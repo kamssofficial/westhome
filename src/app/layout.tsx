@@ -1,18 +1,20 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Playfair_Display } from "next/font/google";
+import { Cormorant_Garamond, DM_Sans } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import Providers from "@/components/layout/Providers";
 
-const inter = Inter({
-  variable: "--font-inter",
+const cormorant = Cormorant_Garamond({
+  variable: "--font-cormorant",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
   display: "swap",
 });
 
-const playfair = Playfair_Display({
-  variable: "--font-playfair",
+const dmSans = DM_Sans({
+  variable: "--font-dm-sans",
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
   display: "swap",
 });
 
@@ -54,7 +56,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
-  themeColor: "#FAFAF8",
+  themeColor: "#FAF9F6",
 };
 
 export default function RootLayout({
@@ -63,28 +65,28 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${playfair.variable}`}>
+    <html lang="en" className={`${cormorant.variable} ${dmSans.variable}`}>
       <body className="min-h-screen bg-background text-foreground font-sans antialiased">
         <Toaster
           position="top-center"
           toastOptions={{
             duration: 3000,
             style: {
-              background: "#2C2C2C",
-              color: "#fff",
+              background: "#1C1917",
+              color: "#FAF9F6",
               fontSize: "14px",
               borderRadius: "8px",
             },
             success: {
               iconTheme: {
                 primary: "#2D7A4F",
-                secondary: "#fff",
+                secondary: "#FAF9F6",
               },
             },
             error: {
               iconTheme: {
                 primary: "#C53030",
-                secondary: "#fff",
+                secondary: "#FAF9F6",
               },
             },
           }}

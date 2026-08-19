@@ -9,7 +9,6 @@ import Button from "@/components/ui/Button";
 import { ProductGridSkeleton } from "@/components/ui/Skeleton";
 import type { Product, Category } from "@/types";
 
-// Fallback categories if API fails
 const FALLBACK_CATEGORIES: Category[] = [
   { id: "1", name: "Wall Decor", slug: "wall-decor", image: "/images/categories/wall-decor.svg", isActive: true, position: 1, subcategories: [] },
   { id: "2", name: "Laundry", slug: "laundry", image: "/images/categories/laundry.svg", isActive: true, position: 2, subcategories: [] },
@@ -61,40 +60,36 @@ export default function HomePage() {
       {/* ============================================================
           HERO SECTION
           ============================================================ */}
-      <section className="relative h-[70vh] md:h-[80vh] bg-primary overflow-hidden">
-        {/* Background image */}
+      <section className="relative h-[85vh] md:h-[90vh] overflow-hidden">
         <Image src="/images/banners/hero.svg" alt="" fill className="absolute inset-0 w-full h-full object-cover" priority />
         <div className="hero-gradient absolute inset-0" />
-        
-        {/* Hero content */}
-        <div className="relative h-full flex items-center">
+
+        <div className="relative h-full flex items-center justify-center text-center">
           <div className="container-shop">
-            <div className="max-w-xl">
-              <p className="text-accent text-xs md:text-sm font-medium uppercase tracking-[0.2em] mb-3 md:mb-4">
-                Premium Home & Lifestyle
-              </p>
-              <h1 className="text-3xl md:text-5xl lg:text-6xl font-serif text-white leading-[1.1] mb-4 md:mb-6">
-                Elevate Your
-                <br />
-                <span className="text-accent">Living Space</span>
-              </h1>
-              <p className="text-white/70 text-sm md:text-base mb-6 md:mb-8 max-w-md leading-relaxed">
-                Discover handpicked home décor, comforters, lamps, and lifestyle
-                accessories that transform your house into a home.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Link href="/shop">
-                  <Button variant="accent" size="lg">
-                    Explore Collection
-                    <ArrowRight size={18} />
-                  </Button>
-                </Link>
-                <Link href="/collections/comforters">
-                  <Button variant="ghost" size="lg" className="text-white border border-white/30 hover:bg-white/10">
-                    Shop Comforters
-                  </Button>
-                </Link>
-              </div>
+            <p className="font-label text-accent mb-4 md:mb-6">
+              Premium Home & Lifestyle
+            </p>
+            <h1 className="font-display text-4xl md:text-6xl lg:text-7xl text-text-inverse leading-[1.05] mb-4 md:mb-6 max-w-3xl mx-auto">
+              Elevate Your
+              <br />
+              Living Space
+            </h1>
+            <p className="text-text-inverse/60 text-sm md:text-base mb-8 md:mb-10 max-w-md mx-auto leading-relaxed">
+              Handpicked home décor, comforters, lamps, and lifestyle
+              accessories that transform your house into a home.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Link href="/shop">
+                <Button variant="accent" size="lg">
+                  Explore Collection
+                  <ArrowRight size={16} />
+                </Button>
+              </Link>
+              <Link href="/collections/comforters">
+                <Button variant="ghost" size="lg" className="text-text-inverse border border-text-inverse/20 hover:bg-text-inverse/10">
+                  Shop Comforters
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
@@ -103,20 +98,18 @@ export default function HomePage() {
       {/* ============================================================
           SHOP BY CATEGORY
           ============================================================ */}
-      <section className="py-12 md:py-16">
+      <section className="py-16 md:py-24">
         <div className="container-shop">
-          <div className="flex items-end justify-between mb-6 md:mb-8">
+          <div className="flex items-end justify-between mb-8 md:mb-12">
             <div>
-              <h2 className="text-xl md:text-2xl font-serif text-foreground">
+              <p className="font-label text-accent mb-2">Collections</p>
+              <h2 className="font-display text-2xl md:text-3xl text-foreground">
                 Shop by Category
               </h2>
-              <p className="text-sm text-text-secondary mt-1">
-                Browse our curated collections
-              </p>
             </div>
             <Link
               href="/shop"
-              className="text-sm font-medium text-secondary hover:text-secondary-hover flex items-center gap-1 transition-colors"
+              className="text-sm font-medium text-secondary hover:text-foreground flex items-center gap-1.5 transition-colors"
             >
               View All
               <ArrowRight size={14} />
@@ -132,7 +125,7 @@ export default function HomePage() {
                   href={`/collections/${cat.slug}`}
                   className="flex-shrink-0 w-24"
                 >
-                  <div className="aspect-square rounded-xl bg-surface-muted overflow-hidden mb-2 border border-border-light">
+                  <div className="aspect-square bg-surface-muted overflow-hidden mb-2 border border-border">
                     {cat.image ? (
                       <Image src={cat.image} alt={cat.name} width={96} height={96} className="w-full h-full object-cover" />
                     ) : (
@@ -141,7 +134,7 @@ export default function HomePage() {
                       </div>
                     )}
                   </div>
-                  <p className="text-xs font-medium text-center text-foreground truncate">
+                  <p className="text-[11px] font-medium text-center text-foreground truncate">
                     {cat.name}
                   </p>
                 </Link>
@@ -149,24 +142,24 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Desktop: grid */}
-          <div className="hidden md:grid grid-cols-4 lg:grid-cols-7 gap-4">
+          {/* Desktop: clean grid */}
+          <div className="hidden md:grid grid-cols-3 lg:grid-cols-7 gap-6">
             {categories.map((cat) => (
               <Link
                 key={cat.id}
                 href={`/collections/${cat.slug}`}
-                className="group"
+                className="group text-center"
               >
-                <div className="aspect-square rounded-xl bg-surface-muted overflow-hidden mb-2 border border-border-light group-hover:border-accent/30 group-hover:shadow-md transition-all duration-300">
+                <div className="aspect-square bg-surface-muted overflow-hidden mb-3 border border-border group-hover:border-accent transition-colors duration-300">
                   {cat.image ? (
-                    <Image src={cat.image} alt={cat.name} width={200} height={200} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    <Image src={cat.image} alt={cat.name} width={200} height={200} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-xs text-text-muted">
                       {cat.name.slice(0, 2)}
                     </div>
                   )}
                 </div>
-                <p className="text-xs font-medium text-center text-foreground group-hover:text-secondary transition-colors">
+                <p className="text-xs font-medium text-foreground group-hover:text-accent transition-colors">
                   {cat.name}
                 </p>
               </Link>
@@ -176,22 +169,20 @@ export default function HomePage() {
       </section>
 
       {/* ============================================================
-          FEATURED PRODUCTS
+          FEATURED PRODUCTS — Asymmetric layout
           ============================================================ */}
-      <section className="py-12 md:py-16 bg-surface-muted/50">
+      <section className="py-16 md:py-24 bg-surface-muted/30">
         <div className="container-shop">
-          <div className="flex items-end justify-between mb-6 md:mb-8">
+          <div className="flex items-end justify-between mb-8 md:mb-12">
             <div>
-              <h2 className="text-xl md:text-2xl font-serif text-foreground">
+              <p className="font-label text-accent mb-2">Curated</p>
+              <h2 className="font-display text-2xl md:text-3xl text-foreground">
                 Featured Products
               </h2>
-              <p className="text-sm text-text-secondary mt-1">
-                Our handpicked selection
-              </p>
             </div>
             <Link
               href="/shop?sort=featured"
-              className="text-sm font-medium text-secondary hover:text-secondary-hover flex items-center gap-1 transition-colors"
+              className="text-sm font-medium text-secondary hover:text-foreground flex items-center gap-1.5 transition-colors"
             >
               View All
               <ArrowRight size={14} />
@@ -201,17 +192,26 @@ export default function HomePage() {
           {loading ? (
             <ProductGridSkeleton count={4} />
           ) : featuredProducts.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 stagger-in">
-              {featuredProducts.map((product, i) => (
-                <ProductCard key={product.id} product={product} priority={i < 4} />
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 stagger-in">
+              {/* First product: large on left */}
+              {featuredProducts[0] && (
+                <div className="col-span-2 lg:col-span-1 lg:row-span-2">
+                  <ProductCard product={featuredProducts[0]} priority />
+                </div>
+              )}
+              {/* Remaining products: stacked on right */}
+              {featuredProducts.slice(1, 4).map((product, i) => (
+                <div key={product.id}>
+                  <ProductCard product={product} priority={i < 2} />
+                </div>
               ))}
             </div>
           ) : (
-            <div className="text-center py-12">
-              <p className="text-text-muted text-sm">
+            <div className="text-center py-16">
+              <p className="text-text-muted text-sm mb-4">
                 Featured products coming soon. Visit the shop to explore our full collection.
               </p>
-              <Link href="/shop" className="inline-block mt-4">
+              <Link href="/shop">
                 <Button variant="primary" size="md">
                   Browse Shop
                   <ArrowRight size={16} />
@@ -225,25 +225,25 @@ export default function HomePage() {
       {/* ============================================================
           PROMOTIONAL BANNER
           ============================================================ */}
-      <section className="py-12 md:py-16">
+      <section className="py-16 md:py-24">
         <div className="container-shop">
-          <div className="relative rounded-2xl overflow-hidden">
-            <Image src="/images/banners/promo-comforters.svg" alt="Promotional banner" fill className="absolute inset-0 w-full h-full object-cover" />
-            <div className="relative z-10 px-8 py-12 md:px-16 md:py-20 text-center">
-              <p className="text-accent text-xs md:text-sm font-medium uppercase tracking-[0.15em] mb-3">
+          <div className="relative overflow-hidden bg-surface-muted border border-border">
+            <Image src="/images/banners/promo-comforters.svg" alt="" fill className="absolute inset-0 w-full h-full object-cover opacity-40" />
+            <div className="relative z-10 px-8 py-14 md:px-16 md:py-20 text-center">
+              <p className="font-label text-accent mb-3">
                 Limited Time
               </p>
-              <h2 className="text-2xl md:text-4xl font-serif text-white mb-4">
+              <h2 className="font-display text-2xl md:text-4xl text-foreground mb-4">
                 Premium Comforters Collection
               </h2>
-              <p className="text-white/70 text-sm md:text-base mb-6 max-w-lg mx-auto">
+              <p className="text-text-secondary text-sm md:text-base mb-8 max-w-lg mx-auto">
                 Experience luxury sleep with our curated comforter range.
                 Quality materials, exceptional comfort.
               </p>
               <Link href="/collections/comforters">
-                <Button variant="accent" size="lg">
+                <Button variant="primary" size="lg">
                   Shop Now
-                  <ArrowRight size={18} />
+                  <ArrowRight size={16} />
                 </Button>
               </Link>
             </div>
@@ -254,25 +254,27 @@ export default function HomePage() {
       {/* ============================================================
           LIFESTYLE COLLECTION
           ============================================================ */}
-      <section className="py-12 md:py-16">
+      <section className="py-16 md:py-24">
         <div className="container-shop">
-          <div className="relative rounded-2xl overflow-hidden">
-            <Image src="/images/banners/lifestyle-collection.svg" alt="Lifestyle collection" fill className="absolute inset-0 w-full h-full object-cover" />
-            <div className="relative z-10 px-8 py-12 md:px-16 md:py-20 text-left max-w-xl">
-              <p className="text-accent text-xs md:text-sm font-medium uppercase tracking-[0.15em] mb-3">
+          <div className="relative overflow-hidden bg-surface-muted border border-border">
+            <Image src="/images/banners/lifestyle-collection.svg" alt="" fill className="absolute inset-0 w-full h-full object-cover opacity-30" />
+            <div className="relative z-10 px-8 py-14 md:px-16 md:py-20 text-left max-w-xl">
+              <p className="font-label text-accent mb-3">
                 Curated for You
               </p>
-              <h2 className="text-2xl md:text-4xl font-serif text-white mb-4">
-                Premium Lifestyle<br />Collection
+              <h2 className="font-display text-2xl md:text-4xl text-foreground mb-4">
+                Premium Lifestyle
+                <br />
+                Collection
               </h2>
-              <p className="text-white/70 text-sm md:text-base mb-6 max-w-md">
+              <p className="text-text-secondary text-sm md:text-base mb-8 max-w-md">
                 Transform every corner of your home with our handpicked lifestyle accessories.
                 Timeless design, exceptional quality.
               </p>
               <Link href="/shop">
-                <Button variant="accent" size="lg">
+                <Button variant="primary" size="lg">
                   Explore Collection
-                  <ArrowRight size={18} />
+                  <ArrowRight size={16} />
                 </Button>
               </Link>
             </div>
@@ -283,20 +285,18 @@ export default function HomePage() {
       {/* ============================================================
           NEW ARRIVALS
           ============================================================ */}
-      <section className="py-12 md:py-16">
+      <section className="py-16 md:py-24 bg-surface-muted/30">
         <div className="container-shop">
-          <div className="flex items-end justify-between mb-6 md:mb-8">
+          <div className="flex items-end justify-between mb-8 md:mb-12">
             <div>
-              <h2 className="text-xl md:text-2xl font-serif text-foreground">
+              <p className="font-label text-accent mb-2">Just In</p>
+              <h2 className="font-display text-2xl md:text-3xl text-foreground">
                 New Arrivals
               </h2>
-              <p className="text-sm text-text-secondary mt-1">
-                Fresh additions to our collection
-              </p>
             </div>
             <Link
               href="/shop?sort=newest"
-              className="text-sm font-medium text-secondary hover:text-secondary-hover flex items-center gap-1 transition-colors"
+              className="text-sm font-medium text-secondary hover:text-foreground flex items-center gap-1.5 transition-colors"
             >
               View All
               <ArrowRight size={14} />
@@ -306,13 +306,13 @@ export default function HomePage() {
           {loading ? (
             <ProductGridSkeleton count={4} />
           ) : newArrivals.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 stagger-in">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 stagger-in">
               {newArrivals.map((product, i) => (
                 <ProductCard key={product.id} product={product} priority={i < 4} />
               ))}
             </div>
           ) : (
-            <div className="text-center py-12">
+            <div className="text-center py-16">
               <p className="text-text-muted text-sm">
                 New arrivals coming soon. Check back regularly for the latest additions.
               </p>
@@ -324,17 +324,18 @@ export default function HomePage() {
       {/* ============================================================
           WHY WESTHOME
           ============================================================ */}
-      <section className="py-12 md:py-16 bg-surface-muted/50">
+      <section className="py-16 md:py-24">
         <div className="container-shop">
-          <h2 className="text-xl md:text-2xl font-serif text-foreground text-center mb-8 md:mb-12">
+          <p className="font-label text-accent text-center mb-2">Our Promise</p>
+          <h2 className="font-display text-2xl md:text-3xl text-foreground text-center mb-12 md:mb-16">
             Why WESTHOME
           </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
             <div className="text-center">
-              <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-3">
-                <Truck size={22} className="text-accent" />
+              <div className="w-12 h-12 border border-border flex items-center justify-center mx-auto mb-4">
+                <Truck size={20} className="text-accent" />
               </div>
-              <h3 className="text-sm font-semibold text-foreground mb-1">
+              <h3 className="text-sm font-medium text-foreground mb-1">
                 Fast Delivery
               </h3>
               <p className="text-xs text-text-secondary leading-relaxed">
@@ -342,10 +343,10 @@ export default function HomePage() {
               </p>
             </div>
             <div className="text-center">
-              <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-3">
-                <Shield size={22} className="text-accent" />
+              <div className="w-12 h-12 border border-border flex items-center justify-center mx-auto mb-4">
+                <Shield size={20} className="text-accent" />
               </div>
-              <h3 className="text-sm font-semibold text-foreground mb-1">
+              <h3 className="text-sm font-medium text-foreground mb-1">
                 Quality Assured
               </h3>
               <p className="text-xs text-text-secondary leading-relaxed">
@@ -353,10 +354,10 @@ export default function HomePage() {
               </p>
             </div>
             <div className="text-center">
-              <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-3">
-                <RotateCcw size={22} className="text-accent" />
+              <div className="w-12 h-12 border border-border flex items-center justify-center mx-auto mb-4">
+                <RotateCcw size={20} className="text-accent" />
               </div>
-              <h3 className="text-sm font-semibold text-foreground mb-1">
+              <h3 className="text-sm font-medium text-foreground mb-1">
                 Easy Returns
               </h3>
               <p className="text-xs text-text-secondary leading-relaxed">
@@ -364,10 +365,10 @@ export default function HomePage() {
               </p>
             </div>
             <div className="text-center">
-              <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-3">
-                <HeadphonesIcon size={22} className="text-accent" />
+              <div className="w-12 h-12 border border-border flex items-center justify-center mx-auto mb-4">
+                <HeadphonesIcon size={20} className="text-accent" />
               </div>
-              <h3 className="text-sm font-semibold text-foreground mb-1">
+              <h3 className="text-sm font-medium text-foreground mb-1">
                 Support
               </h3>
               <p className="text-xs text-text-secondary leading-relaxed">
@@ -379,34 +380,23 @@ export default function HomePage() {
       </section>
 
       {/* ============================================================
-          WHATSAPP CTA
+          WHATSAPP CTA — Minimal
           ============================================================ */}
-      <section className="py-12 md:py-16">
+      <section className="py-16 md:py-24 border-t border-border">
         <div className="container-shop">
-          <div className="flex items-center gap-6 md:gap-10 p-6 md:p-10 rounded-2xl bg-[#25D366]/5 border border-[#25D366]/20">
-            <div className="flex-shrink-0">
-              <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-[#25D366] flex items-center justify-center">
-                <MessageCircle size={28} className="text-white" />
-              </div>
-            </div>
-            <div className="flex-1">
-              <h3 className="text-lg md:text-xl font-serif text-foreground mb-1">
-                Chat with Us
-              </h3>
-              <p className="text-sm text-text-secondary mb-3">
-                Have questions? Need custom sizes? Reach out on WhatsApp for
-                quick assistance.
-              </p>
+          <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 justify-center">
+            <MessageCircle size={20} className="text-[#25D366]" />
+            <p className="text-sm text-text-secondary text-center sm:text-left">
+              Questions? Need custom sizes?{" "}
               <a
                 href="https://wa.me/919999999999?text=Hi!%20I%20have%20a%20question%20about%20WESTHOME%20products."
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#25D366] text-white rounded-lg text-sm font-medium hover:bg-[#20BD5C] transition-colors"
+                className="text-foreground font-medium underline underline-offset-4 decoration-border hover:decoration-accent transition-colors"
               >
-                <MessageCircle size={16} />
-                Start Chat
+                Chat with us on WhatsApp
               </a>
-            </div>
+            </p>
           </div>
         </div>
       </section>

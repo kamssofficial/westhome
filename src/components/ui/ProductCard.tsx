@@ -70,7 +70,7 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
       href={`/products/${product.slug}`}
       className="group block"
     >
-      <div className="bg-white rounded-xl overflow-hidden shadow-card hover:shadow-card-hover transition-all duration-300">
+      <div className="bg-white overflow-hidden border border-border hover:border-accent/40 transition-colors duration-300">
         {/* Image */}
         <div className="relative aspect-product bg-surface-muted overflow-hidden">
           {primaryImage && !imageError ? (
@@ -146,7 +146,7 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
 
         {/* Info */}
         <div className="p-3">
-          <p className="text-[11px] text-text-muted uppercase tracking-wider mb-1">
+          <p className="text-[11px] font-label text-text-muted mb-1">
             {product.category?.name}
           </p>
           <h3 className="text-sm font-medium text-foreground line-clamp-2 mb-2 min-h-[2.5rem]">

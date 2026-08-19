@@ -6,29 +6,29 @@
    ============================================================ */
 
 @theme {
-  /* Color Palette - Premium warm neutrals */
-  --color-background: #FAFAF8;
-  --color-foreground: #1A1A1A;
+  /* Color Palette - Refined warm neutrals */
+  --color-background: #FAF9F6;
+  --color-foreground: #1C1917;
   
-  --color-primary: #2C2C2C;
-  --color-primary-hover: #1A1A1A;
-  --color-secondary: #8B7355;
-  --color-secondary-hover: #7A6548;
+  --color-primary: #1C1917;
+  --color-primary-hover: #0C0A09;
+  --color-secondary: #78716C;
+  --color-secondary-hover: #57534E;
   
-  --color-accent: #C9A96E;
-  --color-accent-hover: #B89858;
+  --color-accent: #A89279;
+  --color-accent-hover: #96806A;
   
   --color-surface: #FFFFFF;
-  --color-surface-hover: #F5F5F3;
-  --color-surface-muted: #F0EFED;
+  --color-surface-hover: #F5F5F4;
+  --color-surface-muted: #F0EDE8;
   
-  --color-border: #E5E5E3;
-  --color-border-light: #EDEDEB;
+  --color-border: #E7E5E4;
+  --color-border-light: #F0EDE8;
   
-  --color-text-primary: #1A1A1A;
-  --color-text-secondary: #6B6B6B;
-  --color-text-muted: #999999;
-  --color-text-inverse: #FFFFFF;
+  --color-text-primary: #1C1917;
+  --color-text-secondary: #78716C;
+  --color-text-muted: #A8A29E;
+  --color-text-inverse: #FAF9F6;
   
   --color-success: #2D7A4F;
   --color-error: #C53030;
@@ -36,8 +36,8 @@
   --color-info: #2B6CB0;
   
   /* Typography */
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-serif: 'Cormorant Garamond', Georgia, serif;
   
   /* Spacing Scale */
   --spacing-18: 4.5rem;
@@ -95,9 +95,22 @@ body {
    ============================================================ */
 
 h1, h2, h3, h4, h5, h6 {
-  line-height: 1.2;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  line-height: 1.15;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+}
+
+.font-display {
+  font-family: var(--font-serif);
+  font-weight: 300;
+}
+
+.font-label {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.6875rem;
 }
 
 /* ============================================================
@@ -187,9 +200,9 @@ h1, h2, h3, h4, h5, h6 {
 .hero-gradient {
   background: linear-gradient(
     to bottom,
-    rgba(0, 0, 0, 0) 0%,
-    rgba(0, 0, 0, 0.02) 50%,
-    rgba(0, 0, 0, 0.15) 100%
+    rgba(28, 25, 23, 0) 0%,
+    rgba(28, 25, 23, 0.3) 50%,
+    rgba(28, 25, 23, 0.7) 100%
   );
 }
 
