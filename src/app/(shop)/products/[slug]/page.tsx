@@ -158,7 +158,7 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
     );
 
     const whatsappUrl = getWhatsAppUrl(
-      process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "+919999999999",
+      process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "+919895071144",
       message
     );
     window.open(whatsappUrl, "_blank");
@@ -170,7 +170,7 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
       toast.success("Link copied!");
     } else if (method === "whatsapp") {
       const message = `Check out this product: ${product.name} - ${window.location.href}`;
-      window.open(getWhatsAppUrl(process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "+919999999999", message), "_blank");
+      window.open(getWhatsAppUrl(process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "+919895071144", message), "_blank");
     }
     setShareMenuOpen(false);
   };

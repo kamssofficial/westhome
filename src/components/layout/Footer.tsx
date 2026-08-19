@@ -49,7 +49,7 @@ export default function Footer({ className }: { className?: string }) {
             </p>
             <div className="space-y-2 text-sm text-white/60">
               <a
-                href="tel:+919999999999"
+                href="tel:+919895071144"
                 className="flex items-center gap-2 hover:text-white transition-colors"
               >
                 <Phone size={14} />
@@ -124,7 +124,7 @@ export default function Footer({ className }: { className?: string }) {
               Connect With Us
             </h3>
             <a
-              href="https://wa.me/919999999999"
+              href="https://wa.me/919895071144"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#25D366] text-white rounded-lg text-sm font-medium hover:bg-[#20BD5C] transition-colors mb-6"

@@ -389,7 +389,7 @@ export default function HomePage() {
             <p className="text-sm text-text-secondary text-center sm:text-left">
               Questions? Need custom sizes?{" "}
               <a
-                href="https://wa.me/919999999999?text=Hi!%20I%20have%20a%20question%20about%20WESTHOME%20products."
+                href="https://wa.me/919895071144?text=Hi!%20I%20have%20a%20question%20about%20WESTHOME%20products."
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-foreground font-medium underline underline-offset-4 decoration-border hover:decoration-accent transition-colors"

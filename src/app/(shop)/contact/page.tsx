@@ -20,7 +20,7 @@ export default function ContactPage() {
           <div className="space-y-6">
             <h2 className="text-xl font-serif">Get in Touch</h2>
             <div className="space-y-4">
-              <a href="tel:+919999999999" className="flex items-center gap-3 p-3 bg-white rounded-xl border border-border-light hover:shadow-sm transition-all">
+              <a href="tel:+919895071144" className="flex items-center gap-3 p-3 bg-white rounded-xl border border-border-light hover:shadow-sm transition-all">
                 <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
                   <Phone size={18} className="text-accent" />
                 </div>
@@ -38,7 +38,7 @@ export default function ContactPage() {
                   <p className="text-xs text-text-muted">info@westhomebybmd.com</p>
                 </div>
               </a>
-              <a href="https://wa.me/919999999999" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 bg-white rounded-xl border border-border-light hover:shadow-sm transition-all">
+              <a href="https://wa.me/919895071144" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 bg-white rounded-xl border border-border-light hover:shadow-sm transition-all">
                 <div className="w-10 h-10 rounded-lg bg-[#25D366]/10 flex items-center justify-center">
                   <MessageCircle size={18} className="text-[#25D366]" />
                 </div>
