@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="500" viewBox="0 0 1200 500">
+  <defs>
+    <!-- Warm luxury background -->
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2C2420"/>
+      <stop offset="40%" style="stop-color:#3A302A"/>
+      <stop offset="100%" style="stop-color:#2A221E"/>
+    </linearGradient>
+    <radialGradient id="warmGlow" cx="65%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#C9A96E;stop-opacity:0.12"/>
+      <stop offset="60%" style="stop-color:#C9A96E;stop-opacity:0.03"/>
+      <stop offset="100%" style="stop-color:#C9A96E;stop-opacity:0"/>
+    </radialGradient>
+    <radialGradient id="softLight" cx="30%" cy="40%" r="35%">
+      <stop offset="0%" style="stop-color:#8B7355;stop-opacity:0.1"/>
+      <stop offset="100%" style="stop-color:#8B7355;stop-opacity:0"/>
+    </radialGradient>
+    <linearGradient id="goldLine" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#C9A96E;stop-opacity:0"/>
+      <stop offset="50%" style="stop-color:#D4B87A;stop-opacity:0.4"/>
+      <stop offset="100%" style="stop-color:#C9A96E;stop-opacity:0"/>
+    </linearGradient>
+    <!-- Fabric texture pattern -->
+    <pattern id="fabricWeave" x="0" y="0" width="8" height="8" patternUnits="userSpaceOnUse">
+      <rect width="8" height="8" fill="transparent"/>
+      <path d="M0 4 L8 4" stroke="#C9A96E" stroke-width="0.15" opacity="0.06"/>
+      <path d="M4 0 L4 8" stroke="#C9A96E" stroke-width="0.15" opacity="0.04"/>
+    </pattern>
+    <filter id="softBlur">
+      <feGaussianBlur stdDeviation="2"/>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1200" height="500" fill="url(#bg)"/>
+  <rect width="1200" height="500" fill="url(#warmGlow)"/>
+  <rect width="1200" height="500" fill="url(#softLight)"/>
+  <rect width="1200" height="500" fill="url(#fabricWeave)"/>
+  
+  <!-- Abstract bedding/comforter shapes -->
+  <g opacity="0.08">
+    <!-- Layer 1 - base -->
+    <ellipse cx="700" cy="350" rx="350" ry="120" fill="none" stroke="#C9A96E" stroke-width="1.5"/>
+    <!-- Layer 2 - mid -->
+    <ellipse cx="700" cy="310" rx="300" ry="100" fill="#C9A96E" opacity="0.04"/>
+    <ellipse cx="700" cy="310" rx="300" ry="100" fill="none" stroke="#D4B87A" stroke-width="1"/>
+    <!-- Layer 3 - top -->
+    <ellipse cx="700" cy="275" rx="250" ry="80" fill="#C9A96E" opacity="0.06"/>
+    <ellipse cx="700" cy="275" rx="250" ry="80" fill="none" stroke="#C9A96E" stroke-width="0.8"/>
+    <!-- Pillow shapes -->
+    <ellipse cx="620" cy="220" rx="80" ry="40" fill="#C9A96E" opacity="0.05"/>
+    <ellipse cx="620" cy="220" rx="80" ry="40" fill="none" stroke="#C9A96E" stroke-width="0.6"/>
+    <ellipse cx="780" cy="225" rx="75" ry="35" fill="#D4B87A" opacity="0.04"/>
+    <ellipse cx="780" cy="225" rx="75" ry="35" fill="none" stroke="#D4B87A" stroke-width="0.6"/>
+  </g>
+  
+  <!-- Decorative flowing fabric lines -->
+  <g opacity="0.1">
+    <path d="M350 400 Q500 350 700 380 Q900 410 1050 370" fill="none" stroke="#C9A96E" stroke-width="1"/>
+    <path d="M380 380 Q530 330 700 360 Q870 390 1020 350" fill="none" stroke="#D4B87A" stroke-width="0.6"/>
+    <path d="M400 360 Q550 310 700 340 Q850 370 1000 330" fill="none" stroke="#8B7355" stroke-width="0.4"/>
+  </g>
+  
+  <!-- Gold accent lines -->
+  <rect x="0" y="245" width="1200" height="0.5" fill="url(#goldLine)"/>
+  <rect x="0" y="255" width="1200" height="0.3" fill="url(#goldLine)" opacity="0.5"/>
+  
+  <!-- Corner accents -->
+  <g opacity="0.15">
+    <path d="M30 30 L30 80" stroke="#C9A96E" stroke-width="1"/>
+    <path d="M30 30 L80 30" stroke="#C9A96E" stroke-width="1"/>
+    <circle cx="30" cy="30" r="2" fill="#C9A96E"/>
+  </g>
+  <g opacity="0.15" transform="translate(1200,0) scale(-1,1)">
+    <path d="M30 30 L30 80" stroke="#C9A96E" stroke-width="1"/>
+    <path d="M30 30 L80 30" stroke="#C9A96E" stroke-width="1"/>
+    <circle cx="30" cy="30" r="2" fill="#C9A96E"/>
+  </g>
+  <g opacity="0.15" transform="translate(0,500) scale(1,-1)">
+    <path d="M30 30 L30 80" stroke="#C9A96E" stroke-width="1"/>
+    <path d="M30 30 L80 30" stroke="#C9A96E" stroke-width="1"/>
+  </g>
+  <g opacity="0.15" transform="translate(1200,500) scale(-1,-1)">
+    <path d="M30 30 L30 80" stroke="#C9A96E" stroke-width="1"/>
+    <path d="M30 30 L80 30" stroke="#C9A96E" stroke-width="1"/>
+  </g>
+  
+  <!-- Scattered decorative elements -->
+  <g opacity="0.08">
+    <circle cx="150" cy="150" r="30" fill="none" stroke="#C9A96E" stroke-width="0.5"/>
+    <circle cx="150" cy="150" r="20" fill="none" stroke="#C9A96E" stroke-width="0.3"/>
+    <path d="M1050 400 L1070 380 L1090 400 L1070 420 Z" fill="none" stroke="#C9A96E" stroke-width="0.5"/>
+    <rect x="200" y="380" width="40" height="40" rx="2" fill="none" stroke="#D4B87A" stroke-width="0.4" transform="rotate(15 220 400)"/>
+  </g>
+  
+  <!-- Subtle sparkle dots -->
+  <g opacity="0.25">
+    <circle cx="300" cy="120" r="1.5" fill="#C9A96E"/>
+    <circle cx="600" cy="80" r="1" fill="#D4B87A"/>
+    <circle cx="900" cy="150" r="1.5" fill="#C9A96E"/>
+    <circle cx="1100" cy="100" r="1" fill="#C9A96E"/>
+    <circle cx="450" cy="420" r="1" fill="#D4B87A"/>
+    <circle cx="750" cy="440" r="1.5" fill="#C9A96E"/>
+    <circle cx="1000" cy="400" r="1" fill="#C9A96E"/>
+  </g>
+</svg>

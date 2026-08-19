@@ -1,0 +1,112 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { signIn as nextAuthSignIn } from "next-auth/react";
+import { signIn } from "@/lib/auth";
+import { useRouter } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
+import Button from "@/components/ui/Button";
+import toast from "react-hot-toast";
+
+export default function LoginPage() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const result = await nextAuthSignIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        toast.error("Invalid email or password");
+      } else {
+        toast.success("Signed in successfully");
+        router.push("/account");
+        router.refresh();
+      }
+    } catch {
+      toast.error("Failed to sign in");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-md">
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <Link href="/" className="inline-block">
+            <Image
+              src="/images/logo/westhome-logo.png"
+              alt="WESTHOME"
+              width={160}
+              height={45}
+              className="h-8 w-auto mx-auto"
+            />
+          </Link>
+          <h1 className="text-xl font-serif mt-4">Welcome Back</h1>
+          <p className="text-sm text-text-secondary mt-1">
+            Sign in to your WESTHOME account
+          </p>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="bg-white border border-border-light rounded-xl p-5 md:p-6 space-y-4">
+          <div>
+            <label className="text-xs font-medium text-text-secondary mb-1 block">Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full px-3 py-2.5 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
+              placeholder="your@email.com"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-text-secondary mb-1 block">Password</label>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="w-full px-3 py-2.5 pr-10 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
+                placeholder="••••••••"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-foreground"
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+          </div>
+          <Button type="submit" fullWidth size="lg" loading={loading}>
+            Sign In
+          </Button>
+        </form>
+
+        <p className="text-center text-sm text-text-secondary mt-4">
+          Don&apos;t have an account?{" "}
+          <Link href="/register" className="text-accent font-medium hover:underline">
+            Create one
+          </Link>
+        </p>
+      </div>
+    </div>
+  );
+}

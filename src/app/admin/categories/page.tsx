@@ -1,0 +1,226 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { Plus, Edit, Trash2, GripVertical, ChevronRight, ChevronDown } from "lucide-react";
+import Button from "@/components/ui/Button";
+import { cn } from "@/lib/utils";
+import toast from "react-hot-toast";
+
+interface Subcategory {
+  id: string;
+  name: string;
+  slug: string;
+  position: number;
+  isActive: boolean;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  position: number;
+  isActive: boolean;
+  productCount: number;
+  subcategories: Subcategory[];
+}
+
+export default function AdminCategoriesPage() {
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [newSubcategoryName, setNewSubcategoryName] = useState("");
+  const [addingSubTo, setAddingSubTo] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/categories");
+      if (res.ok) {
+        const data = await res.json();
+        setCategories(data.categories);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateCategory = async () => {
+    const name = prompt("Enter category name:");
+    if (!name) return;
+    try {
+      const res = await fetch("/api/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, position: categories.length + 1 }),
+      });
+      if (res.ok) {
+        toast.success("Category created");
+        fetchCategories();
+      }
+    } catch {
+      toast.error("Failed to create category");
+    }
+  };
+
+  const handleUpdateCategory = async (id: string) => {
+    try {
+      const res = await fetch(`/api/categories/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: editName }),
+      });
+      if (res.ok) {
+        toast.success("Category updated");
+        setEditingId(null);
+        fetchCategories();
+      }
+    } catch {
+      toast.error("Failed to update category");
+    }
+  };
+
+  const handleDeleteCategory = async (id: string, name: string) => {
+    if (!confirm(`Delete category "${name}"? Products in this category will be unassigned.`)) return;
+    try {
+      const res = await fetch(`/api/categories/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("Category deleted");
+        fetchCategories();
+      }
+    } catch {
+      toast.error("Failed to delete category");
+    }
+  };
+
+  const handleAddSubcategory = async (categoryId: string) => {
+    if (!newSubcategoryName.trim()) return;
+    try {
+      const res = await fetch(`/api/categories/${categoryId}/subcategories`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newSubcategoryName }),
+      });
+      if (res.ok) {
+        toast.success("Subcategory added");
+        setNewSubcategoryName("");
+        setAddingSubTo(null);
+        fetchCategories();
+      }
+    } catch {
+      toast.error("Failed to add subcategory");
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-semibold">Categories</h1>
+        <Button size="sm" onClick={handleCreateCategory}>
+          <Plus size={16} /> Add Category
+        </Button>
+      </div>
+
+      <div className="space-y-2">
+        {loading ? (
+          <div className="text-center py-8 text-text-muted">Loading...</div>
+        ) : categories.map((cat) => (
+          <div key={cat.id} className="bg-white rounded-xl border border-border-light">
+            {/* Category row */}
+            <div className="flex items-center gap-3 p-4">
+              <button
+                onClick={() => setExpandedId(expandedId === cat.id ? null : cat.id)}
+                className="p-1 hover:bg-surface-muted rounded"
+              >
+                {expandedId === cat.id ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+              </button>
+
+              {editingId === cat.id ? (
+                <div className="flex items-center gap-2 flex-1">
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="flex-1 px-3 py-1.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
+                    autoFocus
+                    onKeyDown={(e) => e.key === "Enter" && handleUpdateCategory(cat.id)}
+                  />
+                  <Button size="sm" onClick={() => handleUpdateCategory(cat.id)}>Save</Button>
+                  <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>Cancel</Button>
+                </div>
+              ) : (
+                <>
+                  <div className="flex-1">
+                    <p className="font-medium text-sm">{cat.name}</p>
+                    <p className="text-xs text-text-muted">{cat.productCount} products • {cat.subcategories.length} subcategories</p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => { setEditingId(cat.id); setEditName(cat.name); }} className="p-1.5 hover:bg-surface-muted rounded-lg">
+                      <Edit size={14} className="text-text-muted" />
+                    </button>
+                    <button onClick={() => handleDeleteCategory(cat.id, cat.name)} className="p-1.5 hover:bg-error/10 rounded-lg">
+                      <Trash2 size={14} className="text-error" />
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Subcategories */}
+            {expandedId === cat.id && (
+              <div className="border-t border-border-light px-4 pb-4 pt-3 ml-8">
+                <p className="text-xs font-medium text-text-muted mb-2 uppercase tracking-wider">Subcategories</p>
+                {cat.subcategories.length > 0 ? (
+                  <div className="space-y-1">
+                    {cat.subcategories.map((sub) => (
+                      <div key={sub.id} className="flex items-center justify-between px-3 py-2 bg-surface-muted rounded-lg">
+                        <span className="text-sm">{sub.name}</span>
+                        <button className="p-1 hover:bg-white rounded text-text-muted">
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-text-muted">No subcategories</p>
+                )}
+
+                {/* Add subcategory */}
+                {addingSubTo === cat.id ? (
+                  <div className="flex items-center gap-2 mt-2">
+                    <input
+                      type="text"
+                      value={newSubcategoryName}
+                      onChange={(e) => setNewSubcategoryName(e.target.value)}
+                      placeholder="Subcategory name"
+                      className="flex-1 px-3 py-1.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
+                      autoFocus
+                      onKeyDown={(e) => e.key === "Enter" && handleAddSubcategory(cat.id)}
+                    />
+                    <Button size="sm" onClick={() => handleAddSubcategory(cat.id)}>Add</Button>
+                    <Button size="sm" variant="ghost" onClick={() => { setAddingSubTo(null); setNewSubcategoryName(""); }}>Cancel</Button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setAddingSubTo(cat.id)}
+                    className="flex items-center gap-1 mt-2 text-xs text-accent hover:underline"
+                  >
+                    <Plus size={12} /> Add subcategory
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
