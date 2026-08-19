@@ -190,7 +190,7 @@ export default function HomePage() {
           </div>
 
           {loading ? (
-            <ProductGridSkeleton count={4} />
+            <ProductGridSkeleton count={4} className="lg:grid-cols-3" />
           ) : featuredProducts.length > 0 ? (
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 stagger-in">
               {/* First product: large on left */}
