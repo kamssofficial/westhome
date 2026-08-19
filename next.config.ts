@@ -10,7 +10,6 @@ const nextConfig: NextConfig = {
         hostname: "**",
       },
     ],
-    formats: ["image/webp", "image/avif"],
   },
   experimental: {
     serverActions: {
