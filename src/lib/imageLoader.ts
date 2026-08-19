@@ -1,24 +1,19 @@
 /**
- * Custom Next.js image loader that bypasses the optimizer for SVG files.
- * SVGs cannot be optimized (WebP/AVIF conversion) and the built-in
- * optimizer returns 400 for them, so they are served directly.
+ * Custom Next.js image loader.
+ *
+ * When a custom loader is configured, the built-in /_next/image optimizer
+ * is disabled, so we must serve all images directly from their public path.
+ * SVGs were already broken with the optimizer (400 error); raster images
+ * also break because /_next/image returns 404 under a custom loader.
+ *
+ * TODO: Re-enable optimization by switching to an external service
+ * (Cloudinary, Imgix, etc.) or by using `unoptimized` per-component
+ * and removing this custom loader.
  */
 import type { ImageLoaderProps } from "next/image";
 
 export default function westhomeImageLoader({
   src,
-  width,
-  quality,
 }: ImageLoaderProps): string {
-  // SVGs: serve directly — no optimization possible or needed
-  if (src.endsWith(".svg")) {
-    return src;
-  }
-
-  // Everything else: go through the default Next.js optimizer
-  const params = new URLSearchParams();
-  params.set("url", src);
-  params.set("w", String(width));
-  if (quality) params.set("q", String(quality));
-  return `/_next/image?${params.toString()}`;
+  return src;
 }
