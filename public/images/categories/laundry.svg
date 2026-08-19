@@ -1,80 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
   <defs>
-    <linearGradient id="bg2" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#F8F5F0"/>
-      <stop offset="100%" style="stop-color:#EDE8DF"/>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F8F6F3"/>
+      <stop offset="100%" stop-color="#F0EDE8"/>
     </linearGradient>
-    <linearGradient id="gold2" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#B8935A"/>
-      <stop offset="50%" style="stop-color:#D4B87A"/>
-      <stop offset="100%" style="stop-color:#C9A96E"/>
-    </linearGradient>
-    <radialGradient id="glow2" cx="50%" cy="42%" r="30%">
-      <stop offset="0%" style="stop-color:#C9A96E;stop-opacity:0.06"/>
-      <stop offset="100%" style="stop-color:#C9A96E;stop-opacity:0"/>
-    </radialGradient>
   </defs>
-  
-  <rect width="400" height="400" fill="url(#bg2)"/>
-  <rect width="400" height="400" fill="url(#glow2)"/>
-  
-  <!-- Premium laundry basket illustration -->
-  <g transform="translate(200,175)">
-    <!-- Basket body - tapered -->
-    <path d="M-70 40 L-55 -50 Q0 -65 55 -50 L70 40 Q0 55 -70 40 Z" fill="#C9A96E" opacity="0.06"/>
-    <path d="M-70 40 L-55 -50 Q0 -65 55 -50 L70 40 Q0 55 -70 40 Z" fill="none" stroke="url(#gold2)" stroke-width="1.8"/>
-    
-    <!-- Weave pattern -->
-    <g opacity="0.15">
-      <path d="M-60 30 L-50 -40" stroke="#C9A96E" stroke-width="0.5"/>
-      <path d="M-45 35 L-38 -45" stroke="#C9A96E" stroke-width="0.5"/>
-      <path d="M-30 38 L-25 -48" stroke="#C9A96E" stroke-width="0.5"/>
-      <path d="M-15 40 L-12 -50" stroke="#C9A96E" stroke-width="0.5"/>
-      <path d="M0 42 L0 -52" stroke="#C9A96E" stroke-width="0.5"/>
-      <path d="M15 40 L12 -50" stroke="#C9A96E" stroke-width="0.5"/>
-      <path d="M30 38 L25 -48" stroke="#C9A96E" stroke-width="0.5"/>
-      <path d="M45 35 L38 -45" stroke="#C9A96E" stroke-width="0.5"/>
-      <path d="M60 30 L50 -40" stroke="#C9A96E" stroke-width="0.5"/>
-      <!-- Horizontal weave -->
-      <path d="M-65 20 Q0 10 65 20" stroke="#C9A96E" stroke-width="0.4" fill="none"/>
-      <path d="M-62 0 Q0 -8 62 0" stroke="#C9A96E" stroke-width="0.4" fill="none"/>
-      <path d="M-58 -20 Q0 -28 58 -20" stroke="#C9A96E" stroke-width="0.4" fill="none"/>
-      <path d="M-52 -35 Q0 -42 52 -35" stroke="#C9A96E" stroke-width="0.4" fill="none"/>
-    </g>
-    
-    <!-- Handle -->
-    <path d="M-40 -50 Q0 -80 40 -50" fill="none" stroke="url(#gold2)" stroke-width="2"/>
-    <path d="M-38 -50 Q0 -75 38 -50" fill="none" stroke="#C9A96E" stroke-width="0.5" opacity="0.3"/>
-    
-    <!-- Fabric draped over edge -->
-    <path d="M-55 -48 Q-60 -55 -50 -58 Q-40 -52 -35 -48" fill="#C9A96E" opacity="0.06" stroke="#C9A96E" stroke-width="0.4" opacity="0.15"/>
-    <path d="M20 -50 Q25 -58 35 -55 Q40 -48 30 -45" fill="#D4B87A" opacity="0.05" stroke="#D4B87A" stroke-width="0.4" opacity="0.12"/>
-    
-    <!-- Fabric folds inside -->
-    <path d="M-30 -40 Q-15 -45 0 -38 Q15 -45 30 -40" fill="none" stroke="#C9A96E" stroke-width="0.5" opacity="0.1"/>
-    <path d="M-25 -30 Q-10 -35 5 -28 Q20 -35 25 -30" fill="none" stroke="#C9A96E" stroke-width="0.4" opacity="0.08"/>
-  </g>
-  
-  <!-- Decorative hangers nearby -->
-  <g opacity="0.12" transform="translate(320,100)">
-    <path d="M0 0 L0 30" stroke="#C9A96E" stroke-width="0.8"/>
-    <path d="M-20 20 L0 8 L20 20" stroke="#C9A96E" stroke-width="0.8" fill="none"/>
-    <circle cx="0" cy="-5" r="4" fill="none" stroke="#C9A96E" stroke-width="0.6"/>
-  </g>
-  <g opacity="0.08" transform="translate(340,120)">
-    <path d="M0 0 L0 25" stroke="#D4B87A" stroke-width="0.6"/>
-    <path d="M-15 17 L0 7 L15 17" stroke="#D4B87A" stroke-width="0.6" fill="none"/>
-    <circle cx="0" cy="-4" r="3" fill="none" stroke="#D4B87A" stroke-width="0.5"/>
-  </g>
-  
-  <!-- Decorative dots -->
-  <g opacity="0.15">
-    <circle cx="70" cy="80" r="1.5" fill="#C9A96E"/>
-    <circle cx="330" cy="320" r="1.5" fill="#C9A96E"/>
-    <circle cx="60" cy="340" r="1" fill="#D4B87A"/>
-  </g>
-  
-  <!-- Label -->
-  <text x="200" y="365" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="15" fill="#2C2C2C" font-weight="400" letter-spacing="3" opacity="0.7">LAUNDRY</text>
-  <line x1="160" y1="375" x2="240" y2="375" stroke="url(#gold2)" stroke-width="0.8" opacity="0.5"/>
+  <rect width="400" height="400" fill="url(#bg)"/>
+  <path d="M140 180 Q200 160 260 180 Q260 240 200 260 Q140 240 140 180Z" fill="none" stroke="#C9A96E" stroke-width="1.5"/>
+  <line x1="140" y1="210" x2="260" y2="210" stroke="#C9A96E" stroke-width="0.5" opacity="0.3"/>
 </svg>

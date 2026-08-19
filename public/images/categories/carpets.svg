@@ -1,93 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
   <defs>
-    <linearGradient id="bg5" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#F8F5F0"/>
-      <stop offset="100%" style="stop-color:#EDE8DF"/>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F8F6F3"/>
+      <stop offset="100%" stop-color="#F0EDE8"/>
     </linearGradient>
-    <linearGradient id="gold5" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#B8935A"/>
-      <stop offset="50%" style="stop-color:#D4B87A"/>
-      <stop offset="100%" style="stop-color:#C9A96E"/>
-    </linearGradient>
-    <radialGradient id="glow5" cx="50%" cy="42%" r="30%">
-      <stop offset="0%" style="stop-color:#C9A96E;stop-opacity:0.06"/>
-      <stop offset="100%" style="stop-color:#C9A96E;stop-opacity:0"/>
-    </radialGradient>
   </defs>
-  
-  <rect width="400" height="400" fill="url(#bg5)"/>
-  <rect width="400" height="400" fill="url(#glow5)"/>
-  
-  <!-- Carpet/Rug illustration - perspective view -->
-  <g transform="translate(200,180)">
-    <!-- Rug body with perspective -->
-    <path d="M-110 -60 L-80 70 L80 70 L110 -60 Z" fill="#C9A96E" opacity="0.04" stroke="url(#gold5)" stroke-width="1.5"/>
-    
-    <!-- Border pattern -->
-    <path d="M-100 -50 L-75 60 L75 60 L100 -50 Z" fill="none" stroke="#C9A96E" stroke-width="0.6" opacity="0.2"/>
-    <path d="M-92 -42 L-70 52 L70 52 L92 -42 Z" fill="none" stroke="#D4B87A" stroke-width="0.4" opacity="0.15"/>
-    
-    <!-- Central medallion -->
-    <ellipse cx="0" cy="5" rx="35" ry="28" fill="#C9A96E" opacity="0.04" stroke="#C9A96E" stroke-width="0.8"/>
-    <ellipse cx="0" cy="5" rx="25" ry="18" fill="#D4B87A" opacity="0.03" stroke="#D4B87A" stroke-width="0.5"/>
-    <ellipse cx="0" cy="5" rx="12" ry="8" fill="#C9A96E" opacity="0.05" stroke="#C9A96E" stroke-width="0.4"/>
-    
-    <!-- Corner ornaments -->
-    <g opacity="0.15">
-      <!-- Top left -->
-      <path d="M-85 -45 L-75 -35" stroke="#C9A96E" stroke-width="0.5"/>
-      <circle cx="-80" cy="-40" r="4" fill="none" stroke="#C9A96E" stroke-width="0.4"/>
-      <!-- Top right -->
-      <path d="M85 -45 L75 -35" stroke="#C9A96E" stroke-width="0.5"/>
-      <circle cx="80" cy="-40" r="4" fill="none" stroke="#C9A96E" stroke-width="0.4"/>
-      <!-- Bottom left -->
-      <path d="M-75 55 L-65 65" stroke="#C9A96E" stroke-width="0.5"/>
-      <circle cx="-70" cy="60" r="4" fill="none" stroke="#C9A96E" stroke-width="0.4"/>
-      <!-- Bottom right -->
-      <path d="M75 55 L65 65" stroke="#C9A96E" stroke-width="0.5"/>
-      <circle cx="70" cy="60" r="4" fill="none" stroke="#C9A96E" stroke-width="0.4"/>
-    </g>
-    
-    <!-- Geometric pattern within border -->
-    <g opacity="0.1">
-      <!-- Diamond chain top -->
-      <path d="M-60 -40 L-50 -35 L-40 -40 L-50 -45 Z" fill="none" stroke="#C9A96E" stroke-width="0.5"/>
-      <path d="M-30 -40 L-20 -35 L-10 -40 L-20 -45 Z" fill="none" stroke="#C9A96E" stroke-width="0.5"/>
-      <path d="M0 -40 L10 -35 L20 -40 L10 -45 Z" fill="none" stroke="#C9A96E" stroke-width="0.5"/>
-      <path d="M30 -40 L40 -35 L50 -40 L40 -45 Z" fill="none" stroke="#C9A96E" stroke-width="0.5"/>
-      <!-- Diamond chain bottom -->
-      <path d="M-55 50 L-45 55 L-35 50 L-45 45 Z" fill="none" stroke="#D4B87A" stroke-width="0.4"/>
-      <path d="M-20 50 L-10 55 L0 50 L-10 45 Z" fill="none" stroke="#D4B87A" stroke-width="0.4"/>
-      <path d="M15 50 L25 55 L35 50 L25 45 Z" fill="none" stroke="#D4B87A" stroke-width="0.4"/>
-    </g>
-    
-    <!-- Fringe at bottom -->
-    <g opacity="0.12">
-      <line x1="-70" y1="70" x2="-72" y2="82" stroke="#C9A96E" stroke-width="0.5"/>
-      <line x1="-60" y1="70" x2="-62" y2="82" stroke="#C9A96E" stroke-width="0.5"/>
-      <line x1="-50" y1="70" x2="-52" y2="82" stroke="#C9A96E" stroke-width="0.5"/>
-      <line x1="-40" y1="70" x2="-42" y2="82" stroke="#C9A96E" stroke-width="0.5"/>
-      <line x1="-30" y1="70" x2="-32" y2="82" stroke="#C9A96E" stroke-width="0.5"/>
-      <line x1="-20" y1="70" x2="-22" y2="82" stroke="#C9A96E" stroke-width="0.5"/>
-      <line x1="-10" y1="70" x2="-12" y2="82" stroke="#C9A96E" stroke-width="0.5"/>
-      <line x1="0" y1="70" x2="-2" y2="82" stroke="#C9A96E" stroke-width="0.5"/>
-      <line x1="10" y1="70" x2="8" y2="82" stroke="#C9A96E" stroke-width="0.5"/>
-      <line x1="20" y1="70" x2="18" y2="82" stroke="#C9A96E" stroke-width="0.5"/>
-      <line x1="30" y1="70" x2="28" y2="82" stroke="#C9A96E" stroke-width="0.5"/>
-      <line x1="40" y1="70" x2="38" y2="82" stroke="#C9A96E" stroke-width="0.5"/>
-      <line x1="50" y1="70" x2="48" y2="82" stroke="#C9A96E" stroke-width="0.5"/>
-      <line x1="60" y1="70" x2="58" y2="82" stroke="#C9A96E" stroke-width="0.5"/>
-    </g>
-  </g>
-  
-  <!-- Decorative dots -->
-  <g opacity="0.15">
-    <circle cx="60" cy="70" r="1.5" fill="#C9A96E"/>
-    <circle cx="340" cy="80" r="1" fill="#D4B87A"/>
-    <circle cx="50" cy="340" r="1" fill="#C9A96E"/>
-  </g>
-  
-  <!-- Label -->
-  <text x="200" y="365" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="15" fill="#2C2C2C" font-weight="400" letter-spacing="3" opacity="0.7">CARPETS</text>
-  <line x1="155" y1="375" x2="245" y2="375" stroke="url(#gold5)" stroke-width="0.8" opacity="0.5"/>
+  <rect width="400" height="400" fill="url(#bg)"/>
+  <path d="M150 170 L250 170 L250 270 L150 270Z" fill="none" stroke="#C9A96E" stroke-width="1.5"/>
+  <line x1="175" y1="170" x2="175" y2="270" stroke="#C9A96E" stroke-width="0.5" opacity="0.3"/>
+  <line x1="200" y1="170" x2="200" y2="270" stroke="#C9A96E" stroke-width="0.5" opacity="0.3"/>
+  <line x1="225" y1="170" x2="225" y2="270" stroke="#C9A96E" stroke-width="0.5" opacity="0.3"/>
 </svg>

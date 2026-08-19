@@ -1,89 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
   <defs>
-    <linearGradient id="bg4" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#F8F5F0"/>
-      <stop offset="100%" style="stop-color:#EDE8DF"/>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F8F6F3"/>
+      <stop offset="100%" stop-color="#F0EDE8"/>
     </linearGradient>
-    <linearGradient id="gold4" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#B8935A"/>
-      <stop offset="50%" style="stop-color:#D4B87A"/>
-      <stop offset="100%" style="stop-color:#C9A96E"/>
-    </linearGradient>
-    <radialGradient id="lampGlow" cx="50%" cy="30%" r="25%">
-      <stop offset="0%" style="stop-color:#D4B87A;stop-opacity:0.1"/>
-      <stop offset="60%" style="stop-color:#D4B87A;stop-opacity:0.03"/>
-      <stop offset="100%" style="stop-color:#D4B87A;stop-opacity:0"/>
-    </radialGradient>
-    <radialGradient id="glow4" cx="50%" cy="42%" r="30%">
-      <stop offset="0%" style="stop-color:#C9A96E;stop-opacity:0.05"/>
-      <stop offset="100%" style="stop-color:#C9A96E;stop-opacity:0"/>
-    </radialGradient>
   </defs>
-  
-  <rect width="400" height="400" fill="url(#bg4)"/>
-  <rect width="400" height="400" fill="url(#glow4)"/>
-  <rect width="400" height="400" fill="url(#lampGlow)"/>
-  
-  <!-- Main table lamp -->
-  <g transform="translate(200,180)">
-    <!-- Lampshade - elegant trapezoid -->
-    <path d="M-55 -65 L-35 0 L35 0 L55 -65 Z" fill="#C9A96E" opacity="0.05" stroke="url(#gold4)" stroke-width="1.2"/>
-    <!-- Shade texture lines -->
-    <g opacity="0.08">
-      <line x1="-48" y1="-55" x2="-33" y2="-3" stroke="#C9A96E" stroke-width="0.4"/>
-      <line x1="-35" y1="-60" x2="-25" y2="-3" stroke="#C9A96E" stroke-width="0.4"/>
-      <line x1="-18" y1="-63" x2="-12" y2="-3" stroke="#C9A96E" stroke-width="0.4"/>
-      <line x1="0" y1="-65" x2="0" y2="-3" stroke="#C9A96E" stroke-width="0.4"/>
-      <line x1="18" y1="-63" x2="12" y2="-3" stroke="#C9A96E" stroke-width="0.4"/>
-      <line x1="35" y1="-60" x2="25" y2="-3" stroke="#C9A96E" stroke-width="0.4"/>
-      <line x1="48" y1="-55" x2="33" y2="-3" stroke="#C9A96E" stroke-width="0.4"/>
-    </g>
-    <!-- Shade top rim -->
-    <ellipse cx="0" cy="-65" rx="55" ry="5" fill="none" stroke="#C9A96E" stroke-width="0.6" opacity="0.3"/>
-    
-    <!-- Lamp stem -->
-    <rect x="-4" y="0" width="8" height="60" rx="2" fill="#C9A96E" opacity="0.06" stroke="#C9A96E" stroke-width="0.8"/>
-    <!-- Decorative ring on stem -->
-    <ellipse cx="0" cy="20" rx="8" ry="3" fill="none" stroke="#D4B87A" stroke-width="0.6" opacity="0.3"/>
-    <ellipse cx="0" cy="40" rx="7" ry="2.5" fill="none" stroke="#D4B87A" stroke-width="0.5" opacity="0.25"/>
-    
-    <!-- Base -->
-    <ellipse cx="0" cy="60" rx="28" ry="8" fill="#C9A96E" opacity="0.05" stroke="#C9A96E" stroke-width="1"/>
-    <ellipse cx="0" cy="60" rx="20" ry="5" fill="#C9A96E" opacity="0.03" stroke="#C9A96E" stroke-width="0.5" opacity="0.3"/>
-    
-    <!-- Light glow effect -->
-    <ellipse cx="0" cy="-30" rx="40" ry="35" fill="#D4B87A" opacity="0.03"/>
-  </g>
-  
-  <!-- Small accent lamp (right) -->
-  <g transform="translate(320,220)" opacity="0.3">
-    <!-- Shade -->
-    <path d="M-25 -35 L-15 0 L15 0 L25 -35 Z" fill="#D4B87A" opacity="0.06" stroke="#D4B87A" stroke-width="0.8"/>
-    <!-- Stem -->
-    <rect x="-2.5" y="0" width="5" height="30" rx="1.5" fill="#D4B87A" opacity="0.08" stroke="#D4B87A" stroke-width="0.5"/>
-    <!-- Base -->
-    <ellipse cx="0" cy="30" rx="14" ry="4" fill="#D4B87A" opacity="0.05" stroke="#D4B87A" stroke-width="0.6"/>
-  </g>
-  
-  <!-- Candle accent (left) -->
-  <g transform="translate(80,230)" opacity="0.2">
-    <rect x="-4" y="-30" width="8" height="35" rx="2" fill="#C9A96E" opacity="0.08" stroke="#C9A96E" stroke-width="0.5"/>
-    <!-- Flame -->
-    <path d="M0 -35 Q-4 -42 0 -48 Q4 -42 0 -35" fill="#D4B87A" opacity="0.2"/>
-    <path d="M0 -37 Q-2 -41 0 -45 Q2 -41 0 -37" fill="#D4B87A" opacity="0.15"/>
-    <!-- Candle holder -->
-    <ellipse cx="0" cy="5" rx="8" ry="3" fill="none" stroke="#C9A96E" stroke-width="0.5"/>
-  </g>
-  
-  <!-- Decorative dots -->
-  <g opacity="0.15">
-    <circle cx="60" cy="80" r="1.5" fill="#C9A96E"/>
-    <circle cx="350" cy="100" r="1" fill="#D4B87A"/>
-    <circle cx="50" cy="340" r="1" fill="#C9A96E"/>
-    <circle cx="360" cy="350" r="1.5" fill="#C9A96E"/>
-  </g>
-  
-  <!-- Label -->
-  <text x="200" y="365" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="15" fill="#2C2C2C" font-weight="400" letter-spacing="3" opacity="0.7">LAMPS</text>
-  <line x1="170" y1="375" x2="230" y2="375" stroke="url(#gold4)" stroke-width="0.8" opacity="0.5"/>
+  <rect width="400" height="400" fill="url(#bg)"/>
+  <line x1="200" y1="250" x2="200" y2="190" stroke="#C9A96E" stroke-width="1.5"/>
+  <path d="M170 190 Q200 150 230 190" fill="none" stroke="#C9A96E" stroke-width="1.5"/>
+  <circle cx="200" cy="160" r="8" fill="none" stroke="#C9A96E" stroke-width="0.5" opacity="0.4"/>
 </svg>

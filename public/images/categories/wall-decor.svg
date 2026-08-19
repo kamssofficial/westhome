@@ -1,93 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
   <defs>
-    <linearGradient id="bg1" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#F8F5F0"/>
-      <stop offset="100%" style="stop-color:#EDE8DF"/>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F8F6F3"/>
+      <stop offset="100%" stop-color="#F0EDE8"/>
     </linearGradient>
-    <linearGradient id="gold1" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#B8935A"/>
-      <stop offset="50%" style="stop-color:#D4B87A"/>
-      <stop offset="100%" style="stop-color:#C9A96E"/>
-    </linearGradient>
-    <radialGradient id="glow" cx="50%" cy="40%" r="30%">
-      <stop offset="0%" style="stop-color:#C9A96E;stop-opacity:0.06"/>
-      <stop offset="100%" style="stop-color:#C9A96E;stop-opacity:0"/>
-    </radialGradient>
   </defs>
-  
-  <rect width="400" height="400" fill="url(#bg1)"/>
-  <rect width="400" height="400" fill="url(#glow)"/>
-  
-  <!-- Ornate picture frame -->
-  <g transform="translate(200,165)">
-    <!-- Outer frame -->
-    <rect x="-120" y="-100" width="240" height="200" rx="3" fill="none" stroke="url(#gold1)" stroke-width="2.5"/>
-    <!-- Inner frame -->
-    <rect x="-108" y="-88" width="216" height="176" rx="2" fill="none" stroke="#C9A96E" stroke-width="0.8" opacity="0.5"/>
-    <!-- Mat border -->
-    <rect x="-95" y="-75" width="190" height="150" rx="1" fill="#F0EBE1" stroke="#C9A96E" stroke-width="0.4" opacity="0.6"/>
-    
-    <!-- Abstract art inside frame -->
-    <!-- Landscape layers -->
-    <rect x="-85" y="-65" width="170" height="130" fill="#E8E1D4"/>
-    <!-- Sky gradient -->
-    <rect x="-85" y="-65" width="170" height="60" fill="#DDD6C8" opacity="0.5"/>
-    <!-- Mountains -->
-    <path d="M-85 15 L-40 -35 L-10 0 L30 -45 L70 -10 L85 15 Z" fill="#C9A96E" opacity="0.12"/>
-    <path d="M-85 15 L-50 -20 L-20 5 L20 -30 L60 0 L85 15 Z" fill="#8B7355" opacity="0.08"/>
-    <!-- Sun circle -->
-    <circle cx="55" cy="-40" r="15" fill="#D4B87A" opacity="0.15"/>
-    <circle cx="55" cy="-40" r="12" fill="#D4B87A" opacity="0.08"/>
-    <!-- Ground -->
-    <rect x="-85" y="15" width="170" height="50" fill="#C9A96E" opacity="0.06"/>
-    <!-- Decorative plant -->
-    <line x1="-30" y1="15" x2="-30" y2="-10" stroke="#8B7355" stroke-width="0.8" opacity="0.2"/>
-    <circle cx="-35" cy="-15" r="6" fill="#C9A96E" opacity="0.08"/>
-    <circle cx="-25" cy="-18" r="5" fill="#8B7355" opacity="0.06"/>
-    <circle cx="-30" cy="-22" r="4" fill="#C9A96E" opacity="0.1"/>
-    
-    <!-- Frame corner ornaments -->
-    <g opacity="0.2">
-      <circle cx="-118" cy="-98" r="3" fill="#D4B87A"/>
-      <circle cx="118" cy="-98" r="3" fill="#D4B87A"/>
-      <circle cx="-118" cy="98" r="3" fill="#D4B87A"/>
-      <circle cx="118" cy="98" r="3" fill="#D4B87A"/>
-    </g>
-  </g>
-  
-  <!-- Second smaller frame (gallery wall effect) -->
-  <g transform="translate(340,110)" opacity="0.35">
-    <rect x="-30" y="-25" width="60" height="50" rx="1" fill="none" stroke="#C9A96E" stroke-width="1"/>
-    <rect x="-24" y="-19" width="48" height="38" fill="#C9A96E" opacity="0.05"/>
-    <circle cx="0" cy="-5" r="8" fill="#D4B87A" opacity="0.1"/>
-    <path d="M-20 15 L-5 -8 L10 5 L20 -12 L24 15" fill="#C9A96E" opacity="0.06"/>
-  </g>
-  
-  <!-- Decorative shelf line -->
-  <line x1="80" y1="310" x2="320" y2="310" stroke="#C9A96E" stroke-width="0.5" opacity="0.2"/>
-  
-  <!-- Small decorative items on shelf -->
-  <g opacity="0.15" transform="translate(130,300)">
-    <!-- Vase -->
-    <path d="M-8 10 L-5 -5 Q0 -10 5 -5 L8 10 Z" fill="none" stroke="#C9A96E" stroke-width="0.8"/>
-    <circle cx="0" cy="-12" r="4" fill="#C9A96E" opacity="0.3"/>
-    <circle cx="-4" cy="-14" r="3" fill="#8B7355" opacity="0.2"/>
-  </g>
-  <g opacity="0.15" transform="translate(270,300)">
-    <!-- Small frame -->
-    <rect x="-10" y="-12" width="20" height="24" rx="1" fill="none" stroke="#D4B87A" stroke-width="0.6"/>
-    <circle cx="0" cy="0" r="5" fill="#C9A96E" opacity="0.15"/>
-  </g>
-  
-  <!-- Premium dots -->
-  <g opacity="0.15">
-    <circle cx="60" cy="60" r="1.5" fill="#C9A96E"/>
-    <circle cx="340" cy="340" r="1.5" fill="#C9A96E"/>
-    <circle cx="50" cy="350" r="1" fill="#D4B87A"/>
-    <circle cx="360" cy="70" r="1" fill="#D4B87A"/>
-  </g>
-  
-  <!-- Label -->
-  <text x="200" y="365" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="15" fill="#2C2C2C" font-weight="400" letter-spacing="3" opacity="0.7">WALL DECOR</text>
-  <line x1="155" y1="375" x2="245" y2="375" stroke="url(#gold1)" stroke-width="0.8" opacity="0.5"/>
+  <rect width="400" height="400" fill="url(#bg)"/>
+  <!-- Simple frame outline -->
+  <rect x="130" y="110" width="140" height="180" rx="2" fill="none" stroke="#C9A96E" stroke-width="1.5"/>
+  <rect x="142" y="122" width="116" height="156" rx="1" fill="none" stroke="#C9A96E" stroke-width="0.5" opacity="0.4"/>
+  <!-- Small dot accent -->
+  <circle cx="200" cy="200" r="3" fill="#C9A96E" opacity="0.3"/>
 </svg>

@@ -1,150 +1,25 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1400" height="800" viewBox="0 0 1400 800">
   <defs>
-    <!-- Rich dark background gradient -->
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#1a1714"/>
-      <stop offset="30%" style="stop-color:#2a2420"/>
-      <stop offset="60%" style="stop-color:#342c24"/>
-      <stop offset="100%" style="stop-color:#1e1a16"/>
+      <stop offset="0%" stop-color="#0F0F0F"/>
+      <stop offset="100%" stop-color="#1A1714"/>
     </linearGradient>
-    <!-- Warm ambient glow -->
-    <radialGradient id="glow1" cx="25%" cy="35%" r="45%">
-      <stop offset="0%" style="stop-color:#C9A96E;stop-opacity:0.18"/>
-      <stop offset="50%" style="stop-color:#C9A96E;stop-opacity:0.06"/>
-      <stop offset="100%" style="stop-color:#C9A96E;stop-opacity:0"/>
+    <radialGradient id="glow" cx="70%" cy="40%" r="50%">
+      <stop offset="0%" stop-color="#C9A96E" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#C9A96E" stop-opacity="0"/>
     </radialGradient>
-    <radialGradient id="glow2" cx="75%" cy="55%" r="40%">
-      <stop offset="0%" style="stop-color:#8B7355;stop-opacity:0.12"/>
-      <stop offset="60%" style="stop-color:#8B7355;stop-opacity:0.03"/>
-      <stop offset="100%" style="stop-color:#8B7355;stop-opacity:0"/>
-    </radialGradient>
-    <radialGradient id="glow3" cx="50%" cy="80%" r="35%">
-      <stop offset="0%" style="stop-color:#D4B87A;stop-opacity:0.08"/>
-      <stop offset="100%" style="stop-color:#D4B87A;stop-opacity:0"/>
-    </radialGradient>
-    <!-- Gold shimmer gradient -->
-    <linearGradient id="goldShimmer" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#B8935A;stop-opacity:0"/>
-      <stop offset="30%" style="stop-color:#C9A96E;stop-opacity:0.3"/>
-      <stop offset="50%" style="stop-color:#D4B87A;stop-opacity:0.5"/>
-      <stop offset="70%" style="stop-color:#C9A96E;stop-opacity:0.3"/>
-      <stop offset="100%" style="stop-color:#B8935A;stop-opacity:0"/>
-    </linearGradient>
-    <!-- Diamond pattern -->
-    <pattern id="diamonds" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
-      <path d="M30 0 L60 30 L30 60 L0 30 Z" fill="none" stroke="#C9A96E" stroke-width="0.3" opacity="0.08"/>
-    </pattern>
-    <!-- Subtle noise texture -->
-    <filter id="noise">
-      <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/>
-      <feColorMatrix type="saturate" values="0"/>
-      <feComponentTransfer>
-        <feFuncA type="linear" slope="0.03"/>
-      </feComponentTransfer>
-      <feBlend in="SourceGraphic" mode="overlay"/>
-    </filter>
-    <!-- Soft shadow -->
-    <filter id="softShadow">
-      <feGaussianBlur in="SourceAlpha" stdDeviation="8"/>
-      <feOffset dx="0" dy="4"/>
-      <feComponentTransfer><feFuncA type="linear" slope="0.15"/></feComponentTransfer>
-      <feMerge>
-        <feMergeNode/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
   </defs>
-  
-  <!-- Base background -->
   <rect width="1400" height="800" fill="url(#bg)"/>
-  
-  <!-- Ambient glows -->
-  <rect width="1400" height="800" fill="url(#glow1)"/>
-  <rect width="1400" height="800" fill="url(#glow2)"/>
-  <rect width="1400" height="800" fill="url(#glow3)"/>
-  
-  <!-- Diamond pattern overlay -->
-  <rect width="1400" height="800" fill="url(#diamonds)"/>
-  
-  <!-- Elegant flowing curves -->
-  <path d="M-50 500 C200 380 400 420 700 380 C1000 340 1200 400 1450 360" fill="none" stroke="#C9A96E" stroke-width="0.8" opacity="0.12"/>
-  <path d="M-50 520 C200 400 400 440 700 400 C1000 360 1200 420 1450 380" fill="none" stroke="#D4B87A" stroke-width="0.5" opacity="0.08"/>
-  <path d="M-50 480 C200 360 400 400 700 360 C1000 320 1200 380 1450 340" fill="none" stroke="#8B7355" stroke-width="0.5" opacity="0.06"/>
-  
-  <!-- Decorative corner ornaments - top left -->
-  <g opacity="0.12">
-    <path d="M40 40 L40 120" stroke="#C9A96E" stroke-width="1"/>
-    <path d="M40 40 L120 40" stroke="#C9A96E" stroke-width="1"/>
-    <circle cx="40" cy="40" r="3" fill="#C9A96E"/>
-    <path d="M60 40 L60 80" stroke="#C9A96E" stroke-width="0.5"/>
-    <path d="M40 60 L80 60" stroke="#C9A96E" stroke-width="0.5"/>
-  </g>
-  
-  <!-- Decorative corner ornaments - top right -->
-  <g opacity="0.12" transform="translate(1400,0) scale(-1,1)">
-    <path d="M40 40 L40 120" stroke="#C9A96E" stroke-width="1"/>
-    <path d="M40 40 L120 40" stroke="#C9A96E" stroke-width="1"/>
-    <circle cx="40" cy="40" r="3" fill="#C9A96E"/>
-    <path d="M60 40 L60 80" stroke="#C9A96E" stroke-width="0.5"/>
-    <path d="M40 60 L80 60" stroke="#C9A96E" stroke-width="0.5"/>
-  </g>
-  
-  <!-- Decorative corner ornaments - bottom left -->
-  <g opacity="0.12" transform="translate(0,800) scale(1,-1)">
-    <path d="M40 40 L40 120" stroke="#C9A96E" stroke-width="1"/>
-    <path d="M40 40 L120 40" stroke="#C9A96E" stroke-width="1"/>
-    <circle cx="40" cy="40" r="3" fill="#C9A96E"/>
-  </g>
-  
-  <!-- Decorative corner ornaments - bottom right -->
-  <g opacity="0.12" transform="translate(1400,800) scale(-1,-1)">
-    <path d="M40 40 L40 120" stroke="#C9A96E" stroke-width="1"/>
-    <path d="M40 40 L120 40" stroke="#C9A96E" stroke-width="1"/>
-    <circle cx="40" cy="40" r="3" fill="#C9A96E"/>
-  </g>
-  
-  <!-- Floating geometric elements -->
-  <g opacity="0.06">
-    <!-- Diamond -->
-    <path d="M180 200 L220 170 L260 200 L220 230 Z" fill="none" stroke="#C9A96E" stroke-width="1"/>
-    <!-- Circle -->
-    <circle cx="1150" cy="250" r="35" fill="none" stroke="#C9A96E" stroke-width="0.8"/>
-    <circle cx="1150" cy="250" r="25" fill="none" stroke="#C9A96E" stroke-width="0.4"/>
-    <!-- Hexagon -->
-    <path d="M350 600 L380 585 L410 600 L410 630 L380 645 L350 630 Z" fill="none" stroke="#D4B87A" stroke-width="0.6"/>
-    <!-- Triangle -->
-    <path d="M1050 550 L1080 510 L1110 550 Z" fill="none" stroke="#C9A96E" stroke-width="0.6"/>
-  </g>
-  
-  <!-- Scattered premium dots -->
-  <g opacity="0.2">
-    <circle cx="200" cy="300" r="2" fill="#C9A96E"/>
-    <circle cx="500" cy="180" r="1.5" fill="#D4B87A"/>
-    <circle cx="800" cy="650" r="2" fill="#C9A96E"/>
-    <circle cx="1050" cy="150" r="1.5" fill="#C9A96E"/>
-    <circle cx="1250" cy="450" r="2" fill="#D4B87A"/>
-    <circle cx="350" cy="550" r="1" fill="#C9A96E"/>
-    <circle cx="650" cy="100" r="1" fill="#C9A96E"/>
-    <circle cx="950" cy="700" r="1.5" fill="#D4B87A"/>
-    <circle cx="150" cy="650" r="1" fill="#C9A96E"/>
-    <circle cx="1300" cy="300" r="1" fill="#C9A96E"/>
-  </g>
-  
-  <!-- Horizontal gold accent line -->
-  <rect x="200" y="390" width="400" height="0.5" fill="url(#goldShimmer)" opacity="0.6"/>
-  <rect x="800" y="390" width="400" height="0.5" fill="url(#goldShimmer)" opacity="0.4"/>
-  
-  <!-- Central decorative emblem area -->
-  <g opacity="0.05" transform="translate(700,400)">
-    <circle r="120" fill="none" stroke="#C9A96E" stroke-width="0.5"/>
-    <circle r="100" fill="none" stroke="#C9A96E" stroke-width="0.3"/>
-    <circle r="80" fill="none" stroke="#D4B87A" stroke-width="0.3"/>
-    <path d="M0 -120 L120 0 L0 120 L-120 0 Z" fill="none" stroke="#C9A96E" stroke-width="0.3"/>
-  </g>
-  
-  <!-- Subtle grain/texture overlay -->
-  <rect width="1400" height="800" fill="transparent" filter="url(#noise)" opacity="0.4"/>
-  
-  <!-- Vignette edges -->
-  <rect width="1400" height="800" fill="url(#bg)" opacity="0.15"/>
+  <rect width="1400" height="800" fill="url(#glow)"/>
+  <!-- Single thin horizontal line -->
+  <line x1="120" y1="380" x2="480" y2="380" stroke="#C9A96E" stroke-width="0.5" opacity="0.4"/>
+  <!-- Subtle corner marks -->
+  <line x1="60" y1="60" x2="60" y2="100" stroke="#C9A96E" stroke-width="0.5" opacity="0.15"/>
+  <line x1="60" y1="60" x2="100" y2="60" stroke="#C9A96E" stroke-width="0.5" opacity="0.15"/>
+  <line x1="1340" y1="60" x2="1340" y2="100" stroke="#C9A96E" stroke-width="0.5" opacity="0.15"/>
+  <line x1="1340" y1="60" x2="1300" y2="60" stroke="#C9A96E" stroke-width="0.5" opacity="0.15"/>
+  <line x1="60" y1="740" x2="60" y2="700" stroke="#C9A96E" stroke-width="0.5" opacity="0.15"/>
+  <line x1="60" y1="740" x2="100" y2="740" stroke="#C9A96E" stroke-width="0.5" opacity="0.15"/>
+  <line x1="1340" y1="740" x2="1340" y2="700" stroke="#C9A96E" stroke-width="0.5" opacity="0.15"/>
+  <line x1="1340" y1="740" x2="1300" y2="740" stroke="#C9A96E" stroke-width="0.5" opacity="0.15"/>
 </svg>
