@@ -48,3 +48,40 @@ export async function requireAdminOrManager() {
 export async function requireOrderManager() {
   return requireAuthRole(["ADMIN", "MANAGER", "ORDER_MANAGER"]);
 }
+
+/** Check if the current user has a specific permission */
+export async function requirePermission(permission: string): Promise<
+  | { session: any; error?: never }
+  | { session?: never; error: NextResponse }
+> {
+  const session = await auth();
+  if (!session?.user) {
+    return {
+      error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
+    };
+  }
+
+  const role = (session.user as any).role as string;
+  const permissionsStr = (session.user as any).permissions || "[]";
+
+  // Admin and Manager have all permissions
+  if (role === "ADMIN" || role === "MANAGER") {
+    return { session };
+  }
+
+  try {
+    const permissions = JSON.parse(permissionsStr);
+    if (Array.isArray(permissions) && permissions.includes(permission)) {
+      return { session };
+    }
+  } catch {}
+
+  return {
+    error: NextResponse.json({ error: "Forbidden: Missing permission" }, { status: 403 }),
+  };
+}
+
+/** Check if the user is staff (any non-customer role) */
+export async function requireStaff() {
+  return requireAuthRole(["ADMIN", "MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER"]);
+}

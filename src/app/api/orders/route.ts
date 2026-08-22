@@ -76,6 +76,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing required address information" }, { status: 400 });
     }
 
+    // Server-side delivery charge validation
+    const settings = await db.siteSetting.findMany();
+    const settingsObj: Record<string, any> = {};
+    settings.forEach((s) => { settingsObj[s.key] = s.value; });
+    const freeThreshold = Number(settingsObj.freeDeliveryThreshold) || 2000;
+    const defaultDeliveryCharge = Number(settingsObj.defaultDeliveryCharge) || 149;
+    
+    // Recalculate delivery charge server-side
+    let serverDeliveryCharge: number;
+    if (deliveryMethod === "express") {
+      serverDeliveryCharge = 299;
+    } else {
+      serverDeliveryCharge = subtotal > freeThreshold ? 0 : defaultDeliveryCharge;
+    }
+    
+    // Use server-calculated delivery charge (prevents client manipulation)
+    const finalDeliveryCharge = serverDeliveryCharge;
+    const finalTotal = subtotal - (discount || 0) + finalDeliveryCharge + (tax || 0);
+
     // Generate order number
     const date = new Date();
     const year = date.getFullYear().toString().slice(-2);
@@ -100,9 +119,9 @@ export async function POST(request: NextRequest) {
         country: country || "India",
         subtotal,
         discount: discount || 0,
-        deliveryCharge: deliveryCharge || 0,
+        deliveryCharge: finalDeliveryCharge,
         tax: tax || 0,
-        total,
+        total: finalTotal,
         paymentMethod: paymentMethod || null,
         paymentStatus: paymentMethod === "cod" ? "PENDING" : "PENDING",
         deliveryMethod: deliveryMethod || "delivery",

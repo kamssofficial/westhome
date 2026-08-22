@@ -25,13 +25,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify the order exists
+    // Verify the order exists and belongs to the authenticated user
     const order = await db.order.findUnique({
       where: { id: orderId },
     });
 
     if (!order) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
+
+    // SECURITY: Ensure the order belongs to the authenticated user
+    if (order.userId && order.userId !== (session.user as any).id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // Create Razorpay order

@@ -42,7 +42,7 @@ function LoginForm() {
         // Route to the correct area based on role
         if (role === "ADMIN") {
           window.location.href = "/admin/dashboard";
-        } else if (role === "MANAGER") {
+        } else if (["MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER"].includes(role)) {
           window.location.href = "/staff/dashboard";
         } else {
           // Full page reload so the middleware picks up the fresh JWT

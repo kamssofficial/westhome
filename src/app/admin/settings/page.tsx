@@ -16,7 +16,7 @@ export default function AdminSettingsPage() {
     state: "",
     pinCode: "",
     currency: "INR",
-    freeDeliveryThreshold: "999",
+    freeDeliveryThreshold: "2000",
     defaultDeliveryCharge: "49",
     estimatedDeliveryDays: "5",
     storePickup: false,

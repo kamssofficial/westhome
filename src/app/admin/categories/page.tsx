@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, GripVertical, ChevronRight, ChevronDown } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Plus, Edit, Trash2, GripVertical, ChevronRight, ChevronDown, Save, ArrowUpDown } from "lucide-react";
 import Button from "@/components/ui/Button";
-import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
 
 interface Subcategory {
@@ -33,6 +32,11 @@ export default function AdminCategoriesPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [newSubcategoryName, setNewSubcategoryName] = useState("");
   const [addingSubTo, setAddingSubTo] = useState<string | null>(null);
+  const [orderChanged, setOrderChanged] = useState(false);
+  const [savingOrder, setSavingOrder] = useState(false);
+  const [reorderMode, setReorderMode] = useState(false);
+  const dragItem = useRef<number | null>(null);
+  const dragOverItem = useRef<number | null>(null);
 
   useEffect(() => {
     fetchCategories();
@@ -51,6 +55,55 @@ export default function AdminCategoriesPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+
+  const handleDragStart = (index: number) => { dragItem.current = index; };
+  const handleDragEnter = (index: number) => { dragOverItem.current = index; };
+  const handleDragEnd = () => {
+    if (dragItem.current === null || dragOverItem.current === null) return;
+    const newCats = [...categories];
+    const dragged = newCats[dragItem.current];
+    newCats.splice(dragItem.current, 1);
+    newCats.splice(dragOverItem.current, 0, dragged);
+    dragItem.current = null;
+    dragOverItem.current = null;
+    setCategories(newCats);
+    setOrderChanged(true);
+  };
+
+  const handleSaveOrder = async () => {
+    setSavingOrder(true);
+    try {
+      const categoryIds = categories.map(c => c.id);
+      const res = await fetch('/api/admin/categories/reorder', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ categoryIds }),
+      });
+      if (res.ok) {
+        toast.success('Category order saved');
+        setOrderChanged(false);
+        setReorderMode(false);
+        fetchCategories();
+      } else { toast.error('Failed to save order'); }
+    } catch { toast.error('Failed to save order'); } finally { setSavingOrder(false); }
+  };
+
+  const handleMoveUp = (index: number) => {
+    if (index === 0) return;
+    const newCats = [...categories];
+    [newCats[index - 1], newCats[index]] = [newCats[index], newCats[index - 1]];
+    setCategories(newCats);
+    setOrderChanged(true);
+  };
+
+  const handleMoveDown = (index: number) => {
+    if (index === categories.length - 1) return;
+    const newCats = [...categories];
+    [newCats[index], newCats[index + 1]] = [newCats[index + 1], newCats[index]];
+    setCategories(newCats);
+    setOrderChanged(true);
   };
 
   const handleCreateCategory = async () => {
@@ -123,11 +176,40 @@ export default function AdminCategoriesPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Categories</h1>
-        <Button size="sm" onClick={handleCreateCategory}>
-          <Plus size={16} /> Add Category
-        </Button>
+        <div>
+          <h1 className="text-xl font-semibold">Categories</h1>
+          <p className="text-sm text-text-muted mt-1">Manage your product categories and their order</p>
+        </div>
+        <div className="flex items-center gap-2">
+          {reorderMode ? (
+            <>
+              {orderChanged && (
+                <Button onClick={handleSaveOrder} disabled={savingOrder} variant="primary">
+                  <Save size={16} /> {savingOrder ? "Saving..." : "Save Order"}
+                </Button>
+              )}
+              <Button onClick={() => { setReorderMode(false); setOrderChanged(false); fetchCategories(); }} variant="ghost">
+                Cancel
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button onClick={() => setReorderMode(true)} variant="outline">
+                <ArrowUpDown size={16} /> Reorder
+              </Button>
+              <Button size="sm" onClick={handleCreateCategory}>
+                <Plus size={16} /> Add Category
+              </Button>
+            </>
+          )}
+        </div>
       </div>
+
+      {reorderMode && (
+        <div className="mb-4 p-3 bg-accent/10 border border-accent/20 rounded-xl text-sm text-accent">
+          Drag categories up or down to reorder them. The new order will apply across the entire site.
+        </div>
+      )}
 
       <div className="space-y-2">
         {loading ? (
@@ -135,13 +217,23 @@ export default function AdminCategoriesPage() {
         ) : categories.map((cat) => (
           <div key={cat.id} className="bg-surface rounded-[1.35rem] border border-border">
             {/* Category row */}
-            <div className="flex items-center gap-3 p-4">
-              <button
+            <div className={"flex items-center gap-3 p-4" + (reorderMode ? " cursor-move" : "")} draggable={reorderMode} onDragStart={() => handleDragStart(categories.indexOf(cat))} onDragEnter={() => handleDragEnter(categories.indexOf(cat))} onDragEnd={handleDragEnd} onDragOver={(e) => e.preventDefault()}>
+              {reorderMode && (
+                <div className="flex items-center gap-1">
+                  <GripVertical size={16} className="text-text-muted" />
+                  <div className="flex flex-col">
+                    <button onClick={() => handleMoveUp(categories.indexOf(cat))} disabled={categories.indexOf(cat) === 0} className="p-0.5 hover:bg-surface-muted rounded disabled:opacity-30"><ChevronRight size={12} className="rotate-[-90deg]" /></button>
+                    <button onClick={() => handleMoveDown(categories.indexOf(cat))} disabled={categories.indexOf(cat) === categories.length - 1} className="p-0.5 hover:bg-surface-muted rounded disabled:opacity-30"><ChevronRight size={12} className="rotate-90" /></button>
+                  </div>
+                </div>
+              )}
+              <span className="text-xs font-mono text-text-muted w-6 text-center">#{categories.indexOf(cat) + 1}</span>
+              {!reorderMode && (<button
                 onClick={() => setExpandedId(expandedId === cat.id ? null : cat.id)}
                 className="p-1 hover:bg-surface-muted rounded"
               >
                 {expandedId === cat.id ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-              </button>
+              </button>)}
 
               {editingId === cat.id ? (
                 <div className="flex items-center gap-2 flex-1">
@@ -162,20 +254,20 @@ export default function AdminCategoriesPage() {
                     <p className="font-medium text-sm">{cat.name}</p>
                     <p className="text-xs text-text-muted">{cat.productCount} products • {cat.subcategories.length} subcategories</p>
                   </div>
-                  <div className="flex items-center gap-1">
+                  {!reorderMode && (<div className="flex items-center gap-1">
                     <button onClick={() => { setEditingId(cat.id); setEditName(cat.name); }} className="p-1.5 hover:bg-surface-muted rounded-lg">
                       <Edit size={14} className="text-text-muted" />
                     </button>
                     <button onClick={() => handleDeleteCategory(cat.id, cat.name)} className="p-1.5 hover:bg-error/10 rounded-lg">
                       <Trash2 size={14} className="text-error" />
                     </button>
-                  </div>
+                  </div>)}
                 </>
               )}
             </div>
 
             {/* Subcategories */}
-            {expandedId === cat.id && (
+            {!reorderMode && expandedId === cat.id && (
               <div className="border-t border-border px-4 pb-4 pt-3 ml-8">
                 <p className="text-xs font-medium text-text-muted mb-2 uppercase tracking-wider">Subcategories</p>
                 {cat.subcategories.length > 0 ? (

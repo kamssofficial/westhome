@@ -33,6 +33,7 @@ model User {
   emailVerified DateTime?
   image         String?
   isActive      Boolean   @default(true)
+  permissions   String    @default("[]")
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 

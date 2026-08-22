@@ -2,7 +2,35 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import db from "@/lib/db";
 
+// SECURITY: Simple in-memory rate limiter for registration
+const registrationAttempts = new Map<string, { count: number; resetAt: number }>();
+const MAX_REGISTRATION_ATTEMPTS = 5;
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const record = registrationAttempts.get(ip);
+  if (!record || now > record.resetAt) {
+    registrationAttempts.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return true;
+  }
+  if (record.count >= MAX_REGISTRATION_ATTEMPTS) {
+    return false;
+  }
+  record.count++;
+  return true;
+}
+
 export async function POST(request: NextRequest) {
+  // SECURITY: Rate limit registration attempts per IP
+  const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
+  if (!checkRateLimit(ip)) {
+    return NextResponse.json(
+      { error: "Too many registration attempts. Please try again later." },
+      { status: 429 }
+    );
+  }
+
   try {
     const body = await request.json();
     const { name, email, password, phone } = body;

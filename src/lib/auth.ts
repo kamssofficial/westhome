@@ -71,6 +71,7 @@ export const authOptions: NextAuthConfig = {
       if (user) {
         token.role = (user as any).role || "CUSTOMER";
         token.id = user.id;
+        token.permissions = (user as any).permissions || "[]";
       }
       return token;
     },
@@ -78,6 +79,7 @@ export const authOptions: NextAuthConfig = {
       if (session.user) {
         (session.user as any).role = token.role;
         (session.user as any).id = token.id;
+        (session.user as any).permissions = token.permissions || "[]";
       }
       return session;
     },

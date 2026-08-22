@@ -132,7 +132,7 @@ h1, h2, h3, h4, h5, h6 {
 .stagger-in > *:nth-child(6) { animation-delay: 350ms; }
 
 .safe-bottom { padding-bottom: max(1.5rem, env(safe-area-inset-bottom)); }
-.bottom-nav-safe { padding-bottom: max(6.75rem, calc(6.75rem + env(safe-area-inset-bottom))); }
+.bottom-nav-safe { padding-bottom: max(4.5rem, calc(4.5rem + env(safe-area-inset-bottom))); }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }

@@ -9,7 +9,7 @@ import {
   Check,
   Headphones,
   MessageCircle,
-  RotateCcw,
+  User,
   ShieldCheck,
   Star,
   Truck,
@@ -19,201 +19,10 @@ import Button from "@/components/ui/Button";
 import { ProductGridSkeleton } from "@/components/ui/Skeleton";
 import type { Category, Product } from "@/types";
 
-const FALLBACK_CATEGORIES: Category[] = [
-  {
-    id: "1",
-    name: "Wall Decor",
-    slug: "wall-decor",
-    image: "/images/categories/wall-decor.svg",
-    isActive: true,
-    position: 1,
-    subcategories: [],
-  },
-  {
-    id: "2",
-    name: "Laundry",
-    slug: "laundry",
-    image: "/images/categories/laundry.svg",
-    isActive: true,
-    position: 2,
-    subcategories: [],
-  },
-  {
-    id: "3",
-    name: "Comforters",
-    slug: "comforters",
-    image: "/images/categories/comforters.svg",
-    isActive: true,
-    position: 3,
-    subcategories: [],
-  },
-  {
-    id: "4",
-    name: "Lamps",
-    slug: "lamps",
-    image: "/images/categories/lamps.svg",
-    isActive: true,
-    position: 4,
-    subcategories: [],
-  },
-  {
-    id: "5",
-    name: "Carpets",
-    slug: "carpets",
-    image: "/images/categories/carpets.svg",
-    isActive: true,
-    position: 5,
-    subcategories: [],
-  },
-  {
-    id: "6",
-    name: "Clocks",
-    slug: "clocks",
-    image: "/images/categories/clocks.svg",
-    isActive: true,
-    position: 6,
-    subcategories: [],
-  },
-  {
-    id: "7",
-    name: "Accessories",
-    slug: "accessories",
-    image: "/images/categories/accessories.svg",
-    isActive: true,
-    position: 7,
-    subcategories: [],
-  },
-];
-
-const FALLBACK_PRODUCTS: Product[] = [
-  {
-    id: "demo-1",
-    name: "Quiet Geometry Wall Clock",
-    slug: "quiet-geometry-wall-clock",
-    regularPrice: 2499,
-    salePrice: 1999,
-    stockQuantity: 8,
-    lowStockThreshold: 2,
-    allowBackorder: false,
-    trackInventory: true,
-    allowCustomSize: false,
-    purchaseMethod: "BOTH",
-    status: "ACTIVE",
-    isActive: true,
-    isFeatured: true,
-    isBestseller: true,
-    isNewArrival: false,
-    images: [
-      {
-        id: "demo-image-1",
-        url: "/images/categories/clocks.svg",
-        alt: "Quiet Geometry Wall Clock",
-        position: 0,
-        isPrimary: true,
-      },
-    ],
-    variants: [],
-    category: FALLBACK_CATEGORIES[5],
-    tags: ["clock", "modern"],
-  },
-  {
-    id: "demo-2",
-    name: "Soft Horizon Comforter",
-    slug: "soft-horizon-comforter",
-    regularPrice: 3899,
-    salePrice: 3299,
-    stockQuantity: 12,
-    lowStockThreshold: 3,
-    allowBackorder: false,
-    trackInventory: true,
-    allowCustomSize: false,
-    purchaseMethod: "BUY_ONLINE",
-    status: "ACTIVE",
-    isActive: true,
-    isFeatured: true,
-    isBestseller: false,
-    isNewArrival: true,
-    images: [
-      {
-        id: "demo-image-2",
-        url: "/images/categories/comforters.svg",
-        alt: "Soft Horizon Comforter",
-        position: 0,
-        isPrimary: true,
-      },
-    ],
-    variants: [],
-    category: FALLBACK_CATEGORIES[2],
-    tags: ["comforter", "soft"],
-  },
-  {
-    id: "demo-3",
-    name: "Amber Evening Lamp",
-    slug: "amber-evening-lamp",
-    regularPrice: 2199,
-    stockQuantity: 10,
-    lowStockThreshold: 2,
-    allowBackorder: false,
-    trackInventory: true,
-    allowCustomSize: false,
-    purchaseMethod: "BUY_ONLINE",
-    status: "ACTIVE",
-    isActive: true,
-    isFeatured: true,
-    isBestseller: false,
-    isNewArrival: true,
-    images: [
-      {
-        id: "demo-image-3",
-        url: "/images/categories/lamps.svg",
-        alt: "Amber Evening Lamp",
-        position: 0,
-        isPrimary: true,
-      },
-    ],
-    variants: [],
-    category: FALLBACK_CATEGORIES[3],
-    tags: ["lamp", "light"],
-  },
-  {
-    id: "demo-4",
-    name: "Linework Wall Panel",
-    slug: "linework-wall-panel",
-    regularPrice: 2999,
-    salePrice: 2499,
-    stockQuantity: 5,
-    lowStockThreshold: 2,
-    allowBackorder: false,
-    trackInventory: true,
-    allowCustomSize: false,
-    purchaseMethod: "WHATSAPP",
-    status: "ACTIVE",
-    isActive: true,
-    isFeatured: false,
-    isBestseller: true,
-    isNewArrival: false,
-    images: [
-      {
-        id: "demo-image-4",
-        url: "/images/categories/wall-decor.svg",
-        alt: "Linework Wall Panel",
-        position: 0,
-        isPrimary: true,
-      },
-    ],
-    variants: [],
-    category: FALLBACK_CATEGORIES[0],
-    tags: ["wall", "decor"],
-  },
-];
-
 export default function HomePage() {
-  const [categories, setCategories] = useState<Category[]>(FALLBACK_CATEGORIES);
-  const [featuredProducts, setFeaturedProducts] =
-    useState<Product[]>(FALLBACK_PRODUCTS);
-  const [newArrivals, setNewArrivals] = useState<Product[]>(
-    FALLBACK_PRODUCTS.slice(1)
-  );
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [newArrivals, setNewArrivals] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -228,10 +37,24 @@ export default function HomePage() {
           const data = await catRes.value.json();
           if (data.categories?.length) setCategories(data.categories);
         }
+
+        // Featured products — fallback to newest if none marked featured
+        let featured: Product[] = [];
         if (featRes.status === "fulfilled" && featRes.value.ok) {
           const data = await featRes.value.json();
-          if (data.products?.length) setFeaturedProducts(data.products);
+          if (data.products?.length) featured = data.products;
         }
+        if (featured.length === 0) {
+          try {
+            const fbRes = await fetch("/api/products?limit=4&sort=newest");
+            if (fbRes.ok) {
+              const fbData = await fbRes.json();
+              if (fbData.products?.length) featured = fbData.products;
+            }
+          } catch {}
+        }
+        setFeaturedProducts(featured);
+
         if (newRes.status === "fulfilled" && newRes.value.ok) {
           const data = await newRes.value.json();
           if (data.products?.length) setNewArrivals(data.products);
@@ -253,8 +76,8 @@ export default function HomePage() {
         
         <div className="absolute -right-4 top-10 h-44 w-44 rounded-full bg-[#d5966e]/20 blur-3xl" />
         
-        <div className="relative grid items-stretch lg:min-h-[690px] lg:grid-cols-[.88fr_1.12fr]">
-          <div className="order-2 relative z-10 flex flex-col justify-center px-7 py-12 sm:px-12 md:px-16 md:py-16 lg:order-1 lg:py-24">
+        <div className="relative grid items-stretch lg:min-h-[700px] lg:grid-cols-[.88fr_1.12fr]">
+          <div className="order-2 relative z-10 flex flex-col justify-center px-6 py-12 min-h-[440px] pb-16 sm:min-h-0 sm:px-10 sm:py-14 sm:pb-16 md:px-14 md:py-16 lg:order-1 lg:px-16 lg:py-24">
             <div className="mb-7 flex items-center gap-3 text-[#e0a681]">
               <span className="h-px w-8 bg-current" />
               <p className="font-label text-[9px]">
@@ -265,7 +88,7 @@ export default function HomePage() {
               Make space for{" "}
               <span className="text-[#e0a681]">living.</span>
             </h1>
-            <p className="mt-7 max-w-md text-sm leading-7 text-white/65 md:text-lg md:leading-8">
+            <p className="mt-5 max-w-md text-[13px] leading-6 text-white/70 sm:text-sm sm:leading-7 md:text-lg md:leading-8">
               Objects with a point of view. Soft textures, warm light, and
               everyday details that make a house feel like yours.
             </p>
@@ -277,7 +100,7 @@ export default function HomePage() {
               </Link>
               
             </div>
-            <div className="mt-14 flex items-center gap-6 text-xs text-white/50">
+            <div className="mt-8 sm:mt-14 flex items-center gap-4 sm:gap-6 text-[11px] sm:text-xs text-white/50">
               <span className="flex items-center gap-2">
                 <Check size={14} className="text-[#e0a681]" /> Curated in
                 India
@@ -288,9 +111,9 @@ export default function HomePage() {
               </span>
             </div>
           </div>
-          <div className="order-1 relative min-h-[250px] overflow-hidden lg:order-2 lg:min-h-full">
-            <div className="hero-art absolute inset-0" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#1f2521]/30 via-transparent to-transparent lg:bg-gradient-to-r lg:from-[#1f2521]/20 lg:via-transparent lg:to-transparent" />
+          <div className="order-1 relative hidden min-h-[250px] overflow-hidden sm:block lg:order-2 lg:min-h-full">
+
+            <div className="absolute inset-0 bg-gradient-to-t from-[#1f2521]/50 via-[#1f2521]/10 to-transparent lg:bg-gradient-to-r lg:from-[#1f2521]/40 lg:via-[#1f2521]/10 lg:to-transparent" />
             
           </div>
         </div>
@@ -388,6 +211,13 @@ export default function HomePage() {
           </div>
           {loading ? (
             <ProductGridSkeleton count={4} className="lg:grid-cols-4" />
+          ) : featuredProducts.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-text-muted text-sm mb-4">Discover our curated collection.</p>
+              <Link href="/search" className="inline-flex items-center gap-2 text-sm font-semibold text-accent hover:underline">
+                Explore Collection <ArrowUpRight size={14} />
+              </Link>
+            </div>
           ) : (
             <div className="stagger-in grid grid-cols-2 gap-4 md:gap-6 lg:grid-cols-4">
               {featuredProducts.slice(0, 4).map((product, index) => (
@@ -402,26 +232,26 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* PROMOTIONAL BANNER */}
+            {/* THE COMFORT EDIT */}
       <section className="container-shop py-20 md:py-28">
-        <div className="grid overflow-hidden rounded-[2rem] bg-[#d9c9b8] md:grid-cols-2">
-          <div className="relative min-h-[320px] overflow-hidden md:min-h-[520px]">
+        <div className="grid overflow-hidden rounded-[2rem] bg-[#d9c9b8] md:grid-cols-[1fr_1.1fr] md:items-center">
+          <div className="relative min-h-[280px] overflow-hidden md:min-h-[480px] order-2 md:order-1">
             <Image
-              src="/images/banners/promo-comforters.svg"
+              src="/images/banners/hero.png"
               alt="Soft comforters collection"
               fill
               className="object-cover transition-transform duration-1000 hover:scale-105"
             />
             <div className="absolute inset-0 bg-gradient-to-r from-[#5e493b]/10 to-transparent" />
           </div>
-          <div className="flex flex-col justify-center px-7 py-12 md:px-14 lg:px-20">
-            <p className="font-label mb-4 text-[9px] text-[#80523a]">
+          <div className="flex flex-col justify-center px-7 py-12 md:px-12 lg:px-16 order-1 md:order-2">
+            <p className="font-label mb-4 text-[9px] uppercase tracking-[.18em] text-[#80523a]">
               The comfort edit
             </p>
-            <h2 className="font-display max-w-md text-4xl leading-[.95] text-[#322923] md:text-6xl">
+            <h2 className="font-display max-w-md text-4xl leading-[.95] text-[#322923] md:text-5xl lg:text-[3.4rem]">
               A softer way to end the day.
             </h2>
-            <p className="mt-6 max-w-md text-sm leading-7 text-[#5d5049]">
+            <p className="mt-5 max-w-md text-sm leading-7 text-[#5d5049] md:text-base md:leading-8">
               Layer your space with breathable textures and considered comfort.
               Made to feel good, every night.
             </p>
@@ -434,7 +264,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* NEW ARRIVALS */}
+{/* NEW ARRIVALS */}
       <section className="container-shop pb-20 md:pb-28">
         <div className="mb-8 flex items-end justify-between md:mb-12">
           <div>
@@ -458,6 +288,12 @@ export default function HomePage() {
         </div>
         {loading ? (
           <ProductGridSkeleton count={3} />
+        ) : newArrivals.length === 0 ? (
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="aspect-[.82] rounded-[1.35rem] bg-surface-muted animate-pulse" />
+            ))}
+          </div>
         ) : (
           <div className="stagger-in grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6">
             {newArrivals.slice(0, 3).map((product, index) => (
@@ -503,10 +339,10 @@ export default function HomePage() {
                 </p>
               </div>
               <div>
-                <RotateCcw size={21} className="mb-5 text-[#e0a681]" />
-                <h3 className="text-sm font-semibold">Easy returns</h3>
+                <User size={21} className="mb-5 text-[#e0a681]" />
+                <h3 className="text-sm font-semibold">Personal assistance</h3>
                 <p className="mt-2 text-xs leading-5 text-white/50">
-                  A simple, human process.
+                  Real help when you need it.
                 </p>
               </div>
               <div>

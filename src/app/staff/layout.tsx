@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import {
   LayoutDashboard, Package, ShoppingCart, Users,
-  Menu, X, Bell, ChevronRight, LogOut, Store,
+  Menu, X, Bell, LogOut, Store,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import WestHomeLogo from "@/components/ui/WestHomeLogo";
@@ -20,6 +20,13 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Customers", href: "/staff/customers", icon: Users },
 ];
 
+const PAGE_TITLES: Record<string, string> = {
+  "/staff/dashboard": "Dashboard",
+  "/staff/orders": "Orders",
+  "/staff/products": "Products",
+  "/staff/customers": "Customers",
+};
+
 export default function StaffLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -30,22 +37,21 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
   const userRole = user?.role || "MANAGER";
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login");
-    } else if (status === "authenticated" && userRole === "ADMIN") {
-      router.push("/admin/dashboard");
-    }
+    if (status === "unauthenticated") router.push("/login");
+    else if (status === "authenticated" && userRole === "ADMIN") router.push("/admin/dashboard");
+    else if (status === "authenticated" && !(["MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER"].includes(userRole))) router.push("/");
   }, [status, router, userRole]);
+
+  useEffect(() => { setSidebarOpen(false); }, [pathname]);
 
   const userName = user?.name || "Staff";
   const initials = userName.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2);
+  const pageTitle = PAGE_TITLES[pathname] || "Dashboard";
 
-  const handleSignOut = async () => {
-    await signOut({ callbackUrl: "/login" });
-  };
+  const handleSignOut = async () => { await signOut({ callbackUrl: "/login" }); };
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-[#f7f5f2]">
       {/* Mobile overlay */}
       <div
         className={cn(
@@ -59,17 +65,17 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed top-0 left-0 z-50 h-full w-64 bg-background border-r border-border transition-transform duration-300 lg:translate-x-0 flex flex-col",
+          "fixed top-0 left-0 z-50 h-full w-64 bg-[#faf8f5] border-r border-black/[.06] transition-transform duration-300 lg:translate-x-0 flex flex-col",
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        {/* Brand header */}
-        <div className="p-5 border-b border-border">
+        {/* Brand */}
+        <div className="p-5 border-b border-black/[.06]">
           <Link href="/staff/dashboard" className="flex flex-col gap-0.5">
-            <WestHomeLogo size="sm" />
-            <div className="mt-1.5 inline-flex items-center gap-1.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-              <span className="text-[9px] text-text-muted tracking-wider uppercase font-medium">Staff Panel</span>
+            <WestHomeLogo size="sm" plain />
+            <div className="mt-2 flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-[#d4a574]" />
+              <span className="text-[9px] text-[#b0aba6] tracking-[.12em] uppercase font-medium">Staff Panel</span>
             </div>
           </Link>
         </div>
@@ -87,85 +93,71 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
                 className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-150 group",
                   isActive
-                    ? "bg-gradient-to-r from-amber-600 to-amber-500 text-white shadow-sm"
-                    : "text-text-secondary hover:text-foreground hover:bg-surface-muted"
+                    ? "bg-stone-900 text-white shadow-sm"
+                    : "text-[#6b6560] hover:text-[#1a1917] hover:bg-black/[.04]"
                 )}
               >
-                <Icon size={17} className={cn(isActive ? "text-white/80" : "text-text-muted group-hover:text-text-secondary")} />
+                <Icon size={17} className={cn(isActive ? "text-white/70" : "text-[#b0aba6] group-hover:text-[#6b6560]")} />
                 {item.label}
-                {isActive && (
-                  <ChevronRight size={14} className="ml-auto text-white/40" />
-                )}
               </Link>
             );
           })}
         </nav>
 
         {/* Footer */}
-        <div className="p-3 border-t border-border space-y-1">
-          <button
-            onClick={handleSignOut}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium text-text-secondary hover:text-foreground hover:bg-surface-muted transition-all w-full"
-          >
-            <LogOut size={17} className="text-text-muted" />
-            Sign Out
-          </button>
+        <div className="p-3 border-t border-black/[.06] space-y-0.5">
           <Link
             href="/"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium text-text-secondary hover:text-foreground hover:bg-surface-muted transition-all"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium text-[#6b6560] hover:text-[#1a1917] hover:bg-black/[.04] transition-all"
           >
-            <Store size={17} className="text-text-muted" />
+            <Store size={17} className="text-[#b0aba6]" />
             View Store
           </Link>
+          <button
+            onClick={handleSignOut}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium text-[#6b6560] hover:text-[#1a1917] hover:bg-black/[.04] transition-all w-full"
+          >
+            <LogOut size={17} className="text-[#b0aba6]" />
+            Sign Out
+          </button>
         </div>
       </aside>
 
       {/* Main content */}
       <div className="lg:ml-64">
-        {/* Top bar */}
-        <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-lg border-b border-border h-14 flex items-center px-4 md:px-6 gap-4">
+        {/* Header */}
+        <header className="sticky top-0 z-30 bg-[#faf8f5]/80 backdrop-blur-lg border-b border-black/[.06] h-14 flex items-center px-4 md:px-6 gap-4">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="lg:hidden p-2 hover:bg-surface-muted rounded-xl transition-colors"
+            className="lg:hidden p-2 hover:bg-black/[.04] rounded-xl transition-colors"
           >
-            <Menu size={18} />
+            <Menu size={18} className="text-[#1a1917]" />
           </button>
 
-          {/* Breadcrumb */}
           <div className="flex-1 flex items-center gap-1.5 text-sm">
-            <span className="text-text-muted">Staff</span>
-            <ChevronRight size={12} className="text-text-muted" />
-            <span className="font-medium">
-              {NAV_ITEMS.find((item) => pathname.startsWith(item.href))?.label || "Dashboard"}
-            </span>
+            <span className="text-[#b0aba6]">Staff</span>
+            <span className="text-[#b0aba6] text-xs">/</span>
+            <span className="font-medium text-[#1a1917]">{pageTitle}</span>
           </div>
 
           <div className="flex items-center gap-2">
-            <button className="relative p-2 hover:bg-surface-muted rounded-xl transition-colors">
-              <Bell size={17} className="text-text-secondary" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-accent rounded-full ring-2 ring-white" />
+            <button className="relative p-2 hover:bg-black/[.04] rounded-xl transition-colors">
+              <Bell size={17} className="text-[#6b6560]" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#d4a574] rounded-full ring-2 ring-[#faf8f5]" />
             </button>
-            <div className="w-px h-6 bg-stone-200 mx-1" />
+            <div className="w-px h-6 bg-black/[.08] mx-1" />
             <div className="flex items-center gap-2.5 pl-1">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-full bg-stone-800 flex items-center justify-center">
                 <span className="text-white text-xs font-medium">{initials}</span>
               </div>
               <div className="hidden md:block">
-                <p className="text-sm font-medium leading-none">{userName}</p>
-                <p className="text-[10px] text-text-muted mt-0.5">Staff</p>
+                <p className="text-sm font-medium text-[#1a1917] leading-none">{userName}</p>
+                <p className="text-[10px] text-[#b0aba6] mt-0.5">Staff</p>
               </div>
             </div>
-            <button
-              onClick={handleSignOut}
-              className="p-2 hover:bg-surface-muted rounded-xl transition-colors"
-              title="Sign out"
-            >
-              <LogOut size={17} className="text-text-secondary" />
-            </button>
           </div>
         </header>
 
-        {/* Page content */}
         <main className="p-4 md:p-6 lg:p-8 max-w-[1400px]">
           {children}
         </main>

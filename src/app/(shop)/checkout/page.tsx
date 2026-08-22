@@ -34,14 +34,29 @@ export default function CheckoutPage() {
   const [orderResult, setOrderResult] = useState<{ orderNumber: string; id: string } | null>(null);
   const [upiCopied, setUpiCopied] = useState(false);
   const [userEmail, setUserEmail] = useState("");
+  const [freeThreshold, setFreeThreshold] = useState(2000);
+  const [deliveryChargeRate, setDeliveryChargeRate] = useState(149);
   const items = useCartStore((s) => s.items);
   const getSubtotal = useCartStore((s) => s.getSubtotal);
   const clearCart = useCartStore((s) => s.clearCart);
   const subtotal = mounted ? getSubtotal() : 0;
-  const deliveryCharge = deliveryOption === "express" ? 299 : (subtotal > 999 ? 0 : 149);
+  const deliveryCharge = deliveryOption === "express" ? 299 : (subtotal > freeThreshold ? 0 : deliveryChargeRate);
+  const amountNeeded = Math.max(0, freeThreshold - subtotal + 1);
   const total = subtotal + deliveryCharge;
 
   useEffect(() => { setMounted(true); }, []);
+
+  useEffect(() => {
+    fetch("/api/settings")
+      .then(r => r.json())
+      .then(d => {
+        if (d.settings) {
+          if (d.settings.freeDeliveryThreshold) setFreeThreshold(Number(d.settings.freeDeliveryThreshold));
+          if (d.settings.defaultDeliveryCharge) setDeliveryChargeRate(Number(d.settings.defaultDeliveryCharge));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     fetch("/api/addresses")
@@ -196,13 +211,26 @@ export default function CheckoutPage() {
           )}
           <h2 className="text-sm font-semibold text-primary mb-3">Delivery Options</h2>
           <div className="space-y-2 mb-6">
+            {/* Free Delivery Banner */}
+            {deliveryOption === "standard" && (
+              deliveryCharge === 0 ? (
+                <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-700">
+                  🎉 You qualify for FREE delivery!
+                </div>
+              ) : (
+                <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-700">
+                  Add {formatPrice(amountNeeded)} more to get FREE delivery.
+                </div>
+              )
+            )}
+
             {[{ id: "standard", label: "Standard Delivery", desc: "3-5 Business Days", free: true }, { id: "express", label: "Express Delivery", desc: "1-2 Business Days", free: false }].map((opt) => (
               <button key={opt.id} onClick={() => setDeliveryOption(opt.id)} className={cn("w-full flex items-center justify-between p-3 rounded-[1.35rem] border transition-colors", deliveryOption === opt.id ? "border-primary bg-surface-muted" : "border-border bg-white")}>
                 <div className="flex items-center gap-3">
                   <div className={cn("w-4 h-4 rounded-full border-2 flex items-center justify-center", deliveryOption === opt.id ? "border-primary" : "border-border")}>{deliveryOption === opt.id && <div className="w-2 h-2 rounded-full bg-primary" />}</div>
                   <div className="text-left"><p className="text-sm font-medium text-primary">{opt.label}</p><p className="text-xs text-secondary">{opt.desc}</p></div>
                 </div>
-                <span className="text-sm font-semibold text-primary">{(opt.free && subtotal > 999) ? "Free" : opt.free ? ("₹149") : ("₹299")}</span>
+                <span className="text-sm font-semibold text-primary">{(opt.free && subtotal > freeThreshold) ? "Free" : opt.free ? formatPrice(deliveryChargeRate) : "₹299"}</span>
               </button>
             ))}
           </div>

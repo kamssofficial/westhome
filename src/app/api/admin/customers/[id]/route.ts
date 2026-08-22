@@ -148,11 +148,14 @@ export async function PATCH(
     const { id } = await params;
     const body = await request.json();
 
-    const updates: any = {};
-    if (body.name !== undefined) updates.name = body.name || null;
-    if (body.email !== undefined) updates.email = body.email;
-    if (body.phone !== undefined) updates.phone = body.phone || null;
-    if (body.isActive !== undefined) updates.isActive = body.isActive;
+    // SECURITY: Strict allowlist — only these fields can be updated
+    const ALLOWED_FIELDS = ["name", "email", "phone", "isActive"] as const;
+    const updates: Record<string, any> = {};
+    for (const field of ALLOWED_FIELDS) {
+      if (body[field] !== undefined) {
+        updates[field] = body[field] || null;
+      }
+    }
 
     // Check email uniqueness if changing
     if (updates.email) {

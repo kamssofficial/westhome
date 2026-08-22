@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { Plus, Search, Edit, Trash2, Users, Shield, X, Eye, EyeOff } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -14,14 +15,14 @@ interface StaffMember {
   phone: string | null;
   role: string;
   isActive: boolean;
+  permissions: string;
   createdAt: string;
   updatedAt: string;
   _count?: { orders: number };
 }
 
 const ROLES = [
-  { value: "ADMIN", label: "Admin", description: "Full access to all features" },
-  { value: "MANAGER", label: "Manager", description: "Manage products, orders, and content" },
+  { value: "MANAGER", label: "Manager", description: "Full staff access to products, orders, and content" },
   { value: "PRODUCT_MANAGER", label: "Product Manager", description: "Manage products and inventory" },
   { value: "ORDER_MANAGER", label: "Order Manager", description: "Manage orders and deliveries" },
   { value: "CONTENT_MANAGER", label: "Content Manager", description: "Manage homepage, content, and promotions" },
@@ -180,9 +181,10 @@ export default function AdminStaffPage() {
           <h1 className="text-xl font-semibold">Staff Management</h1>
           <p className="text-sm text-text-muted mt-0.5">{staff.length} team members</p>
         </div>
-        <Button size="sm" onClick={openAddModal}>
+        <Link href="/admin/staff/new"
+          className="inline-flex items-center gap-1.5 px-3 py-2 bg-[#1a1917] text-white rounded-xl text-sm font-medium hover:bg-[#2d2926] transition-colors">
           <Plus size={16} /> Add Staff
-        </Button>
+        </Link>
       </div>
 
       {/* Search & Filter */}

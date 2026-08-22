@@ -69,26 +69,21 @@ Contact:
 For shipping inquiries, please WhatsApp us or email info@westhomebybmd.com.`,
   },
   returns: {
-    title: "Return Policy",
-    content: `Return and Exchange Policy:
+    title: "Contact & Support",
+    content: `We are here to help:
 
-Eligibility:
-- Returns accepted within 7 days of delivery
-- Product must be unused and in original packaging
-- Some items may not be eligible for return
+At WestHome, we stand behind the quality of every product we offer.
+If you have any concerns about your order, please reach out to our
+support team and we will do our best to assist you.
 
-Process:
-1. Contact us via WhatsApp or email
-2. Provide your order number and reason
-3. We will arrange pickup or provide return instructions
-4. Refund/exchange processed after inspection
+Damaged or Defective Items:
+If you receive a damaged or defective item, please contact us within
+48 hours with photographic evidence. We will work with you to resolve
+the issue.
 
-Refunds:
-- Refunds will be processed within 5-7 business days
-- Refund will be credited to original payment method
-
-Contact:
-For return requests, please contact info@westhomebybmd.com`,
+How to Reach Us:
+- Email: info@westhomebybmd.com
+- WhatsApp: https://wa.me/919895071144`,
   },
   cancellation: {
     title: "Cancellation Policy",

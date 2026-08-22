@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Minus, Plus, Trash2, ArrowLeft, ShoppingBag } from "lucide-react";
@@ -13,9 +14,25 @@ export default function CartPage() {
   const getSubtotal = useCartStore((s) => s.getSubtotal);
   const getTotal = useCartStore((s) => s.getTotal);
 
+  const [freeThreshold, setFreeThreshold] = useState(2000);
+  const [deliveryChargeRate, setDeliveryChargeRate] = useState(149);
+
+  useEffect(() => {
+    fetch("/api/settings")
+      .then(r => r.json())
+      .then(d => {
+        if (d.settings) {
+          if (d.settings.freeDeliveryThreshold) setFreeThreshold(Number(d.settings.freeDeliveryThreshold));
+          if (d.settings.defaultDeliveryCharge) setDeliveryChargeRate(Number(d.settings.defaultDeliveryCharge));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const subtotal = getSubtotal();
-  const deliveryCharge = subtotal > 999 ? 0 : 149;
+  const deliveryCharge = subtotal > freeThreshold ? 0 : deliveryChargeRate;
   const total = subtotal + deliveryCharge;
+  const amountNeeded = Math.max(0, freeThreshold - subtotal + 1);
 
   if (items.length === 0) {
     return (
@@ -105,6 +122,17 @@ export default function CartPage() {
       {/* Order Summary */}
       <div className="container-shop mt-6 pb-4">
         <div className="bg-surface rounded-[1.35rem] border border-foreground/[.08] p-4 shadow-sm">
+          {/* Free Delivery Banner */}
+          {deliveryCharge === 0 ? (
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-700">
+              🎉 You qualify for FREE delivery!
+            </div>
+          ) : (
+            <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-700">
+              Add {formatPrice(amountNeeded)} more to get FREE delivery.
+            </div>
+          )}
+
           <h3 className="text-sm font-semibold text-primary mb-3">Order Summary</h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">

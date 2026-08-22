@@ -3,6 +3,25 @@ import db from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { requireAdmin } from "@/lib/apiAuth";
 
+// SECURITY: Simple in-memory rate limiter for staff creation
+const staffCreationAttempts = new Map<string, { count: number; resetAt: number }>();
+const MAX_STAFF_CREATION = 10;
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+
+function checkStaffRateLimit(adminId: string): boolean {
+  const now = Date.now();
+  const record = staffCreationAttempts.get(adminId);
+  if (!record || now > record.resetAt) {
+    staffCreationAttempts.set(adminId, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return true;
+  }
+  if (record.count >= MAX_STAFF_CREATION) {
+    return false;
+  }
+  record.count++;
+  return true;
+}
+
 // GET /api/admin/staff — List all staff members
 export async function GET(request: NextRequest) {
   const authResult = await requireAdmin();
@@ -32,6 +51,7 @@ export async function GET(request: NextRequest) {
         email: true,
         phone: true,
         role: true,
+        permissions: true,
         isActive: true,
         createdAt: true,
         updatedAt: true,
@@ -58,7 +78,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { name, email, password, phone, role } = body;
+    const { name, email, password, phone, role, permissions, isActive } = body;
 
     if (!name || !email || !password) {
       return NextResponse.json(
@@ -67,8 +87,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate role
-    const validRoles = ["ADMIN", "MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER"];
+    // Validate role — never allow CUSTOMER or ADMIN creation through this endpoint
+    const validRoles = ["MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER"];
     if (role && !validRoles.includes(role)) {
       return NextResponse.json(
         { error: "Invalid role" },
@@ -96,7 +116,8 @@ export async function POST(request: NextRequest) {
         passwordHash,
         phone: phone || null,
         role: role || "MANAGER",
-        isActive: true,
+        permissions: JSON.stringify(permissions || []),
+        isActive: isActive !== undefined ? isActive : true,
       },
       select: {
         id: true,
@@ -104,6 +125,7 @@ export async function POST(request: NextRequest) {
         email: true,
         phone: true,
         role: true,
+        permissions: true,
         isActive: true,
         createdAt: true,
       },

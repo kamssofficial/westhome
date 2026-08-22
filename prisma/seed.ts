@@ -80,6 +80,7 @@ async function main() {
     { name: "Vases", slug: "vases", position: 3 },
     { name: "Flower Pots", slug: "flower-pots", position: 4 },
     { name: "Tissue Boxes", slug: "tissue-boxes", position: 5 },
+    { name: "Dustbin", slug: "dustbin", position: 6 },
   ];
 
   const accessoriesId = categories["accessories"].id;
@@ -107,13 +108,15 @@ async function main() {
     {
       key: "deliveryConfig",
       value: {
-        freeDeliveryThreshold: 999,
-        defaultDeliveryCharge: 49,
+        freeDeliveryThreshold: 2000,
+        defaultDeliveryCharge: 149,
         estimatedDeliveryDays: 5,
         storePickup: true,
       },
       group: "delivery",
     },
+    { key: "freeDeliveryThreshold", value: 2000, group: "delivery" },
+    { key: "defaultDeliveryCharge", value: 149, group: "delivery" },
   ];
 
   for (const setting of settingsData) {

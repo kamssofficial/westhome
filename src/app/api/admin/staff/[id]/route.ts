@@ -21,6 +21,7 @@ export async function GET(
         email: true,
         phone: true,
         role: true,
+        permissions: true,
         isActive: true,
         createdAt: true,
         updatedAt: true,
@@ -53,7 +54,7 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { name, email, phone, role, password, isActive } = body;
+    const { name, email, phone, role, password, isActive, permissions } = body;
 
     // Find existing user
     const existing = await db.user.findUnique({ where: { id } });
@@ -82,6 +83,7 @@ export async function PUT(
     if (phone !== undefined) updateData.phone = phone || null;
     if (role !== undefined) updateData.role = role;
     if (isActive !== undefined) updateData.isActive = isActive;
+    if (permissions !== undefined) updateData.permissions = JSON.stringify(permissions);
     if (password) updateData.passwordHash = await bcrypt.hash(password, 12);
 
     const updated = await db.user.update({

@@ -8,15 +8,12 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCartStore } from "@/store/cart";
 import { cn } from "@/lib/utils";
 
-const NAV_LINKS = [
+const BASE_NAV = [
   { label: "Home", href: "/" },
   { label: "Shop", href: "/shop" },
-  { label: "Wall Decor", href: "/collections/wall-decor" },
-  { label: "Comforters", href: "/collections/comforters" },
-  { label: "Lamps", href: "/collections/lamps" },
-  { label: "Carpets", href: "/collections/carpets" },
-  { label: "Accessories", href: "/collections/accessories" },
 ];
+
+interface NavCat { label: string; href: string; }
 
 export default function Header() {
   const pathname = usePathname();
@@ -26,6 +23,16 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [navCategories, setNavCategories] = useState<NavCat[]>([]);
+
+  useEffect(() => {
+    fetch("/api/categories")
+      .then(r => r.json())
+      .then(d => {
+        if (d.categories) setNavCategories(d.categories.map((c: any) => ({ label: c.name, href: "/collections/" + c.slug })));
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 16);
@@ -77,7 +84,7 @@ export default function Header() {
               className="hidden items-center gap-0.5 lg:flex"
               aria-label="Primary navigation"
             >
-              {NAV_LINKS.map((link) => (
+              {[...BASE_NAV, ...navCategories].map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
@@ -223,7 +230,7 @@ export default function Header() {
               Explore WESTHOME
             </p>
             <nav className="space-y-1" aria-label="Mobile navigation">
-              {NAV_LINKS.map((link) => (
+              {[...BASE_NAV, ...navCategories].map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}

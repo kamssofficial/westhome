@@ -3,12 +3,18 @@ import db from "@/lib/db";
 import { Prisma } from "@prisma/client";
 import { requireAdmin } from "@/lib/apiAuth";
 
+// SECURITY: Settings keys that should NEVER be exposed to unauthenticated users
+const SENSITIVE_KEYS = ["smtp_password", "api_secret", "webhook_secret", "internal_note"];
+
 export async function GET() {
   try {
     const settings = await db.siteSetting.findMany();
     const settingsObj: Record<string, any> = {};
     settings.forEach((s) => {
-      settingsObj[s.key] = s.value;
+      // SECURITY: Strip sensitive keys from public response
+      if (!SENSITIVE_KEYS.includes(s.key)) {
+        settingsObj[s.key] = s.value;
+      }
     });
     return NextResponse.json({ settings: settingsObj });
   } catch (error) {

@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   Heart, Minus, Plus, Star, ChevronLeft, ChevronRight,
-  MessageCircle, Share2, ChevronDown, Shield, Truck, Headphones,
+  MessageCircle, Share2, ChevronDown, ShieldCheck, Truck, Headphones,
 } from "lucide-react";
 import ProductCard from "@/components/ui/ProductCard";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -515,15 +515,15 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
         </div>
 
         {/* Trust signals */}
-        <div className="flex items-center justify-around py-6 mt-2">
+        <div className="grid grid-cols-3 gap-4 py-7 mt-2 border-t border-border">
           {[
-            { icon: <Shield size={20} />, label: "Premium Quality" },
-            { icon: <Truck size={20} />, label: "Reliable Delivery" },
-            { icon: <Headphones size={20} />, label: "Dedicated Support" },
+            { icon: <ShieldCheck size={20} strokeWidth={1.5} />, label: "Premium Quality" },
+            { icon: <Truck size={20} strokeWidth={1.5} />, label: "Reliable Delivery" },
+            { icon: <Headphones size={20} strokeWidth={1.5} />, label: "Dedicated Support" },
           ].map((item) => (
-            <div key={item.label} className="flex flex-col items-center gap-1.5">
-              <div className="text-primary">{item.icon}</div>
-              <span className="text-[10px] font-medium text-secondary text-center">{item.label}</span>
+            <div key={item.label} className="flex flex-col items-center gap-2.5 text-center">
+              <div className="text-foreground/70">{item.icon}</div>
+              <span className="text-[11px] font-medium text-text-secondary tracking-wide">{item.label}</span>
             </div>
           ))}
         </div>

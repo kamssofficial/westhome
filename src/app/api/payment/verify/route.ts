@@ -16,6 +16,15 @@ export async function POST(request: NextRequest) {
       orderId,
     } = await request.json();
 
+    // SECURITY: Verify the order belongs to the authenticated user
+    const existingOrder = await db.order.findUnique({ where: { id: orderId } });
+    if (!existingOrder) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
+    if (existingOrder.userId && existingOrder.userId !== (session.user as any).id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     // Verify signature
     const body = razorpay_order_id + "|" + razorpay_payment_id;
     const expectedSignature = crypto
@@ -23,7 +32,12 @@ export async function POST(request: NextRequest) {
       .update(body.toString())
       .digest("hex");
 
-    const isAuthentic = expectedSignature === razorpay_signature;
+    // SECURITY: Use timing-safe comparison to prevent timing attacks
+    const sigBuffer = Buffer.from(razorpay_signature || "", "utf8");
+    const expectedBuffer = Buffer.from(expectedSignature, "utf8");
+    const isAuthentic =
+      sigBuffer.length === expectedBuffer.length &&
+      crypto.timingSafeEqual(sigBuffer, expectedBuffer);
 
     if (!isAuthentic) {
       // Payment verification failed

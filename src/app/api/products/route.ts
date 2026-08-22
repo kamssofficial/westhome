@@ -39,15 +39,52 @@ export async function GET(request: NextRequest) {
     if (color) where.color = { contains: color, mode: "insensitive" };
     if (inStock === "true") where.stockQuantity = { gt: 0 };
     if (onSale === "true") where.salePrice = { not: null };
+    
+    // Extended filters
+    const style = searchParams.get("style");
+    const pattern = searchParams.get("pattern");
+    const shape = searchParams.get("shape");
+    const finish = searchParams.get("finish");
+    const isNewArrival = searchParams.get("isNewArrival") === "true";
+    const isFeatured = searchParams.get("isFeatured") === "true";
+    const minWidth = searchParams.get("minWidth");
+    const maxWidth = searchParams.get("maxWidth");
+    const minHeight = searchParams.get("minHeight");
+    const maxHeight = searchParams.get("maxHeight");
+    const minLength = searchParams.get("minLength");
+    const maxLength = searchParams.get("maxLength");
+    const minDiameter = searchParams.get("minDiameter");
+    const maxDiameter = searchParams.get("maxDiameter");
+    const minRating = searchParams.get("minRating");
+    
+    if (style) where.style = { contains: style, mode: "insensitive" };
+    if (pattern) where.pattern = { contains: pattern, mode: "insensitive" };
+    if (shape) where.shape = { contains: shape, mode: "insensitive" };
+    if (finish) where.finish = { contains: finish, mode: "insensitive" };
+    if (isNewArrival) where.isNewArrival = true;
+    if (isFeatured) where.isFeatured = true;
+    if (minWidth) where.width = { ...where.width, gte: parseFloat(minWidth) };
+    if (maxWidth) where.width = { ...where.width, lte: parseFloat(maxWidth) };
+    if (minHeight) where.height = { ...where.height, gte: parseFloat(minHeight) };
+    if (maxHeight) where.height = { ...where.height, lte: parseFloat(maxHeight) };
+    if (minLength) where.length = { ...where.length, gte: parseFloat(minLength) };
+    if (maxLength) where.length = { ...where.length, lte: parseFloat(maxLength) };
+    if (minDiameter) where.diameter = { ...where.diameter, gte: parseFloat(minDiameter) };
+    if (maxDiameter) where.diameter = { ...where.diameter, lte: parseFloat(maxDiameter) };
 
     let orderBy: any = { createdAt: "desc" };
     switch (sort) {
       case "price_asc": orderBy = { regularPrice: "asc" }; break;
+      case "name_asc": orderBy = { name: "asc" }; break;
+      case "name_desc": orderBy = { name: "desc" }; break;
       case "price_desc": orderBy = { regularPrice: "desc" }; break;
       case "bestselling": orderBy = { orderItems: { _count: "desc" } }; break;
       default: orderBy = [{ isFeatured: "desc" }, { createdAt: "desc" }]; break;
     }
 
+    // Rating filter - applied after fetch since it's computed
+    const minRatingNum = minRating ? parseFloat(minRating) : 0;
+    
     const [products, total] = await Promise.all([
       db.product.findMany({
         where, include: { category: { select: { id: true, name: true, slug: true } }, images: { orderBy: [{ isPrimary: "desc" }, { position: "asc" }] }, variants: { where: { isActive: true }, orderBy: { position: "asc" }, include: { images: { orderBy: { position: "asc" } }, attributes: { include: { variantAttribute: true } } } }, reviews: { where: { status: "APPROVED" }, select: { rating: true } }, tags: true },
