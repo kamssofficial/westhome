@@ -1,17 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { signIn as nextAuthSignIn } from "next-auth/react";
-import { signIn } from "@/lib/auth";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 import Button from "@/components/ui/Button";
 import toast from "react-hot-toast";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/account";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -30,14 +30,29 @@ export default function LoginPage() {
 
       if (result?.error) {
         toast.error("Invalid email or password");
+        setLoading(false);
       } else {
         toast.success("Signed in successfully");
-        router.push("/account");
-        router.refresh();
+        // Wait for the JWT cookie to be set before checking session
+        await new Promise((r) => setTimeout(r, 500));
+        const sessionRes = await fetch("/api/auth/session");
+        const sessionData = await sessionRes.json();
+        const role = sessionData?.user?.role;
+
+        // Route to the correct area based on role
+        if (role === "ADMIN") {
+          window.location.href = "/admin/dashboard";
+        } else if (role === "MANAGER") {
+          window.location.href = "/staff/dashboard";
+        } else {
+          // Full page reload so the middleware picks up the fresh JWT
+          window.location.href = callbackUrl.startsWith("/account")
+            ? callbackUrl
+            : "/account";
+        }
       }
     } catch {
       toast.error("Failed to sign in");
-    } finally {
       setLoading(false);
     }
   };
@@ -45,24 +60,13 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
-        {/* Logo */}
         <div className="text-center mb-8">
-          <Link href="/" className="inline-block">
-            <Image
-              src="/images/logo/westhome-logo.png"
-              alt="WESTHOME"
-              width={160}
-              height={45}
-              className="h-8 w-auto mx-auto"
-            />
-          </Link>
-          <h1 className="text-xl font-serif mt-4">Welcome Back</h1>
+          <h1 className="text-xl font-serif">Welcome Back</h1>
           <p className="text-sm text-text-secondary mt-1">
             Sign in to your WESTHOME account
           </p>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="bg-white border border-border-light rounded-xl p-5 md:p-6 space-y-4">
           <div>
             <label className="text-xs font-medium text-text-secondary mb-1 block">Email</label>
@@ -108,5 +112,13 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><p className="text-sm text-text-muted">Loading...</p></div>}>
+      <LoginForm />
+    </Suspense>
   );
 }

@@ -3,6 +3,7 @@ import { Cormorant_Garamond, DM_Sans } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import Providers from "@/components/layout/Providers";
+import IntroAnimation from "@/components/ui/IntroAnimation";
 
 const cormorant = Cormorant_Garamond({
   variable: "--font-cormorant",
@@ -24,14 +25,13 @@ export const metadata: Metadata = {
     template: "%s | WESTHOME by BM Distributors",
   },
   description:
-    "Discover premium home décor, comforters, lamps, carpets, wall art, and lifestyle accessories at WESTHOME by BM Distributors.",
+    "Discover premium home décor — laundry baskets, frames, and soap dispensers at WESTHOME by BM Distributors.",
   keywords: [
     "home decor",
     "premium home",
-    "wall art",
-    "comforters",
-    "lamps",
-    "carpets",
+    "laundry baskets",
+    "frames",
+    "soap dispensers",
     "lifestyle",
     "BM Distributors",
   ],
@@ -56,7 +56,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
-  themeColor: "#FAF9F6",
+  themeColor: "#F7F3EA",
 };
 
 export default function RootLayout({
@@ -91,7 +91,9 @@ export default function RootLayout({
             },
           }}
         />
-        <Providers>{children}</Providers>
+        <Providers>
+          <IntroAnimation>{children}</IntroAnimation>
+        </Providers>
       </body>
     </html>
   );

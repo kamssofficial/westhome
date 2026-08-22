@@ -1,0 +1,1 @@
+const fs=require("fs");const c=fs.readFileSync("../.freebuff/checkout_src.txt","utf-8");fs.mkdirSync("src/app/(shop)/checkout",{recursive:true});fs.writeFileSync("src/app/(shop)/checkout/page.tsx",c);console.log("Done",c.length);

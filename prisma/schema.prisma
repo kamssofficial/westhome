@@ -79,12 +79,46 @@ model Product {
   allowBackorder  Boolean       @default(false)
   trackInventory  Boolean       @default(true)
 
+  // Physical Dimensions
+  height          Decimal?
+  width           Decimal?
+  length          Decimal?
+  depth           Decimal?
+  diameter        Decimal?
+  dimensionUnit   String?       @default("cm")
+  weight          Decimal?
+  weightUnit      String?       @default("kg")
+  capacity        Decimal?
+  capacityUnit    String?       @default("L")
+
+  // Physical Attributes
+  material        String?
+  color           String?
+  finish          String?
+  shape           String?
+  pattern         String?
+  style           String?
+  mountingType    String?
+  usageLocation   String?       // Indoor, Outdoor, Bathroom, etc.
+
+  // Product Information
+  careInstructions String?
+  warranty         String?
+
+  // Packaging
+  packagingType       String?
+  packagingDimensions String?
+  packagingWeight     Decimal?
+  includedItems       String?
+
   // Sizing
   allowCustomSize Boolean       @default(false)
   customSizeMinWidth  Decimal?
   customSizeMinLength Decimal?
+  customSizeMinHeight Decimal?
   customSizeMaxWidth  Decimal?
   customSizeMaxLength Decimal?
+  customSizeMaxHeight Decimal?
   customSizeUnit  String?       @default("cm")
   customSizePricingMethod String? @default("area") // area, linear, fixed
   customSizeRequiresApproval Boolean @default(false)
@@ -154,10 +188,12 @@ model ProductImage {
   alt       String?
   position  Int     @default(0)
   isPrimary Boolean @default(false)
+  imageType String  @default("PRODUCT") // PRODUCT, LIFESTYLE
 
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId])
+  @@index([imageType])
 }
 
 model ProductVideo {

@@ -1,17 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
+import { requireAuthRole } from "@/lib/apiAuth";
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-
     const query = searchParams.get("q") || searchParams.get("query") || "";
     const category = searchParams.get("category") || "";
     const subcategory = searchParams.get("subcategory") || "";
-    const minPrice = searchParams.get("minPrice");
-    const maxPrice = searchParams.get("maxPrice");
-    const inStock = searchParams.get("inStock");
-    const onSale = searchParams.get("onSale");
     const sort = searchParams.get("sort") || "recommended";
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "24");
@@ -19,158 +15,103 @@ export async function GET(request: NextRequest) {
     const newArrivals = searchParams.get("newArrivals") === "true";
     const bestsellers = searchParams.get("bestsellers") === "true";
 
-    // Build where clause
-    const where: any = {
-      isActive: true,
-      status: "ACTIVE",
-    };
-
-    if (query) {
-      where.OR = [
-        { name: { contains: query, mode: "insensitive" } },
-        { description: { contains: query, mode: "insensitive" } },
-        { shortDescription: { contains: query, mode: "insensitive" } },
-        { sku: { contains: query, mode: "insensitive" } },
-        { tags: { some: { tag: { contains: query, mode: "insensitive" } } } },
-        { category: { name: { contains: query, mode: "insensitive" } } },
-        { subcategory: { name: { contains: query, mode: "insensitive" } } },
-      ];
-    }
-
-    if (category) {
-      where.category = { slug: category };
-    }
-
-    if (subcategory) {
-      where.subcategory = { slug: subcategory };
-    }
-
-    if (minPrice || maxPrice) {
-      where.regularPrice = {};
-      if (minPrice) where.regularPrice.gte = parseFloat(minPrice);
-      if (maxPrice) where.regularPrice.lte = parseFloat(maxPrice);
-    }
-
-    if (inStock === "true") {
-      where.stockQuantity = { gt: 0 };
-    }
-
-    if (onSale === "true") {
-      where.salePrice = { not: null };
-    }
-
+    // Admin/staff can see all statuses; storefront only ACTIVE
+    const statusFilter = searchParams.get("status");
+    const isAdminView = !!(statusFilter || searchParams.get("all"));
+    const where: any = isAdminView ? {} : { isActive: true, status: "ACTIVE" };
+    if (statusFilter) where.status = statusFilter;
+    if (query) { where.OR = [{ name: { contains: query, mode: "insensitive" } }, { description: { contains: query, mode: "insensitive" } }, { shortDescription: { contains: query, mode: "insensitive" } }, { material: { contains: query, mode: "insensitive" } }]; }
+    if (category) { where.category = { slug: category }; }
+    if (subcategory) { where.subcategory = { slug: subcategory }; }
     if (featured) where.isFeatured = true;
     if (newArrivals) where.isNewArrival = true;
     if (bestsellers) where.isBestseller = true;
+    // Physical attribute filters
+    const minPrice = searchParams.get("minPrice");
+    const maxPrice = searchParams.get("maxPrice");
+    const material = searchParams.get("material");
+    const color = searchParams.get("color");
+    const inStock = searchParams.get("inStock");
+    const onSale = searchParams.get("onSale");
+    if (minPrice) where.regularPrice = { ...where.regularPrice, gte: parseFloat(minPrice) };
+    if (maxPrice) where.regularPrice = { ...where.regularPrice, lte: parseFloat(maxPrice) };
+    if (material) where.material = { contains: material, mode: "insensitive" };
+    if (color) where.color = { contains: color, mode: "insensitive" };
+    if (inStock === "true") where.stockQuantity = { gt: 0 };
+    if (onSale === "true") where.salePrice = { not: null };
 
-    // Build orderBy
     let orderBy: any = { createdAt: "desc" };
     switch (sort) {
-      case "newest":
-        orderBy = { createdAt: "desc" };
-        break;
-      case "price_asc":
-        orderBy = { regularPrice: "asc" };
-        break;
-      case "price_desc":
-        orderBy = { regularPrice: "desc" };
-        break;
-      case "bestselling":
-        orderBy = { orderItems: { _count: "desc" } };
-        break;
-      case "rating":
-        orderBy = { reviews: { _count: "desc" } };
-        break;
-      case "recommended":
-      default:
-        orderBy = [
-          { isFeatured: "desc" },
-          { isBestseller: "desc" },
-          { createdAt: "desc" },
-        ];
-        break;
+      case "price_asc": orderBy = { regularPrice: "asc" }; break;
+      case "price_desc": orderBy = { regularPrice: "desc" }; break;
+      case "bestselling": orderBy = { orderItems: { _count: "desc" } }; break;
+      default: orderBy = [{ isFeatured: "desc" }, { createdAt: "desc" }]; break;
     }
-
-    const skip = (page - 1) * limit;
 
     const [products, total] = await Promise.all([
       db.product.findMany({
-        where,
-        include: {
-          category: { select: { id: true, name: true, slug: true } },
-          subcategory: { select: { id: true, name: true, slug: true } },
-          images: { orderBy: [{ isPrimary: "desc" }, { position: "asc" }] },
-          variants: {
-            where: { isActive: true },
-            orderBy: { position: "asc" },
-            include: {
-              images: { orderBy: { position: "asc" } },
-              attributes: {
-                include: { variantAttribute: true },
-              },
-            },
-          },
-          reviews: { where: { status: "APPROVED" }, select: { rating: true } },
-          tags: true,
-        },
-        orderBy,
-        skip,
-        take: limit,
+        where, include: { category: { select: { id: true, name: true, slug: true } }, images: { orderBy: [{ isPrimary: "desc" }, { position: "asc" }] }, variants: { where: { isActive: true }, orderBy: { position: "asc" }, include: { images: { orderBy: { position: "asc" } }, attributes: { include: { variantAttribute: true } } } }, reviews: { where: { status: "APPROVED" }, select: { rating: true } }, tags: true },
+        orderBy, skip: (page - 1) * limit, take: limit,
       }),
       db.product.count({ where }),
     ]);
-
-    // Transform products to include computed fields
-    const transformedProducts = products.map((product) => ({
+    const transformed = products.map((product) => ({
       ...product,
       regularPrice: Number(product.regularPrice),
       salePrice: product.salePrice ? Number(product.salePrice) : null,
-      promotionalPrice: product.promotionalPrice ? Number(product.promotionalPrice) : null,
-      rating:
-        product.reviews.length > 0
-          ? product.reviews.reduce((sum, r) => sum + r.rating, 0) / product.reviews.length
-          : null,
+      rating: product.reviews.length > 0 ? product.reviews.reduce((s, r) => s + r.rating, 0) / product.reviews.length : null,
       reviewCount: product.reviews.length,
       tags: product.tags?.map((t: any) => t.tag) || [],
-      variants: product.variants.map((v) => ({
-        ...v,
-        price: Number(v.price),
-        salePrice: v.salePrice ? Number(v.salePrice) : null,
-        attributes: v.attributes.map((a) => ({
-          attributeId: a.variantAttributeId,
-          attributeName: a.variantAttribute.name,
-          value: a.value,
-          colorCode: a.colorCode,
-        })),
-      })),
+      variants: product.variants.map((v) => ({ ...v, price: Number(v.price), salePrice: v.salePrice ? Number(v.salePrice) : null, attributes: v.attributes.map((a) => ({ attributeId: a.variantAttributeId, attributeName: a.variantAttribute.name, value: a.value, colorCode: a.colorCode })) })),
+      // Physical attributes
+      height: product.height ? Number(product.height) : null,
+      width: product.width ? Number(product.width) : null,
+      length: product.length ? Number(product.length) : null,
+      depth: product.depth ? Number(product.depth) : null,
+      diameter: product.diameter ? Number(product.diameter) : null,
+      dimensionUnit: product.dimensionUnit,
+      weight: product.weight ? Number(product.weight) : null,
+      weightUnit: product.weightUnit,
+      capacity: product.capacity ? Number(product.capacity) : null,
+      capacityUnit: product.capacityUnit,
+      material: product.material,
+      color: product.color,
+      finish: product.finish,
+      shape: product.shape,
+      pattern: product.pattern,
+      style: product.style,
+      mountingType: product.mountingType,
+      usageLocation: product.usageLocation,
+      careInstructions: product.careInstructions,
+      warranty: product.warranty,
+      packagingType: product.packagingType,
+      packagingDimensions: product.packagingDimensions,
+      packagingWeight: product.packagingWeight ? Number(product.packagingWeight) : null,
+      includedItems: product.includedItems,
+      allowCustomSize: product.allowCustomSize,
+      customSizeUnit: product.customSizeUnit,
+      customSizeMinWidth: product.customSizeMinWidth ? Number(product.customSizeMinWidth) : null,
+      customSizeMinLength: product.customSizeMinLength ? Number(product.customSizeMinLength) : null,
+      customSizeMinHeight: product.customSizeMinHeight ? Number(product.customSizeMinHeight) : null,
+      customSizeMaxWidth: product.customSizeMaxWidth ? Number(product.customSizeMaxWidth) : null,
+      customSizeMaxLength: product.customSizeMaxLength ? Number(product.customSizeMaxLength) : null,
+      customSizeMaxHeight: product.customSizeMaxHeight ? Number(product.customSizeMaxHeight) : null,
+      customSizePricingMethod: product.customSizePricingMethod,
+      customSizeRequiresApproval: product.customSizeRequiresApproval,
     }));
-
-    return NextResponse.json({
-      products: transformedProducts,
-      total,
-      page,
-      totalPages: Math.ceil(total / limit),
-    });
+    return NextResponse.json({ products: transformed, total, page, totalPages: Math.ceil(total / limit) });
   } catch (error) {
-    console.error("Products API error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch products" },
-      { status: 500 }
-    );
+    return NextResponse.json({ products: [], total: 0, page: 1, totalPages: 0 });
   }
 }
 
 export async function POST(request: NextRequest) {
+  const authResult = await requireAuthRole(["ADMIN", "MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER"]);
+  if (authResult.error) return authResult.error;
+
   try {
-    // Only admin can create products - check auth in production
     const body = await request.json();
-
-    const slug = body.name
-      .toLowerCase()
-      .replace(/[^\w\s-]/g, "")
-      .replace(/[\s_-]+/g, "-")
-      .replace(/^-+|-+$/g, "");
-
+    const slug = body.name.toLowerCase().replace(/[^\w\s-]/g, "").replace(/[\s_-]+/g, "-").replace(/^-+|-+$/g, "");
     const product = await db.product.create({
       data: {
         name: body.name,
@@ -180,7 +121,6 @@ export async function POST(request: NextRequest) {
         shortDescription: body.shortDescription,
         regularPrice: body.regularPrice,
         salePrice: body.salePrice,
-        costPrice: body.costPrice,
         stockQuantity: body.stockQuantity || 0,
         lowStockThreshold: body.lowStockThreshold || 5,
         trackInventory: body.trackInventory ?? true,
@@ -189,29 +129,58 @@ export async function POST(request: NextRequest) {
         customSizeUnit: body.customSizeUnit,
         customSizeMinWidth: body.customSizeMinWidth,
         customSizeMinLength: body.customSizeMinLength,
+        customSizeMinHeight: body.customSizeMinHeight,
         customSizeMaxWidth: body.customSizeMaxWidth,
         customSizeMaxLength: body.customSizeMaxLength,
+        customSizeMaxHeight: body.customSizeMaxHeight,
         customSizePricingMethod: body.customSizePricingMethod,
-        customSizeRequiresApproval: body.customSizeRequiresApproval ?? false,
+        customSizeRequiresApproval: body.customSizeRequiresApproval,
         purchaseMethod: body.purchaseMethod || "BOTH",
         categoryId: body.categoryId,
-        subcategoryId: body.subcategoryId,
+        subcategoryId: body.subcategoryId || null,
         isFeatured: body.isFeatured ?? false,
         isBestseller: body.isBestseller ?? false,
         isNewArrival: body.isNewArrival ?? false,
         status: body.status || "DRAFT",
-        seoTitle: body.seoTitle,
-        seoDescription: body.seoDescription,
-        metaKeywords: body.metaKeywords,
+        // Physical attributes
+        height: body.height,
+        width: body.width,
+        length: body.length,
+        depth: body.depth,
+        diameter: body.diameter,
+        dimensionUnit: body.dimensionUnit,
+        weight: body.weight,
+        weightUnit: body.weightUnit,
+        capacity: body.capacity,
+        capacityUnit: body.capacityUnit,
+        material: body.material,
+        color: body.color,
+        finish: body.finish,
+        shape: body.shape,
+        pattern: body.pattern,
+        style: body.style,
+        mountingType: body.mountingType,
+        usageLocation: body.usageLocation,
+        careInstructions: body.careInstructions,
+        warranty: body.warranty,
+        packagingType: body.packagingType,
+        packagingDimensions: body.packagingDimensions,
+        packagingWeight: body.packagingWeight,
+        includedItems: body.includedItems,
+      },
+    });
+    // Log the action
+    await db.auditLog.create({
+      data: {
+        action: "CREATE",
+        entity: "PRODUCT",
+        entityId: product.id,
+        details: { name: product.name, slug: product.slug },
       },
     });
 
     return NextResponse.json({ product }, { status: 201 });
   } catch (error) {
-    console.error("Create product error:", error);
-    return NextResponse.json(
-      { error: "Failed to create product" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to create product" }, { status: 500 });
   }
 }

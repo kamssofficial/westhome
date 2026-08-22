@@ -3,10 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Heart, ShoppingBag, ExternalLink } from "lucide-react";
-import { cn, formatPrice, calculateDiscount, getWhatsAppUrl } from "@/lib/utils";
+import { Heart, ImageOff } from "lucide-react";
+import { cn, formatPrice, calculateDiscount } from "@/lib/utils";
 import { useWishlistStore } from "@/store/wishlist";
-import { useCartStore } from "@/store/cart";
 import toast from "react-hot-toast";
 import type { Product } from "@/types";
 
@@ -19,36 +18,10 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
   const [imageError, setImageError] = useState(false);
   const toggleWishlist = useWishlistStore((s) => s.toggleItem);
   const isInWishlist = useWishlistStore((s) => s.isInWishlist(product.id));
-  const addToCart = useCartStore((s) => s.addItem);
 
   const primaryImage = product.images.find((i) => i.isPrimary) || product.images[0];
   const discount = calculateDiscount(product.regularPrice, product.salePrice || 0);
-  const hasVariants = product.variants && product.variants.length > 0;
   const inStock = product.trackInventory ? product.stockQuantity > 0 : true;
-
-  const handleAddToCart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!inStock) return;
-
-    if (hasVariants) {
-      // Redirect to product page to select variant
-      window.location.href = `/products/${product.slug}`;
-      return;
-    }
-
-    addToCart({
-      id: product.id,
-      productId: product.id,
-      name: product.name,
-      price: Number(product.salePrice || product.regularPrice),
-      salePrice: product.salePrice ? Number(product.salePrice) : undefined,
-      quantity: 1,
-      image: primaryImage?.url,
-      maxStock: product.stockQuantity,
-    });
-    toast.success("Added to cart");
-  };
 
   const handleWishlist = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -68,11 +41,11 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
   return (
     <Link
       href={`/products/${product.slug}`}
-      className="group block"
+      className="group block card-press"
     >
-      <div className="bg-white overflow-hidden border border-border hover:border-accent/40 transition-colors duration-300">
+      <div className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-card-hover transition-all duration-300">
         {/* Image */}
-        <div className="relative aspect-product bg-surface-muted overflow-hidden">
+        <div className="relative aspect-square bg-surface-muted overflow-hidden">
           {primaryImage && !imageError ? (
             <Image
               src={primaryImage.url}
@@ -84,89 +57,64 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
               onError={() => setImageError(true)}
             />
           ) : (
-            <Image src="/images/products/placeholder-product.svg" alt={product.name} fill sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" className="object-cover opacity-60" />
+            <div className="w-full h-full flex flex-col items-center justify-center text-text-muted">
+              <ImageOff size={24} className="mb-1 opacity-40" />
+              <span className="text-[10px]">No image</span>
+            </div>
           )}
 
+          {/* Wishlist heart */}
+          <button
+            onClick={handleWishlist}
+            className={cn(
+              "absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 active:scale-90",
+              isInWishlist
+                ? "bg-white text-error shadow-sm"
+                : "bg-white/80 backdrop-blur-sm text-text-muted hover:bg-white hover:text-error"
+            )}
+            aria-label="Add to wishlist"
+          >
+            <Heart size={15} fill={isInWishlist ? "currentColor" : "none"} />
+          </button>
+
           {/* Badges */}
-          <div className="absolute top-2 left-2 flex flex-col gap-1">
+          <div className="absolute top-3 left-3 flex flex-col gap-1">
             {product.isNewArrival && (
-              <span className="px-2 py-0.5 bg-primary text-white text-[10px] font-semibold rounded uppercase tracking-wider">
+              <span className="px-2 py-0.5 bg-primary text-white text-[10px] font-semibold rounded-full">
                 New
               </span>
             )}
-            {product.isBestseller && (
-              <span className="px-2 py-0.5 bg-accent text-white text-[10px] font-semibold rounded uppercase tracking-wider">
-                Bestseller
-              </span>
-            )}
-            {product.isComingSoon && (
-              <span className="px-2 py-0.5 bg-info text-white text-[10px] font-semibold rounded uppercase tracking-wider">
-                Coming Soon
+            {discount > 0 && (
+              <span className="px-2 py-0.5 bg-error text-white text-[10px] font-semibold rounded-full">
+                -{discount}%
               </span>
             )}
             {!inStock && (
-              <span className="px-2 py-0.5 bg-text-secondary text-white text-[10px] font-semibold rounded uppercase tracking-wider">
-                Out of Stock
+              <span className="px-2 py-0.5 bg-text-muted text-white text-[10px] font-semibold rounded-full">
+                Sold Out
               </span>
-            )}
-          </div>
-
-          {/* Discount badge */}
-          {discount > 0 && (
-            <span className="absolute top-2 right-2 px-2 py-0.5 bg-error text-white text-[10px] font-semibold rounded">
-              -{discount}%
-            </span>
-          )}
-
-          {/* Quick actions overlay */}
-          <div className="absolute bottom-2 right-2 flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-            <button
-              onClick={handleWishlist}
-              className={cn(
-                "w-8 h-8 rounded-full flex items-center justify-center shadow-md transition-colors",
-                isInWishlist
-                  ? "bg-error text-white"
-                  : "bg-white text-text-secondary hover:text-error"
-              )}
-              aria-label="Add to wishlist"
-            >
-              <Heart size={14} fill={isInWishlist ? "currentColor" : "none"} />
-            </button>
-            {inStock && !hasVariants && (
-              <button
-                onClick={handleAddToCart}
-                className="w-8 h-8 rounded-full bg-white text-text-secondary hover:text-foreground flex items-center justify-center shadow-md transition-colors"
-                aria-label="Add to cart"
-              >
-                <ShoppingBag size={14} />
-              </button>
             )}
           </div>
         </div>
 
         {/* Info */}
-        <div className="p-3">
-          <p className="text-[11px] font-label text-text-muted mb-1">
+        <div className="p-2.5">
+          <p className="font-label text-[9px] tracking-[0.15em] text-accent mb-0.5">
             {product.category?.name}
           </p>
-          <h3 className="text-sm font-medium text-foreground line-clamp-2 mb-2 min-h-[2.5rem]">
+          <h3 className="text-[13px] font-medium text-primary line-clamp-1 leading-snug">
             {product.name}
           </h3>
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-foreground">
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-sm font-semibold text-primary">
               {formatPrice(product.salePrice || product.regularPrice)}
             </span>
             {product.salePrice && (
-              <span className="text-xs text-text-muted line-through">
+              <span className="text-[11px] text-text-muted line-through">
                 {formatPrice(product.regularPrice)}
               </span>
             )}
           </div>
-          {hasVariants && (
-            <p className="text-[11px] text-text-muted mt-1">
-              Multiple options available
-            </p>
-          )}
         </div>
       </div>
     </Link>

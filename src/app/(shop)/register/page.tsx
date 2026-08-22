@@ -2,15 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { signIn as nextAuthSignIn } from "next-auth/react";
 import { Eye, EyeOff } from "lucide-react";
 import Button from "@/components/ui/Button";
 import toast from "react-hot-toast";
 
 export default function RegisterPage() {
-  const router = useRouter();
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "", confirmPassword: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -40,15 +37,21 @@ export default function RegisterPage() {
         throw new Error(err.error);
       }
 
-      // Auto sign-in after registration
-      await nextAuthSignIn("credentials", {
+      // Auto-login after successful registration
+      const result = await nextAuthSignIn("credentials", {
         email: form.email,
         password: form.password,
         redirect: false,
       });
 
-      toast.success("Account created!");
-      router.push("/account");
+      if (result?.error) {
+        // Registration succeeded but auto-login failed — redirect to login
+        toast.success("Account created! Please sign in.");
+        window.location.href = "/login";
+      } else {
+        toast.success("Account created and signed in!");
+        window.location.href = "/account";
+      }
     } catch (err: any) {
       toast.error(err.message || "Failed to create account");
     } finally {
@@ -60,10 +63,7 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Link href="/" className="inline-block">
-            <Image src="/images/logo/westhome-logo.png" alt="WESTHOME" width={160} height={45} className="h-8 w-auto mx-auto" />
-          </Link>
-          <h1 className="text-xl font-serif mt-4">Create Account</h1>
+          <h1 className="text-xl font-serif">Create Account</h1>
           <p className="text-sm text-text-secondary mt-1">Join the WESTHOME community</p>
         </div>
 

@@ -1,510 +1,304 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { ArrowLeft, Lock, CreditCard, Truck, Store } from "lucide-react";
-import Button from "@/components/ui/Button";
-import EmptyState from "@/components/ui/EmptyState";
+import { ArrowLeft, ChevronRight, CreditCard, Smartphone, Building2, Wallet, Banknote, Shield, MapPin, Copy, CheckCircle } from "lucide-react";
 import { useCartStore } from "@/store/cart";
 import { formatPrice, cn } from "@/lib/utils";
 import toast from "react-hot-toast";
 
-const INDIAN_STATES = [
-  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
-  "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka",
-  "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram",
-  "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu",
-  "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal",
-  "Delhi", "Jammu and Kashmir", "Ladakh",
+const STEPS = ["Address", "Payment", "Confirm"];
+
+const PAYMENT_METHODS = [
+  { id: "upi", label: "UPI Payment", icon: <Smartphone size={18} />, badge: "UPI" },
+  { id: "cod", label: "Cash on Delivery", icon: <Banknote size={18} /> },
 ];
 
+const UPI_ID = "sanoojbm1144@okaxis";
+
+interface Address {
+  id: string; name: string; phone: string;
+  addressLine1: string; addressLine2?: string;
+  city: string; state: string; pinCode: string;
+}
+
 export default function CheckoutPage() {
-  const router = useRouter();
-  const { items, getSubtotal, discount, couponCode } = useCartStore();
-  const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState<"address" | "payment">("address");
+  const [mounted, setMounted] = useState(false);
+  const [step, setStep] = useState(0);
+  const [paymentMethod, setPaymentMethod] = useState("upi");
+  const [deliveryOption, setDeliveryOption] = useState("standard");
+  const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [loadingAddresses, setLoadingAddresses] = useState(true);
+  const [placingOrder, setPlacingOrder] = useState(false);
+  const [orderResult, setOrderResult] = useState<{ orderNumber: string; id: string } | null>(null);
+  const [upiCopied, setUpiCopied] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
+  const items = useCartStore((s) => s.items);
+  const getSubtotal = useCartStore((s) => s.getSubtotal);
+  const clearCart = useCartStore((s) => s.clearCart);
+  const subtotal = mounted ? getSubtotal() : 0;
+  const deliveryCharge = deliveryOption === "express" ? 299 : (subtotal > 999 ? 0 : 149);
+  const total = subtotal + deliveryCharge;
 
-  const [form, setForm] = useState({
-    name: "",
-    phone: "",
-    email: "",
-    addressLine1: "",
-    addressLine2: "",
-    city: "",
-    state: "",
-    pinCode: "",
-    country: "India",
-    deliveryMethod: "delivery" as "delivery" | "pickup",
-    paymentMethod: "razorpay",
-    notes: "",
-  });
+  useEffect(() => { setMounted(true); }, []);
 
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  useEffect(() => {
+    fetch("/api/addresses")
+      .then((r) => r.json())
+      .then((data) => {
+        const addrs = data.addresses || [];
+        setAddresses(addrs);
+        if (addrs.length > 0) setSelectedAddress(addrs[0].id);
+      })
+      .catch(() => {})
+      .finally(() => setLoadingAddresses(false));
 
-  const subtotal = getSubtotal();
-  const delivery = form.deliveryMethod === "pickup" ? 0 : (subtotal >= 999 ? 0 : 49);
-  const total = subtotal - discount + delivery;
+    fetch("/api/auth/session")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.user?.email) setUserEmail(data.user.email);
+      })
+      .catch(() => {});
+  }, []);
 
-  const validate = () => {
-    const errs: Record<string, string> = {};
-    if (!form.name.trim()) errs.name = "Name is required";
-    if (!form.phone.trim()) errs.phone = "Phone is required";
-    else if (!/^[+]?[0-9]{10,12}$/.test(form.phone.replace(/\s/g, "")))
-      errs.phone = "Invalid phone number";
-    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
-      errs.email = "Invalid email";
-    if (form.deliveryMethod === "delivery") {
-      if (!form.addressLine1.trim()) errs.addressLine1 = "Address is required";
-      if (!form.city.trim()) errs.city = "City is required";
-      if (!form.state.trim()) errs.state = "State is required";
-      if (!form.pinCode.trim()) errs.pinCode = "PIN code is required";
-      else if (!/^[1-9][0-9]{5}$/.test(form.pinCode)) errs.pinCode = "Invalid PIN code";
-    }
-    setErrors(errs);
-    return Object.keys(errs).length === 0;
-  };
-
-  const handleProceedToPayment = () => {
-    if (validate()) {
-      setStep("payment");
-    }
+  const handleCopyUPI = () => {
+    navigator.clipboard.writeText(UPI_ID).then(() => {
+      setUpiCopied(true);
+      toast.success("UPI ID copied!");
+      setTimeout(() => setUpiCopied(false), 3000);
+    }).catch(() => {
+      toast.error("Failed to copy");
+    });
   };
 
   const handlePlaceOrder = async () => {
-    setLoading(true);
+    if (placingOrder) return; // Prevent double-click
+    setPlacingOrder(true);
     try {
-      // First create the order
-      const orderRes = await fetch("/api/orders", {
+      const addr = addresses.find((a) => a.id === selectedAddress);
+      const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          customerName: addr?.name || "",
+          customerEmail: userEmail,
+          customerPhone: addr?.phone || "",
+          addressLine1: addr?.addressLine1 || "",
+          addressLine2: addr?.addressLine2 || "",
+          city: addr?.city || "",
+          state: addr?.state || "",
+          pinCode: addr?.pinCode || "",
+          country: "India",
           items: items.map((item) => ({
             productId: item.productId,
-            variantId: item.variantId,
-            variantName: item.variantName,
+            variantId: item.variantId || null,
+            productName: item.name,
+            variantName: item.variantName || null,
             quantity: item.quantity,
-            image: item.image,
-            customSize: item.customSize,
+            unitPrice: item.price,
+            salePrice: item.salePrice || null,
+            totalPrice: (item.salePrice || item.price) * item.quantity,
+            image: item.image || null,
           })),
-          address: {
-            name: form.name,
-            phone: form.phone,
-            email: form.email,
-            addressLine1: form.addressLine1,
-            addressLine2: form.addressLine2,
-            city: form.city,
-            state: form.state,
-            pinCode: form.pinCode,
-            country: form.country,
-          },
-          deliveryMethod: form.deliveryMethod,
-          couponCode,
-          paymentMethod: form.paymentMethod,
+          subtotal,
+          discount: 0,
+          deliveryCharge,
+          tax: 0,
+          total,
+          paymentMethod: paymentMethod,
+          deliveryMethod: deliveryOption === "express" ? "express" : "delivery",
         }),
       });
-
-      if (!orderRes.ok) {
-        const err = await orderRes.json();
-        throw new Error(err.error || "Failed to create order");
+      if (res.ok) {
+        const data = await res.json();
+        setOrderResult({ orderNumber: data.order.orderNumber, id: data.order.id });
+        clearCart();
+        setStep(2);
+      } else {
+        const err = await res.json();
+        toast.error(err.error || "Failed to place order. Please try again.");
       }
-
-      const orderData = await orderRes.json();
-      const orderId = orderData.order.id;
-
-      // Initiate Razorpay payment
-      const paymentRes = await fetch("/api/payment/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          orderId,
-          amount: total,
-        }),
-      });
-
-      if (!paymentRes.ok) {
-        throw new Error("Failed to initiate payment");
-      }
-
-      const paymentData = await paymentRes.json();
-
-      // Load Razorpay script
-      const script = document.createElement("script");
-      script.src = "https://checkout.razorpay.com/v1/checkout.js";
-      script.onload = () => {
-        const options = {
-          key: paymentData.keyId,
-          amount: paymentData.amount,
-          currency: "INR",
-          name: "WESTHOME by BM Distributors",
-          description: `Order ${orderData.order.orderNumber}`,
-          order_id: paymentData.razorpayOrderId,
-          handler: async (response: any) => {
-            // Verify payment
-            try {
-              const verifyRes = await fetch("/api/payment/verify", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  razorpay_order_id: response.razorpay_order_id,
-                  razorpay_payment_id: response.razorpay_payment_id,
-                  razorpay_signature: response.razorpay_signature,
-                  orderId,
-                }),
-              });
-
-              if (verifyRes.ok) {
-                useCartStore.getState().clearCart();
-                router.push(`/account/orders/${orderId}?success=true`);
-              } else {
-                toast.error("Payment verification failed. Please contact support.");
-                router.push(`/account/orders/${orderId}?payment_error=true`);
-              }
-            } catch {
-              toast.error("Payment verification failed. Please contact support.");
-              router.push(`/account/orders/${orderId}?payment_error=true`);
-            }
-          },
-          prefill: {
-            name: form.name,
-            email: form.email,
-            contact: form.phone,
-          },
-          theme: {
-            color: "#C9A96E",
-          },
-          modal: {
-            ondismiss: () => {
-              toast.error("Payment was cancelled");
-            },
-          },
-        };
-
-        const rzp = new (window as any).Razorpay(options);
-        rzp.on("payment.failed", () => {
-          toast.error("Payment failed. Please try again.");
-          router.push(`/account/orders/${orderId}?payment_error=true`);
-        });
-        rzp.open();
-      };
-      document.body.appendChild(script);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to place order");
+    } catch {
+      toast.error("Network error. Please try again.");
     } finally {
-      setLoading(false);
+      setPlacingOrder(false);
     }
   };
 
-  if (items.length === 0) {
+  if (!mounted) {
     return (
-      <div className="container-shop py-8 md:py-16">
-        <EmptyState
-          icon="cart"
-          title="Your cart is empty"
-          description="Add some products before checking out."
-          action={{ label: "Browse Shop", href: "/shop" }}
-        />
+      <div className="animate-fade-in">
+        <div className="px-4 pt-3 pb-2 flex items-center gap-3">
+          <Link href="/cart" className="p-1 hover:bg-surface-muted rounded-lg transition-colors"><ArrowLeft size={20} /></Link>
+          <div className="flex-1 text-center"><p className="text-sm font-semibold text-primary">Checkout</p></div>
+          <div className="w-7" />
+        </div>
+        <div className="px-4 py-12 text-center">
+          <div className="animate-pulse space-y-4">
+            <div className="h-32 bg-surface-muted rounded-xl" />
+            <div className="h-20 bg-surface-muted rounded-xl" />
+          </div>
+        </div>
       </div>
     );
   }
 
-  const inputClass = (field: string) =>
-    cn(
-      "w-full px-3 py-2.5 bg-white border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 transition-colors",
-      errors[field] ? "border-error" : "border-border"
-    );
-
   return (
-    <div className="container-shop py-4 md:py-8 animate-fade-in">
-      {/* Back to cart */}
-      <Link href="/cart" className="inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-foreground transition-colors mb-4 md:mb-6">
-        <ArrowLeft size={16} />
-        Back to Cart
-      </Link>
-
-      <h1 className="text-xl md:text-2xl font-serif text-foreground mb-6">Checkout</h1>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-        {/* Main form */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Step indicator */}
-          <div className="flex items-center gap-4 text-sm">
-            <span className={cn("font-medium", step === "address" ? "text-foreground" : "text-success")}>
-              1. Address
-            </span>
-            <div className="flex-1 h-px bg-border" />
-            <span className={cn("font-medium", step === "payment" ? "text-foreground" : "text-text-muted")}>
-              2. Payment
-            </span>
-          </div>
-
-          {step === "address" && (
-            <div className="space-y-5">
-              {/* Contact info */}
-              <div className="bg-white border border-border-light rounded-xl p-4 md:p-5">
-                <h2 className="text-base font-semibold mb-4">Contact Information</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs font-medium text-text-secondary mb-1 block">
-                      Full Name *
-                    </label>
-                    <input
-                      type="text"
-                      value={form.name}
-                      onChange={(e) => setForm({ ...form, name: e.target.value })}
-                      className={inputClass("name")}
-                      placeholder="Your full name"
-                    />
-                    {errors.name && <p className="text-xs text-error mt-1">{errors.name}</p>}
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-text-secondary mb-1 block">
-                      Phone Number *
-                    </label>
-                    <input
-                      type="tel"
-                      value={form.phone}
-                      onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                      className={inputClass("phone")}
-                      placeholder="+91 XXXXX XXXXX"
-                    />
-                    {errors.phone && <p className="text-xs text-error mt-1">{errors.phone}</p>}
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="text-xs font-medium text-text-secondary mb-1 block">
-                      Email (for order updates)
-                    </label>
-                    <input
-                      type="email"
-                      value={form.email}
-                      onChange={(e) => setForm({ ...form, email: e.target.value })}
-                      className={inputClass("email")}
-                      placeholder="your@email.com"
-                    />
-                    {errors.email && <p className="text-xs text-error mt-1">{errors.email}</p>}
-                  </div>
-                </div>
+    <div className="animate-fade-in">
+      <div className="px-4 pt-3 pb-2 flex items-center gap-3">
+        <Link href="/cart" className="p-1 hover:bg-surface-muted rounded-lg transition-colors"><ArrowLeft size={20} /></Link>
+        <h1 className="text-xl font-semibold text-primary">Checkout</h1>
+      </div>
+      <div className="px-4 pb-32 lg:pb-4">
+        <div className="flex items-center justify-between">
+          {STEPS.map((s, i) => (
+            <div key={s} className="flex items-center flex-1">
+              <div className="flex items-center gap-2">
+                <div className={cn("w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold", i <= step ? "bg-primary text-white" : "bg-surface-muted text-text-muted")}>{i + 1}</div>
+                <span className={cn("text-xs font-medium", i <= step ? "text-primary" : "text-text-muted")}>{s}</span>
               </div>
-
-              {/* Delivery method */}
-              <div className="bg-white border border-border-light rounded-xl p-4 md:p-5">
-                <h2 className="text-base font-semibold mb-4">Delivery Method</h2>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => setForm({ ...form, deliveryMethod: "delivery" })}
-                    className={cn(
-                      "flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left",
-                      form.deliveryMethod === "delivery"
-                        ? "border-foreground bg-foreground/5"
-                        : "border-border hover:border-foreground/30"
-                    )}
-                  >
-                    <Truck size={20} className={form.deliveryMethod === "delivery" ? "text-accent" : "text-text-muted"} />
-                    <div>
-                      <p className="text-sm font-medium">Delivery</p>
-                      <p className="text-xs text-text-muted">
-                        {subtotal >= 999 ? "Free delivery" : "₹49 delivery charge"}
-                      </p>
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => setForm({ ...form, deliveryMethod: "pickup" })}
-                    className={cn(
-                      "flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left",
-                      form.deliveryMethod === "pickup"
-                        ? "border-foreground bg-foreground/5"
-                        : "border-border hover:border-foreground/30"
-                    )}
-                  >
-                    <Store size={20} className={form.deliveryMethod === "pickup" ? "text-accent" : "text-text-muted"} />
-                    <div>
-                      <p className="text-sm font-medium">Store Pickup</p>
-                      <p className="text-xs text-text-muted">Free</p>
-                    </div>
-                  </button>
-                </div>
-              </div>
-
-              {/* Address */}
-              {form.deliveryMethod === "delivery" && (
-                <div className="bg-white border border-border-light rounded-xl p-4 md:p-5">
-                  <h2 className="text-base font-semibold mb-4">Delivery Address</h2>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-xs font-medium text-text-secondary mb-1 block">Address *</label>
-                      <input
-                        type="text"
-                        value={form.addressLine1}
-                        onChange={(e) => setForm({ ...form, addressLine1: e.target.value })}
-                        className={inputClass("addressLine1")}
-                        placeholder="House/Building name, Street"
-                      />
-                      {errors.addressLine1 && <p className="text-xs text-error mt-1">{errors.addressLine1}</p>}
-                    </div>
-                    <div>
-                      <label className="text-xs font-medium text-text-secondary mb-1 block">Apartment, Suite (optional)</label>
-                      <input
-                        type="text"
-                        value={form.addressLine2}
-                        onChange={(e) => setForm({ ...form, addressLine2: e.target.value })}
-                        className="w-full px-3 py-2.5 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
-                        placeholder="Apt, Suite, Floor"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-xs font-medium text-text-secondary mb-1 block">City *</label>
-                        <input
-                          type="text"
-                          value={form.city}
-                          onChange={(e) => setForm({ ...form, city: e.target.value })}
-                          className={inputClass("city")}
-                          placeholder="City"
-                        />
-                        {errors.city && <p className="text-xs text-error mt-1">{errors.city}</p>}
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-text-secondary mb-1 block">PIN Code *</label>
-                        <input
-                          type="text"
-                          value={form.pinCode}
-                          onChange={(e) => setForm({ ...form, pinCode: e.target.value })}
-                          className={inputClass("pinCode")}
-                          placeholder="6 digits"
-                          maxLength={6}
-                        />
-                        {errors.pinCode && <p className="text-xs text-error mt-1">{errors.pinCode}</p>}
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-xs font-medium text-text-secondary mb-1 block">State *</label>
-                      <select
-                        value={form.state}
-                        onChange={(e) => setForm({ ...form, state: e.target.value })}
-                        className={inputClass("state")}
-                      >
-                        <option value="">Select State</option>
-                        {INDIAN_STATES.map((s) => (
-                          <option key={s} value={s}>{s}</option>
-                        ))}
-                      </select>
-                      {errors.state && <p className="text-xs text-error mt-1">{errors.state}</p>}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <Button fullWidth size="lg" onClick={handleProceedToPayment}>
-                Continue to Payment
-              </Button>
+              {i < STEPS.length - 1 && <div className={cn("flex-1 h-px mx-3", i < step ? "bg-primary" : "bg-border")} />}
             </div>
-          )}
-
-          {step === "payment" && (
-            <div className="space-y-5">
-              {/* Order summary card */}
-              <div className="bg-white border border-border-light rounded-xl p-4 md:p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-base font-semibold">Shipping to</h2>
-                  <button
-                    onClick={() => setStep("address")}
-                    className="text-xs text-accent hover:underline"
-                  >
-                    Change
-                  </button>
-                </div>
-                <div className="text-sm text-text-secondary">
-                  <p className="font-medium text-foreground">{form.name}</p>
-                  {form.deliveryMethod === "delivery" ? (
-                    <p>{form.addressLine1}{form.addressLine2 ? `, ${form.addressLine2}` : ""}, {form.city}, {form.state} - {form.pinCode}</p>
-                  ) : (
-                    <p>Store Pickup at WESTHOME store</p>
-                  )}
-                  <p>{form.phone}</p>
-                </div>
-              </div>
-
-              {/* Payment method */}
-              <div className="bg-white border border-border-light rounded-xl p-4 md:p-5">
-                <h2 className="text-base font-semibold mb-4">Payment Method</h2>
-                <div className="space-y-2">
-                  <label className="flex items-center gap-3 p-3 rounded-xl border-2 border-foreground bg-foreground/5 cursor-pointer">
-                    <CreditCard size={20} className="text-accent" />
-                    <div>
-                      <p className="text-sm font-medium">Razorpay</p>
-                      <p className="text-xs text-text-muted">UPI, Cards, Net Banking, Wallets</p>
-                    </div>
-                  </label>
-                </div>
-                <div className="flex items-center gap-2 mt-3 text-xs text-text-muted">
-                  <Lock size={12} />
-                  <span>Payments are secure and encrypted</span>
-                </div>
-              </div>
-
-              <Button
-                fullWidth
-                size="lg"
-                variant="accent"
-                loading={loading}
-                onClick={handlePlaceOrder}
-              >
-                <Lock size={16} />
-                Pay {formatPrice(total)}
-              </Button>
-            </div>
-          )}
-        </div>
-
-        {/* Order summary sidebar */}
-        <div className="lg:col-span-1">
-          <div className="bg-white border border-border-light rounded-xl p-4 md:p-5 sticky top-20">
-            <h2 className="text-base font-semibold mb-4">Order Summary</h2>
-
-            {/* Items */}
-            <div className="space-y-3 mb-4 max-h-60 overflow-y-auto">
-              {items.map((item) => (
-                <div key={item.id} className="flex gap-3">
-                  <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-surface-muted flex-shrink-0">
-                    {item.image && (
-                      <Image src={item.image} alt={item.name} fill sizes="48px" className="object-cover" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium line-clamp-1">{item.name}</p>
-                    {item.variantName && <p className="text-[10px] text-text-muted">{item.variantName}</p>}
-                    <p className="text-xs">Qty: {item.quantity}</p>
-                  </div>
-                  <p className="text-xs font-medium">{formatPrice((item.salePrice || item.price) * item.quantity)}</p>
-                </div>
-              ))}
-            </div>
-
-            {/* Totals */}
-            <div className="border-t border-border-light pt-3 space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-text-secondary">Subtotal</span>
-                <span>{formatPrice(subtotal)}</span>
-              </div>
-              {discount > 0 && (
-                <div className="flex justify-between text-success">
-                  <span>Discount</span>
-                  <span>-{formatPrice(discount)}</span>
-                </div>
-              )}
-              <div className="flex justify-between">
-                <span className="text-text-secondary">Delivery</span>
-                <span>{delivery === 0 ? "FREE" : formatPrice(delivery)}</span>
-              </div>
-              <div className="border-t border-border-light pt-2 flex justify-between text-base font-semibold">
-                <span>Total</span>
-                <span>{formatPrice(total)}</span>
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
       </div>
+
+      {step === 0 && (
+        <div className="px-4">
+          <h2 className="text-sm font-semibold text-primary mb-3">Delivery Address</h2>
+          {loadingAddresses ? (
+            <div className="space-y-3 mb-4"><div className="skeleton h-20 rounded-xl" /></div>
+          ) : addresses.length > 0 ? (
+            <div className="space-y-3 mb-4">
+              {addresses.map((addr) => (
+                <button key={addr.id} onClick={() => setSelectedAddress(addr.id)} className={cn("w-full bg-white rounded-xl p-4 shadow-sm text-left border-2 transition-colors", selectedAddress === addr.id ? "border-primary" : "border-transparent")}>
+                  <div className="flex items-start gap-3">
+                    <div className={cn("w-4 h-4 rounded-full border-2 flex items-center justify-center mt-0.5 flex-shrink-0", selectedAddress === addr.id ? "border-primary" : "border-border")}>
+                      {selectedAddress === addr.id && <div className="w-2 h-2 rounded-full bg-primary" />}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-primary">{addr.name}</p>
+                      <p className="text-xs text-secondary mt-0.5">{addr.addressLine1}{addr.addressLine2 ? ", " + addr.addressLine2 : ""}</p>
+                      <p className="text-xs text-secondary">{addr.city}, {addr.state} - {addr.pinCode}</p>
+                      <p className="text-xs text-secondary mt-0.5">{addr.phone}</p>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl p-6 shadow-sm mb-4 text-center">
+              <MapPin size={24} className="text-secondary mx-auto mb-2" />
+              <p className="text-sm text-secondary mb-3">No saved addresses. Add a delivery address to continue.</p>
+              <Link href="/account/addresses" className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary text-white rounded-xl text-xs font-medium">Add Address</Link>
+            </div>
+          )}
+          <h2 className="text-sm font-semibold text-primary mb-3">Delivery Options</h2>
+          <div className="space-y-2 mb-6">
+            {[{ id: "standard", label: "Standard Delivery", desc: "3-5 Business Days", free: true }, { id: "express", label: "Express Delivery", desc: "1-2 Business Days", free: false }].map((opt) => (
+              <button key={opt.id} onClick={() => setDeliveryOption(opt.id)} className={cn("w-full flex items-center justify-between p-3 rounded-xl border transition-colors", deliveryOption === opt.id ? "border-primary bg-surface-muted" : "border-border bg-white")}>
+                <div className="flex items-center gap-3">
+                  <div className={cn("w-4 h-4 rounded-full border-2 flex items-center justify-center", deliveryOption === opt.id ? "border-primary" : "border-border")}>{deliveryOption === opt.id && <div className="w-2 h-2 rounded-full bg-primary" />}</div>
+                  <div className="text-left"><p className="text-sm font-medium text-primary">{opt.label}</p><p className="text-xs text-secondary">{opt.desc}</p></div>
+                </div>
+                <span className="text-sm font-semibold text-primary">{(opt.free && subtotal > 999) ? "Free" : opt.free ? ("₹149") : ("₹299")}</span>
+              </button>
+            ))}
+          </div>
+          <div className="bg-white rounded-xl p-4 shadow-sm mb-6">
+            <h3 className="text-sm font-semibold text-primary mb-3">Order Summary</h3>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between"><span className="text-secondary">Subtotal ({items.length} items)</span><span className="font-medium">{formatPrice(subtotal)}</span></div>
+              <div className="flex justify-between"><span className="text-secondary">Delivery</span><span className="font-medium">{deliveryCharge === 0 ? "Free" : formatPrice(deliveryCharge)}</span></div>
+              <div className="border-t border-border pt-2 flex justify-between"><span className="font-semibold text-primary">Total</span><span className="font-bold text-primary">{formatPrice(total)}</span></div>
+            </div>
+          </div>
+          <div className="sticky bottom-[120px] lg:static lg:mt-0 bg-white/95 backdrop-blur-sm py-3 -mx-4 px-4 border-t border-border-light z-[60]">
+            <button onClick={() => setStep(1)} disabled={!selectedAddress} className="w-full py-3.5 bg-primary text-white rounded-2xl text-sm font-semibold hover:bg-primary-hover transition-colors flex items-center justify-center gap-2 disabled:opacity-40">Continue to Payment <ChevronRight size={16} /></button>
+          </div>
+        </div>
+      )}
+
+      {step === 1 && (
+        <div className="px-4">
+          <h2 className="text-sm font-semibold text-primary mb-3">Payment Method</h2>
+          <div className="space-y-2 mb-6">
+            {PAYMENT_METHODS.map((m) => (
+              <button key={m.id} onClick={() => setPaymentMethod(m.id)} className={cn("w-full flex items-center justify-between p-3 rounded-xl border transition-colors", paymentMethod === m.id ? "border-primary bg-surface-muted" : "border-border bg-white")}>
+                <div className="flex items-center gap-3">
+                  <div className={cn("w-4 h-4 rounded-full border-2 flex items-center justify-center", paymentMethod === m.id ? "border-primary" : "border-border")}>{paymentMethod === m.id && <div className="w-2 h-2 rounded-full bg-primary" />}</div>
+                  <span className="text-sm font-medium text-primary">{m.label}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {m.badge && <span className="text-[10px] font-bold text-secondary bg-surface-muted px-2 py-0.5 rounded">{m.badge}</span>}
+                  {m.icon}
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {/* UPI Instructions */}
+          {paymentMethod === "upi" && (
+            <div className="bg-white rounded-xl p-5 shadow-sm mb-6 border border-accent/20">
+              <div className="flex items-center gap-2 mb-3">
+                <Smartphone size={18} className="text-accent" />
+                <h3 className="text-sm font-semibold text-primary">UPI Payment</h3>
+              </div>
+              <p className="text-xs text-secondary mb-3">Send the exact amount to the UPI ID below using any UPI app (Google Pay, PhonePe, Paytm, etc.)</p>
+              <div className="bg-surface-muted rounded-xl p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] text-text-muted uppercase tracking-wider mb-1">UPI ID</p>
+                  <p className="text-base font-semibold text-primary font-mono">{UPI_ID}</p>
+                </div>
+                <button onClick={handleCopyUPI} className="flex items-center gap-1.5 px-3 py-2 bg-white rounded-lg border border-border text-xs font-medium hover:bg-surface-muted transition-colors">
+                  {upiCopied ? <><CheckCircle size={14} className="text-success" /> Copied</> : <><Copy size={14} /> Copy</>}
+                </button>
+              </div>
+              <p className="text-xs text-secondary mt-3">After transferring, click <strong>Place Order</strong> below. Your order will be processed once payment is verified by our team.</p>
+            </div>
+          )}
+
+          <div className="flex items-center gap-2 text-xs text-secondary mb-6"><Shield size={14} /><span>Your payment is safe and secure.</span></div>
+          <div className="bg-white rounded-xl p-4 shadow-sm mb-6"><div className="flex justify-between text-sm"><span className="font-semibold text-primary">Total</span><span className="font-bold text-primary">{formatPrice(total)}</span></div></div>
+          <div className="sticky bottom-[120px] lg:static lg:mt-0 bg-white/95 backdrop-blur-sm py-3 -mx-4 px-4 border-t border-border-light z-[60]">
+            <button
+              onClick={handlePlaceOrder}
+              disabled={placingOrder}
+              className="w-full py-3.5 bg-primary text-white rounded-2xl text-sm font-semibold hover:bg-primary-hover transition-colors disabled:opacity-50"
+            >
+              {placingOrder ? "Placing Order..." : paymentMethod === "upi" ? `Pay ₹${total.toLocaleString()} via UPI & Place Order` : `Place Order — ${formatPrice(total)}`}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {step === 2 && (
+        <div className="px-4 py-12 text-center">
+          <div className="w-16 h-16 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-4"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#4A7C59" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg></div>
+          <h2 className="text-xl font-semibold text-primary mb-2">Thank You!</h2>
+          <p className="text-sm text-secondary mb-4">Your order has been placed successfully.</p>
+          <div className="bg-white rounded-xl p-4 shadow-sm inline-block mb-4">
+            <p className="text-xs text-secondary mb-1">Order Number</p>
+            <p className="text-lg font-bold text-primary">{orderResult?.orderNumber || "—"}</p>
+          </div>
+          {paymentMethod === "upi" && (
+            <div className="bg-accent/10 rounded-xl p-4 mb-4 max-w-sm mx-auto">
+              <p className="text-xs font-semibold text-accent mb-1">Payment: UPI (Pending Verification)</p>
+              <p className="text-xs text-secondary">We will verify your UPI payment and confirm your order shortly.</p>
+            </div>
+          )}
+          {paymentMethod === "cod" && (
+            <div className="bg-surface-muted rounded-xl p-4 mb-4 max-w-sm mx-auto">
+              <p className="text-xs font-semibold text-primary mb-1">Payment: Cash on Delivery</p>
+              <p className="text-xs text-secondary">Pay when your order is delivered.</p>
+            </div>
+          )}
+          <p className="text-xs text-secondary mb-8">You can track your order status in My Orders.</p>
+          <Link href="/shop" className="block w-full py-3.5 bg-primary text-white rounded-2xl text-sm font-semibold text-center hover:bg-primary-hover transition-colors">Continue Shopping</Link>
+          <Link href="/account/orders" className="block w-full py-3 text-sm font-medium text-secondary text-center mt-2 hover:text-primary transition-colors">View My Orders</Link>
+        </div>
+      )}
     </div>
   );
 }

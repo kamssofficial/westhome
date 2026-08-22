@@ -14,6 +14,12 @@ import type { ImageLoaderProps } from "next/image";
 
 export default function westhomeImageLoader({
   src,
+  width,
+  quality,
 }: ImageLoaderProps): string {
-  return src;
+  const params = new URLSearchParams();
+  if (width) params.set("w", String(width));
+  if (quality) params.set("q", String(quality));
+  const qs = params.toString();
+  return qs ? src + "?" + qs : src;
 }

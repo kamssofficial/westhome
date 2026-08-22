@@ -1,79 +1,115 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Package, ChevronRight } from "lucide-react";
-import { formatPrice, formatDate, getStatusColor, cn } from "@/lib/utils";
+import { ArrowLeft } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { formatPrice } from "@/lib/utils";
+import { useState, useEffect } from "react";
 
 interface Order {
   id: string;
   orderNumber: string;
-  total: number;
   status: string;
-  paymentStatus: string;
-  items: { productName: string; quantity: number }[];
+  total: number;
   createdAt: string;
+  items: { productName: string; quantity: number; unitPrice: number; image?: string }[];
 }
 
-export default function AccountOrdersPage() {
+const TABS = ["All", "Processing", "Shipped", "Delivered"];
+
+const STATUS_COLORS: Record<string, string> = {
+  NEW: "bg-blue-100 text-blue-800",
+  CONFIRMED: "bg-blue-100 text-blue-800",
+  PROCESSING: "bg-amber-100 text-amber-800",
+  SHIPPED: "bg-blue-100 text-blue-800",
+  DELIVERED: "bg-green-100 text-green-800",
+  CANCELLED: "bg-red-100 text-red-800",
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  NEW: "New",
+  CONFIRMED: "Confirmed",
+  PROCESSING: "Processing",
+  SHIPPED: "Shipped",
+  DELIVERED: "Delivered",
+  CANCELLED: "Cancelled",
+};
+
+export default function OrdersPage() {
+  const [activeTab, setActiveTab] = useState("All");
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/orders")
       .then((r) => r.json())
-      .then((data) => setOrders(data.orders || []))
-      .catch(console.error)
+      .then((data) => {
+        setOrders(data.orders || []);
+      })
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
-  return (
-    <div className="container-shop py-4 md:py-8 animate-fade-in">
-      <h1 className="text-xl md:text-2xl font-serif mb-6">My Orders</h1>
+  const filtered = activeTab === "All"
+    ? orders
+    : orders.filter((o) => {
+        const s = o.status.toUpperCase();
+        if (activeTab === "Processing") return s === "NEW" || s === "CONFIRMED" || s === "PROCESSING";
+        if (activeTab === "Shipped") return s === "SHIPPED" || s === "OUT_FOR_DELIVERY";
+        if (activeTab === "Delivered") return s === "DELIVERED";
+        return true;
+      });
 
-      {loading ? (
-        <div className="text-center py-8 text-text-muted">Loading...</div>
-      ) : orders.length > 0 ? (
-        <div className="space-y-3">
-          {orders.map((order) => (
-            <Link
-              key={order.id}
-              href={`/account/orders/${order.id}`}
-              className="block bg-white rounded-xl border border-border-light p-4 hover:shadow-sm transition-all"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-medium">{order.orderNumber}</span>
-                    <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-medium", getStatusColor(order.status))}>
-                      {order.status.replace(/_/g, " ")}
-                    </span>
-                  </div>
-                  <p className="text-xs text-text-muted">
-                    {order.items.map((i) => i.productName).join(", ")}
-                  </p>
-                  <p className="text-xs text-text-muted mt-0.5">
-                    {formatDate(order.createdAt)}
-                  </p>
-                </div>
-                <div className="text-right ml-4">
-                  <p className="text-sm font-semibold">{formatPrice(order.total)}</p>
-                  <ChevronRight size={14} className="text-text-muted ml-auto mt-1" />
-                </div>
-              </div>
-            </Link>
+  return (
+    <div className="animate-fade-in">
+      <div className="px-4 pt-3 pb-2 flex items-center gap-3">
+        <Link href="/account" className="p-1 hover:bg-surface-muted rounded-lg transition-colors"><ArrowLeft size={20} /></Link>
+        <h1 className="text-xl font-semibold text-primary">My Orders</h1>
+      </div>
+
+      <div className="px-4 pb-3">
+        <div className="flex gap-1 bg-surface-muted rounded-xl p-1">
+          {TABS.map((tab) => (
+            <button key={tab} onClick={() => setActiveTab(tab)} className={cn("flex-1 py-2 text-xs font-medium rounded-lg transition-colors", activeTab === tab ? "bg-white text-primary shadow-sm" : "text-secondary")}>
+              {tab}
+            </button>
           ))}
         </div>
-      ) : (
-        <div className="text-center py-16">
-          <Package size={40} className="mx-auto mb-3 text-text-muted" />
-          <h3 className="font-semibold mb-1">No orders yet</h3>
-          <p className="text-sm text-text-secondary mb-4">Start shopping to see your orders here.</p>
-          <Link href="/shop" className="inline-block px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors">
-            Browse Shop
-          </Link>
-        </div>
-      )}
+      </div>
+
+      <div className="px-4 space-y-3 pb-8">
+        {loading ? (
+          [1, 2, 3].map((i) => (<div key={i} className="skeleton h-32 rounded-xl" />))
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-sm text-secondary">No orders found</p>
+            <Link href="/shop" className="text-sm text-accent hover:underline mt-2 inline-block">Start shopping</Link>
+          </div>
+        ) : (
+          filtered.map((order) => (
+            <div key={order.id} className="bg-white rounded-xl p-4 shadow-sm">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <p className="text-xs text-secondary">Order ID</p>
+                  <p className="text-sm font-semibold text-primary">{order.orderNumber}</p>
+                </div>
+                <span className={cn("px-2.5 py-1 rounded-full text-[10px] font-semibold", STATUS_COLORS[order.status] || "bg-gray-100 text-gray-800")}>
+                  {STATUS_LABELS[order.status] || order.status}
+                </span>
+              </div>
+              <p className="text-xs text-secondary mb-1">Placed on {new Date(order.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</p>
+              {order.items?.slice(0, 2).map((item, i) => (
+                <p key={i} className="text-xs text-secondary">{item.productName} x{item.quantity}</p>
+              ))}
+              <div className="flex items-center justify-between mt-3 pt-3 border-t border-border-light">
+                <span className="text-sm text-secondary">Total</span>
+                <span className="text-sm font-bold text-primary">{formatPrice(order.total)}</span>
+              </div>
+              <button className="w-full mt-3 py-2 text-xs font-medium text-secondary border border-border rounded-lg hover:bg-surface-muted transition-colors">View Details</button>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 }

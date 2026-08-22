@@ -8,6 +8,7 @@ export interface ProductImage {
   alt?: string;
   position: number;
   isPrimary: boolean;
+  imageType?: "PRODUCT" | "LIFESTYLE";
 }
 
 export interface ProductVariant {
@@ -43,14 +44,51 @@ export interface Product {
   lowStockThreshold: number;
   allowBackorder: boolean;
   trackInventory: boolean;
+
+  // Physical Dimensions
+  height?: number;
+  width?: number;
+  length?: number;
+  depth?: number;
+  diameter?: number;
+  dimensionUnit?: string;
+  weight?: number;
+  weightUnit?: string;
+  capacity?: number;
+  capacityUnit?: string;
+
+  // Physical Attributes
+  material?: string;
+  color?: string;
+  finish?: string;
+  shape?: string;
+  pattern?: string;
+  style?: string;
+  mountingType?: string;
+  usageLocation?: string;
+
+  // Product Information
+  careInstructions?: string;
+  warranty?: string;
+
+  // Packaging
+  packagingType?: string;
+  packagingDimensions?: string;
+  packagingWeight?: number;
+  includedItems?: string;
+
+  // Custom Sizing
   allowCustomSize: boolean;
   customSizeUnit?: string;
   customSizeMinWidth?: number;
   customSizeMinLength?: number;
+  customSizeMinHeight?: number;
   customSizeMaxWidth?: number;
   customSizeMaxLength?: number;
+  customSizeMaxHeight?: number;
   customSizePricingMethod?: string;
   customSizeRequiresApproval?: boolean;
+
   purchaseMethod: "BUY_ONLINE" | "WHATSAPP" | "BOTH";
   status: "DRAFT" | "ACTIVE" | "INACTIVE" | "ARCHIVED";
   isActive: boolean;

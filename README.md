@@ -145,10 +145,9 @@ npx prisma db seed
 ```
 
 This creates:
-- Admin user: `admin@westhomebybmd.com` / `admin123`
+- Admin user: `sanoojbm1144@gmail.com` / `Westhome1144`
 - 7 categories (Wall Decor, Laundry, Comforters, Lamps, Carpets, Clocks, Accessories)
 - 5 subcategories under Accessories
-- 16 sample products with variants
 - Site settings
 - Content pages
 

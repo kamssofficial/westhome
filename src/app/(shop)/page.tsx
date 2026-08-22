@@ -3,48 +3,57 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, Truck, Shield, RotateCcw, HeadphonesIcon, MessageCircle } from "lucide-react";
-import ProductCard from "@/components/ui/ProductCard";
-import Button from "@/components/ui/Button";
-import { ProductGridSkeleton } from "@/components/ui/Skeleton";
+import { ArrowRight } from "lucide-react";
+import { cn, formatPrice } from "@/lib/utils";
+import { motion } from "motion/react";
+import { TextEffect } from "@/components/motion-primitives/text-effect";
 import type { Product, Category } from "@/types";
 
-const FALLBACK_CATEGORIES: Category[] = [
-  { id: "1", name: "Wall Decor", slug: "wall-decor", image: "/images/categories/wall-decor.svg", isActive: true, position: 1, subcategories: [] },
-  { id: "2", name: "Laundry", slug: "laundry", image: "/images/categories/laundry.svg", isActive: true, position: 2, subcategories: [] },
-  { id: "3", name: "Comforters", slug: "comforters", image: "/images/categories/comforters.svg", isActive: true, position: 3, subcategories: [] },
-  { id: "4", name: "Lamps", slug: "lamps", image: "/images/categories/lamps.svg", isActive: true, position: 4, subcategories: [] },
-  { id: "5", name: "Carpets", slug: "carpets", image: "/images/categories/carpets.svg", isActive: true, position: 5, subcategories: [] },
-  { id: "6", name: "Clocks", slug: "clocks", image: "/images/categories/clocks.svg", isActive: true, position: 6, subcategories: [] },
-  { id: "7", name: "Accessories", slug: "accessories", image: "/images/categories/accessories.svg", isActive: true, position: 7, subcategories: [] },
-];
+interface HeroSection {
+  id: string;
+  type: string;
+  title?: string;
+  subtitle?: string;
+  description?: string;
+  image?: string;
+  buttonText?: string;
+  buttonLink?: string;
+}
 
 export default function HomePage() {
-  const [categories, setCategories] = useState<Category[]>(FALLBACK_CATEGORIES);
-  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [newArrivals, setNewArrivals] = useState<Product[]>([]);
+  const [heroSections, setHeroSections] = useState<HeroSection[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeSlide, setActiveSlide] = useState(0);
+
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [catRes, featRes, newRes] = await Promise.allSettled([
+        const [catRes, newRes, featRes, homeRes] = await Promise.allSettled([
           fetch("/api/categories"),
-          fetch("/api/products?featured=true&limit=4"),
-          fetch("/api/products?newArrivals=true&limit=4"),
+          fetch("/api/products?newArrivals=true&limit=8"),
+          fetch("/api/products?featured=true&limit=6"),
+          fetch("/api/homepage"),
         ]);
-
         if (catRes.status === "fulfilled" && catRes.value.ok) {
           const catData = await catRes.value.json();
-          if (catData.categories?.length) setCategories(catData.categories);
+          setCategories(catData.categories || []);
+        }
+        if (newRes.status === "fulfilled" && newRes.value.ok) {
+          const newData = await newRes.value.json();
+          setNewArrivals(newData.products || []);
         }
         if (featRes.status === "fulfilled" && featRes.value.ok) {
           const featData = await featRes.value.json();
           setFeaturedProducts(featData.products || []);
         }
-        if (newRes.status === "fulfilled" && newRes.value.ok) {
-          const newData = await newRes.value.json();
-          setNewArrivals(newData.products || []);
+        if (homeRes.status === "fulfilled" && homeRes.value.ok) {
+          const homeData = await homeRes.value.json();
+          const heroes = (homeData.sections || []).filter((s: HeroSection) => s.type === "HERO");
+          setHeroSections(heroes);
         }
       } catch (err) {
         console.error("Homepage fetch error:", err);
@@ -55,349 +64,227 @@ export default function HomePage() {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    if (heroSections.length <= 1) return;
+    const timer = setInterval(() => {
+      setActiveSlide((prev) => (prev + 1) % heroSections.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [heroSections.length]);
+
+  const hero = heroSections[activeSlide];
+
   return (
     <div className="animate-fade-in">
-      {/* ============================================================
-          HERO SECTION
-          ============================================================ */}
-      <section className="relative h-[85vh] md:h-[90vh] overflow-hidden">
-        <Image src="/images/banners/hero.svg" alt="" fill className="absolute inset-0 w-full h-full object-cover" priority />
-        <div className="hero-gradient absolute inset-0" />
-
-        <div className="relative h-full flex items-center justify-center text-center">
-          <div className="container-shop">
-            <p className="font-label text-accent mb-4 md:mb-6">
-              Premium Home & Lifestyle
+      {/* HERO — Editorial layout */}
+      <section className="px-4 pt-3 pb-2">
+        <div className="relative rounded-2xl overflow-hidden h-[420px] md:h-[480px] bg-primary">
+          {hero?.image && (
+            <Image src={hero.image} alt="" fill className="absolute inset-0 w-full h-full object-cover" priority />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
+          <div className="relative h-full flex flex-col justify-end p-6 pb-8">
+            <p className="font-label text-[10px] tracking-[0.2em] text-white/60 uppercase mb-2">
+              {hero?.subtitle || "Handcrafted Home"}
             </p>
-            <h1 className="font-display text-4xl md:text-6xl lg:text-7xl text-text-inverse leading-[1.05] mb-4 md:mb-6 max-w-3xl mx-auto">
-              Elevate Your
-              <br />
-              Living Space
-            </h1>
-            <p className="text-text-inverse/60 text-sm md:text-base mb-8 md:mb-10 max-w-md mx-auto leading-relaxed">
-              Handpicked home décor, comforters, lamps, and lifestyle
-              accessories that transform your house into a home.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Link href="/shop">
-                <Button variant="accent" size="lg">
-                  Explore Collection
-                  <ArrowRight size={16} />
-                </Button>
+            <TextEffect
+              as="h1"
+              preset="fade-in-blur"
+              per="word"
+              className="font-display text-[2.5rem] md:text-5xl lg:text-6xl text-white leading-[1.05] mb-3 max-w-md"
+              speedReveal={0.8}
+              speedSegment={1.2}
+            >
+              {hero?.title || "Where craft meets home"}
+            </TextEffect>
+            <TextEffect
+              as="p"
+              preset="fade"
+              delay={0.3}
+              className="text-white/60 text-sm mb-5 leading-relaxed max-w-sm"
+            >
+              {hero?.description || "Woven baskets, artisan frames, and handcrafted dispensers — each piece tells a story."}
+            </TextEffect>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5, duration: 0.5 }}>
+              <Link href={hero?.buttonLink || "/shop"} className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-primary rounded-full text-sm font-medium hover:bg-white/90 transition-colors w-fit">
+                {hero?.buttonText || "Shop the collection"} <ArrowRight size={15} />
               </Link>
-              <Link href="/collections/comforters">
-                <Button variant="ghost" size="lg" className="text-text-inverse border border-text-inverse/20 hover:bg-text-inverse/10">
-                  Shop Comforters
-                </Button>
-              </Link>
-            </div>
+            </motion.div>
           </div>
         </div>
+        {heroSections.length > 1 && (
+          <div className="flex items-center justify-center gap-2 mt-3">
+            {heroSections.map((_: HeroSection, i: number) => (
+              <button key={i} onClick={() => setActiveSlide(i)} className={cn("rounded-full transition-all duration-300", i === activeSlide ? "w-5 h-1.5 bg-primary" : "w-1.5 h-1.5 bg-stone-300")} aria-label={`Slide ${i + 1}`} />
+            ))}
+          </div>
+        )}
       </section>
 
-      {/* ============================================================
-          SHOP BY CATEGORY
-          ============================================================ */}
-      <section className="py-16 md:py-24">
-        <div className="container-shop">
-          <div className="flex items-end justify-between mb-8 md:mb-12">
-            <div>
-              <p className="font-label text-accent mb-2">Collections</p>
-              <h2 className="font-display text-2xl md:text-3xl text-foreground">
-                Shop by Category
-              </h2>
-            </div>
-            <Link
-              href="/shop"
-              className="text-sm font-medium text-secondary hover:text-foreground flex items-center gap-1.5 transition-colors"
-            >
-              View All
-              <ArrowRight size={14} />
-            </Link>
+      {/* SHOP BY CATEGORY */}
+      <section className="px-4 py-6">
+        <div className="flex items-end justify-between mb-4">
+          <div>
+            <p className="font-label text-[10px] tracking-[0.2em] text-accent mb-1">Collections</p>
+            <h2 className="text-lg font-display text-primary">Shop by category</h2>
           </div>
-
-          {/* Mobile: horizontal scroll */}
-          <div className="md:hidden -mx-1 px-1">
-            <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
-              {categories.map((cat) => (
-                <Link
-                  key={cat.id}
-                  href={`/collections/${cat.slug}`}
-                  className="flex-shrink-0 w-24"
-                >
-                  <div className="aspect-square bg-surface-muted overflow-hidden mb-2 border border-border">
-                    {cat.image ? (
-                      <Image src={cat.image} alt={cat.name} width={96} height={96} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-xs text-text-muted">
-                        {cat.name.slice(0, 2)}
-                      </div>
-                    )}
+          <Link href="/shop" className="text-sm font-medium text-secondary flex items-center gap-1 hover:text-primary transition-colors">View all <ArrowRight size={14} /></Link>
+        </div>
+        {loading ? (
+          <div className="grid grid-cols-3 gap-2.5">
+            {[1, 2, 3].map((i) => (<div key={i} className="skeleton aspect-[4/5] rounded-xl" />))}
+          </div>
+        ) : categories.length > 0 ? (
+          <>
+            <div className="grid grid-cols-3 gap-2.5 mb-2.5">
+              {categories.slice(0, 3).map((cat) => (
+                <Link key={cat.id} href={`/collections/${cat.slug}`} className="group block">
+                  <div className="relative aspect-[4/5] rounded-xl overflow-hidden bg-surface-muted">
+                    {cat.image ? (<Image src={cat.image} alt={cat.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="33vw" />) : (<div className="w-full h-full flex items-center justify-center text-text-muted text-xs font-medium">{cat.name}</div>)}
                   </div>
-                  <p className="text-[11px] font-medium text-center text-foreground truncate">
-                    {cat.name}
-                  </p>
+                  <p className="text-xs font-medium text-primary mt-1.5 text-center truncate">{cat.name}</p>
                 </Link>
               ))}
             </div>
-          </div>
-
-          {/* Desktop: clean grid */}
-          <div className="hidden md:grid grid-cols-3 lg:grid-cols-7 gap-6">
-            {categories.map((cat) => (
-              <Link
-                key={cat.id}
-                href={`/collections/${cat.slug}`}
-                className="group text-center"
-              >
-                <div className="aspect-square bg-surface-muted overflow-hidden mb-3 border border-border group-hover:border-accent transition-colors duration-300">
-                  {cat.image ? (
-                    <Image src={cat.image} alt={cat.name} width={200} height={200} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-xs text-text-muted">
-                      {cat.name.slice(0, 2)}
+            {categories.length > 3 && (
+              <div className="grid grid-cols-4 gap-2">
+                {categories.slice(3, 7).map((cat) => (
+                  <Link key={cat.id} href={`/collections/${cat.slug}`} className="group block">
+                    <div className="relative aspect-square rounded-xl overflow-hidden bg-surface-muted">
+                      {cat.image ? (<Image src={cat.image} alt={cat.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="25vw" />) : (<div className="w-full h-full flex items-center justify-center text-text-muted text-[10px] font-medium text-center px-1">{cat.name}</div>)}
                     </div>
+                    <p className="text-[11px] font-medium text-primary mt-1 text-center truncate">{cat.name}</p>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="text-center py-8"><p className="text-text-muted text-sm">No categories available yet.</p></div>
+        )}
+      </section>
+
+      {/* FEATURED PRODUCTS */}
+      {featuredProducts.length > 0 && (
+        <section className="px-4 py-6">
+          <div className="flex items-end justify-between mb-4">
+            <div>
+              <p className="font-label text-[10px] tracking-[0.2em] text-accent mb-1">Curated</p>
+              <h2 className="text-lg font-display text-primary">Featured pieces</h2>
+            </div>
+            <Link href="/shop?sort=featured" className="text-sm font-medium text-secondary flex items-center gap-1 hover:text-primary transition-colors">View all <ArrowRight size={14} /></Link>
+          </div>
+          <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4">
+            {featuredProducts.map((p) => (
+              <Link key={p.id} href={"/products/" + p.slug} className="group block flex-shrink-0 w-[160px]">
+                <div className="relative aspect-square bg-surface-muted rounded-xl overflow-hidden">
+                  {p.images && p.images.length > 0 ? (
+                    <Image src={p.images[0].url} alt={p.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="160px" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-text-muted text-xs">No image</div>
                   )}
                 </div>
-                <p className="text-xs font-medium text-foreground group-hover:text-accent transition-colors">
-                  {cat.name}
+                <p className="text-xs font-medium text-primary mt-2 truncate">{p.name}</p>
+                <p className="text-sm font-bold text-primary">
+                  {p.salePrice ? (
+                    <><span className="text-error">{formatPrice(p.salePrice)}</span> <span className="text-text-muted line-through text-[10px]">{formatPrice(p.regularPrice)}</span></>
+                  ) : (
+                    formatPrice(p.regularPrice)
+                  )}
                 </p>
               </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* NEW ARRIVALS */}
+      <section className="px-4 py-6">
+        <div className="flex items-end justify-between mb-4">
+          <div>
+            <p className="font-label text-[10px] tracking-[0.2em] text-accent mb-1">Just arrived</p>
+            <h2 className="text-lg font-display text-primary">New in</h2>
+          </div>
+          <Link href="/shop?sort=newest" className="text-sm font-medium text-secondary flex items-center gap-1 hover:text-primary transition-colors">View all <ArrowRight size={14} /></Link>
+        </div>
+        {newArrivals.length > 0 ? (
+          <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4">
+            {newArrivals.slice(0, 6).map((p) => (
+              <Link key={p.id} href={"/products/" + p.slug} className="group block flex-shrink-0 w-[160px]">
+                <div className="relative aspect-square bg-surface-muted rounded-xl overflow-hidden">
+                  {p.images && p.images.length > 0 ? (
+                    <Image src={p.images[0].url} alt={p.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="160px" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-text-muted text-xs">No image</div>
+                  )}
+                </div>
+                <p className="text-xs font-medium text-primary mt-2 truncate">{p.name}</p>
+                <p className="text-sm font-bold text-primary">
+                  {p.salePrice ? (
+                    <><span className="text-error">{formatPrice(p.salePrice)}</span> <span className="text-text-muted line-through text-[10px]">{formatPrice(p.regularPrice)}</span></>
+                  ) : (
+                    formatPrice(p.regularPrice)
+                  )}
+                </p>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8"><p className="text-text-muted text-sm">No new arrivals yet.</p></div>
+        )}
+      </section>
+
+      {/* BRAND STORY — Editorial layout */}
+      <section className="px-4 py-8">
+        <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
+          <div className="p-6 pb-4">
+            <TextEffect as="p" preset="fade" className="font-label text-[10px] tracking-[0.2em] text-accent mb-3">
+              How we do things at WestHome
+            </TextEffect>
+            <TextEffect as="h2" preset="blur" per="word" className="font-display text-2xl md:text-3xl text-primary leading-tight mb-3">
+              Every piece, considered.
+            </TextEffect>
+            <p className="text-sm text-secondary leading-relaxed max-w-sm">
+              From handwoven baskets in Kerala to artisan soap dispensers — we source what we would live with ourselves.
+            </p>
+          </div>
+          <div className="grid grid-cols-3 border-t border-border-light">
+            {[
+              { num: "01", title: "Woven by hand", desc: "Each basket crafted by artisans" },
+              { num: "02", title: "Built to last", desc: "Materials that age beautifully" },
+              { num: "03", title: "Delivered with care", desc: "From our store to your home" },
+            ].map((item) => (
+              <div key={item.num} className="p-4 border-r border-border-light last:border-r-0">
+                <span className="font-display text-2xl text-accent/40 block mb-1">{item.num}</span>
+                <p className="text-xs font-semibold text-primary leading-tight">{item.title}</p>
+                <p className="text-[10px] text-secondary mt-1 leading-snug">{item.desc}</p>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ============================================================
-          FEATURED PRODUCTS — Asymmetric layout
-          ============================================================ */}
-      <section className="py-16 md:py-24 bg-surface-muted/30">
-        <div className="container-shop">
-          <div className="flex items-end justify-between mb-8 md:mb-12">
-            <div>
-              <p className="font-label text-accent mb-2">Curated</p>
-              <h2 className="font-display text-2xl md:text-3xl text-foreground">
-                Featured Products
-              </h2>
-            </div>
-            <Link
-              href="/shop?sort=featured"
-              className="text-sm font-medium text-secondary hover:text-foreground flex items-center gap-1.5 transition-colors"
-            >
-              View All
-              <ArrowRight size={14} />
-            </Link>
+      {/* STORE INFO */}
+      <section className="px-4 py-6 pb-24">
+        <div className="bg-stone-900 rounded-2xl p-6 text-white">
+          <TextEffect as="p" preset="fade" className="font-label text-[10px] tracking-[0.2em] text-stone-400 mb-3">
+            Visit us
+          </TextEffect>
+          <TextEffect as="h2" preset="blur" per="word" className="font-display text-2xl mb-4">
+            West Home by BM Distributors
+          </TextEffect>
+          <div className="text-sm text-stone-400 leading-relaxed mb-5">
+            <p>City Gate Building, near Press Club Junction,</p>
+            <p>Karandakkad, Kasaragod, Kerala — 671121</p>
           </div>
-
-          {loading ? (
-            <ProductGridSkeleton count={4} className="lg:grid-cols-3" />
-          ) : featuredProducts.length > 0 ? (
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 stagger-in">
-              {/* First product: large on left */}
-              {featuredProducts[0] && (
-                <div className="col-span-2 lg:col-span-1 lg:row-span-2">
-                  <ProductCard product={featuredProducts[0]} priority />
-                </div>
-              )}
-              {/* Remaining products: stacked on right */}
-              {featuredProducts.slice(1, 4).map((product, i) => (
-                <div key={product.id}>
-                  <ProductCard product={product} priority={i < 2} />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-16">
-              <p className="text-text-muted text-sm mb-4">
-                Featured products coming soon. Visit the shop to explore our full collection.
-              </p>
-              <Link href="/shop">
-                <Button variant="primary" size="md">
-                  Browse Shop
-                  <ArrowRight size={16} />
-                </Button>
-              </Link>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* ============================================================
-          PROMOTIONAL BANNER
-          ============================================================ */}
-      <section className="py-16 md:py-24">
-        <div className="container-shop">
-          <div className="relative overflow-hidden bg-surface-muted border border-border">
-            <Image src="/images/banners/promo-comforters.svg" alt="" fill className="absolute inset-0 w-full h-full object-cover opacity-40" />
-            <div className="relative z-10 px-8 py-14 md:px-16 md:py-20 text-center">
-              <p className="font-label text-accent mb-3">
-                Limited Time
-              </p>
-              <h2 className="font-display text-2xl md:text-4xl text-foreground mb-4">
-                Premium Comforters Collection
-              </h2>
-              <p className="text-text-secondary text-sm md:text-base mb-8 max-w-lg mx-auto">
-                Experience luxury sleep with our curated comforter range.
-                Quality materials, exceptional comfort.
-              </p>
-              <Link href="/collections/comforters">
-                <Button variant="primary" size="lg">
-                  Shop Now
-                  <ArrowRight size={16} />
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ============================================================
-          LIFESTYLE COLLECTION
-          ============================================================ */}
-      <section className="py-16 md:py-24">
-        <div className="container-shop">
-          <div className="relative overflow-hidden bg-surface-muted border border-border">
-            <Image src="/images/banners/lifestyle-collection.svg" alt="" fill className="absolute inset-0 w-full h-full object-cover opacity-30" />
-            <div className="relative z-10 px-8 py-14 md:px-16 md:py-20 text-left max-w-xl">
-              <p className="font-label text-accent mb-3">
-                Curated for You
-              </p>
-              <h2 className="font-display text-2xl md:text-4xl text-foreground mb-4">
-                Premium Lifestyle
-                <br />
-                Collection
-              </h2>
-              <p className="text-text-secondary text-sm md:text-base mb-8 max-w-md">
-                Transform every corner of your home with our handpicked lifestyle accessories.
-                Timeless design, exceptional quality.
-              </p>
-              <Link href="/shop">
-                <Button variant="primary" size="lg">
-                  Explore Collection
-                  <ArrowRight size={16} />
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ============================================================
-          NEW ARRIVALS
-          ============================================================ */}
-      <section className="py-16 md:py-24 bg-surface-muted/30">
-        <div className="container-shop">
-          <div className="flex items-end justify-between mb-8 md:mb-12">
-            <div>
-              <p className="font-label text-accent mb-2">Just In</p>
-              <h2 className="font-display text-2xl md:text-3xl text-foreground">
-                New Arrivals
-              </h2>
-            </div>
-            <Link
-              href="/shop?sort=newest"
-              className="text-sm font-medium text-secondary hover:text-foreground flex items-center gap-1.5 transition-colors"
-            >
-              View All
-              <ArrowRight size={14} />
-            </Link>
-          </div>
-
-          {loading ? (
-            <ProductGridSkeleton count={4} />
-          ) : newArrivals.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 stagger-in">
-              {newArrivals.map((product, i) => (
-                <ProductCard key={product.id} product={product} priority={i < 4} />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-16">
-              <p className="text-text-muted text-sm">
-                New arrivals coming soon. Check back regularly for the latest additions.
-              </p>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* ============================================================
-          WHY WESTHOME
-          ============================================================ */}
-      <section className="py-16 md:py-24">
-        <div className="container-shop">
-          <p className="font-label text-accent text-center mb-2">Our Promise</p>
-          <h2 className="font-display text-2xl md:text-3xl text-foreground text-center mb-12 md:mb-16">
-            Why WESTHOME
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
-            <div className="text-center">
-              <div className="w-12 h-12 border border-border flex items-center justify-center mx-auto mb-4">
-                <Truck size={20} className="text-accent" />
-              </div>
-              <h3 className="text-sm font-medium text-foreground mb-1">
-                Fast Delivery
-              </h3>
-              <p className="text-xs text-text-secondary leading-relaxed">
-                Quick and reliable delivery across India
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="w-12 h-12 border border-border flex items-center justify-center mx-auto mb-4">
-                <Shield size={20} className="text-accent" />
-              </div>
-              <h3 className="text-sm font-medium text-foreground mb-1">
-                Quality Assured
-              </h3>
-              <p className="text-xs text-text-secondary leading-relaxed">
-                Premium materials and craftsmanship
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="w-12 h-12 border border-border flex items-center justify-center mx-auto mb-4">
-                <RotateCcw size={20} className="text-accent" />
-              </div>
-              <h3 className="text-sm font-medium text-foreground mb-1">
-                Easy Returns
-              </h3>
-              <p className="text-xs text-text-secondary leading-relaxed">
-                Hassle-free return policy
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="w-12 h-12 border border-border flex items-center justify-center mx-auto mb-4">
-                <HeadphonesIcon size={20} className="text-accent" />
-              </div>
-              <h3 className="text-sm font-medium text-foreground mb-1">
-                Support
-              </h3>
-              <p className="text-xs text-text-secondary leading-relaxed">
-                Dedicated customer support
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ============================================================
-          WHATSAPP CTA — Minimal
-          ============================================================ */}
-      <section className="py-16 md:py-24 border-t border-border">
-        <div className="container-shop">
-          <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 justify-center">
-            <MessageCircle size={20} className="text-[#25D366]" />
-            <p className="text-sm text-text-secondary text-center sm:text-left">
-              Questions? Need custom sizes?{" "}
-              <a
-                href="https://wa.me/919895071144?text=Hi!%20I%20have%20a%20question%20about%20WESTHOME%20products."
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-foreground font-medium underline underline-offset-4 decoration-border hover:decoration-accent transition-colors"
-              >
-                Chat with us on WhatsApp
-              </a>
-            </p>
-          </div>
+          <a
+            href="https://wa.me/919895071144"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-stone-900 rounded-full text-xs font-medium hover:bg-stone-100 transition-colors"
+          >
+            Chat on WhatsApp <ArrowRight size={13} />
+          </a>
         </div>
       </section>
     </div>

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
+import { requireAuth } from "@/lib/auth";
 
 // Razorpay initialization
 const Razorpay = require("razorpay");
@@ -11,6 +12,10 @@ const razorpay = new Razorpay({
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await requireAuth();
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const { orderId, amount } = await request.json();
 
     if (!orderId || !amount) {

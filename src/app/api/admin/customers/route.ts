@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import db from "@/lib/db";
+import { requireAdminOrManager } from "@/lib/apiAuth";
 
 export async function GET() {
+  const authResult = await requireAdminOrManager();
+  if (authResult.error) return authResult.error;
+
   try {
     const customers = await db.user.findMany({
       where: { role: "CUSTOMER" },

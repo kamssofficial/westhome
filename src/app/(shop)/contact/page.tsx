@@ -1,87 +1,142 @@
 "use client";
 
-import { MapPin, Phone, Mail, MessageCircle, Clock } from "lucide-react";
+import Link from "next/link";
+import { ArrowLeft, Phone, Mail, MapPin, MessageCircle, Clock } from "lucide-react";
 
 export default function ContactPage() {
   return (
     <div className="animate-fade-in">
-      <section className="bg-surface-muted/50 border-b border-border-light">
-        <div className="container-shop py-10 md:py-16 text-center">
-          <h1 className="text-2xl md:text-4xl font-serif text-foreground mb-4">Contact Us</h1>
-          <p className="text-sm md:text-base text-text-secondary max-w-lg mx-auto">
-            We&apos;d love to hear from you. Reach out with any questions.
-          </p>
-        </div>
-      </section>
+      <div className="px-4 pt-3 pb-2 flex items-center gap-3">
+        <Link href="/" className="p-1 hover:bg-surface-muted rounded-lg transition-colors">
+          <ArrowLeft size={20} />
+        </Link>
+        <h1 className="text-xl font-semibold text-primary">Contact Us</h1>
+      </div>
 
-      <section className="container-shop py-10 md:py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
-          {/* Contact Info */}
-          <div className="space-y-6">
-            <h2 className="text-xl font-serif">Get in Touch</h2>
-            <div className="space-y-4">
-              <a href="tel:+919895071144" className="flex items-center gap-3 p-3 bg-white rounded-xl border border-border-light hover:shadow-sm transition-all">
-                <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
-                  <Phone size={18} className="text-accent" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Phone</p>
-                  <p className="text-xs text-text-muted">+91 99999 99999</p>
-                </div>
-              </a>
-              <a href="mailto:info@westhomebybmd.com" className="flex items-center gap-3 p-3 bg-white rounded-xl border border-border-light hover:shadow-sm transition-all">
-                <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
-                  <Mail size={18} className="text-accent" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Email</p>
-                  <p className="text-xs text-text-muted">info@westhomebybmd.com</p>
-                </div>
-              </a>
-              <a href="https://wa.me/919895071144" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 bg-white rounded-xl border border-border-light hover:shadow-sm transition-all">
-                <div className="w-10 h-10 rounded-lg bg-[#25D366]/10 flex items-center justify-center">
-                  <MessageCircle size={18} className="text-[#25D366]" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">WhatsApp</p>
-                  <p className="text-xs text-text-muted">Chat with us</p>
-                </div>
-              </a>
-              <div id="location" className="flex items-start gap-3 p-3 bg-white rounded-xl border border-border-light">
-                <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
-                  <MapPin size={18} className="text-accent" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Store Location</p>
-                  <p className="text-xs text-text-muted">India</p>
-                </div>
-              </div>
+      {/* Store Info Card */}
+      <div className="px-4 py-4">
+        <div className="bg-white rounded-2xl p-5 shadow-sm">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-stone-700 to-stone-900 flex items-center justify-center">
+              <span className="text-white text-lg font-semibold">W</span>
+            </div>
+            <div>
+              <h2 className="text-base font-semibold text-primary">West Home by BM Distributors</h2>
+              <p className="text-xs text-secondary">Premium Home Décor</p>
             </div>
           </div>
 
-          {/* Contact Form */}
-          <div>
-            <h2 className="text-xl font-serif mb-4">Send a Message</h2>
-            <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); alert("Thank you! We'll get back to you soon."); }}>
-              <div>
-                <label className="text-xs font-medium text-text-secondary mb-1 block">Name</label>
-                <input type="text" required className="w-full px-3 py-2.5 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" />
+          <div className="space-y-4">
+            {/* Address */}
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 rounded-full bg-surface-muted flex items-center justify-center flex-shrink-0">
+                <MapPin size={16} className="text-secondary" />
               </div>
               <div>
-                <label className="text-xs font-medium text-text-secondary mb-1 block">Email</label>
-                <input type="email" required className="w-full px-3 py-2.5 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" />
+                <p className="text-sm font-medium text-primary">Store Address</p>
+                <p className="text-sm text-secondary mt-0.5 leading-relaxed">
+                  City Gate Building, near Press Club Junction,<br />
+                  Karandakkad, Kasaragod,<br />
+                  Kerala, India — 671121
+                </p>
+              </div>
+            </div>
+
+            {/* Phone */}
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 rounded-full bg-surface-muted flex items-center justify-center flex-shrink-0">
+                <Phone size={16} className="text-secondary" />
               </div>
               <div>
-                <label className="text-xs font-medium text-text-secondary mb-1 block">Message</label>
-                <textarea required rows={4} className="w-full px-3 py-2.5 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 resize-none" />
+                <p className="text-sm font-medium text-primary">Phone</p>
+                <a href="tel:+919895071144" className="text-sm text-accent hover:underline">
+                  +91 98950 71144
+                </a>
               </div>
-              <button type="submit" className="w-full px-4 py-2.5 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors">
-                Send Message
-              </button>
-            </form>
+            </div>
+
+            {/* Email */}
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 rounded-full bg-surface-muted flex items-center justify-center flex-shrink-0">
+                <Mail size={16} className="text-secondary" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-primary">Email</p>
+                <a href="mailto:info@westhomebybmd.com" className="text-sm text-accent hover:underline">
+                  info@westhomebybmd.com
+                </a>
+              </div>
+            </div>
+
+            {/* WhatsApp */}
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 rounded-full bg-[#25D366]/10 flex items-center justify-center flex-shrink-0">
+                <MessageCircle size={16} className="text-[#25D366]" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-primary">WhatsApp</p>
+                <a
+                  href="https://wa.me/919895071144"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-accent hover:underline"
+                >
+                  Chat with us on WhatsApp
+                </a>
+              </div>
+            </div>
+
+            {/* Hours */}
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 rounded-full bg-surface-muted flex items-center justify-center flex-shrink-0">
+                <Clock size={16} className="text-secondary" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-primary">Business Hours</p>
+                <p className="text-sm text-secondary mt-0.5">
+                  Monday – Saturday: 10:00 AM – 8:00 PM<br />
+                  Sunday: 11:00 AM – 6:00 PM
+                </p>
+              </div>
+            </div>
           </div>
         </div>
-      </section>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="px-4 pb-4">
+        <div className="grid grid-cols-2 gap-3">
+          <a
+            href="https://wa.me/919895071144"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 py-3.5 bg-[#25D366] text-white rounded-2xl text-sm font-semibold hover:bg-[#20BD5C] transition-colors"
+          >
+            <MessageCircle size={18} />
+            WhatsApp Us
+          </a>
+          <a
+            href="tel:+919895071144"
+            className="flex items-center justify-center gap-2 py-3.5 bg-primary text-white rounded-2xl text-sm font-semibold hover:bg-primary-hover transition-colors"
+          >
+            <Phone size={18} />
+            Call Now
+          </a>
+        </div>
+      </div>
+
+      {/* Map Placeholder */}
+      <div className="px-4 pb-8">
+        <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
+          <div className="relative h-48 bg-surface-muted flex items-center justify-center">
+            <div className="text-center">
+              <MapPin size={32} className="mx-auto text-secondary mb-2" />
+              <p className="text-sm font-medium text-primary">Karandakkad, Kasaragod</p>
+              <p className="text-xs text-secondary mt-0.5">Kerala, India — 671121</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

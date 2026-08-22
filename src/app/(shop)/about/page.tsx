@@ -1,56 +1,80 @@
 "use client";
 
-import Link from "next/link";
-import { MapPin, Phone, Mail, MessageCircle } from "lucide-react";
+import { Shield, Sparkles, Users } from "lucide-react";
 
 export default function AboutPage() {
   return (
     <div className="animate-fade-in">
-      {/* Hero */}
-      <section className="bg-surface-muted/50 border-b border-border-light">
-        <div className="container-shop py-10 md:py-16 text-center">
-          <p className="text-accent text-xs font-medium uppercase tracking-[0.2em] mb-3">About Us</p>
-          <h1 className="text-2xl md:text-4xl font-serif text-foreground mb-4">
-            WESTHOME by BM Distributors
-          </h1>
-          <p className="text-sm md:text-base text-text-secondary max-w-lg mx-auto leading-relaxed">
-            Your trusted destination for premium home décor and lifestyle products.
-          </p>
+      {/* Hero section */}
+      <div className="relative h-56 bg-gradient-to-br from-stone-800 to-stone-900 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+        <div className="absolute bottom-4 left-4">
+          <h1 className="text-2xl font-semibold text-white">About West Home</h1>
         </div>
-      </section>
+      </div>
 
-      {/* Story */}
-      <section className="container-shop py-10 md:py-16">
-        <div className="max-w-3xl mx-auto space-y-8">
-          <div>
-            <h2 className="text-xl font-serif mb-4">Our Story</h2>
-            <p className="text-text-secondary leading-relaxed">
-              WESTHOME is a premium home lifestyle brand by BM Distributors,
-              offering carefully curated products to elevate your living spaces.
-              From elegant wall decor to luxurious comforters, we bring quality
-              and style to your home.
-            </p>
-          </div>
-          <div>
-            <h2 className="text-xl font-serif mb-4">Our Mission</h2>
-            <p className="text-text-secondary leading-relaxed">
-              To provide premium home products at accessible prices, backed by
-              excellent customer service and reliable delivery.
-            </p>
-          </div>
-          <div>
-            <h2 className="text-xl font-serif mb-4">Why Choose WESTHOME</h2>
-            <ul className="space-y-2 text-text-secondary">
-              <li>• Premium quality products</li>
-              <li>• Curated collections for every room</li>
-              <li>• Competitive pricing</li>
-              <li>• Fast and reliable delivery</li>
-              <li>• Dedicated customer support</li>
-              <li>• Easy returns and exchanges</li>
-            </ul>
+      {/* Brand story */}
+      <div className="px-4 py-6">
+        <p className="text-sm text-secondary leading-relaxed">
+          At WestHome, we believe that your home deserves the best. Our collections are
+          thoughtfully curated to bring style, comfort and quality into your everyday life.
+        </p>
+        <p className="text-sm text-secondary leading-relaxed mt-3">
+          WestHome by BM Distributors is a premium home décor and lifestyle retail brand
+          offering physical products designed to improve the appearance, comfort, organization,
+          and atmosphere of residential interiors.
+        </p>
+        <p className="text-sm text-secondary leading-relaxed mt-3">
+          From laundry baskets to frames to soap dispensers — every piece
+          is chosen with care to help you create the home of your dreams.
+        </p>
+      </div>
+
+      {/* Store Location */}
+      <div className="px-4 pb-6">
+        <div className="bg-white rounded-xl p-5 shadow-sm">
+          <h3 className="text-sm font-semibold text-primary mb-3">Visit Our Store</h3>
+          <div className="space-y-2 text-sm text-secondary">
+            <p className="font-medium text-primary">West Home by BM Distributors</p>
+            <p>City Gate Building, near Press Club Junction,</p>
+            <p>Karandakkad, Kasaragod, Kerala — 671121</p>
+            <div className="pt-2">
+              <a href="tel:+919895071144" className="text-accent hover:underline">+91 98950 71144</a>
+            </div>
           </div>
         </div>
-      </section>
+      </div>
+
+      {/* Brand values */}
+      <div className="px-4 space-y-4 pb-8">
+        {[
+          {
+            icon: <Sparkles size={20} className="text-primary" />,
+            title: "Premium Quality",
+            desc: "Every product is handpicked and quality-tested to meet our high standards.",
+          },
+          {
+            icon: <Shield size={20} className="text-primary" />,
+            title: "Stylish & Timeless Designs",
+            desc: "Our collections blend contemporary style with classic elegance.",
+          },
+          {
+            icon: <Users size={20} className="text-primary" />,
+            title: "Trusted by Thousands",
+            desc: "Thousands of happy customers across Kerala and Karnataka trust West Home.",
+          },
+        ].map((item) => (
+          <div key={item.title} className="flex items-start gap-3 bg-white rounded-xl p-4 shadow-sm">
+            <div className="w-10 h-10 rounded-full bg-surface-muted flex items-center justify-center flex-shrink-0">
+              {item.icon}
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-primary">{item.title}</h3>
+              <p className="text-xs text-secondary mt-0.5 leading-relaxed">{item.desc}</p>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

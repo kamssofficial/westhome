@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
+import { requireAuthRole } from "@/lib/apiAuth";
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authResult = await requireAuthRole(["ADMIN", "MANAGER", "CONTENT_MANAGER"]);
+  if (authResult.error) return authResult.error;
+
   try {
     const { id } = await params;
     const body = await request.json();

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { Prisma } from "@prisma/client";
+import { requireAdmin } from "@/lib/apiAuth";
 
 export async function GET() {
   try {
@@ -16,6 +17,9 @@ export async function GET() {
 }
 
 export async function PUT(request: NextRequest) {
+  const authResult = await requireAdmin();
+  if (authResult.error) return authResult.error;
+
   try {
     const body = await request.json();
 

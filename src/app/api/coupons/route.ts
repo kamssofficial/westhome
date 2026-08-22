@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
+import { requireAdmin } from "@/lib/apiAuth";
 
 export async function GET() {
+  const authResult = await requireAdmin();
+  if (authResult.error) return authResult.error;
+
   try {
     const coupons = await db.coupon.findMany({
       orderBy: { createdAt: "desc" },
@@ -13,6 +17,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const authResult = await requireAdmin();
+  if (authResult.error) return authResult.error;
+
   try {
     const body = await request.json();
     const coupon = await db.coupon.create({

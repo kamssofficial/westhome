@@ -1,16 +1,35 @@
 "use client";
 
 import { useState } from "react";
+import { useEffect } from "react";
 import { User, Mail, Phone, Lock } from "lucide-react";
 import Button from "@/components/ui/Button";
 import toast from "react-hot-toast";
 
 export default function AccountSettingsPage() {
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", phone: "" });
+  const [passwordForm, setPasswordForm] = useState({ current: "", newPass: "", confirm: "" });
+
+  useEffect(() => {
+    fetch("/api/account/profile")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.user) {
+          setForm({
+            name: data.user.name || "",
+            email: data.user.email || "",
+            phone: data.user.phone || "",
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const handleSave = async () => {
-    setLoading(true);
+    setSaving(true);
     try {
       const res = await fetch("/api/account/profile", {
         method: "PUT",
@@ -25,7 +44,7 @@ export default function AccountSettingsPage() {
     } catch {
       toast.error("Failed to update");
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
@@ -57,7 +76,7 @@ export default function AccountSettingsPage() {
             <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={`${inputClass} pl-10`} placeholder="+91 XXXXX XXXXX" />
           </div>
         </div>
-        <Button onClick={handleSave} loading={loading}>Save Changes</Button>
+        <Button onClick={handleSave} loading={saving}>Save Changes</Button>
       </div>
 
       <div className="mt-6 bg-white rounded-xl border border-border-light p-4 md:p-5">
@@ -65,10 +84,52 @@ export default function AccountSettingsPage() {
           <Lock size={14} /> Change Password
         </h2>
         <div className="space-y-3">
-          <input type="password" className={inputClass} placeholder="Current password" />
-          <input type="password" className={inputClass} placeholder="New password (min. 6 characters)" />
-          <input type="password" className={inputClass} placeholder="Confirm new password" />
-          <Button variant="outline" size="sm">Update Password</Button>
+          <input type="password" className={inputClass} placeholder="Current password" value={passwordForm.current} onChange={(e) => setPasswordForm({ ...passwordForm, current: e.target.value })} />
+          <input type="password" className={inputClass} placeholder="New password (min. 6 characters)" value={passwordForm.newPass} onChange={(e) => setPasswordForm({ ...passwordForm, newPass: e.target.value })} />
+          <input type="password" className={inputClass} placeholder="Confirm new password" value={passwordForm.confirm} onChange={(e) => setPasswordForm({ ...passwordForm, confirm: e.target.value })} />
+          <Button
+            variant="outline"
+            size="sm"
+            loading={changingPassword}
+            onClick={async () => {
+              if (!passwordForm.current || !passwordForm.newPass) {
+                toast.error("Please fill in all fields");
+                return;
+              }
+              if (passwordForm.newPass !== passwordForm.confirm) {
+                toast.error("Passwords do not match");
+                return;
+              }
+              if (passwordForm.newPass.length < 6) {
+                toast.error("Password must be at least 6 characters");
+                return;
+              }
+              setChangingPassword(true);
+              try {
+                const res = await fetch("/api/account/password", {
+                  method: "PUT",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    currentPassword: passwordForm.current,
+                    newPassword: passwordForm.newPass,
+                  }),
+                });
+                if (res.ok) {
+                  toast.success("Password updated");
+                  setPasswordForm({ current: "", newPass: "", confirm: "" });
+                } else {
+                  const err = await res.json();
+                  toast.error(err.error || "Failed to update password");
+                }
+              } catch {
+                toast.error("Failed to update password");
+              } finally {
+                setChangingPassword(false);
+              }
+            }}
+          >
+            Update Password
+          </Button>
         </div>
       </div>
     </div>

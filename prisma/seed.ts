@@ -1,4 +1,4 @@
-import { PrismaClient, ProductStatus, PurchaseMethod } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import bcrypt from "bcryptjs";
 
@@ -12,19 +12,37 @@ async function main() {
   // ADMIN USER
   // ============================================================
   console.log("👤 Creating admin user...");
-  const adminPasswordHash = await bcrypt.hash("admin123", 12);
+  const adminPasswordHash = await bcrypt.hash("Westhome1144", 12);
   const admin = await db.user.upsert({
-    where: { email: "admin@westhomebybmd.com" },
-    update: {},
+    where: { email: "sanoojbm1144@gmail.com" },
+    update: { name: "sanooj" },
     create: {
-      name: "WESTHOME Admin",
-      email: "admin@westhomebybmd.com",
+      name: "sanooj",
+      email: "sanoojbm1144@gmail.com",
       passwordHash: adminPasswordHash,
       role: "ADMIN",
       emailVerified: new Date(),
     },
   });
-  console.log(`   ✅ Admin: ${admin.email} / admin123`);
+  console.log(`   ✅ Admin: ${admin.email} / Westhome1144`);
+
+  // ============================================================
+  // STAFF USER
+  // ============================================================
+  console.log("\n👤 Creating staff user...");
+  const staffPasswordHash = await bcrypt.hash("SALLUshai@2005", 12);
+  const staff = await db.user.upsert({
+    where: { email: "salmansahil2005@gmail.com" },
+    update: { name: "Sahil", role: "MANAGER", passwordHash: staffPasswordHash },
+    create: {
+      name: "Sahil",
+      email: "salmansahil2005@gmail.com",
+      passwordHash: staffPasswordHash,
+      role: "MANAGER",
+      emailVerified: new Date(),
+    },
+  });
+  console.log(`   ✅ Staff: ${staff.email} / SALLUshai@2005`);
 
   // ============================================================
   // CATEGORIES (in correct order)
@@ -73,334 +91,6 @@ async function main() {
       create: { ...sub, categoryId: accessoriesId },
     });
     console.log(`   ✅ Accessories > ${sub.name}`);
-  }
-
-  // ============================================================
-  // SAMPLE PRODUCTS
-  // ============================================================
-  console.log("\n📦 Creating sample products...");
-
-  interface ProductDef {
-    name: string;
-    slug: string;
-    description: string;
-    shortDescription: string;
-    regularPrice: number;
-    salePrice?: number;
-    stockQuantity: number;
-    categoryId: string;
-    subcategoryId?: string;
-    isFeatured?: boolean;
-    isBestseller?: boolean;
-    isNewArrival?: boolean;
-    status: ProductStatus;
-    purchaseMethod: PurchaseMethod;
-    allowCustomSize?: boolean;
-    customSizeUnit?: string;
-    customSizeRequiresApproval?: boolean;
-    images?: { url: string; alt: string; isPrimary: boolean; position: number }[];
-    variants?: { name: string; price: number; salePrice?: number; stockQuantity: number; sku: string; isActive: boolean; position: number }[];
-    variantAttributes?: { name: string; values: string[]; position: number }[];
-  }
-
-  const sampleProducts: ProductDef[] = [
-    {
-      name: "Abstract Canvas Wall Art - Golden Hour",
-      slug: "abstract-canvas-golden-hour",
-      description: "Premium abstract canvas art featuring warm golden tones. Perfect for living rooms and bedrooms.",
-      shortDescription: "Premium abstract canvas art in warm golden tones",
-      regularPrice: 2499,
-      salePrice: 1999,
-      stockQuantity: 15,
-      categoryId: categories["wall-decor"].id,
-      isFeatured: true,
-      isNewArrival: true,
-      status: "ACTIVE" as ProductStatus,
-      purchaseMethod: "BOTH" as PurchaseMethod,
-      images: [{ url: "/images/placeholder/product-1.jpg", alt: "Abstract Canvas Wall Art", isPrimary: true, position: 0 }],
-    },
-    {
-      name: "Decorative Wall Mirror - Round Gold Frame",
-      slug: "decorative-wall-mirror-round-gold",
-      description: "Elegant round wall mirror with premium gold-finished frame. Adds depth and sophistication to any room.",
-      shortDescription: "Elegant round mirror with gold frame",
-      regularPrice: 3299,
-      stockQuantity: 8,
-      categoryId: categories["wall-decor"].id,
-      isBestseller: true,
-      status: "ACTIVE" as ProductStatus,
-      purchaseMethod: "BOTH" as PurchaseMethod,
-      images: [{ url: "/images/placeholder/product-2.jpg", alt: "Round Gold Mirror", isPrimary: true, position: 0 }],
-    },
-    {
-      name: "Premium Velvet Comforter - Queen Size",
-      slug: "premium-velvet-comforter-queen",
-      description: "Luxuriously soft velvet comforter. Double-brushed microfiber with premium filling for year-round comfort.",
-      shortDescription: "Luxuriously soft velvet comforter",
-      regularPrice: 4999,
-      salePrice: 3999,
-      stockQuantity: 20,
-      categoryId: categories["comforters"].id,
-      isFeatured: true,
-      isBestseller: true,
-      status: "ACTIVE" as ProductStatus,
-      purchaseMethod: "BUY_ONLINE" as PurchaseMethod,
-      variants: [
-        { name: "Single", price: 3499, salePrice: 2999, stockQuantity: 10, sku: "WH-COMF-SGL", isActive: true, position: 0 },
-        { name: "Double", price: 4499, salePrice: 3499, stockQuantity: 8, sku: "WH-COMF-DBL", isActive: true, position: 1 },
-        { name: "Queen", price: 4999, salePrice: 3999, stockQuantity: 10, sku: "WH-COMF-QEN", isActive: true, position: 2 },
-        { name: "King", price: 5999, salePrice: 4999, stockQuantity: 5, sku: "WH-COMF-KNG", isActive: true, position: 3 },
-      ],
-      variantAttributes: [
-        { name: "Size", values: ["Single", "Double", "Queen", "King"], position: 0 },
-      ],
-    },
-    {
-      name: "Egyptian Cotton Comforter - Premium Collection",
-      slug: "egyptian-cotton-comforter-premium",
-      description: "400 thread count Egyptian cotton comforter. Breathable, durable, and incredibly soft.",
-      shortDescription: "400TC Egyptian cotton comforter",
-      regularPrice: 6999,
-      stockQuantity: 12,
-      categoryId: categories["comforters"].id,
-      isNewArrival: true,
-      status: "ACTIVE" as ProductStatus,
-      purchaseMethod: "BOTH" as PurchaseMethod,
-    },
-    {
-      name: "Modern Arc Floor Lamp - Matte Black",
-      slug: "modern-arc-floor-lamp-matte-black",
-      description: "Sleek arc floor lamp with adjustable head and warm LED lighting. Perfect for reading corners.",
-      shortDescription: "Sleek arc floor lamp with adjustable head",
-      regularPrice: 3999,
-      salePrice: 3499,
-      stockQuantity: 10,
-      categoryId: categories["lamps"].id,
-      isFeatured: true,
-      status: "ACTIVE" as ProductStatus,
-      purchaseMethod: "BOTH" as PurchaseMethod,
-    },
-    {
-      name: "Ceramic Table Lamp - Cream",
-      slug: "ceramic-table-lamp-cream",
-      description: "Handcrafted ceramic table lamp with linen shade. Warm ambient lighting for bedrooms and living rooms.",
-      shortDescription: "Handcrafted ceramic table lamp",
-      regularPrice: 2499,
-      stockQuantity: 15,
-      categoryId: categories["lamps"].id,
-      isBestseller: true,
-      status: "ACTIVE" as ProductStatus,
-      purchaseMethod: "BOTH" as PurchaseMethod,
-    },
-    {
-      name: "Hand-Tufted Wool Carpet - Beige",
-      slug: "hand-tufted-wool-carpet-beige",
-      description: "Premium hand-tufted wool carpet. Soft underfoot, durable, and easy to maintain.",
-      shortDescription: "Premium hand-tufted wool carpet",
-      regularPrice: 5999,
-      stockQuantity: 8,
-      categoryId: categories["carpets"].id,
-      isFeatured: true,
-      status: "ACTIVE" as ProductStatus,
-      purchaseMethod: "WHATSAPP" as PurchaseMethod,
-      allowCustomSize: true,
-      customSizeUnit: "cm",
-      customSizeRequiresApproval: true,
-      variants: [
-        { name: "4x6 ft", price: 5999, stockQuantity: 5, sku: "WH-CARP-4X6", isActive: true, position: 0 },
-        { name: "6x9 ft", price: 8999, stockQuantity: 3, sku: "WH-CARP-6X9", isActive: true, position: 1 },
-        { name: "8x10 ft", price: 12999, stockQuantity: 2, sku: "WH-CARP-8X10", isActive: true, position: 2 },
-      ],
-      variantAttributes: [
-        { name: "Size", values: ["4x6 ft", "6x9 ft", "8x10 ft"], position: 0 },
-      ],
-    },
-    {
-      name: "Minimalist Wall Clock - Wooden Frame",
-      slug: "minimalist-wall-clock-wooden",
-      description: "Clean minimalist wall clock with natural wooden frame. Silent quartz movement.",
-      shortDescription: "Minimalist clock with wooden frame",
-      regularPrice: 1499,
-      stockQuantity: 20,
-      categoryId: categories["clocks"].id,
-      status: "ACTIVE" as ProductStatus,
-      purchaseMethod: "BUY_ONLINE" as PurchaseMethod,
-    },
-    {
-      name: "Vintage Metal Wall Clock - Antique Finish",
-      slug: "vintage-metal-wall-clock-antique",
-      description: "Classic vintage-style metal wall clock with antique finish. A statement piece for any room.",
-      shortDescription: "Vintage metal clock with antique finish",
-      regularPrice: 1999,
-      salePrice: 1699,
-      stockQuantity: 12,
-      categoryId: categories["clocks"].id,
-      isNewArrival: true,
-      status: "ACTIVE" as ProductStatus,
-      purchaseMethod: "BOTH" as PurchaseMethod,
-    },
-    {
-      name: "Premium Laundry Basket - Woven Design",
-      slug: "premium-laundry-basket-woven",
-      description: "Durable woven laundry basket with handles. Elegant design that complements any bathroom or bedroom.",
-      shortDescription: "Durable woven laundry basket",
-      regularPrice: 1299,
-      stockQuantity: 25,
-      categoryId: categories["laundry"].id,
-      isBestseller: true,
-      status: "ACTIVE" as ProductStatus,
-      purchaseMethod: "BOTH" as PurchaseMethod,
-    },
-    {
-      name: "Ceramic Flower Vase - Terracotta",
-      slug: "ceramic-flower-vase-terracotta",
-      description: "Handmade ceramic vase in warm terracotta finish. Perfect for fresh or dried flowers.",
-      shortDescription: "Handmade ceramic vase in terracotta",
-      regularPrice: 899,
-      stockQuantity: 30,
-      categoryId: categories["accessories"].id,
-      subcategoryId: subcategories["vases"].id,
-      status: "ACTIVE" as ProductStatus,
-      purchaseMethod: "BOTH" as PurchaseMethod,
-    },
-    {
-      name: "Indoor Plant Pot - White Ceramic Set",
-      slug: "indoor-plant-pot-white-ceramic-set",
-      description: "Set of 3 white ceramic plant pots in graduating sizes. Drainage holes included.",
-      shortDescription: "Set of 3 white ceramic plant pots",
-      regularPrice: 1499,
-      salePrice: 1199,
-      stockQuantity: 18,
-      categoryId: categories["accessories"].id,
-      subcategoryId: subcategories["flower-pots"].id,
-      isFeatured: true,
-      status: "ACTIVE" as ProductStatus,
-      purchaseMethod: "BUY_ONLINE" as PurchaseMethod,
-    },
-    {
-      name: "Velvet Cushion Cover - Emerald Green",
-      slug: "velvet-cushion-cover-emerald",
-      description: "Premium velvet cushion cover with invisible zipper. 16x16 inch.",
-      shortDescription: "Premium velvet cushion cover",
-      regularPrice: 599,
-      stockQuantity: 40,
-      categoryId: categories["accessories"].id,
-      subcategoryId: subcategories["cushion-covers"].id,
-      status: "ACTIVE" as ProductStatus,
-      purchaseMethod: "BOTH" as PurchaseMethod,
-    },
-    {
-      name: "Leather Tissue Box Cover - Brown",
-      slug: "leather-tissue-box-cover-brown",
-      description: "Premium leather tissue box cover. Elegant addition to any coffee table or desk.",
-      shortDescription: "Premium leather tissue box cover",
-      regularPrice: 799,
-      stockQuantity: 22,
-      categoryId: categories["accessories"].id,
-      subcategoryId: subcategories["tissue-boxes"].id,
-      isNewArrival: true,
-      status: "ACTIVE" as ProductStatus,
-      purchaseMethod: "BOTH" as PurchaseMethod,
-    },
-    {
-      name: "Automatic Soap Dispenser - Stainless Steel",
-      slug: "automatic-soap-dispenser-stainless",
-      description: "Touchless automatic soap dispenser with stainless steel finish. Battery operated.",
-      shortDescription: "Touchless stainless steel soap dispenser",
-      regularPrice: 1299,
-      stockQuantity: 15,
-      categoryId: categories["accessories"].id,
-      subcategoryId: subcategories["soap-dispensers"].id,
-      status: "ACTIVE" as ProductStatus,
-      purchaseMethod: "BUY_ONLINE" as PurchaseMethod,
-    },
-  ];
-
-  for (const productDef of sampleProducts) {
-    const { images, variants, variantAttributes, ...data } = productDef;
-
-    // Create product
-    let product;
-    const existing = await db.product.findUnique({ where: { slug: data.slug } });
-
-    if (existing) {
-      product = existing;
-    } else {
-      product = await db.product.create({
-        data: {
-          ...data,
-          categoryId: data.categoryId,
-          subcategoryId: data.subcategoryId || null,
-          images: images ? {
-            create: images.map((img) => ({
-              url: img.url,
-              alt: img.alt,
-              isPrimary: img.isPrimary,
-              position: img.position,
-            })),
-          } : undefined,
-        },
-      });
-    }
-
-    // Create variant attributes and variants
-    if (variantAttributes && variants) {
-      for (const va of variantAttributes) {
-        const attr = await db.variantAttribute.upsert({
-          where: { productId_name: { productId: product.id, name: va.name } },
-          update: { position: va.position },
-          create: {
-            productId: product.id,
-            name: va.name,
-            position: va.position,
-          },
-        });
-
-        for (const v of variants) {
-          let variant = await db.productVariant.findFirst({
-            where: { productId: product.id, sku: v.sku },
-          });
-
-          if (!variant) {
-            variant = await db.productVariant.create({
-              data: {
-                productId: product.id,
-                name: v.name,
-                sku: v.sku,
-                price: v.price,
-                salePrice: v.salePrice ?? null,
-                stockQuantity: v.stockQuantity,
-                isActive: v.isActive,
-                position: v.position,
-              },
-            });
-          }
-
-          // Link variant to attribute value
-          const existingAttrValue = await db.variantAttributeValue.findUnique({
-            where: {
-              variantAttributeId_variantId: {
-                variantAttributeId: attr.id,
-                variantId: variant.id,
-              },
-            },
-          });
-
-          if (!existingAttrValue) {
-            await db.variantAttributeValue.create({
-              data: {
-                variantAttributeId: attr.id,
-                variantId: variant.id,
-                value: v.name,
-                position: v.position,
-              },
-            });
-          }
-        }
-      }
-    }
-
-    console.log(`   ✅ ${product.name}`);
   }
 
   // ============================================================
@@ -504,7 +194,8 @@ async function main() {
   console.log(`   Homepage Sections: ${counts[7]}`);
 
   console.log("\n🎉 Seed complete!");
-  console.log("   Admin login: admin@westhomebybmd.com / admin123");
+  console.log("   Admin login: sanoojbm1144@gmail.com / Westhome1144");
+  console.log("   Staff login: salmansahil2005@gmail.com / SALLUshai@2005");
 }
 
 main()

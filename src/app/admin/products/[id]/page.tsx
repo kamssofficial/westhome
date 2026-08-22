@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Save, Trash2 } from "lucide-react";
 import Button from "@/components/ui/Button";
+import ImageUploader from "@/components/admin/ImageUploader";
 import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
 
@@ -21,9 +22,27 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
     trackInventory: true, allowBackorder: false, categoryId: "", subcategoryId: "",
     isFeatured: false, isBestseller: false, isNewArrival: false, isComingSoon: false,
     status: "DRAFT", purchaseMethod: "BOTH",
+    // Physical dimensions
+    height: "", width: "", length: "", depth: "", diameter: "",
+    dimensionUnit: "cm", weight: "", weightUnit: "kg",
+    capacity: "", capacityUnit: "L",
+    // Physical attributes
+    material: "", color: "", finish: "", shape: "", pattern: "",
+    style: "", mountingType: "", usageLocation: "",
+    // Product information
+    careInstructions: "", warranty: "",
+    // Packaging
+    packagingType: "", packagingDimensions: "", packagingWeight: "", includedItems: "",
+    // Custom sizing
     allowCustomSize: false, customSizeUnit: "cm",
+    customSizeMinWidth: "", customSizeMinLength: "", customSizeMinHeight: "",
+    customSizeMaxWidth: "", customSizeMaxLength: "", customSizeMaxHeight: "",
+    customSizePricingMethod: "area", customSizeRequiresApproval: false,
+    // SEO
     seoTitle: "", seoDescription: "",
   });
+
+  const [images, setImages] = useState<any[]>([]);
 
   useEffect(() => {
     Promise.all([
@@ -42,9 +61,41 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
           isFeatured: p.isFeatured ?? false, isBestseller: p.isBestseller ?? false,
           isNewArrival: p.isNewArrival ?? false, isComingSoon: p.isComingSoon ?? false,
           status: p.status || "DRAFT", purchaseMethod: p.purchaseMethod || "BOTH",
+          // Physical dimensions
+          height: p.height ? String(p.height) : "", width: p.width ? String(p.width) : "",
+          length: p.length ? String(p.length) : "", depth: p.depth ? String(p.depth) : "",
+          diameter: p.diameter ? String(p.diameter) : "", dimensionUnit: p.dimensionUnit || "cm",
+          weight: p.weight ? String(p.weight) : "", weightUnit: p.weightUnit || "kg",
+          capacity: p.capacity ? String(p.capacity) : "", capacityUnit: p.capacityUnit || "L",
+          // Physical attributes
+          material: p.material || "", color: p.color || "", finish: p.finish || "",
+          shape: p.shape || "", pattern: p.pattern || "", style: p.style || "",
+          mountingType: p.mountingType || "", usageLocation: p.usageLocation || "",
+          // Product information
+          careInstructions: p.careInstructions || "", warranty: p.warranty || "",
+          // Packaging
+          packagingType: p.packagingType || "", packagingDimensions: p.packagingDimensions || "",
+          packagingWeight: p.packagingWeight ? String(p.packagingWeight) : "", includedItems: p.includedItems || "",
+          // Custom sizing
           allowCustomSize: p.allowCustomSize ?? false, customSizeUnit: p.customSizeUnit || "cm",
+          customSizeMinWidth: p.customSizeMinWidth ? String(p.customSizeMinWidth) : "",
+          customSizeMinLength: p.customSizeMinLength ? String(p.customSizeMinLength) : "",
+          customSizeMinHeight: p.customSizeMinHeight ? String(p.customSizeMinHeight) : "",
+          customSizeMaxWidth: p.customSizeMaxWidth ? String(p.customSizeMaxWidth) : "",
+          customSizeMaxLength: p.customSizeMaxLength ? String(p.customSizeMaxLength) : "",
+          customSizeMaxHeight: p.customSizeMaxHeight ? String(p.customSizeMaxHeight) : "",
+          customSizePricingMethod: p.customSizePricingMethod || "area",
+          customSizeRequiresApproval: p.customSizeRequiresApproval ?? false,
+          // SEO
           seoTitle: p.seoTitle || "", seoDescription: p.seoDescription || "",
         });
+        // Load images
+        if (p.images?.length) {
+          setImages(p.images.map((img: any) => ({
+            id: img.id, url: img.url, alt: img.alt || "", isPrimary: img.isPrimary, position: img.position,
+            imageType: img.imageType || "PRODUCT",
+          })));
+        }
       }
       setCategories(catData.categories || []);
     }).finally(() => setLoading(false));
@@ -64,6 +115,24 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
           salePrice: form.salePrice ? parseFloat(form.salePrice) : null,
           stockQuantity: parseInt(form.stockQuantity) || 0,
           lowStockThreshold: parseInt(form.lowStockThreshold) || 5,
+          // Physical dimensions
+          height: form.height ? parseFloat(form.height) : null,
+          width: form.width ? parseFloat(form.width) : null,
+          length: form.length ? parseFloat(form.length) : null,
+          depth: form.depth ? parseFloat(form.depth) : null,
+          diameter: form.diameter ? parseFloat(form.diameter) : null,
+          weight: form.weight ? parseFloat(form.weight) : null,
+          capacity: form.capacity ? parseFloat(form.capacity) : null,
+          // Custom size
+          customSizeMinWidth: form.customSizeMinWidth ? parseFloat(form.customSizeMinWidth) : null,
+          customSizeMinLength: form.customSizeMinLength ? parseFloat(form.customSizeMinLength) : null,
+          customSizeMinHeight: form.customSizeMinHeight ? parseFloat(form.customSizeMinHeight) : null,
+          customSizeMaxWidth: form.customSizeMaxWidth ? parseFloat(form.customSizeMaxWidth) : null,
+          customSizeMaxLength: form.customSizeMaxLength ? parseFloat(form.customSizeMaxLength) : null,
+          customSizeMaxHeight: form.customSizeMaxHeight ? parseFloat(form.customSizeMaxHeight) : null,
+          // Packaging
+          packagingWeight: form.packagingWeight ? parseFloat(form.packagingWeight) : null,
+          images: images,
         }),
       });
       if (res.ok) {
@@ -101,6 +170,18 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
       </div>
 
       <div className="space-y-6">
+        {/* Images */}
+        <div className="bg-white rounded-xl border border-border-light p-5">
+          <h2 className="font-semibold mb-4">Product Images</h2>
+          <ImageUploader
+            images={images}
+            onChange={setImages}
+            folder="products"
+            maxImages={10}
+            allowLifestyle
+          />
+        </div>
+
         {/* Basic Info */}
         <div className="bg-white rounded-xl border border-border-light p-5">
           <h2 className="font-semibold mb-4">Basic Information</h2>
@@ -145,13 +226,89 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
             <div><label className="text-xs font-medium text-text-secondary mb-1 block">Purchase Method</label><select value={form.purchaseMethod} onChange={(e) => setForm({ ...form, purchaseMethod: e.target.value })} className={inputClass}><option value="BUY_ONLINE">Buy Online</option><option value="WHATSAPP">WhatsApp Only</option><option value="BOTH">Both</option></select></div>
           </div>
           <div className="flex flex-wrap items-center gap-4">
-            {([["isFeatured", "Featured"], ["isBestseller", "Bestseller"], ["isNewArrival", "New Arrival"], ["isComingSoon", "Coming Soon"], ["allowCustomSize", "Custom Size"]] as const).map(([key, label]) => (
+            {([["isFeatured", "Featured"], ["isBestseller", "Bestseller"], ["isNewArrival", "New Arrival"], ["isComingSoon", "Coming Soon"]] as const).map(([key, label]) => (
               <label key={key} className="flex items-center gap-2 text-sm cursor-pointer">
                 <input type="checkbox" checked={form[key] as boolean} onChange={(e) => setForm({ ...form, [key]: e.target.checked })} className="accent-accent" />
                 {label}
               </label>
             ))}
           </div>
+        </div>
+
+        {/* Physical Dimensions */}
+        <div className="bg-white rounded-xl border border-border-light p-5">
+          <h2 className="font-semibold mb-4">Physical Dimensions</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div><label className="text-xs font-medium text-text-secondary mb-1 block">Height</label><input type="number" step="0.1" value={form.height} onChange={(e) => setForm({ ...form, height: e.target.value })} className={inputClass} placeholder="0" /></div>
+            <div><label className="text-xs font-medium text-text-secondary mb-1 block">Width</label><input type="number" step="0.1" value={form.width} onChange={(e) => setForm({ ...form, width: e.target.value })} className={inputClass} placeholder="0" /></div>
+            <div><label className="text-xs font-medium text-text-secondary mb-1 block">Length</label><input type="number" step="0.1" value={form.length} onChange={(e) => setForm({ ...form, length: e.target.value })} className={inputClass} placeholder="0" /></div>
+            <div><label className="text-xs font-medium text-text-secondary mb-1 block">Depth</label><input type="number" step="0.1" value={form.depth} onChange={(e) => setForm({ ...form, depth: e.target.value })} className={inputClass} placeholder="0" /></div>
+            <div><label className="text-xs font-medium text-text-secondary mb-1 block">Diameter</label><input type="number" step="0.1" value={form.diameter} onChange={(e) => setForm({ ...form, diameter: e.target.value })} className={inputClass} placeholder="0" /></div>
+            <div><label className="text-xs font-medium text-text-secondary mb-1 block">Dimension Unit</label><select value={form.dimensionUnit} onChange={(e) => setForm({ ...form, dimensionUnit: e.target.value })} className={inputClass}><option value="cm">cm</option><option value="mm">mm</option><option value="in">inches</option></select></div>
+            <div><label className="text-xs font-medium text-text-secondary mb-1 block">Weight</label><input type="number" step="0.1" value={form.weight} onChange={(e) => setForm({ ...form, weight: e.target.value })} className={inputClass} placeholder="0" /></div>
+            <div><label className="text-xs font-medium text-text-secondary mb-1 block">Weight Unit</label><select value={form.weightUnit} onChange={(e) => setForm({ ...form, weightUnit: e.target.value })} className={inputClass}><option value="kg">kg</option><option value="g">g</option></select></div>
+          </div>
+        </div>
+
+        {/* Material & Appearance */}
+        <div className="bg-white rounded-xl border border-border-light p-5">
+          <h2 className="font-semibold mb-4">Material & Appearance</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div><label className="text-xs font-medium text-text-secondary mb-1 block">Material</label><input type="text" value={form.material} onChange={(e) => setForm({ ...form, material: e.target.value })} className={inputClass} placeholder="e.g. Ceramic, Wool, Velvet" /></div>
+            <div><label className="text-xs font-medium text-text-secondary mb-1 block">Color</label><input type="text" value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} className={inputClass} placeholder="e.g. Gold, Cream, Black" /></div>
+            <div><label className="text-xs font-medium text-text-secondary mb-1 block">Finish</label><input type="text" value={form.finish} onChange={(e) => setForm({ ...form, finish: e.target.value })} className={inputClass} placeholder="e.g. Matte, Gloss, Brushed" /></div>
+            <div><label className="text-xs font-medium text-text-secondary mb-1 block">Shape</label><input type="text" value={form.shape} onChange={(e) => setForm({ ...form, shape: e.target.value })} className={inputClass} placeholder="e.g. Round, Rectangular" /></div>
+            <div><label className="text-xs font-medium text-text-secondary mb-1 block">Pattern</label><input type="text" value={form.pattern} onChange={(e) => setForm({ ...form, pattern: e.target.value })} className={inputClass} placeholder="e.g. Solid, Geometric" /></div>
+            <div><label className="text-xs font-medium text-text-secondary mb-1 block">Style</label><input type="text" value={form.style} onChange={(e) => setForm({ ...form, style: e.target.value })} className={inputClass} placeholder="e.g. Modern, Vintage" /></div>
+            <div><label className="text-xs font-medium text-text-secondary mb-1 block">Mounting Type</label><input type="text" value={form.mountingType} onChange={(e) => setForm({ ...form, mountingType: e.target.value })} className={inputClass} placeholder="e.g. Wall-mount, Floor, Table" /></div>
+            <div><label className="text-xs font-medium text-text-secondary mb-1 block">Usage Location</label><input type="text" value={form.usageLocation} onChange={(e) => setForm({ ...form, usageLocation: e.target.value })} className={inputClass} placeholder="e.g. Indoor, Bathroom" /></div>
+          </div>
+        </div>
+
+        {/* Care & Packaging */}
+        <div className="bg-white rounded-xl border border-border-light p-5">
+          <h2 className="font-semibold mb-4">Care & Packaging</h2>
+          <div className="space-y-4">
+            <div><label className="text-xs font-medium text-text-secondary mb-1 block">Care Instructions</label><textarea value={form.careInstructions} onChange={(e) => setForm({ ...form, careInstructions: e.target.value })} className={cn(inputClass, "min-h-[80px] resize-y")} rows={3} placeholder="How to care for this product..." /></div>
+            <div><label className="text-xs font-medium text-text-secondary mb-1 block">Warranty</label><input type="text" value={form.warranty} onChange={(e) => setForm({ ...form, warranty: e.target.value })} className={inputClass} placeholder="e.g. 1 year manufacturer warranty" /></div>
+            <div><label className="text-xs font-medium text-text-secondary mb-1 block">Included Items</label><input type="text" value={form.includedItems} onChange={(e) => setForm({ ...form, includedItems: e.target.value })} className={inputClass} placeholder="What's included in the box" /></div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div><label className="text-xs font-medium text-text-secondary mb-1 block">Packaging Type</label><input type="text" value={form.packagingType} onChange={(e) => setForm({ ...form, packagingType: e.target.value })} className={inputClass} placeholder="e.g. Corrugated box" /></div>
+              <div><label className="text-xs font-medium text-text-secondary mb-1 block">Packaging Dimensions</label><input type="text" value={form.packagingDimensions} onChange={(e) => setForm({ ...form, packagingDimensions: e.target.value })} className={inputClass} placeholder="e.g. 50x40x20 cm" /></div>
+              <div><label className="text-xs font-medium text-text-secondary mb-1 block">Packaging Weight (kg)</label><input type="number" step="0.1" value={form.packagingWeight} onChange={(e) => setForm({ ...form, packagingWeight: e.target.value })} className={inputClass} placeholder="0" /></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Custom Size */}
+        <div className="bg-white rounded-xl border border-border-light p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold">Custom Size</h2>
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="checkbox" checked={form.allowCustomSize} onChange={(e) => setForm({ ...form, allowCustomSize: e.target.checked })} className="accent-accent" />
+              Enable Custom Sizing
+            </label>
+          </div>
+          {form.allowCustomSize && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div><label className="text-xs font-medium text-text-secondary mb-1 block">Min Width</label><input type="number" value={form.customSizeMinWidth} onChange={(e) => setForm({ ...form, customSizeMinWidth: e.target.value })} className={inputClass} /></div>
+                <div><label className="text-xs font-medium text-text-secondary mb-1 block">Min Length</label><input type="number" value={form.customSizeMinLength} onChange={(e) => setForm({ ...form, customSizeMinLength: e.target.value })} className={inputClass} /></div>
+                <div><label className="text-xs font-medium text-text-secondary mb-1 block">Min Height</label><input type="number" value={form.customSizeMinHeight} onChange={(e) => setForm({ ...form, customSizeMinHeight: e.target.value })} className={inputClass} /></div>
+                <div><label className="text-xs font-medium text-text-secondary mb-1 block">Max Width</label><input type="number" value={form.customSizeMaxWidth} onChange={(e) => setForm({ ...form, customSizeMaxWidth: e.target.value })} className={inputClass} /></div>
+                <div><label className="text-xs font-medium text-text-secondary mb-1 block">Max Length</label><input type="number" value={form.customSizeMaxLength} onChange={(e) => setForm({ ...form, customSizeMaxLength: e.target.value })} className={inputClass} /></div>
+                <div><label className="text-xs font-medium text-text-secondary mb-1 block">Max Height</label><input type="number" value={form.customSizeMaxHeight} onChange={(e) => setForm({ ...form, customSizeMaxHeight: e.target.value })} className={inputClass} /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className="text-xs font-medium text-text-secondary mb-1 block">Unit</label><select value={form.customSizeUnit} onChange={(e) => setForm({ ...form, customSizeUnit: e.target.value })} className={inputClass}><option value="cm">cm</option><option value="mm">mm</option><option value="in">inches</option></select></div>
+                <div><label className="text-xs font-medium text-text-secondary mb-1 block">Pricing Method</label><select value={form.customSizePricingMethod} onChange={(e) => setForm({ ...form, customSizePricingMethod: e.target.value })} className={inputClass}><option value="area">By Area</option><option value="linear">By Length</option><option value="fixed">Fixed Price</option></select></div>
+              </div>
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input type="checkbox" checked={form.customSizeRequiresApproval} onChange={(e) => setForm({ ...form, customSizeRequiresApproval: e.target.checked })} className="accent-accent" />
+                Require admin approval for custom orders
+              </label>
+            </div>
+          )}
         </div>
 
         {/* SEO */}

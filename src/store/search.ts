@@ -13,7 +13,7 @@ interface SearchStore {
 export const useSearchStore = create<SearchStore>()((set, get) => ({
   query: "",
   recentSearches: [],
-  popularSearches: ["wall decor", "lamps", "comforters", "carpets", "flower pots", "vases"],
+  popularSearches: ["laundry baskets", "frames", "soap dispenser", "botanical", "ceramic", "woven"],
 
   setQuery: (query) => set({ query }),
 

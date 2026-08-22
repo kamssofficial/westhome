@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
+import { requireOrderManager } from "@/lib/apiAuth";
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authResult = await requireOrderManager();
+  if (authResult.error) return authResult.error;
+
   try {
     const { id } = await params;
     const body = await request.json();

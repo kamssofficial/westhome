@@ -36,7 +36,11 @@ export const authOptions: NextAuthConfig = {
           where: { email: credentials.email as string },
         });
 
-        if (!user || !user.isActive) {
+        if (!user) {
+          return null;
+        }
+        // isActive may be undefined if field wasn't migrated — treat undefined as true
+        if (user.isActive === false) {
           return null;
         }
 
@@ -76,6 +80,16 @@ export const authOptions: NextAuthConfig = {
         (session.user as any).id = token.id;
       }
       return session;
+    },
+    async redirect({ url, baseUrl }) {
+      // Allow relative callback URLs
+      if (url.startsWith("/")) return url;
+      // Allow redirects to the same origin
+      try {
+        const urlObj = new URL(url);
+        if (urlObj.origin === baseUrl) return urlObj.pathname;
+      } catch {}
+      return baseUrl;
     },
   },
   pages: {
@@ -117,7 +131,7 @@ export async function requireAuth() {
 
 export async function requireAdmin() {
   const session = await auth();
-  if (!session?.user || ((session.user as any).role !== "ADMIN" && (session.user as any).role !== "MANAGER")) {
+  if (!session?.user || (session.user as any).role !== "ADMIN") {
     throw new Error("Unauthorized: Admin access required");
   }
   return session;

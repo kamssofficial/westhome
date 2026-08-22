@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
+import { requireAuthRole } from "@/lib/apiAuth";
 
 export async function GET() {
   try {
@@ -11,6 +12,9 @@ export async function GET() {
 }
 
 export async function PUT(request: NextRequest) {
+  const authResult = await requireAuthRole(["ADMIN", "MANAGER", "CONTENT_MANAGER"]);
+  if (authResult.error) return authResult.error;
+
   try {
     const body = await request.json();
     const page = await db.contentPage.upsert({

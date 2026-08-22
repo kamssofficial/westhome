@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import db from "@/lib/db";
+import { requireAuth } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await requireAuth();
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const {
       razorpay_order_id,
       razorpay_payment_id,

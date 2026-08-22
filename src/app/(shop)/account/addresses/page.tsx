@@ -75,8 +75,12 @@ export default function AddressesPage() {
     return (
       <div className="container-shop py-4 md:py-8">
         <h1 className="text-xl font-serif mb-6">My Addresses</h1>
-        <EmptyState icon="product" title="No saved addresses" description="Add a delivery address to make checkout faster."
-          action={{ label: "Add Address", href: "#" }} />
+        <EmptyState icon="product" title="No saved addresses" description="Add a delivery address to make checkout faster." />
+        <div className="flex justify-center mt-2">
+          <Button size="sm" onClick={() => setShowForm(true)}>
+            <Plus size={14} /> Add Address
+          </Button>
+        </div>
       </div>
     );
   }
