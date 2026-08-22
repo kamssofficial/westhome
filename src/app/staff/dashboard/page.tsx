@@ -39,7 +39,7 @@ export default function StaffDashboard() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold text-stone-900">Staff Dashboard</h1>
-        <p className="text-sm text-stone-500 mt-1">Overview of store activity</p>
+        <p className="text-sm text-text-muted mt-1">Overview of store activity</p>
       </div>
 
       {/* Stats */}
@@ -47,7 +47,7 @@ export default function StaffDashboard() {
         {statCards.map((stat) => {
           const Icon = stat.icon;
           return (
-            <div key={stat.label} className="bg-white rounded-xl p-5 border border-stone-200/60">
+            <div key={stat.label} className="bg-surface rounded-[1.35rem] p-5 border border-border">
               <div className="flex items-center gap-3">
                 <div className={`p-2.5 rounded-lg ${stat.color}`}>
                   <Icon size={20} />
@@ -56,7 +56,7 @@ export default function StaffDashboard() {
                   <p className="text-2xl font-semibold text-stone-900">
                     {loading ? "—" : stat.value.toLocaleString()}
                   </p>
-                  <p className="text-xs text-stone-500">{stat.label}</p>
+                  <p className="text-xs text-text-muted">{stat.label}</p>
                 </div>
               </div>
             </div>
@@ -65,19 +65,19 @@ export default function StaffDashboard() {
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-white rounded-xl p-5 border border-stone-200/60">
+      <div className="bg-surface rounded-[1.35rem] p-5 border border-border">
         <h2 className="text-sm font-semibold text-stone-900 mb-4">Quick Actions</h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <a href="/staff/orders" className="flex items-center gap-2 px-4 py-3 bg-stone-50 hover:bg-stone-100 rounded-lg transition-colors text-sm font-medium text-stone-700">
+          <a href="/staff/orders" className="flex items-center gap-2 px-4 py-3 bg-surface-muted/30 hover:bg-surface-muted rounded-lg transition-colors text-sm font-medium text-stone-700">
             <ShoppingCart size={16} /> View Orders
           </a>
-          <a href="/staff/products" className="flex items-center gap-2 px-4 py-3 bg-stone-50 hover:bg-stone-100 rounded-lg transition-colors text-sm font-medium text-stone-700">
+          <a href="/staff/products" className="flex items-center gap-2 px-4 py-3 bg-surface-muted/30 hover:bg-surface-muted rounded-lg transition-colors text-sm font-medium text-stone-700">
             <Package size={16} /> View Products
           </a>
-          <a href="/staff/customers" className="flex items-center gap-2 px-4 py-3 bg-stone-50 hover:bg-stone-100 rounded-lg transition-colors text-sm font-medium text-stone-700">
+          <a href="/staff/customers" className="flex items-center gap-2 px-4 py-3 bg-surface-muted/30 hover:bg-surface-muted rounded-lg transition-colors text-sm font-medium text-stone-700">
             <Users size={16} /> View Customers
           </a>
-          <a href="/" className="flex items-center gap-2 px-4 py-3 bg-stone-50 hover:bg-stone-100 rounded-lg transition-colors text-sm font-medium text-stone-700">
+          <a href="/" className="flex items-center gap-2 px-4 py-3 bg-surface-muted/30 hover:bg-surface-muted rounded-lg transition-colors text-sm font-medium text-stone-700">
             <TrendingUp size={16} /> View Store
           </a>
         </div>

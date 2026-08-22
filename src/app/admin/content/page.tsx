@@ -67,7 +67,7 @@ export default function AdminContentPage() {
         {defaultPages.map((dp) => {
           const existing = pages.find((p) => p.slug === dp.slug);
           return (
-            <div key={dp.slug} className="bg-white rounded-xl border border-border-light p-4">
+            <div key={dp.slug} className="bg-surface rounded-[1.35rem] border border-border p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium text-sm">{dp.title}</p>

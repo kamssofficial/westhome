@@ -67,23 +67,23 @@ export default function RegisterPage() {
           <p className="text-sm text-text-secondary mt-1">Join the WESTHOME community</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white border border-border-light rounded-xl p-5 md:p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="bg-surface border border-border rounded-[1.35rem] p-5 md:p-6 space-y-4">
           <div>
             <label className="text-xs font-medium text-text-secondary mb-1 block">Full Name *</label>
-            <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required className="w-full px-3 py-2.5 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" placeholder="Your name" />
+            <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" placeholder="Your name" />
           </div>
           <div>
             <label className="text-xs font-medium text-text-secondary mb-1 block">Email *</label>
-            <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required className="w-full px-3 py-2.5 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" placeholder="your@email.com" />
+            <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" placeholder="your@email.com" />
           </div>
           <div>
             <label className="text-xs font-medium text-text-secondary mb-1 block">Phone</label>
-            <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full px-3 py-2.5 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" placeholder="+91 XXXXX XXXXX" />
+            <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" placeholder="+91 XXXXX XXXXX" />
           </div>
           <div>
             <label className="text-xs font-medium text-text-secondary mb-1 block">Password *</label>
             <div className="relative">
-              <input type={showPassword ? "text" : "password"} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required className="w-full px-3 py-2.5 pr-10 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" placeholder="Min. 6 characters" />
+              <input type={showPassword ? "text" : "password"} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required className="w-full px-3 py-2.5 pr-10 bg-surface border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" placeholder="Min. 6 characters" />
               <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-foreground">
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
@@ -91,7 +91,7 @@ export default function RegisterPage() {
           </div>
           <div>
             <label className="text-xs font-medium text-text-secondary mb-1 block">Confirm Password *</label>
-            <input type="password" value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} required className="w-full px-3 py-2.5 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" placeholder="Confirm your password" />
+            <input type="password" value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} required className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" placeholder="Confirm your password" />
           </div>
           <Button type="submit" fullWidth size="lg" loading={loading}>Create Account</Button>
         </form>

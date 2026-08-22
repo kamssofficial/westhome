@@ -81,26 +81,26 @@ function CategoryContent() {
   return (
     <div className="animate-fade-in">
       {/* Back button */}
-      <div className="px-4 pt-3 pb-2">
+      <div className="container-shop pt-10 pb-6 md:pt-16 md:pb-10">
         <Link href="/shop" className="p-1 hover:bg-surface-muted rounded-lg transition-colors inline-flex">
           <ArrowLeft size={20} />
         </Link>
       </div>
 
       {/* Title + count */}
-      <div className="px-4 pb-3">
+      <div className="container-shop pb-3">
         <h1 className="text-2xl font-semibold text-primary">{category?.name || slug.replace(/-/g, " ")}</h1>
         <p className="text-sm text-secondary mt-0.5">{total || 0} Items</p>
       </div>
 
       {/* Filter / Sort bar — always visible */}
-      <div className="px-4 pb-3">
+      <div className="container-shop pb-3">
         <div className="flex items-center justify-between">
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={cn(
-              "flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-medium transition-colors",
-              showFilters ? "bg-primary text-white border-primary" : "bg-white border-border"
+              "flex items-center gap-1.5 px-3 py-2 rounded-[1.35rem] border text-sm font-medium transition-colors",
+              showFilters ? "bg-primary text-white border-primary" : "bg-surface border-border"
             )}
           >
             <SlidersHorizontal size={14} /> Filter
@@ -110,7 +110,7 @@ function CategoryContent() {
               <select
                 value={sort}
                 onChange={(e) => { setSort(e.target.value); setPage(1); }}
-                className="px-3 py-2 pr-8 rounded-xl border border-border bg-white text-sm focus:outline-none appearance-none"
+                className="px-3 py-2 pr-8 rounded-[1.35rem] border border-border bg-white text-sm focus:outline-none appearance-none"
               >
                 {SORT_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -120,13 +120,13 @@ function CategoryContent() {
             </div>
             <button
               onClick={() => setViewMode("grid")}
-              className={cn("p-2 rounded-lg", viewMode === "grid" ? "bg-primary text-white" : "bg-white border border-border")}
+              className={cn("p-2 rounded-lg", viewMode === "grid" ? "bg-primary text-white" : "bg-surface border border-border")}
             >
               <Grid3X3 size={16} />
             </button>
             <button
               onClick={() => setViewMode("list")}
-              className={cn("p-2 rounded-lg", viewMode === "list" ? "bg-primary text-white" : "bg-white border border-border")}
+              className={cn("p-2 rounded-lg", viewMode === "list" ? "bg-primary text-white" : "bg-surface border border-border")}
             >
               <List size={16} />
             </button>
@@ -135,7 +135,7 @@ function CategoryContent() {
 
         {/* Filter Panel */}
         {showFilters && (
-          <div className="bg-white rounded-xl p-4 shadow-sm mt-3">
+          <div className="bg-surface rounded-[1.35rem] border border-foreground/[.08] p-4 shadow-sm mt-3">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
                 <label className="text-xs font-medium text-text-secondary mb-1 block">Min Price (₹)</label>
@@ -174,14 +174,14 @@ function CategoryContent() {
 
       {/* Subcategory grid (when applicable) */}
       {hasSubcategories && showSubcategories && (
-        <div className="px-4 pb-4">
+        <div className="container-shop pb-4">
           <div className="grid grid-cols-2 gap-3">
             {category!.subcategories.map((sub) => {
               return (
                 <Link
                   key={sub.id}
                   href={`/collections/${slug}/${sub.slug}`}
-                  className="group block bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-card transition-all"
+                  className="group block bg-surface rounded-[1.35rem] border border-foreground/[.08] overflow-hidden shadow-sm hover:shadow-card transition-all"
                 >
                   <div className="relative aspect-[4/3] bg-surface-muted overflow-hidden flex items-center justify-center">
                     <span className="text-sm font-medium text-text-muted">{sub.name}</span>
@@ -201,7 +201,7 @@ function CategoryContent() {
       )}
 
       {/* Product grid */}
-      <div className="px-4 pb-8">
+      <div className="container-shop pb-8">
         {loading ? (
           <ProductGridSkeleton count={8} />
         ) : products.length > 0 ? (

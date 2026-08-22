@@ -1,62 +1,243 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight } from "lucide-react";
-import { cn, formatPrice } from "@/lib/utils";
-import { motion } from "motion/react";
-import { TextEffect } from "@/components/motion-primitives/text-effect";
-import type { Product, Category } from "@/types";
+import {
+  ArrowRight,
+  ArrowUpRight,
+  Check,
+  Headphones,
+  MessageCircle,
+  RotateCcw,
+  ShieldCheck,
+  Star,
+  Truck,
+} from "lucide-react";
+import ProductCard from "@/components/ui/ProductCard";
+import Button from "@/components/ui/Button";
+import { ProductGridSkeleton } from "@/components/ui/Skeleton";
+import type { Category, Product } from "@/types";
 
-interface HeroSection {
-  id: string;
-  type: string;
-  title?: string;
-  subtitle?: string;
-  description?: string;
-  image?: string;
-  buttonText?: string;
-  buttonLink?: string;
-}
+const FALLBACK_CATEGORIES: Category[] = [
+  {
+    id: "1",
+    name: "Wall Decor",
+    slug: "wall-decor",
+    image: "/images/categories/wall-decor.svg",
+    isActive: true,
+    position: 1,
+    subcategories: [],
+  },
+  {
+    id: "2",
+    name: "Laundry",
+    slug: "laundry",
+    image: "/images/categories/laundry.svg",
+    isActive: true,
+    position: 2,
+    subcategories: [],
+  },
+  {
+    id: "3",
+    name: "Comforters",
+    slug: "comforters",
+    image: "/images/categories/comforters.svg",
+    isActive: true,
+    position: 3,
+    subcategories: [],
+  },
+  {
+    id: "4",
+    name: "Lamps",
+    slug: "lamps",
+    image: "/images/categories/lamps.svg",
+    isActive: true,
+    position: 4,
+    subcategories: [],
+  },
+  {
+    id: "5",
+    name: "Carpets",
+    slug: "carpets",
+    image: "/images/categories/carpets.svg",
+    isActive: true,
+    position: 5,
+    subcategories: [],
+  },
+  {
+    id: "6",
+    name: "Clocks",
+    slug: "clocks",
+    image: "/images/categories/clocks.svg",
+    isActive: true,
+    position: 6,
+    subcategories: [],
+  },
+  {
+    id: "7",
+    name: "Accessories",
+    slug: "accessories",
+    image: "/images/categories/accessories.svg",
+    isActive: true,
+    position: 7,
+    subcategories: [],
+  },
+];
+
+const FALLBACK_PRODUCTS: Product[] = [
+  {
+    id: "demo-1",
+    name: "Quiet Geometry Wall Clock",
+    slug: "quiet-geometry-wall-clock",
+    regularPrice: 2499,
+    salePrice: 1999,
+    stockQuantity: 8,
+    lowStockThreshold: 2,
+    allowBackorder: false,
+    trackInventory: true,
+    allowCustomSize: false,
+    purchaseMethod: "BOTH",
+    status: "ACTIVE",
+    isActive: true,
+    isFeatured: true,
+    isBestseller: true,
+    isNewArrival: false,
+    images: [
+      {
+        id: "demo-image-1",
+        url: "/images/categories/clocks.svg",
+        alt: "Quiet Geometry Wall Clock",
+        position: 0,
+        isPrimary: true,
+      },
+    ],
+    variants: [],
+    category: FALLBACK_CATEGORIES[5],
+    tags: ["clock", "modern"],
+  },
+  {
+    id: "demo-2",
+    name: "Soft Horizon Comforter",
+    slug: "soft-horizon-comforter",
+    regularPrice: 3899,
+    salePrice: 3299,
+    stockQuantity: 12,
+    lowStockThreshold: 3,
+    allowBackorder: false,
+    trackInventory: true,
+    allowCustomSize: false,
+    purchaseMethod: "BUY_ONLINE",
+    status: "ACTIVE",
+    isActive: true,
+    isFeatured: true,
+    isBestseller: false,
+    isNewArrival: true,
+    images: [
+      {
+        id: "demo-image-2",
+        url: "/images/categories/comforters.svg",
+        alt: "Soft Horizon Comforter",
+        position: 0,
+        isPrimary: true,
+      },
+    ],
+    variants: [],
+    category: FALLBACK_CATEGORIES[2],
+    tags: ["comforter", "soft"],
+  },
+  {
+    id: "demo-3",
+    name: "Amber Evening Lamp",
+    slug: "amber-evening-lamp",
+    regularPrice: 2199,
+    stockQuantity: 10,
+    lowStockThreshold: 2,
+    allowBackorder: false,
+    trackInventory: true,
+    allowCustomSize: false,
+    purchaseMethod: "BUY_ONLINE",
+    status: "ACTIVE",
+    isActive: true,
+    isFeatured: true,
+    isBestseller: false,
+    isNewArrival: true,
+    images: [
+      {
+        id: "demo-image-3",
+        url: "/images/categories/lamps.svg",
+        alt: "Amber Evening Lamp",
+        position: 0,
+        isPrimary: true,
+      },
+    ],
+    variants: [],
+    category: FALLBACK_CATEGORIES[3],
+    tags: ["lamp", "light"],
+  },
+  {
+    id: "demo-4",
+    name: "Linework Wall Panel",
+    slug: "linework-wall-panel",
+    regularPrice: 2999,
+    salePrice: 2499,
+    stockQuantity: 5,
+    lowStockThreshold: 2,
+    allowBackorder: false,
+    trackInventory: true,
+    allowCustomSize: false,
+    purchaseMethod: "WHATSAPP",
+    status: "ACTIVE",
+    isActive: true,
+    isFeatured: false,
+    isBestseller: true,
+    isNewArrival: false,
+    images: [
+      {
+        id: "demo-image-4",
+        url: "/images/categories/wall-decor.svg",
+        alt: "Linework Wall Panel",
+        position: 0,
+        isPrimary: true,
+      },
+    ],
+    variants: [],
+    category: FALLBACK_CATEGORIES[0],
+    tags: ["wall", "decor"],
+  },
+];
 
 export default function HomePage() {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [newArrivals, setNewArrivals] = useState<Product[]>([]);
-  const [heroSections, setHeroSections] = useState<HeroSection[]>([]);
+  const [categories, setCategories] = useState<Category[]>(FALLBACK_CATEGORIES);
+  const [featuredProducts, setFeaturedProducts] =
+    useState<Product[]>(FALLBACK_PRODUCTS);
+  const [newArrivals, setNewArrivals] = useState<Product[]>(
+    FALLBACK_PRODUCTS.slice(1)
+  );
   const [loading, setLoading] = useState(true);
-  const [activeSlide, setActiveSlide] = useState(0);
-
-  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [catRes, newRes, featRes, homeRes] = await Promise.allSettled([
+        const [catRes, featRes, newRes] = await Promise.allSettled([
           fetch("/api/categories"),
-          fetch("/api/products?newArrivals=true&limit=8"),
-          fetch("/api/products?featured=true&limit=6"),
-          fetch("/api/homepage"),
+          fetch("/api/products?featured=true&limit=4"),
+          fetch("/api/products?newArrivals=true&limit=4"),
         ]);
         if (catRes.status === "fulfilled" && catRes.value.ok) {
-          const catData = await catRes.value.json();
-          setCategories(catData.categories || []);
-        }
-        if (newRes.status === "fulfilled" && newRes.value.ok) {
-          const newData = await newRes.value.json();
-          setNewArrivals(newData.products || []);
+          const data = await catRes.value.json();
+          if (data.categories?.length) setCategories(data.categories);
         }
         if (featRes.status === "fulfilled" && featRes.value.ok) {
-          const featData = await featRes.value.json();
-          setFeaturedProducts(featData.products || []);
+          const data = await featRes.value.json();
+          if (data.products?.length) setFeaturedProducts(data.products);
         }
-        if (homeRes.status === "fulfilled" && homeRes.value.ok) {
-          const homeData = await homeRes.value.json();
-          const heroes = (homeData.sections || []).filter((s: HeroSection) => s.type === "HERO");
-          setHeroSections(heroes);
+        if (newRes.status === "fulfilled" && newRes.value.ok) {
+          const data = await newRes.value.json();
+          if (data.products?.length) setNewArrivals(data.products);
         }
-      } catch (err) {
-        console.error("Homepage fetch error:", err);
+      } catch (error) {
+        console.error("Homepage fetch error:", error);
       } finally {
         setLoading(false);
       }
@@ -64,227 +245,308 @@ export default function HomePage() {
     fetchData();
   }, []);
 
-  useEffect(() => {
-    if (heroSections.length <= 1) return;
-    const timer = setInterval(() => {
-      setActiveSlide((prev) => (prev + 1) % heroSections.length);
-    }, 5000);
-    return () => clearInterval(timer);
-  }, [heroSections.length]);
-
-  const hero = heroSections[activeSlide];
-
   return (
-    <div className="animate-fade-in">
-      {/* HERO — Editorial layout */}
-      <section className="px-4 pt-3 pb-2">
-        <div className="relative rounded-2xl overflow-hidden h-[420px] md:h-[480px] bg-primary">
-          {hero?.image && (
-            <Image src={hero.image} alt="" fill className="absolute inset-0 w-full h-full object-cover" priority />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
-          <div className="relative h-full flex flex-col justify-end p-6 pb-8">
-            <p className="font-label text-[10px] tracking-[0.2em] text-white/60 uppercase mb-2">
-              {hero?.subtitle || "Handcrafted Home"}
+    <div className="">
+      {/* HERO */}
+      <section className="container-shop relative mt-5 overflow-hidden rounded-[2rem] bg-[#1f2521] text-white shadow-[0_20px_70px_rgba(31,33,31,.18)] md:mt-7">
+        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url(/images/banners/hero.png)" }} />
+        
+        <div className="absolute -right-4 top-10 h-44 w-44 rounded-full bg-[#d5966e]/20 blur-3xl" />
+        
+        <div className="relative grid items-stretch lg:min-h-[690px] lg:grid-cols-[.88fr_1.12fr]">
+          <div className="order-2 relative z-10 flex flex-col justify-center px-7 py-12 sm:px-12 md:px-16 md:py-16 lg:order-1 lg:py-24">
+            <div className="mb-7 flex items-center gap-3 text-[#e0a681]">
+              <span className="h-px w-8 bg-current" />
+              <p className="font-label text-[9px]">
+                Premium home, thoughtfully chosen
+              </p>
+            </div>
+            <h1 className="max-w-xl font-display text-[3.4rem] leading-[.92] tracking-[-.045em] sm:text-6xl md:text-7xl">
+              Make space for{" "}
+              <span className="text-[#e0a681]">living.</span>
+            </h1>
+            <p className="mt-7 max-w-md text-sm leading-7 text-white/65 md:text-lg md:leading-8">
+              Objects with a point of view. Soft textures, warm light, and
+              everyday details that make a house feel like yours.
             </p>
-            <TextEffect
-              as="h1"
-              preset="fade-in-blur"
-              per="word"
-              className="font-display text-[2.5rem] md:text-5xl lg:text-6xl text-white leading-[1.05] mb-3 max-w-md"
-              speedReveal={0.8}
-              speedSegment={1.2}
-            >
-              {hero?.title || "Where craft meets home"}
-            </TextEffect>
-            <TextEffect
-              as="p"
-              preset="fade"
-              delay={0.3}
-              className="text-white/60 text-sm mb-5 leading-relaxed max-w-sm"
-            >
-              {hero?.description || "Woven baskets, artisan frames, and handcrafted dispensers — each piece tells a story."}
-            </TextEffect>
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5, duration: 0.5 }}>
-              <Link href={hero?.buttonLink || "/shop"} className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-primary rounded-full text-sm font-medium hover:bg-white/90 transition-colors w-fit">
-                {hero?.buttonText || "Shop the collection"} <ArrowRight size={15} />
+            <div className="mt-11 flex flex-col gap-3 sm:flex-row">
+              <Link href="/shop">
+                <Button variant="accent" size="lg">
+                  Explore the collection <ArrowRight size={16} />
+                </Button>
               </Link>
-            </motion.div>
+              
+            </div>
+            <div className="mt-14 flex items-center gap-6 text-xs text-white/50">
+              <span className="flex items-center gap-2">
+                <Check size={14} className="text-[#e0a681]" /> Curated in
+                India
+              </span>
+              <span className="flex items-center gap-2">
+                <Check size={14} className="text-[#e0a681]" /> Delivered with
+                care
+              </span>
+            </div>
+          </div>
+          <div className="order-1 relative min-h-[250px] overflow-hidden lg:order-2 lg:min-h-full">
+            <div className="hero-art absolute inset-0" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#1f2521]/30 via-transparent to-transparent lg:bg-gradient-to-r lg:from-[#1f2521]/20 lg:via-transparent lg:to-transparent" />
+            
           </div>
         </div>
-        {heroSections.length > 1 && (
-          <div className="flex items-center justify-center gap-2 mt-3">
-            {heroSections.map((_: HeroSection, i: number) => (
-              <button key={i} onClick={() => setActiveSlide(i)} className={cn("rounded-full transition-all duration-300", i === activeSlide ? "w-5 h-1.5 bg-primary" : "w-1.5 h-1.5 bg-stone-300")} aria-label={`Slide ${i + 1}`} />
-            ))}
-          </div>
-        )}
       </section>
 
-      {/* SHOP BY CATEGORY */}
-      <section className="px-4 py-6">
-        <div className="flex items-end justify-between mb-4">
-          <div>
-            <p className="font-label text-[10px] tracking-[0.2em] text-accent mb-1">Collections</p>
-            <h2 className="text-lg font-display text-primary">Shop by category</h2>
-          </div>
-          <Link href="/shop" className="text-sm font-medium text-secondary flex items-center gap-1 hover:text-primary transition-colors">View all <ArrowRight size={14} /></Link>
+      {/* MARQUEE */}
+      <div className="overflow-hidden border-b border-foreground/[.08] bg-surface py-4">
+        <div className="marquee-track flex w-max items-center gap-8 whitespace-nowrap text-[10px] font-bold uppercase tracking-[.18em] text-text-muted">
+          <span>Thoughtful details</span>
+          <span className="text-accent">✦</span>
+          <span>Made for everyday living</span>
+          <span className="text-accent">✦</span>
+          <span>Premium home & lifestyle</span>
+          <span className="text-accent">✦</span>
+          <span>Thoughtful details</span>
+          <span className="text-accent">✦</span>
+          <span>Made for everyday living</span>
+          <span className="text-accent">✦</span>
+          <span>Premium home & lifestyle</span>
         </div>
-        {loading ? (
-          <div className="grid grid-cols-3 gap-2.5">
-            {[1, 2, 3].map((i) => (<div key={i} className="skeleton aspect-[4/5] rounded-xl" />))}
+      </div>
+
+      {/* CATEGORIES */}
+      <section className="container-shop py-20 md:py-28">
+        <div className="mb-8 flex items-end justify-between md:mb-12">
+          <div>
+            <p className="font-label mb-3 text-[9px] text-accent">
+              Browse by mood
+            </p>
+            <h2 className="font-display text-4xl md:text-5xl">
+              Find your feeling.
+            </h2>
           </div>
-        ) : categories.length > 0 ? (
-          <>
-            <div className="grid grid-cols-3 gap-2.5 mb-2.5">
-              {categories.slice(0, 3).map((cat) => (
-                <Link key={cat.id} href={`/collections/${cat.slug}`} className="group block">
-                  <div className="relative aspect-[4/5] rounded-xl overflow-hidden bg-surface-muted">
-                    {cat.image ? (<Image src={cat.image} alt={cat.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="33vw" />) : (<div className="w-full h-full flex items-center justify-center text-text-muted text-xs font-medium">{cat.name}</div>)}
-                  </div>
-                  <p className="text-xs font-medium text-primary mt-1.5 text-center truncate">{cat.name}</p>
-                </Link>
-              ))}
-            </div>
-            {categories.length > 3 && (
-              <div className="grid grid-cols-4 gap-2">
-                {categories.slice(3, 7).map((cat) => (
-                  <Link key={cat.id} href={`/collections/${cat.slug}`} className="group block">
-                    <div className="relative aspect-square rounded-xl overflow-hidden bg-surface-muted">
-                      {cat.image ? (<Image src={cat.image} alt={cat.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="25vw" />) : (<div className="w-full h-full flex items-center justify-center text-text-muted text-[10px] font-medium text-center px-1">{cat.name}</div>)}
-                    </div>
-                    <p className="text-[11px] font-medium text-primary mt-1 text-center truncate">{cat.name}</p>
-                  </Link>
-                ))}
+          <Link
+            href="/shop"
+            className="group hidden items-center gap-2 text-sm font-semibold text-text-secondary hover:text-foreground sm:flex"
+          >
+            View all{" "}
+            <ArrowUpRight
+              size={15}
+              className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+            />
+          </Link>
+        </div>
+        <div className="scrollbar-hide -mx-1 flex snap-x gap-4 overflow-x-auto px-1 pb-2 md:grid md:grid-cols-7 md:gap-4 md:overflow-visible">
+          {categories.map((category, index) => (
+            <Link
+              href={`/collections/${category.slug}`}
+              key={category.id}
+              className="group min-w-[145px] snap-start md:min-w-0"
+            >
+              <div className="relative aspect-[.82] overflow-hidden rounded-[1.35rem] bg-surface-muted">
+                <Image
+                  src={
+                    category.image ||
+                    "/images/products/placeholder-product.svg"
+                  }
+                  alt={category.name}
+                  fill
+                  className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />
+                
+                <span className="absolute bottom-3 left-3 right-3 text-sm font-semibold text-white">
+                  {category.name}
+                </span>
               </div>
-            )}
-          </>
-        ) : (
-          <div className="text-center py-8"><p className="text-text-muted text-sm">No categories available yet.</p></div>
-        )}
+            </Link>
+          ))}
+        </div>
       </section>
 
       {/* FEATURED PRODUCTS */}
-      {featuredProducts.length > 0 && (
-        <section className="px-4 py-6">
-          <div className="flex items-end justify-between mb-4">
+      <section className="bg-surface-muted/65 py-20 md:py-28">
+        <div className="container-shop">
+          <div className="mb-8 flex items-end justify-between md:mb-12">
             <div>
-              <p className="font-label text-[10px] tracking-[0.2em] text-accent mb-1">Curated</p>
-              <h2 className="text-lg font-display text-primary">Featured pieces</h2>
+              <p className="font-label mb-3 text-[9px] text-accent">
+                The edit
+              </p>
+              <h2 className="font-display text-4xl md:text-5xl">
+                Selected for you.
+              </h2>
             </div>
-            <Link href="/shop?sort=featured" className="text-sm font-medium text-secondary flex items-center gap-1 hover:text-primary transition-colors">View all <ArrowRight size={14} /></Link>
+            <Link
+              href="/shop?sort=featured"
+              className="group hidden items-center gap-2 text-sm font-semibold text-text-secondary hover:text-foreground sm:flex"
+            >
+              View all{" "}
+              <ArrowUpRight
+                size={15}
+                className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+              />
+            </Link>
           </div>
-          <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4">
-            {featuredProducts.map((p) => (
-              <Link key={p.id} href={"/products/" + p.slug} className="group block flex-shrink-0 w-[160px]">
-                <div className="relative aspect-square bg-surface-muted rounded-xl overflow-hidden">
-                  {p.images && p.images.length > 0 ? (
-                    <Image src={p.images[0].url} alt={p.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="160px" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-text-muted text-xs">No image</div>
-                  )}
-                </div>
-                <p className="text-xs font-medium text-primary mt-2 truncate">{p.name}</p>
-                <p className="text-sm font-bold text-primary">
-                  {p.salePrice ? (
-                    <><span className="text-error">{formatPrice(p.salePrice)}</span> <span className="text-text-muted line-through text-[10px]">{formatPrice(p.regularPrice)}</span></>
-                  ) : (
-                    formatPrice(p.regularPrice)
-                  )}
-                </p>
-              </Link>
-            ))}
+          {loading ? (
+            <ProductGridSkeleton count={4} className="lg:grid-cols-4" />
+          ) : (
+            <div className="stagger-in grid grid-cols-2 gap-4 md:gap-6 lg:grid-cols-4">
+              {featuredProducts.slice(0, 4).map((product, index) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  priority={index < 2}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* PROMOTIONAL BANNER */}
+      <section className="container-shop py-20 md:py-28">
+        <div className="grid overflow-hidden rounded-[2rem] bg-[#d9c9b8] md:grid-cols-2">
+          <div className="relative min-h-[320px] overflow-hidden md:min-h-[520px]">
+            <Image
+              src="/images/banners/promo-comforters.svg"
+              alt="Soft comforters collection"
+              fill
+              className="object-cover transition-transform duration-1000 hover:scale-105"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#5e493b]/10 to-transparent" />
           </div>
-        </section>
-      )}
+          <div className="flex flex-col justify-center px-7 py-12 md:px-14 lg:px-20">
+            <p className="font-label mb-4 text-[9px] text-[#80523a]">
+              The comfort edit
+            </p>
+            <h2 className="font-display max-w-md text-4xl leading-[.95] text-[#322923] md:text-6xl">
+              A softer way to end the day.
+            </h2>
+            <p className="mt-6 max-w-md text-sm leading-7 text-[#5d5049]">
+              Layer your space with breathable textures and considered comfort.
+              Made to feel good, every night.
+            </p>
+            <Link href="/collections/comforters" className="mt-8 self-start">
+              <Button variant="primary" size="md">
+                Shop the comfort edit <ArrowRight size={16} />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
 
       {/* NEW ARRIVALS */}
-      <section className="px-4 py-6">
-        <div className="flex items-end justify-between mb-4">
+      <section className="container-shop pb-20 md:pb-28">
+        <div className="mb-8 flex items-end justify-between md:mb-12">
           <div>
-            <p className="font-label text-[10px] tracking-[0.2em] text-accent mb-1">Just arrived</p>
-            <h2 className="text-lg font-display text-primary">New in</h2>
+            <p className="font-label mb-3 text-[9px] text-accent">
+              Just arrived
+            </p>
+            <h2 className="font-display text-4xl md:text-5xl">
+              New in the home.
+            </h2>
           </div>
-          <Link href="/shop?sort=newest" className="text-sm font-medium text-secondary flex items-center gap-1 hover:text-primary transition-colors">View all <ArrowRight size={14} /></Link>
+          <Link
+            href="/shop?sort=newest"
+            className="group hidden items-center gap-2 text-sm font-semibold text-text-secondary hover:text-foreground sm:flex"
+          >
+            See everything{" "}
+            <ArrowUpRight
+              size={15}
+              className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+            />
+          </Link>
         </div>
-        {newArrivals.length > 0 ? (
-          <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4">
-            {newArrivals.slice(0, 6).map((p) => (
-              <Link key={p.id} href={"/products/" + p.slug} className="group block flex-shrink-0 w-[160px]">
-                <div className="relative aspect-square bg-surface-muted rounded-xl overflow-hidden">
-                  {p.images && p.images.length > 0 ? (
-                    <Image src={p.images[0].url} alt={p.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="160px" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-text-muted text-xs">No image</div>
-                  )}
-                </div>
-                <p className="text-xs font-medium text-primary mt-2 truncate">{p.name}</p>
-                <p className="text-sm font-bold text-primary">
-                  {p.salePrice ? (
-                    <><span className="text-error">{formatPrice(p.salePrice)}</span> <span className="text-text-muted line-through text-[10px]">{formatPrice(p.regularPrice)}</span></>
-                  ) : (
-                    formatPrice(p.regularPrice)
-                  )}
-                </p>
-              </Link>
+        {loading ? (
+          <ProductGridSkeleton count={3} />
+        ) : (
+          <div className="stagger-in grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6">
+            {newArrivals.slice(0, 3).map((product, index) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                priority={index === 0}
+              />
             ))}
           </div>
-        ) : (
-          <div className="text-center py-8"><p className="text-text-muted text-sm">No new arrivals yet.</p></div>
         )}
       </section>
 
-      {/* BRAND STORY — Editorial layout */}
-      <section className="px-4 py-8">
-        <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
-          <div className="p-6 pb-4">
-            <TextEffect as="p" preset="fade" className="font-label text-[10px] tracking-[0.2em] text-accent mb-3">
-              How we do things at WestHome
-            </TextEffect>
-            <TextEffect as="h2" preset="blur" per="word" className="font-display text-2xl md:text-3xl text-primary leading-tight mb-3">
-              Every piece, considered.
-            </TextEffect>
-            <p className="text-sm text-secondary leading-relaxed max-w-sm">
-              From handwoven baskets in Kerala to artisan soap dispensers — we source what we would live with ourselves.
-            </p>
-          </div>
-          <div className="grid grid-cols-3 border-t border-border-light">
-            {[
-              { num: "01", title: "Woven by hand", desc: "Each basket crafted by artisans" },
-              { num: "02", title: "Built to last", desc: "Materials that age beautifully" },
-              { num: "03", title: "Delivered with care", desc: "From our store to your home" },
-            ].map((item) => (
-              <div key={item.num} className="p-4 border-r border-border-light last:border-r-0">
-                <span className="font-display text-2xl text-accent/40 block mb-1">{item.num}</span>
-                <p className="text-xs font-semibold text-primary leading-tight">{item.title}</p>
-                <p className="text-[10px] text-secondary mt-1 leading-snug">{item.desc}</p>
+      {/* TRUST / PROMISES */}
+      <section className="bg-[#1f2521] py-20 text-white md:py-28">
+        <div className="container-shop">
+          <div className="grid gap-12 lg:grid-cols-[.8fr_1.2fr] lg:items-end">
+            <div>
+              <p className="font-label mb-4 text-[9px] text-[#e0a681]">
+                Why Westhome
+              </p>
+              <h2 className="font-display max-w-md text-4xl leading-[.95] md:text-6xl">
+                Good design should feel easy.
+              </h2>
+              <p className="mt-6 max-w-sm text-sm leading-7 text-white/55">
+                We keep the experience considered from the first scroll to the
+                moment your order arrives.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-x-5 gap-y-8 md:grid-cols-4 md:gap-8">
+              <div>
+                <Truck size={21} className="mb-5 text-[#e0a681]" />
+                <h3 className="text-sm font-semibold">Fast delivery</h3>
+                <p className="mt-2 text-xs leading-5 text-white/50">
+                  Reliable delivery across India.
+                </p>
               </div>
-            ))}
+              <div>
+                <ShieldCheck size={21} className="mb-5 text-[#e0a681]" />
+                <h3 className="text-sm font-semibold">Quality assured</h3>
+                <p className="mt-2 text-xs leading-5 text-white/50">
+                  Pieces chosen to last.
+                </p>
+              </div>
+              <div>
+                <RotateCcw size={21} className="mb-5 text-[#e0a681]" />
+                <h3 className="text-sm font-semibold">Easy returns</h3>
+                <p className="mt-2 text-xs leading-5 text-white/50">
+                  A simple, human process.
+                </p>
+              </div>
+              <div>
+                <Headphones size={21} className="mb-5 text-[#e0a681]" />
+                <h3 className="text-sm font-semibold">Real support</h3>
+                <p className="mt-2 text-xs leading-5 text-white/50">
+                  We are here when you need us.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* STORE INFO */}
-      <section className="px-4 py-6 pb-24">
-        <div className="bg-stone-900 rounded-2xl p-6 text-white">
-          <TextEffect as="p" preset="fade" className="font-label text-[10px] tracking-[0.2em] text-stone-400 mb-3">
-            Visit us
-          </TextEffect>
-          <TextEffect as="h2" preset="blur" per="word" className="font-display text-2xl mb-4">
-            West Home by BM Distributors
-          </TextEffect>
-          <div className="text-sm text-stone-400 leading-relaxed mb-5">
-            <p>City Gate Building, near Press Club Junction,</p>
-            <p>Karandakkad, Kasaragod, Kerala — 671121</p>
+      {/* WHATSAPP CTA */}
+      <section className="container-shop py-20 md:py-28">
+        <div className="relative overflow-hidden rounded-[2rem] bg-[#dbe2da] px-7 py-16 md:px-16 md:py-20">
+          
+          <div className="relative z-10 max-w-2xl">
+            <Star
+              size={19}
+              className="mb-6 fill-accent text-accent"
+            />
+            <h2 className="font-display text-4xl leading-[.98] md:text-6xl">
+              Need help choosing?
+            </h2>
+            <p className="mt-5 max-w-lg text-sm leading-7 text-text-secondary">
+              Tell us what you are looking for, your room dimensions, or simply
+              send a photo. We will help you find the right fit.
+            </p>
+            <a
+              href="https://wa.me/919895071144?text=Hi!%20I%20need%20help%20choosing%20a%20WESTHOME%20product."
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-8 inline-flex items-center gap-2 rounded-full bg-foreground px-5 py-3 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5 active:scale-[.97]"
+            >
+              <MessageCircle size={17} /> Chat with us on WhatsApp{" "}
+              <ArrowUpRight size={15} />
+            </a>
           </div>
-          <a
-            href="https://wa.me/919895071144"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-stone-900 rounded-full text-xs font-medium hover:bg-stone-100 transition-colors"
-          >
-            Chat on WhatsApp <ArrowRight size={13} />
-          </a>
         </div>
       </section>
     </div>

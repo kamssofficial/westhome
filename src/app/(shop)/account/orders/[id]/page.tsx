@@ -103,7 +103,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
       </div>
 
       {/* Status timeline */}
-      <div className="bg-white rounded-xl border border-border-light p-4 md:p-5 mb-6">
+      <div className="bg-white rounded-xl border border-border p-4 md:p-5 mb-6">
         <h2 className="text-sm font-semibold mb-4">Order Status</h2>
         <div className="flex items-center justify-between overflow-x-auto scrollbar-hide pb-2">
           {STATUS_STEPS.map((step, i) => {
@@ -131,7 +131,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Items */}
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-xl border border-border-light p-4 md:p-5">
+          <div className="bg-white rounded-xl border border-border p-4 md:p-5">
             <h2 className="text-sm font-semibold mb-4">Items</h2>
             <div className="space-y-3">
               {order.items.map((item) => (
@@ -159,17 +159,17 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
 
         {/* Summary */}
         <div className="lg:col-span-1 space-y-4">
-          <div className="bg-white rounded-xl border border-border-light p-4 md:p-5">
+          <div className="bg-white rounded-xl border border-border p-4 md:p-5">
             <h2 className="text-sm font-semibold mb-3">Summary</h2>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between"><span className="text-text-secondary">Subtotal</span><span>{formatPrice(order.subtotal)}</span></div>
               {order.discount > 0 && <div className="flex justify-between text-success"><span>Discount</span><span>-{formatPrice(order.discount)}</span></div>}
               <div className="flex justify-between"><span className="text-text-secondary">Delivery</span><span>{order.deliveryCharge > 0 ? formatPrice(order.deliveryCharge) : "FREE"}</span></div>
-              <div className="border-t border-border-light pt-2 flex justify-between font-semibold"><span>Total</span><span>{formatPrice(order.total)}</span></div>
+              <div className="border-t border-border pt-2 flex justify-between font-semibold"><span>Total</span><span>{formatPrice(order.total)}</span></div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-border-light p-4 md:p-5">
+          <div className="bg-white rounded-xl border border-border p-4 md:p-5">
             <h2 className="text-sm font-semibold mb-3">Shipping Address</h2>
             <p className="text-sm text-text-secondary leading-relaxed">
               {order.customerName}<br />
@@ -179,7 +179,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             </p>
           </div>
 
-          <div className="bg-white rounded-xl border border-border-light p-4 md:p-5">
+          <div className="bg-white rounded-xl border border-border p-4 md:p-5">
             <h2 className="text-sm font-semibold mb-3">Payment</h2>
             <div className="space-y-1 text-sm text-text-secondary">
               <p>Method: {order.paymentMethod || "Razorpay"}</p>
@@ -188,7 +188,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           </div>
 
           {order.trackingNumber && (
-            <div className="bg-white rounded-xl border border-border-light p-4 md:p-5">
+            <div className="bg-white rounded-xl border border-border p-4 md:p-5">
               <h2 className="text-sm font-semibold mb-3">Tracking</h2>
               <p className="text-sm text-text-secondary">Tracking #: {order.trackingNumber}</p>
             </div>

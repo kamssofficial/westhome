@@ -206,7 +206,7 @@ export default function AdminDashboard() {
         <div className="relative z-10">
           <div className="mb-1">
             <span className="text-base font-serif tracking-wide text-white/90 font-semibold">WESTHOME</span>
-            <span className="block text-[9px] text-stone-500 tracking-[0.15em] uppercase">by BM Distributors</span>
+            <span className="block text-[9px] text-text-muted tracking-[0.15em] uppercase">by BM Distributors</span>
           </div>
           <h1 className="text-2xl md:text-3xl font-light tracking-tight mt-3">
             Good {new Date().getHours() < 12 ? "morning" : new Date().getHours() < 17 ? "afternoon" : "evening"}
@@ -235,7 +235,7 @@ export default function AdminDashboard() {
           <div
             key={card.label}
             className={cn(
-              "rounded-xl border p-4 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5",
+              "rounded-[1.35rem] border p-4 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5",
               card.bg,
               card.borderColor
             )}
@@ -253,7 +253,7 @@ export default function AdminDashboard() {
       {/* Sales Trend + Order Status */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* 7-Day Sales Chart */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-border-light p-6 shadow-sm">
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-border p-6 shadow-sm">
           <div className="flex items-center justify-between mb-5">
             <div>
               <h2 className="font-semibold text-sm flex items-center gap-2">
@@ -286,7 +286,7 @@ export default function AdminDashboard() {
                           ? "bg-gradient-to-t from-accent to-accent/70"
                           : day.revenue > 0
                             ? "bg-gradient-to-t from-stone-200 to-stone-100 hover:from-accent/40 hover:to-accent/20"
-                            : "bg-stone-100"
+                            : "bg-surface-muted"
                       )}
                       style={{ height: `${height}px` }}
                     />
@@ -304,7 +304,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Order Status Breakdown */}
-        <div className="bg-white rounded-2xl border border-border-light p-6 shadow-sm">
+        <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
           <div className="flex items-center justify-between mb-5">
             <div>
               <h2 className="font-semibold text-sm flex items-center gap-2">
@@ -329,7 +329,7 @@ export default function AdminDashboard() {
                       </div>
                       <span className="text-xs font-semibold">{s.count}</span>
                     </div>
-                    <div className="h-1.5 bg-stone-100 rounded-full overflow-hidden">
+                    <div className="h-1.5 bg-surface-muted rounded-full overflow-hidden">
                       <div
                         className={cn("h-full rounded-full transition-all duration-700 ease-out", statusColors[s.status] || "bg-gray-400")}
                         style={{ width: `${(s.count / totalStatusCount) * 100}%` }}
@@ -339,7 +339,7 @@ export default function AdminDashboard() {
                 ))
             ) : (
               <div className="flex flex-col items-center justify-center py-8">
-                <div className="w-12 h-12 rounded-full bg-stone-100 flex items-center justify-center mb-3">
+                <div className="w-12 h-12 rounded-full bg-surface-muted flex items-center justify-center mb-3">
                   <ShoppingCart size={20} className="text-stone-400" />
                 </div>
                 <p className="text-xs text-text-muted">No orders yet</p>
@@ -353,7 +353,7 @@ export default function AdminDashboard() {
       {/* Top Products + Low Stock + Notifications */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Top Selling Products */}
-        <div className="bg-white rounded-2xl border border-border-light p-6 shadow-sm">
+        <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
           <div className="flex items-center justify-between mb-5">
             <div>
               <h2 className="font-semibold text-sm flex items-center gap-2">
@@ -369,14 +369,14 @@ export default function AdminDashboard() {
                 <Link
                   key={product.productId}
                   href={`/admin/products/${product.productId}`}
-                  className="flex items-center gap-3 p-2.5 -mx-2.5 rounded-xl hover:bg-stone-50 transition-all group"
+                  className="flex items-center gap-3 p-2.5 -mx-2.5 rounded-xl hover:bg-surface-muted/50 transition-all group"
                 >
                   <div className={cn(
                     "w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0",
                     i === 0 ? "bg-amber-100 text-amber-700"
-                      : i === 1 ? "bg-stone-200 text-stone-600"
+                      : i === 1 ? "bg-surface-muted text-text-secondary"
                         : i === 2 ? "bg-orange-100 text-orange-600"
-                          : "bg-stone-100 text-stone-500"
+                          : "bg-surface-muted text-text-muted"
                   )}>
                     #{i + 1}
                   </div>
@@ -401,7 +401,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Low Stock Alerts */}
-        <div className="bg-white rounded-2xl border border-border-light p-6 shadow-sm">
+        <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
           <div className="flex items-center justify-between mb-5">
             <div>
               <h2 className="font-semibold text-sm flex items-center gap-2">
@@ -421,7 +421,7 @@ export default function AdminDashboard() {
               {lowStockProducts.map((product) => (
                 <div
                   key={product.id}
-                  className="flex items-center justify-between p-2.5 -mx-2.5 rounded-xl hover:bg-stone-50 transition-all"
+                  className="flex items-center justify-between p-2.5 -mx-2.5 rounded-xl hover:bg-surface-muted/50 transition-all"
                 >
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium truncate">{product.name}</p>
@@ -441,7 +441,7 @@ export default function AdminDashboard() {
               ))}
               <Link
                 href="/admin/products"
-                className="flex items-center justify-center gap-1.5 text-xs font-medium text-accent hover:text-accent-hover mt-3 pt-3 border-t border-border-light transition-colors"
+                className="flex items-center justify-center gap-1.5 text-xs font-medium text-accent hover:text-accent-hover mt-3 pt-3 border-t border-border transition-colors"
               >
                 Manage inventory <ArrowRight size={12} />
               </Link>
@@ -458,7 +458,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Notifications */}
-        <div className="bg-white rounded-2xl border border-border-light p-6 shadow-sm">
+        <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
           <div className="flex items-center justify-between mb-5">
             <div>
               <h2 className="font-semibold text-sm flex items-center gap-2">
@@ -478,7 +478,7 @@ export default function AdminDashboard() {
                   key={notif.id}
                   className={cn(
                     "p-2.5 -mx-2.5 rounded-xl transition-all",
-                    !notif.isRead ? "bg-accent/5" : "hover:bg-stone-50"
+                    !notif.isRead ? "bg-accent/5" : "hover:bg-surface-muted/50"
                   )}
                 >
                   <div className="flex items-start gap-2.5">
@@ -496,7 +496,7 @@ export default function AdminDashboard() {
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-8">
-              <div className="w-12 h-12 rounded-full bg-stone-100 flex items-center justify-center mb-3">
+              <div className="w-12 h-12 rounded-full bg-surface-muted flex items-center justify-center mb-3">
                 <Inbox size={20} className="text-stone-400" />
               </div>
               <p className="text-xs font-medium text-text-secondary">All caught up</p>
@@ -507,8 +507,8 @@ export default function AdminDashboard() {
       </div>
 
       {/* Recent Orders */}
-      <div className="bg-white rounded-2xl border border-border-light shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between p-5 border-b border-border-light">
+      <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
+        <div className="flex items-center justify-between p-5 border-b border-border">
           <div>
             <h2 className="font-semibold text-sm flex items-center gap-2">
               <ShoppingBag size={16} className="text-accent" />
@@ -526,7 +526,7 @@ export default function AdminDashboard() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border-light bg-stone-50/80">
+              <tr className="border-b border-border bg-surface-muted/50">
                 <th className="text-left px-5 py-3 font-medium text-text-secondary text-xs uppercase tracking-wider">Order</th>
                 <th className="text-left px-5 py-3 font-medium text-text-secondary text-xs uppercase tracking-wider">Customer</th>
                 <th className="text-right px-5 py-3 font-medium text-text-secondary text-xs uppercase tracking-wider">Total</th>
@@ -537,7 +537,7 @@ export default function AdminDashboard() {
             <tbody>
               {recentOrders.length > 0 ? (
                 recentOrders.map((order) => (
-                  <tr key={order.id} className="border-b border-border-light last:border-0 hover:bg-stone-50/50 transition-colors">
+                  <tr key={order.id} className="border-b border-border last:border-0 hover:bg-surface-muted/50/50 transition-colors">
                     <td className="px-5 py-3.5">
                       <Link href={`/admin/orders/${order.id}`} className="font-semibold hover:text-accent transition-colors">
                         {order.orderNumber}
@@ -559,7 +559,7 @@ export default function AdminDashboard() {
                 <tr>
                   <td colSpan={5} className="px-5 py-12 text-center">
                     <div className="flex flex-col items-center">
-                      <div className="w-14 h-14 rounded-2xl bg-stone-100 flex items-center justify-center mb-3">
+                      <div className="w-14 h-14 rounded-2xl bg-surface-muted flex items-center justify-center mb-3">
                         <ShoppingBag size={24} className="text-stone-300" />
                       </div>
                       <p className="text-sm font-medium text-text-secondary">

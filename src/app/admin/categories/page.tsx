@@ -133,7 +133,7 @@ export default function AdminCategoriesPage() {
         {loading ? (
           <div className="text-center py-8 text-text-muted">Loading...</div>
         ) : categories.map((cat) => (
-          <div key={cat.id} className="bg-white rounded-xl border border-border-light">
+          <div key={cat.id} className="bg-surface rounded-[1.35rem] border border-border">
             {/* Category row */}
             <div className="flex items-center gap-3 p-4">
               <button
@@ -176,7 +176,7 @@ export default function AdminCategoriesPage() {
 
             {/* Subcategories */}
             {expandedId === cat.id && (
-              <div className="border-t border-border-light px-4 pb-4 pt-3 ml-8">
+              <div className="border-t border-border px-4 pb-4 pt-3 ml-8">
                 <p className="text-xs font-medium text-text-muted mb-2 uppercase tracking-wider">Subcategories</p>
                 {cat.subcategories.length > 0 ? (
                   <div className="space-y-1">

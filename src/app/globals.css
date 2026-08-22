@@ -1,479 +1,149 @@
 @import "tailwindcss";
 
-/* ============================================================
-   WESTHOME Design System — Apple Design Philosophy
-   Premium Home-Lifestyle Ecommerce
-   Warm, cream-based, mobile-first
-   Inspired by: WWDC "Designing Fluid Interfaces" (2018),
-   "The Details of UI Typography" (WWDC 2020),
-   "Principles of Great Design" (WWDC 2026)
-   ============================================================ */
-
 @theme {
-  /* Color Palette — Warm Cream Premium */
-  --color-background: #F7F3EA;
-  --color-foreground: #2C1810;
-
-  --color-primary: #2C1810;
-  --color-primary-hover: #1A0E08;
-  --color-secondary: #8B7355;
-  --color-secondary-hover: #6B573F;
-
-  --color-accent: #B8956A;
-  --color-accent-hover: #A38358;
-
-  --color-surface: #FFFEF9;
-  --color-surface-hover: #FBF8F3;
-  --color-surface-muted: #F0EBE3;
-
-  /* Remap white to warm cream */
-  --color-white: #FFFEF9;
-
-  --color-border: #E5DDD5;
-  --color-border-light: #EDE8E2;
-
-  --color-text-primary: #2C1810;
-  --color-text-secondary: #8B7355;
-  --color-text-muted: #B8A898;
-  --color-text-inverse: #FAF8F5;
-
-  --color-success: #4A7C59;
-  --color-error: #B54A4A;
-  --color-warning: #C4943A;
-  --color-info: #5A7A9A;
-
-  /* Typography — Apple Design: optical sizing */
-  --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-serif: 'Cormorant Garamond', Georgia, serif;
-
-  /* Spacing Scale */
+  --color-background: #F5F3EF;
+  --color-foreground: #1F211F;
+  --color-primary: #1F211F;
+  --color-primary-hover: #0d0f0e;
+  --color-secondary: #6F736E;
+  --color-secondary-hover: #4F544F;
+  --color-accent: #B56C45;
+  --color-accent-hover: #995639;
+  --color-surface: #FFFDF9;
+  --color-surface-hover: #F1EDE7;
+  --color-surface-muted: #EBE7DF;
+  --color-border: rgba(31, 33, 31, 0.11);
+  --color-border-light: rgba(31, 33, 31, 0.07);
+  --color-text-primary: #1F211F;
+  --color-text-secondary: #6F736E;
+  --color-text-muted: #979B95;
+  --color-text-inverse: #F8F6F1;
+  --color-success: #2D7A4F;
+  --color-error: #BD4A42;
+  --color-warning: #B68436;
+  --color-info: #416F86;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+  --font-serif: "Iowan Old Style", "Baskerville", "Times New Roman", serif;
   --spacing-18: 4.5rem;
   --spacing-22: 5.5rem;
   --spacing-26: 6.5rem;
   --spacing-30: 7.5rem;
-
-  /* Border Radius */
-  --radius-card: 1rem;
-  --radius-button: 0.75rem;
-  --radius-input: 0.75rem;
+  --radius-card: 1.5rem;
+  --radius-button: 9999px;
+  --radius-input: 9999px;
   --radius-full: 9999px;
-  --radius-pill: 2rem;
-
-  /* Shadows — Warm, subtle, depth-aware */
-  --shadow-sm: 0 1px 3px 0 rgba(44, 24, 16, 0.04);
-  --shadow-card: 0 2px 8px -2px rgba(44, 24, 16, 0.06), 0 1px 4px -1px rgba(44, 24, 16, 0.04);
-  --shadow-card-hover: 0 8px 20px -4px rgba(44, 24, 16, 0.1), 0 4px 8px -2px rgba(44, 24, 16, 0.06);
-  --shadow-dropdown: 0 12px 32px -8px rgba(44, 24, 16, 0.12), 0 4px 12px -4px rgba(44, 24, 16, 0.06);
-  --shadow-modal: 0 24px 60px -16px rgba(44, 24, 16, 0.2);
-
-  /* Spring easing — Apple's cubic-bezier approximations */
-  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --ease-spring-gentle: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --shadow-sm: 0 1px 2px rgba(31, 33, 31, 0.04);
+  --shadow-card: 0 10px 35px rgba(31, 33, 31, 0.08);
+  --shadow-card-hover: 0 22px 60px rgba(31, 33, 31, 0.15);
+  --shadow-dropdown: 0 18px 55px rgba(31, 33, 31, 0.14);
+  --shadow-modal: 0 30px 90px rgba(31, 33, 31, 0.22);
 }
 
-/* ============================================================
-   Base Styles
-   ============================================================ */
-
-* {
-  -webkit-tap-highlight-color: transparent;
-}
+* { -webkit-tap-highlight-color: transparent; }
 
 html {
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /* Apple Design: rubber-banding feel via overscroll */
-  overscroll-behavior: contain;
 }
 
 body {
-  background-color: var(--color-background);
+  background: var(--color-background);
   color: var(--color-foreground);
   font-family: var(--font-sans);
-  line-height: 1.6;
+  line-height: 1.55;
   overflow-x: hidden;
-  /* Apple Design: respect user text size */
-  font-optical-sizing: auto;
 }
 
-::selection {
-  background-color: var(--color-accent);
-  color: white;
-}
-
-/* ============================================================
-   Typography — Apple Design: optical sizing, tracking, leading
-
-   "Large display text wants negative tracking (letters read too
-   far apart as they grow); small text wants slightly positive
-   tracking for legibility." — WWDC 2020
-   ============================================================ */
+::selection { background: var(--color-accent); color: #fff; }
 
 h1, h2, h3, h4, h5, h6 {
-  line-height: 1.1;
-  font-weight: 400;
-  letter-spacing: -0.02em;
+  line-height: 1.08;
+  font-weight: 500;
+  letter-spacing: -0.035em;
 }
 
-/* Display: large headings — tight leading, negative tracking */
-.font-display {
-  font-family: var(--font-serif);
-  font-weight: 400;
-  letter-spacing: -0.025em;
-  line-height: 1.05;
-  font-optical-sizing: auto;
-}
-
-/* Label: small uppercase — positive tracking for legibility */
+.font-display { font-family: var(--font-serif); font-weight: 400; }
 .font-label {
-  font-family: var(--font-sans);
-  font-weight: 600;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  line-height: 1;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
-  font-size: 0.625rem;
 }
 
-/* ============================================================
-   Apple Design: Instant Press Feedback
+::-webkit-scrollbar { width: 7px; height: 7px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #c9c4ba; border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: #aaa398; }
 
-   "Respond on pointer-down, not on release. Highlight a button
-   the instant it's pressed. Waiting for click/touch-up to show
-   feedback feels dead." — Designing Fluid Interfaces (2018)
-   ============================================================ */
-
-/* All interactive elements get instant scale feedback */
-a, button, [role="button"] {
-  -webkit-tap-highlight-color: transparent;
-}
-
-/* Primary button press */
-.btn-press:active,
-button:active:not([disabled]) {
-  transform: scale(0.97);
-  transition: transform 100ms ease-out;
-}
-
-/* Card press feedback — subtle scale + shadow */
-.card-press:active {
-  transform: scale(0.985);
-  transition: transform 120ms ease-out;
-}
-
-/* Link press feedback */
-a:active {
-  opacity: 0.7;
-  transition: opacity 80ms ease-out;
-}
-
-/* Input press feedback */
-input:active, textarea:active, select:active {
-  transform: scale(0.995);
-  transition: transform 80ms ease-out;
-}
-
-/* ============================================================
-   Apple Design: Translucent Materials
-
-   "Build nav/toolbars/sheets as translucent layers with content
-   scrolling underneath — not opaque bars that consume a fixed
-   strip." — WWDC Designing Fluid Interfaces
-   ============================================================ */
-
-.material {
-  background: rgba(247, 243, 234, 0.72);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-}
-
-.material-light {
-  background: rgba(255, 254, 249, 0.6);
-  backdrop-filter: blur(16px) saturate(160%);
-  -webkit-backdrop-filter: blur(16px) saturate(160%);
-}
-
-.material-heavy {
-  background: rgba(247, 243, 234, 0.85);
-  backdrop-filter: blur(24px) saturate(200%);
-  -webkit-backdrop-filter: blur(24px) saturate(200%);
-}
-
-/* Scroll edge effect — fade where content meets floating chrome */
-.scroll-edge-top {
-  position: relative;
-}
-.scroll-edge-top::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(
-    to right,
-    transparent 0%,
-    rgba(44, 24, 16, 0.06) 20%,
-    rgba(44, 24, 16, 0.06) 80%,
-    transparent 100%
-  );
-}
-
-.scroll-edge-bottom {
-  position: relative;
-}
-.scroll-edge-bottom::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(
-    to right,
-    transparent 0%,
-    rgba(44, 24, 16, 0.06) 20%,
-    rgba(44, 24, 16, 0.06) 80%,
-    transparent 100%
-  );
-}
-
-/* ============================================================
-   Custom Scrollbar — minimal, Apple-like
-   ============================================================ */
-
-::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(184, 168, 152, 0.4);
-  border-radius: 2px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(184, 168, 152, 0.6);
-}
-
-/* ============================================================
-   Utility Classes
-   ============================================================ */
-
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-
-.aspect-product {
-  aspect-ratio: 1 / 1;
-}
-
-.aspect-product-wide {
-  aspect-ratio: 4 / 3;
-}
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.aspect-product { aspect-ratio: 1 / 1; }
+.aspect-product-wide { aspect-ratio: 4 / 3; }
 
 .container-shop {
-  max-width: 1200px;
+  width: min(100% - 2rem, 1400px);
   margin: 0 auto;
-  padding-left: 1rem;
-  padding-right: 1rem;
+}
+@media (min-width: 640px) { .container-shop { width: min(100% - 3rem, 1400px); } }
+@media (min-width: 1024px) { .container-shop { width: min(100% - 5rem, 1400px); } }
+
+.material {
+  background: color-mix(in srgb, var(--color-surface) 78%, transparent);
+  border: 1px solid rgba(255, 255, 255, 0.68);
+  box-shadow: 0 10px 40px rgba(31, 33, 31, 0.08);
+  backdrop-filter: blur(22px) saturate(140%);
 }
 
-@media (min-width: 640px) {
-  .container-shop {
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
-  }
-}
-
-@media (min-width: 1024px) {
-  .container-shop {
-    padding-left: 2rem;
-    padding-right: 2rem;
-  }
-}
-
-/* ============================================================
-   Skeleton loading — subtle pulse
-   ============================================================ */
-@keyframes skeleton-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-.skeleton {
-  animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  background-color: var(--color-surface-muted);
-  border-radius: var(--radius-card);
-}
-
-/* ============================================================
-   Safe area padding for mobile
-   ============================================================ */
-.safe-bottom {
-  padding-bottom: max(3.5rem, calc(3.5rem + env(safe-area-inset-bottom)));
-}
-
-/* Gradient overlay for hero images */
 .hero-gradient {
-  background: linear-gradient(
-    to bottom,
-    rgba(44, 24, 16, 0) 0%,
-    rgba(44, 24, 16, 0.15) 50%,
-    rgba(44, 24, 16, 0.55) 100%
-  );
+  background: linear-gradient(90deg, rgba(15, 18, 16, 0.72) 0%, rgba(15, 18, 16, 0.26) 48%, rgba(15, 18, 16, 0.05) 100%);
 }
 
-/* ============================================================
-   Toast animations — Apple-like slide + spring
-   ============================================================ */
-@keyframes toast-enter {
-  from {
-    transform: translateY(-100%) scale(0.95);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0) scale(1);
-    opacity: 1;
-  }
+.hero-glow {
+  background: radial-gradient(circle, rgba(229, 188, 151, 0.35) 0%, rgba(229, 188, 151, 0) 68%);
+  filter: blur(10px);
 }
 
-@keyframes toast-exit {
-  from {
-    transform: translateX(0) scale(1);
-    opacity: 1;
-  }
-  to {
-    transform: translateX(100%) scale(0.95);
-    opacity: 0;
-  }
+.hero-art {
+  background: radial-gradient(circle at 72% 35%, rgba(229, 188, 151, 0.34), transparent 26%), radial-gradient(circle at 78% 72%, rgba(111, 143, 120, 0.22), transparent 31%), linear-gradient(140deg, rgba(255,255,255,0.02), rgba(229,188,151,0.08));
+  mix-blend-mode: soft-light;
+  opacity: 0.2;
 }
 
-.toast-enter {
-  animation: toast-enter 0.35s var(--ease-spring-gentle);
-}
+@keyframes fade-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes float-slow { 0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); } 50% { transform: translate3d(0, -12px, 0) rotate(3deg); } }
+@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes pulse-ring { 0%, 100% { transform: scale(0.92); opacity: 0.4; } 50% { transform: scale(1.04); opacity: 0.85; } }
+@keyframes skeleton-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.52; } }
 
-.toast-exit {
-  animation: toast-exit 0.25s var(--ease-smooth);
-}
+.animate-fade-in { animation: fade-in 700ms cubic-bezier(.23,.88,.26,.92) both; }
+.float-slow { animation: float-slow 7s ease-in-out infinite; }
+.pulse-ring { animation: pulse-ring 4s ease-in-out infinite; }
+.marquee-track { animation: marquee 26s linear infinite; }
+.skeleton { animation: skeleton-pulse 2s ease-in-out infinite; background: var(--color-surface-muted); border-radius: var(--radius-card); }
 
-/* ============================================================
-   Page transitions — Apple Design: spatial consistency
+.stagger-in > * { animation: fade-in 700ms cubic-bezier(.23,.88,.26,.92) both; }
+.stagger-in > *:nth-child(1) { animation-delay: 50ms; }
+.stagger-in > *:nth-child(2) { animation-delay: 110ms; }
+.stagger-in > *:nth-child(3) { animation-delay: 170ms; }
+.stagger-in > *:nth-child(4) { animation-delay: 230ms; }
+.stagger-in > *:nth-child(5) { animation-delay: 290ms; }
+.stagger-in > *:nth-child(6) { animation-delay: 350ms; }
 
-   "Enter and exit along the same path." — WWDC
-   ============================================================ */
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+.safe-bottom { padding-bottom: max(1.5rem, env(safe-area-inset-bottom)); }
+.bottom-nav-safe { padding-bottom: max(6.75rem, calc(6.75rem + env(safe-area-inset-bottom))); }
 
-.animate-fade-in {
-  animation: fade-in 0.4s var(--ease-spring-gentle);
-}
-
-/* Stagger children animation — cascading entrance */
-@keyframes stagger-in {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.stagger-in > * {
-  animation: stagger-in 0.45s var(--ease-spring-gentle) backwards;
-}
-
-.stagger-in > *:nth-child(1) { animation-delay: 0ms; }
-.stagger-in > *:nth-child(2) { animation-delay: 40ms; }
-.stagger-in > *:nth-child(3) { animation-delay: 80ms; }
-.stagger-in > *:nth-child(4) { animation-delay: 120ms; }
-.stagger-in > *:nth-child(5) { animation-delay: 160ms; }
-.stagger-in > *:nth-child(6) { animation-delay: 200ms; }
-.stagger-in > *:nth-child(7) { animation-delay: 240ms; }
-.stagger-in > *:nth-child(8) { animation-delay: 280ms; }
-
-/* Bottom nav safe area */
-.bottom-nav-safe {
-  padding-bottom: max(3.5rem, calc(3.5rem + env(safe-area-inset-bottom)));
-}
-
-/* ============================================================
-   Intro animation
-   ============================================================ */
-@keyframes intro-fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes intro-fade-out {
-  from { opacity: 1; }
-  to { opacity: 0; }
-}
-
-@keyframes intro-line {
-  from { transform: translateX(-100%); }
-  to { transform: translateX(100%); }
-}
-
-.animate-intro-fade-in {
-  animation: intro-fade-in 0.6s ease-out forwards;
-}
-
-.animate-intro-fade-out {
-  animation: intro-fade-out 0.8s ease-in-out forwards;
-}
-
-.animate-intro-line {
-  animation: intro-line 1.4s ease-in-out;
-}
-
-/* ============================================================
-   Apple Design: Reduced Motion
-
-   "Reduced motion doesn't mean no feedback — it means a
-   gentler, non-vestibular equivalent."
-   ============================================================ */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-
-  .animate-fade-in,
-  .stagger-in > * {
-    animation: none !important;
-    opacity: 1 !important;
-    transform: none !important;
-  }
-
-  html {
-    scroll-behavior: auto;
-  }
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+  .marquee-track { animation: none; }
 }
 
-/* Reduced transparency — make translucent surfaces more solid */
 @media (prefers-reduced-transparency: reduce) {
-  .material,
-  .material-light,
-  .material-heavy {
-    background: var(--color-background);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-  }
+  .material { background: var(--color-surface); backdrop-filter: none; }
 }
 
-/* High contrast — defined borders */
 @media (prefers-contrast: more) {
-  .material,
-  .material-light,
-  .material-heavy {
-    border: 1px solid var(--color-border);
-  }
+  .material { background: var(--color-surface); border-color: var(--color-foreground); }
 }

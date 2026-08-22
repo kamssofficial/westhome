@@ -82,7 +82,7 @@ export default function AdminHomepagePage() {
           <div className="text-center py-8 text-text-muted">Loading...</div>
         ) : sections.length > 0 ? (
           sections.sort((a, b) => a.position - b.position).map((section) => (
-            <div key={section.id} className="bg-white rounded-xl border border-border-light p-4">
+            <div key={section.id} className="bg-surface rounded-[1.35rem] border border-border p-4">
               <div className="flex items-center gap-3">
                 <GripVertical size={16} className="text-text-muted cursor-move" />
                 <div className="flex-1">
@@ -114,7 +114,7 @@ export default function AdminHomepagePage() {
             </div>
           ))
         ) : (
-          <div className="bg-white rounded-xl border border-border-light p-8 text-center">
+          <div className="bg-surface rounded-[1.35rem] border border-border p-8 text-center">
             <p className="text-text-muted mb-4">No homepage sections configured yet.</p>
             <p className="text-sm text-text-muted">
               The homepage uses default content. Create sections to customize the homepage.
@@ -128,7 +128,7 @@ export default function AdminHomepagePage() {
         <h2 className="font-semibold text-sm mb-3">Available Section Types</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           {sectionTypes.map((type) => (
-            <div key={type.type} className="flex items-center justify-between p-3 bg-white rounded-xl border border-border-light">
+            <div key={type.type} className="flex items-center justify-between p-3 bg-surface rounded-[1.35rem] border border-border">
               <div>
                 <p className="text-sm font-medium">{type.label}</p>
                 <p className="text-xs text-text-muted">{type.description}</p>

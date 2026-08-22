@@ -6,7 +6,7 @@ import { ArrowLeft, Phone, Mail, MapPin, MessageCircle, Clock } from "lucide-rea
 export default function ContactPage() {
   return (
     <div className="animate-fade-in">
-      <div className="px-4 pt-3 pb-2 flex items-center gap-3">
+      <div className="container-shop pt-3 pb-2 flex items-center gap-3">
         <Link href="/" className="p-1 hover:bg-surface-muted rounded-lg transition-colors">
           <ArrowLeft size={20} />
         </Link>
@@ -14,7 +14,7 @@ export default function ContactPage() {
       </div>
 
       {/* Store Info Card */}
-      <div className="px-4 py-4">
+      <div className="container-shop py-4">
         <div className="bg-white rounded-2xl p-5 shadow-sm">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-12 h-12 rounded-full bg-gradient-to-br from-stone-700 to-stone-900 flex items-center justify-center">
@@ -104,7 +104,7 @@ export default function ContactPage() {
       </div>
 
       {/* Quick Actions */}
-      <div className="px-4 pb-4">
+      <div className="container-shop pb-4">
         <div className="grid grid-cols-2 gap-3">
           <a
             href="https://wa.me/919895071144"
@@ -117,7 +117,7 @@ export default function ContactPage() {
           </a>
           <a
             href="tel:+919895071144"
-            className="flex items-center justify-center gap-2 py-3.5 bg-primary text-white rounded-2xl text-sm font-semibold hover:bg-primary-hover transition-colors"
+            className="flex items-center justify-center gap-2 py-3.5 bg-primary text-white rounded-full text-sm font-semibold hover:bg-primary-hover transition-colors"
           >
             <Phone size={18} />
             Call Now
@@ -126,7 +126,7 @@ export default function ContactPage() {
       </div>
 
       {/* Map Placeholder */}
-      <div className="px-4 pb-8">
+      <div className="container-shop pb-8">
         <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
           <div className="relative h-48 bg-surface-muted flex items-center justify-center">
             <div className="text-center">

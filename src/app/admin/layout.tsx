@@ -70,12 +70,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed top-0 left-0 z-50 h-full w-64 bg-white border-r border-stone-200/80 transition-transform duration-300 lg:translate-x-0 flex flex-col",
+          "fixed top-0 left-0 z-50 h-full w-64 bg-background border-r border-border transition-transform duration-300 lg:translate-x-0 flex flex-col",
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
         {/* Brand header */}
-        <div className="p-5 border-b border-stone-100">
+        <div className="p-5 border-b border-border">
           <Link href="/admin/dashboard" className="flex flex-col gap-0.5">
             <WestHomeLogo size="sm" />
             <div className="mt-1.5 inline-flex items-center gap-1.5">
@@ -89,7 +89,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <nav className="flex-1 overflow-y-auto p-3 space-y-0.5">
           {NAV_ITEMS.map((item, i) => {
             if ("divider" in item) {
-              return <div key={`div-${i}`} className="my-2 border-t border-stone-100 mx-2" />;
+              return <div key={`div-${i}`} className="my-2 border-t border-border mx-2" />;
             }
             const navItem = item as NavItem;
             if (navItem.adminOnly && userRole !== "ADMIN") return null;
@@ -104,7 +104,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   "flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-150 group",
                   isActive
                     ? "bg-gradient-to-r from-stone-900 to-stone-800 text-white shadow-sm"
-                    : "text-text-secondary hover:text-foreground hover:bg-stone-50"
+                    : "text-text-secondary hover:text-foreground hover:bg-surface-muted"
                 )}
               >
                 <Icon size={17} className={cn(isActive ? "text-white/80" : "text-text-muted group-hover:text-text-secondary")} />
@@ -118,17 +118,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </nav>
 
         {/* Footer */}
-        <div className="p-3 border-t border-stone-100 space-y-1">
+        <div className="p-3 border-t border-border space-y-1">
           <button
             onClick={handleSignOut}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium text-text-secondary hover:text-foreground hover:bg-stone-50 transition-all w-full"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium text-text-secondary hover:text-foreground hover:bg-surface-muted transition-all w-full"
           >
             <LogOut size={17} className="text-text-muted" />
             Sign Out
           </button>
           <Link
             href="/"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium text-text-secondary hover:text-foreground hover:bg-stone-50 transition-all"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium text-text-secondary hover:text-foreground hover:bg-surface-muted transition-all"
           >
             <Store size={17} className="text-text-muted" />
             View Store
@@ -139,10 +139,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Main content */}
       <div className="lg:ml-64">
         {/* Top bar */}
-        <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-lg border-b border-stone-200/60 h-14 flex items-center px-4 md:px-6 gap-4">
+        <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-lg border-b border-border h-14 flex items-center px-4 md:px-6 gap-4">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="lg:hidden p-2 hover:bg-stone-100 rounded-xl transition-colors"
+            className="lg:hidden p-2 hover:bg-surface-muted rounded-xl transition-colors"
           >
             <Menu size={18} />
           </button>
@@ -159,7 +159,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
 
           <div className="flex items-center gap-2">
-            <button className="relative p-2 hover:bg-stone-100 rounded-xl transition-colors">
+            <button className="relative p-2 hover:bg-surface-muted rounded-xl transition-colors">
               <Bell size={17} className="text-text-secondary" />
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-accent rounded-full ring-2 ring-white" />
             </button>
@@ -175,7 +175,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </div>
             <button
               onClick={handleSignOut}
-              className="p-2 hover:bg-stone-100 rounded-xl transition-colors"
+              className="p-2 hover:bg-surface-muted rounded-xl transition-colors"
               title="Sign out"
             >
               <LogOut size={17} className="text-text-secondary" />

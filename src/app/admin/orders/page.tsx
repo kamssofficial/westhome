@@ -83,11 +83,11 @@ export default function AdminOrdersPage() {
       </div>
 
       {/* Orders table */}
-      <div className="bg-white rounded-xl border border-border-light overflow-hidden">
+      <div className="bg-surface rounded-[1.35rem] border border-border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border-light bg-surface-muted/50">
+              <tr className="border-b border-border bg-surface-muted/50">
                 <th className="text-left px-4 py-3 font-medium text-text-secondary">Order #</th>
                 <th className="text-left px-4 py-3 font-medium text-text-secondary">Customer</th>
                 <th className="text-right px-4 py-3 font-medium text-text-secondary">Total</th>
@@ -100,7 +100,7 @@ export default function AdminOrdersPage() {
             <tbody>
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i} className="border-b border-border-light">
+                  <tr key={i} className="border-b border-border">
                     <td className="px-4 py-3"><Skeleton className="h-5 w-20" /></td>
                     <td className="px-4 py-3"><Skeleton className="h-5 w-28" /></td>
                     <td className="px-4 py-3"><Skeleton className="h-5 w-16 ml-auto" /></td>
@@ -112,7 +112,7 @@ export default function AdminOrdersPage() {
                 ))
               ) : orders.length > 0 ? (
                 orders.map((order) => (
-                  <tr key={order.id} className="border-b border-border-light last:border-0 hover:bg-surface-muted/50">
+                  <tr key={order.id} className="border-b border-border last:border-0 hover:bg-surface-muted/50">
                     <td className="px-4 py-3">
                       <Link href={`/admin/orders/${order.id}`} className="font-medium hover:text-accent">
                         {order.orderNumber}

@@ -177,7 +177,7 @@ export default function NewProductPage() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic Info */}
-        <div className="bg-white rounded-xl border border-border-light p-5">
+        <div className="bg-surface rounded-[1.35rem] border border-border p-5">
           <h2 className="font-semibold mb-4">Basic Information</h2>
           <div className="space-y-4">
             <div>
@@ -200,7 +200,7 @@ export default function NewProductPage() {
         </div>
 
         {/* Pricing & Stock */}
-        <div className="bg-white rounded-xl border border-border-light p-5">
+        <div className="bg-surface rounded-[1.35rem] border border-border p-5">
           <h2 className="font-semibold mb-4">Pricing & Stock</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
@@ -229,7 +229,7 @@ export default function NewProductPage() {
         </div>
 
         {/* Category */}
-        <div className="bg-white rounded-xl border border-border-light p-5">
+        <div className="bg-surface rounded-[1.35rem] border border-border p-5">
           <h2 className="font-semibold mb-4">Category</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -256,7 +256,7 @@ export default function NewProductPage() {
         </div>
 
         {/* Status & Flags */}
-        <div className="bg-white rounded-xl border border-border-light p-5">
+        <div className="bg-surface rounded-[1.35rem] border border-border p-5">
           <h2 className="font-semibold mb-4">Status & Visibility</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -293,7 +293,7 @@ export default function NewProductPage() {
         </div>
 
         {/* Physical Dimensions */}
-        <div className="bg-white rounded-xl border border-border-light p-5">
+        <div className="bg-surface rounded-[1.35rem] border border-border p-5">
           <h2 className="font-semibold mb-4">Physical Dimensions</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
@@ -339,7 +339,7 @@ export default function NewProductPage() {
         </div>
 
         {/* Material & Appearance */}
-        <div className="bg-white rounded-xl border border-border-light p-5">
+        <div className="bg-surface rounded-[1.35rem] border border-border p-5">
           <h2 className="font-semibold mb-4">Material & Appearance</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -378,7 +378,7 @@ export default function NewProductPage() {
         </div>
 
         {/* Care & Packaging */}
-        <div className="bg-white rounded-xl border border-border-light p-5">
+        <div className="bg-surface rounded-[1.35rem] border border-border p-5">
           <h2 className="font-semibold mb-4">Care & Packaging</h2>
           <div className="space-y-4">
             <div>
@@ -411,7 +411,7 @@ export default function NewProductPage() {
         </div>
 
         {/* Custom Size */}
-        <div className="bg-white rounded-xl border border-border-light p-5">
+        <div className="bg-surface rounded-[1.35rem] border border-border p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold">Custom Size</h2>
             <label className="flex items-center gap-2 text-sm cursor-pointer">
@@ -474,7 +474,7 @@ export default function NewProductPage() {
         </div>
 
         {/* Variants */}
-        <div className="bg-white rounded-xl border border-border-light p-5">
+        <div className="bg-surface rounded-[1.35rem] border border-border p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold">Variants</h2>
             <Button type="button" variant="outline" size="sm" onClick={handleAddVariant}>
@@ -506,7 +506,7 @@ export default function NewProductPage() {
         </div>
 
         {/* SEO */}
-        <div className="bg-white rounded-xl border border-border-light p-5">
+        <div className="bg-surface rounded-[1.35rem] border border-border p-5">
           <h2 className="font-semibold mb-4">SEO</h2>
           <div className="space-y-4">
             <div>

@@ -67,7 +67,7 @@ function LoginForm() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white border border-border-light rounded-xl p-5 md:p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="bg-surface border border-border rounded-[1.35rem] p-5 md:p-6 space-y-4">
           <div>
             <label className="text-xs font-medium text-text-secondary mb-1 block">Email</label>
             <input
@@ -75,7 +75,7 @@ function LoginForm() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-3 py-2.5 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
+              className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
               placeholder="your@email.com"
             />
           </div>
@@ -87,7 +87,7 @@ function LoginForm() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full px-3 py-2.5 pr-10 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
+                className="w-full px-3 py-2.5 pr-10 bg-surface border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
                 placeholder="••••••••"
               />
               <button

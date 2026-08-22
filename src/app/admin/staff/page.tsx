@@ -210,11 +210,11 @@ export default function AdminStaffPage() {
       </div>
 
       {/* Staff List */}
-      <div className="bg-white rounded-xl border border-border-light overflow-hidden">
+      <div className="bg-surface rounded-[1.35rem] border border-border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border-light bg-surface-muted/50">
+              <tr className="border-b border-border bg-surface-muted/50">
                 <th className="text-left px-4 py-3 font-medium text-text-secondary">Staff Member</th>
                 <th className="text-left px-4 py-3 font-medium text-text-secondary hidden md:table-cell">Role</th>
                 <th className="text-left px-4 py-3 font-medium text-text-secondary hidden md:table-cell">Phone</th>
@@ -226,7 +226,7 @@ export default function AdminStaffPage() {
             <tbody>
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i} className="border-b border-border-light">
+                  <tr key={i} className="border-b border-border">
                     <td className="px-4 py-3"><Skeleton className="h-5 w-40" /></td>
                     <td className="px-4 py-3 hidden md:table-cell"><Skeleton className="h-5 w-24" /></td>
                     <td className="px-4 py-3 hidden md:table-cell"><Skeleton className="h-5 w-24" /></td>
@@ -237,7 +237,7 @@ export default function AdminStaffPage() {
                 ))
               ) : staff.length > 0 ? (
                 staff.map((member) => (
-                  <tr key={member.id} className="border-b border-border-light last:border-0 hover:bg-surface-muted/50">
+                  <tr key={member.id} className="border-b border-border last:border-0 hover:bg-surface-muted/50">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-full bg-gradient-to-br from-stone-700 to-stone-900 flex items-center justify-center flex-shrink-0">
@@ -314,7 +314,7 @@ export default function AdminStaffPage() {
       </div>
 
       {/* Role Descriptions */}
-      <div className="bg-white rounded-xl border border-border-light p-5">
+      <div className="bg-surface rounded-[1.35rem] border border-border p-5">
         <h2 className="font-semibold text-sm mb-3">Role Permissions</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {ROLES.map((role) => (
@@ -335,7 +335,7 @@ export default function AdminStaffPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setShowModal(false)} />
           <div className="relative bg-white rounded-2xl w-full max-w-md shadow-modal animate-fade-in">
-            <div className="flex items-center justify-between p-5 border-b border-border-light">
+            <div className="flex items-center justify-between p-5 border-b border-border">
               <h2 className="font-semibold">{editingStaff ? "Edit Staff Member" : "Add Staff Member"}</h2>
               <button onClick={() => setShowModal(false)} className="p-1 hover:bg-surface-muted rounded-lg">
                 <X size={18} />

@@ -171,7 +171,7 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
 
       <div className="space-y-6">
         {/* Images */}
-        <div className="bg-white rounded-xl border border-border-light p-5">
+        <div className="bg-surface rounded-[1.35rem] border border-border p-5">
           <h2 className="font-semibold mb-4">Product Images</h2>
           <ImageUploader
             images={images}
@@ -183,7 +183,7 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
         </div>
 
         {/* Basic Info */}
-        <div className="bg-white rounded-xl border border-border-light p-5">
+        <div className="bg-surface rounded-[1.35rem] border border-border p-5">
           <h2 className="font-semibold mb-4">Basic Information</h2>
           <div className="space-y-4">
             <div><label className="text-xs font-medium text-text-secondary mb-1 block">Product Name *</label><input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputClass} /></div>
@@ -194,7 +194,7 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
         </div>
 
         {/* Pricing & Stock */}
-        <div className="bg-white rounded-xl border border-border-light p-5">
+        <div className="bg-surface rounded-[1.35rem] border border-border p-5">
           <h2 className="font-semibold mb-4">Pricing & Stock</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div><label className="text-xs font-medium text-text-secondary mb-1 block">Regular Price (₹) *</label><input type="number" step="0.01" value={form.regularPrice} onChange={(e) => setForm({ ...form, regularPrice: e.target.value })} className={inputClass} /></div>
@@ -208,7 +208,7 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
         </div>
 
         {/* Category */}
-        <div className="bg-white rounded-xl border border-border-light p-5">
+        <div className="bg-surface rounded-[1.35rem] border border-border p-5">
           <h2 className="font-semibold mb-4">Category</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div><label className="text-xs font-medium text-text-secondary mb-1 block">Category *</label><select value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })} className={inputClass}><option value="">Select</option>{categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
@@ -219,7 +219,7 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
         </div>
 
         {/* Status */}
-        <div className="bg-white rounded-xl border border-border-light p-5">
+        <div className="bg-surface rounded-[1.35rem] border border-border p-5">
           <h2 className="font-semibold mb-4">Status & Flags</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div><label className="text-xs font-medium text-text-secondary mb-1 block">Status</label><select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className={inputClass}><option value="DRAFT">Draft</option><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option><option value="ARCHIVED">Archived</option></select></div>
@@ -236,7 +236,7 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
         </div>
 
         {/* Physical Dimensions */}
-        <div className="bg-white rounded-xl border border-border-light p-5">
+        <div className="bg-surface rounded-[1.35rem] border border-border p-5">
           <h2 className="font-semibold mb-4">Physical Dimensions</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div><label className="text-xs font-medium text-text-secondary mb-1 block">Height</label><input type="number" step="0.1" value={form.height} onChange={(e) => setForm({ ...form, height: e.target.value })} className={inputClass} placeholder="0" /></div>
@@ -251,7 +251,7 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
         </div>
 
         {/* Material & Appearance */}
-        <div className="bg-white rounded-xl border border-border-light p-5">
+        <div className="bg-surface rounded-[1.35rem] border border-border p-5">
           <h2 className="font-semibold mb-4">Material & Appearance</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div><label className="text-xs font-medium text-text-secondary mb-1 block">Material</label><input type="text" value={form.material} onChange={(e) => setForm({ ...form, material: e.target.value })} className={inputClass} placeholder="e.g. Ceramic, Wool, Velvet" /></div>
@@ -266,7 +266,7 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
         </div>
 
         {/* Care & Packaging */}
-        <div className="bg-white rounded-xl border border-border-light p-5">
+        <div className="bg-surface rounded-[1.35rem] border border-border p-5">
           <h2 className="font-semibold mb-4">Care & Packaging</h2>
           <div className="space-y-4">
             <div><label className="text-xs font-medium text-text-secondary mb-1 block">Care Instructions</label><textarea value={form.careInstructions} onChange={(e) => setForm({ ...form, careInstructions: e.target.value })} className={cn(inputClass, "min-h-[80px] resize-y")} rows={3} placeholder="How to care for this product..." /></div>
@@ -281,7 +281,7 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
         </div>
 
         {/* Custom Size */}
-        <div className="bg-white rounded-xl border border-border-light p-5">
+        <div className="bg-surface rounded-[1.35rem] border border-border p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold">Custom Size</h2>
             <label className="flex items-center gap-2 text-sm cursor-pointer">
@@ -312,7 +312,7 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
         </div>
 
         {/* SEO */}
-        <div className="bg-white rounded-xl border border-border-light p-5">
+        <div className="bg-surface rounded-[1.35rem] border border-border p-5">
           <h2 className="font-semibold mb-4">SEO</h2>
           <div className="space-y-4">
             <div><label className="text-xs font-medium text-text-secondary mb-1 block">SEO Title</label><input type="text" value={form.seoTitle} onChange={(e) => setForm({ ...form, seoTitle: e.target.value })} className={inputClass} maxLength={70} /></div>

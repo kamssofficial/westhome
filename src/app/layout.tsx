@@ -1,23 +1,7 @@
 import type { Metadata, Viewport } from "next";
-import { Cormorant_Garamond, DM_Sans } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import Providers from "@/components/layout/Providers";
-import IntroAnimation from "@/components/ui/IntroAnimation";
-
-const cormorant = Cormorant_Garamond({
-  variable: "--font-cormorant",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
-  display: "swap",
-});
-
-const dmSans = DM_Sans({
-  variable: "--font-dm-sans",
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: {
@@ -25,7 +9,7 @@ export const metadata: Metadata = {
     template: "%s | WESTHOME by BM Distributors",
   },
   description:
-    "Discover premium home décor — laundry baskets, frames, and soap dispensers at WESTHOME by BM Distributors.",
+    "Premium home décor — laundry baskets, frames, and soap dispensers at WESTHOME by BM Distributors.",
   keywords: [
     "home decor",
     "premium home",
@@ -56,7 +40,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
-  themeColor: "#F7F3EA",
+  themeColor: "#F5F3EF",
 };
 
 export default function RootLayout({
@@ -65,34 +49,34 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${cormorant.variable} ${dmSans.variable}`}>
-      <body className="min-h-screen bg-background text-foreground font-sans antialiased">
+    <html lang="en">
+      <body className="min-h-screen bg-background text-foreground antialiased">
         <Toaster
           position="top-center"
           toastOptions={{
             duration: 3000,
             style: {
-              background: "#1C1917",
-              color: "#FAF9F6",
+              background: "#1F211F",
+              color: "#F8F6F1",
               fontSize: "14px",
-              borderRadius: "8px",
+              borderRadius: "9999px",
             },
             success: {
               iconTheme: {
                 primary: "#2D7A4F",
-                secondary: "#FAF9F6",
+                secondary: "#F8F6F1",
               },
             },
             error: {
               iconTheme: {
-                primary: "#C53030",
-                secondary: "#FAF9F6",
+                primary: "#BD4A42",
+                secondary: "#F8F6F1",
               },
             },
           }}
         />
         <Providers>
-          <IntroAnimation>{children}</IntroAnimation>
+          {children}
         </Providers>
       </body>
     </html>

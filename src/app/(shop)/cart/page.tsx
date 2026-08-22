@@ -36,7 +36,7 @@ export default function CartPage() {
   return (
     <div className="animate-fade-in">
       {/* Header */}
-      <div className="px-4 pt-3 pb-2 flex items-center gap-3">
+      <div className="container-shop pt-3 pb-2 flex items-center gap-3">
         <Link href="/shop" className="p-1 hover:bg-surface-muted rounded-lg transition-colors">
           <ArrowLeft size={20} />
         </Link>
@@ -44,14 +44,14 @@ export default function CartPage() {
       </div>
 
       {/* Items count */}
-      <div className="px-4 pb-3">
+      <div className="container-shop pb-3">
         <p className="text-sm text-secondary">{items.length} Items</p>
       </div>
 
       {/* Cart items */}
-      <div className="px-4 space-y-3">
+      <div className="container-shop space-y-3">
         {items.map((item) => (
-          <div key={item.id} className="flex gap-3 bg-white rounded-xl p-3 shadow-sm">
+          <div key={item.id} className="flex gap-3 bg-surface rounded-[1.35rem] border border-foreground/[.08] p-3 shadow-sm">
             {/* Image */}
             <div className="relative w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-surface-muted">
               {item.image ? (
@@ -103,8 +103,8 @@ export default function CartPage() {
       </div>
 
       {/* Order Summary */}
-      <div className="px-4 mt-6 pb-4">
-        <div className="bg-white rounded-xl p-4 shadow-sm">
+      <div className="container-shop mt-6 pb-4">
+        <div className="bg-surface rounded-[1.35rem] border border-foreground/[.08] p-4 shadow-sm">
           <h3 className="text-sm font-semibold text-primary mb-3">Order Summary</h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
@@ -125,10 +125,10 @@ export default function CartPage() {
       </div>
 
       {/* CTA */}
-      <div className="px-4 pb-6">
+      <div className="container-shop pb-6">
         <Link
           href="/checkout"
-          className="block w-full py-3.5 bg-primary text-white rounded-2xl text-sm font-semibold text-center hover:bg-primary-hover transition-colors"
+          className="block w-full py-3.5 bg-primary text-white rounded-full text-sm font-semibold text-center hover:bg-primary-hover transition-colors"
         >
           Proceed to Checkout →
         </Link>

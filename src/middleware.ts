@@ -18,8 +18,8 @@ export async function middleware(request: NextRequest) {
     }
 
     if (role !== "ADMIN") {
-      // Non-admin: redirect to their own area
-      if (role === "MANAGER") {
+      const staffRoles = ["MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER"];
+      if (staffRoles.includes(role)) {
         return NextResponse.redirect(new URL("/staff/dashboard", request.url));
       }
       return NextResponse.redirect(new URL("/account", request.url));
@@ -39,7 +39,8 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
 
-    if (role !== "MANAGER" && role !== "ADMIN") {
+    const staffRoles = ["ADMIN", "MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER"];
+    if (!staffRoles.includes(role)) {
       return NextResponse.redirect(new URL("/account", request.url));
     }
 
@@ -58,7 +59,8 @@ export async function middleware(request: NextRequest) {
     if (role === "ADMIN") {
       return NextResponse.redirect(new URL("/admin/dashboard", request.url));
     }
-    if (role === "MANAGER") {
+    const staffRoles = ["MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER"];
+    if (staffRoles.includes(role)) {
       return NextResponse.redirect(new URL("/staff/dashboard", request.url));
     }
 

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ArrowUpRight } from "lucide-react";
 import { ProductGridSkeleton } from "@/components/ui/Skeleton";
 import type { Category } from "@/types";
 
@@ -23,45 +23,98 @@ export default function ShopPage() {
 
   return (
     <div className="animate-fade-in">
-      <div className="px-4 pt-4 pb-2">
-        <h1 className="text-2xl font-semibold text-primary">Our Collections</h1>
-        <p className="text-sm text-secondary mt-1">Explore our curated range of premium home essentials.</p>
-      </div>
+      {/* Hero */}
+      <section className="container-shop pt-10 pb-6 md:pt-16 md:pb-10">
+        <p className="font-label mb-3 text-[9px] text-accent">Collections</p>
+        <h1 className="font-display text-4xl md:text-6xl">Our collections.</h1>
+        <p className="mt-4 max-w-md text-sm leading-7 text-text-secondary">
+          Explore our curated range of premium home essentials — each piece
+          chosen to make your space feel more like you.
+        </p>
+      </section>
 
-      {loading ? (
-        <div className="px-4 py-4 space-y-3">
-          {[1, 2, 3, 4, 5].map((i) => (<div key={i} className="skeleton h-24 rounded-xl" />))}
-        </div>
-      ) : categories.length > 0 ? (
-        <div className="px-4 py-2 space-y-3">
-          {categories.map((cat) => (
-            <Link key={cat.id} href={"/collections/" + cat.slug} className="flex items-center bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-card transition-all group">
-              <div className="relative w-28 h-24 flex-shrink-0 bg-surface-muted overflow-hidden">
-                {cat.image ? (<Image src={cat.image} alt={cat.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="112px" />) : (<div className="w-full h-full flex items-center justify-center text-text-muted text-xs">{cat.name}</div>)}
-              </div>
-              <div className="flex-1 px-4">
-                <h3 className="text-base font-semibold text-primary">{cat.name}</h3>
-                <p className="text-sm text-secondary">{cat.productCount || 0} Items</p>
-              </div>
-              <div className="pr-4"><ArrowRight size={20} className="text-text-muted group-hover:text-primary transition-colors" /></div>
-            </Link>
-          ))}
-        </div>
-      ) : (
-        <div className="px-4 py-12 text-center"><p className="text-sm text-secondary">No collections available yet.</p></div>
-      )}
-
-      <div className="px-4 py-6">
-        <div className="flex items-center justify-between bg-white rounded-xl p-4 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div>
-              <p className="text-sm font-medium text-primary">Can't find what you're looking for?</p>
-              <p className="text-xs text-secondary">Browse all our products and discover more.</p>
-            </div>
+      {/* Category grid */}
+      <section className="container-shop pb-20 md:pb-28">
+        {loading ? (
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="skeleton aspect-[.82] rounded-[1.35rem]" />
+            ))}
           </div>
-          <Link href="/shop/all" className="flex-shrink-0 px-4 py-2.5 bg-primary text-white rounded-xl text-xs font-medium hover:bg-primary-hover transition-colors flex items-center gap-1">Shop All Products <ArrowRight size={12} /></Link>
+        ) : categories.length > 0 ? (
+          <div className="stagger-in grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6">
+            {categories.map((cat, index) => (
+              <Link
+                key={cat.id}
+                href={`/collections/${cat.slug}`}
+                className="group block"
+              >
+                <div className="relative aspect-[.82] overflow-hidden rounded-[1.35rem] bg-surface-muted border border-foreground/[.08] transition-[transform,box-shadow,border-color] duration-500 ease-out group-hover:-translate-y-1 group-hover:border-foreground/[.16] group-hover:shadow-card-hover">
+                  {cat.image ? (
+                    <Image
+                      src={cat.image}
+                      alt={cat.name}
+                      fill
+                      className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+                      sizes="(max-width: 640px) 50vw, 33vw"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-text-muted text-sm font-medium">
+                      {cat.name}
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />
+                  <span className="absolute left-3 top-3 text-[10px] font-bold text-white/80">
+                    0{index + 1}
+                  </span>
+                  <span className="absolute bottom-3 left-3 right-3 text-sm font-semibold text-white">
+                    {cat.name}
+                  </span>
+                  <span className="absolute right-3 bottom-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-white opacity-0 transition-opacity duration-300 group-hover:opacity-100 backdrop-blur">
+                    <ArrowUpRight size={14} />
+                  </span>
+                </div>
+                <div className="mt-3 flex items-center justify-between">
+                  <p className="text-sm font-semibold text-foreground">
+                    {cat.name}
+                  </p>
+                  <p className="text-xs text-text-secondary">
+                    {cat.productCount || 0} items
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-16">
+            <p className="text-text-muted text-sm">No collections available yet.</p>
+          </div>
+        )}
+      </section>
+
+      {/* Shop All CTA */}
+      <section className="container-shop pb-20 md:pb-28">
+        <div className="relative overflow-hidden rounded-[2rem] bg-[#1f2521] px-7 py-12 md:px-16 md:py-16 text-white">
+          <div className="relative z-10">
+            <p className="font-label mb-3 text-[9px] text-[#e0a681]">
+              Browse everything
+            </p>
+            <h2 className="font-display text-3xl md:text-5xl leading-[.95]">
+              Can&apos;t decide?
+            </h2>
+            <p className="mt-4 max-w-sm text-sm leading-7 text-white/55">
+              Browse all our products and discover something that speaks to
+              you.
+            </p>
+            <Link
+              href="/shop/all"
+              className="mt-6 inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-foreground transition-transform hover:-translate-y-0.5 active:scale-[.97]"
+            >
+              Shop all products <ArrowRight size={15} />
+            </Link>
+          </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 }

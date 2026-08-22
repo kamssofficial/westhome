@@ -58,14 +58,14 @@ export default function AdminSettingsPage() {
     }
   };
 
-  const inputClass = "w-full px-3 py-2.5 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30";
+  const inputClass = "w-full px-3 py-2.5 bg-white border border-border rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-accent/30";
 
   return (
     <div className="max-w-3xl space-y-6">
       <h1 className="text-xl font-semibold">Settings</h1>
 
       {/* Store Info */}
-      <div className="bg-white rounded-xl border border-border-light p-5">
+      <div className="bg-surface rounded-[1.35rem] border border-border p-5">
         <h2 className="font-semibold mb-4">Store Information</h2>
         <div className="space-y-4">
           <div>
@@ -112,7 +112,7 @@ export default function AdminSettingsPage() {
       </div>
 
       {/* Delivery */}
-      <div className="bg-white rounded-xl border border-border-light p-5">
+      <div className="bg-surface rounded-[1.35rem] border border-border p-5">
         <h2 className="font-semibold mb-4">Delivery Configuration</h2>
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

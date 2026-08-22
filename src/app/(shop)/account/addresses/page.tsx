@@ -97,7 +97,7 @@ export default function AddressesPage() {
       </div>
 
       {showForm && (
-        <form onSubmit={handleAdd} className="bg-white rounded-xl border border-border-light p-4 md:p-5 mb-6 space-y-4">
+        <form onSubmit={handleAdd} className="bg-white rounded-xl border border-border p-4 md:p-5 mb-6 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div><label className="text-xs font-medium text-text-secondary mb-1 block">Full Name *</label><input type="text" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputClass} /></div>
             <div><label className="text-xs font-medium text-text-secondary mb-1 block">Phone *</label><input type="tel" required value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={inputClass} /></div>
@@ -115,7 +115,7 @@ export default function AddressesPage() {
 
       <div className="space-y-3">
         {addresses.map((addr) => (
-          <div key={addr.id} className="bg-white rounded-xl border border-border-light p-4 flex items-start gap-3">
+          <div key={addr.id} className="bg-white rounded-xl border border-border p-4 flex items-start gap-3">
             <MapPin size={18} className="text-accent mt-0.5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">

@@ -37,7 +37,8 @@ export default function AccountPage() {
             window.location.href = "/admin/dashboard";
             return;
           }
-          if (role === "MANAGER") {
+          const staffRoles = ["MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER"];
+          if (staffRoles.includes(role)) {
             window.location.href = "/staff/dashboard";
             return;
           }
@@ -106,7 +107,7 @@ export default function AccountPage() {
               {MENU_ITEMS.map((item, i) => {
                 const Icon = item.icon;
                 return (
-                  <Link key={"menu-" + i} href={item.href} className={"flex items-center justify-between px-4 py-3.5 hover:bg-surface-muted transition-colors " + (i < MENU_ITEMS.length - 1 ? "border-b border-border-light" : "")}>
+                  <Link key={"menu-" + i} href={item.href} className={"flex items-center justify-between px-4 py-3.5 hover:bg-surface-muted transition-colors " + (i < MENU_ITEMS.length - 1 ? "border-b border-border" : "")}>
                     <div className="flex items-center gap-3">
                       <Icon size={18} className="text-secondary" />
                       <span className="text-sm font-medium text-primary">{item.label}</span>

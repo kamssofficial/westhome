@@ -54,7 +54,7 @@ export default function AccountSettingsPage() {
     <div className="container-shop py-4 md:py-8 max-w-xl animate-fade-in">
       <h1 className="text-xl md:text-2xl font-serif mb-6">Account Settings</h1>
 
-      <div className="bg-white rounded-xl border border-border-light p-4 md:p-5 space-y-4">
+      <div className="bg-white rounded-xl border border-border p-4 md:p-5 space-y-4">
         <div>
           <label className="text-xs font-medium text-text-secondary mb-1 block">Full Name</label>
           <div className="relative">
@@ -79,7 +79,7 @@ export default function AccountSettingsPage() {
         <Button onClick={handleSave} loading={saving}>Save Changes</Button>
       </div>
 
-      <div className="mt-6 bg-white rounded-xl border border-border-light p-4 md:p-5">
+      <div className="mt-6 bg-white rounded-xl border border-border p-4 md:p-5">
         <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
           <Lock size={14} /> Change Password
         </h2>

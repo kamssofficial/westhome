@@ -58,19 +58,19 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
 
   if (loading) {
     return (
-      <div className="px-4 py-6">
+      <div className="container-shop py-6">
         <Skeleton className="aspect-square rounded-2xl mb-4" />
         <Skeleton className="h-4 w-24 mb-2" />
         <Skeleton className="h-8 w-3/4 mb-2" />
         <Skeleton className="h-6 w-20 mb-4" />
-        <Skeleton className="h-12 w-full rounded-xl" />
+        <Skeleton className="h-12 w-full rounded-[1.35rem]" />
       </div>
     );
   }
 
   if (!product) {
     return (
-      <div className="px-4 py-20 text-center">
+      <div className="container-shop py-20 text-center">
         <h2 className="text-xl font-semibold mb-2">Product not found</h2>
         <Link href="/shop" className="text-accent hover:underline text-sm">Browse all products</Link>
       </div>
@@ -110,7 +110,7 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
   return (
     <div className="animate-fade-in">
       {/* Back header */}
-      <div className="px-4 pt-3 pb-1 flex items-center justify-between">
+      <div className="container-shop pt-3 pb-1 flex items-center justify-between">
         <Link href="/shop" className="p-1 hover:bg-surface-muted rounded-lg transition-colors">
           <ChevronLeft size={22} />
         </Link>
@@ -139,7 +139,7 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
       </div>
 
       {/* Main image */}
-      <div className="px-4">
+      <div className="container-shop">
         <div className="relative aspect-square bg-white rounded-2xl overflow-hidden">
           <Image
             src={images[selectedImageIndex]?.url || ""}
@@ -186,7 +186,7 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
       </div>
 
       {/* Product Info */}
-      <div className="px-4 mt-4">
+      <div className="container-shop mt-4">
         <h1 className="text-xl font-semibold text-primary leading-tight">{product.name}</h1>
         <p className="text-xl font-bold text-primary mt-1">{formatPrice(currentPrice)}</p>
 
@@ -210,7 +210,7 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
 
         {/* Quantity */}
         <div className="flex items-center gap-4 mt-5">
-          <div className="flex items-center border border-border rounded-xl overflow-hidden">
+          <div className="flex items-center border border-border rounded-[1.35rem] overflow-hidden">
             <button
               onClick={() => setQuantity((q) => Math.max(1, q - 1))}
               className="w-10 h-10 flex items-center justify-center hover:bg-surface-muted transition-colors"
@@ -235,7 +235,7 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
             "w-full py-3.5 rounded-2xl text-sm font-semibold transition-all duration-200 mt-5",
             inStock
               ? "bg-primary text-white hover:bg-primary-hover active:scale-[0.98]"
-              : "bg-stone-200 text-text-muted cursor-not-allowed"
+              : "bg-surface-muted text-text-muted cursor-not-allowed"
           )}
         >
           {inStock ? "Add to Cart" : "Out of Stock"}
@@ -504,7 +504,7 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
                   )}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-[#25D366] text-white rounded-xl text-xs font-medium"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-[#25D366] text-white rounded-[1.35rem] text-xs font-medium"
                 >
                   <MessageCircle size={14} />
                   Ask About Custom Size
@@ -536,7 +536,7 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
               {product.images
                 .filter((img: any) => img.imageType === "LIFESTYLE")
                 .map((img) => (
-                  <div key={img.id} className="flex-shrink-0 w-[280px] rounded-xl overflow-hidden bg-surface-muted">
+                  <div key={img.id} className="flex-shrink-0 w-[280px] rounded-[1.35rem] overflow-hidden bg-surface-muted">
                     <div className="relative aspect-[4/3]">
                       <Image
                         src={img.url}

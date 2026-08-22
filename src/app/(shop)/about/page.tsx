@@ -14,7 +14,7 @@ export default function AboutPage() {
       </div>
 
       {/* Brand story */}
-      <div className="px-4 py-6">
+      <div className="container-shop py-6">
         <p className="text-sm text-secondary leading-relaxed">
           At WestHome, we believe that your home deserves the best. Our collections are
           thoughtfully curated to bring style, comfort and quality into your everyday life.
@@ -31,8 +31,8 @@ export default function AboutPage() {
       </div>
 
       {/* Store Location */}
-      <div className="px-4 pb-6">
-        <div className="bg-white rounded-xl p-5 shadow-sm">
+      <div className="container-shop pb-6">
+        <div className="bg-surface rounded-[1.35rem] border border-foreground/[.08] p-5 shadow-sm">
           <h3 className="text-sm font-semibold text-primary mb-3">Visit Our Store</h3>
           <div className="space-y-2 text-sm text-secondary">
             <p className="font-medium text-primary">West Home by BM Distributors</p>
@@ -46,7 +46,7 @@ export default function AboutPage() {
       </div>
 
       {/* Brand values */}
-      <div className="px-4 space-y-4 pb-8">
+      <div className="container-shop space-y-4 pb-8">
         {[
           {
             icon: <Sparkles size={20} className="text-primary" />,
@@ -64,7 +64,7 @@ export default function AboutPage() {
             desc: "Thousands of happy customers across Kerala and Karnataka trust West Home.",
           },
         ].map((item) => (
-          <div key={item.title} className="flex items-start gap-3 bg-white rounded-xl p-4 shadow-sm">
+          <div key={item.title} className="flex items-start gap-3 bg-surface rounded-[1.35rem] border border-foreground/[.08] p-4 shadow-sm">
             <div className="w-10 h-10 rounded-full bg-surface-muted flex items-center justify-center flex-shrink-0">
               {item.icon}
             </div>

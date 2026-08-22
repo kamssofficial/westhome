@@ -34,7 +34,7 @@ export default function AdminPromotionsPage() {
         <Button size="sm"><Plus size={16} /> Create Promotion</Button>
       </div>
 
-      <div className="bg-white rounded-xl border border-border-light p-8 text-center">
+      <div className="bg-surface rounded-[1.35rem] border border-border p-8 text-center">
         <p className="text-text-muted">
           {loading ? "Loading..." : promotions.length === 0 ? "No promotions created yet. Create your first promotion to start offering discounts." : `${promotions.length} promotions configured.`}
         </p>

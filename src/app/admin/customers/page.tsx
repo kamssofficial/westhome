@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Users } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
@@ -15,6 +16,7 @@ interface Customer {
 
 export default function AdminCustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -29,10 +31,10 @@ export default function AdminCustomersPage() {
     <div className="space-y-4">
       <h1 className="text-xl font-semibold">Customers</h1>
 
-      <div className="bg-white rounded-xl border border-border-light overflow-hidden">
+      <div className="bg-surface rounded-[1.35rem] border border-border overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-border-light bg-surface-muted/50">
+            <tr className="border-b border-border bg-surface-muted/50">
               <th className="text-left px-4 py-3 font-medium text-text-secondary">Name</th>
               <th className="text-left px-4 py-3 font-medium text-text-secondary hidden md:table-cell">Email</th>
               <th className="text-left px-4 py-3 font-medium text-text-secondary hidden md:table-cell">Phone</th>
@@ -45,7 +47,7 @@ export default function AdminCustomersPage() {
               <tr><td colSpan={5} className="px-4 py-8 text-center text-text-muted">Loading...</td></tr>
             ) : customers.length > 0 ? (
               customers.map((c) => (
-                <tr key={c.id} className="border-b border-border-light last:border-0 hover:bg-surface-muted/50">
+                <tr key={c.id} className="border-b border-border last:border-0 hover:bg-surface-muted/50 cursor-pointer" onClick={() => router.push("/admin/customers/" + c.id)}>
                   <td className="px-4 py-3 font-medium">{c.name || "—"}</td>
                   <td className="px-4 py-3 text-text-secondary hidden md:table-cell">{c.email}</td>
                   <td className="px-4 py-3 text-text-secondary hidden md:table-cell">{c.phone || "—"}</td>

@@ -101,7 +101,7 @@ export default function OrdersPage() {
               {order.items?.slice(0, 2).map((item, i) => (
                 <p key={i} className="text-xs text-secondary">{item.productName} x{item.quantity}</p>
               ))}
-              <div className="flex items-center justify-between mt-3 pt-3 border-t border-border-light">
+              <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
                 <span className="text-sm text-secondary">Total</span>
                 <span className="text-sm font-bold text-primary">{formatPrice(order.total)}</span>
               </div>

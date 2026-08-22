@@ -1,260 +1,270 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Search, ShoppingBag, Menu, X, ChevronRight } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useCartStore } from "@/store/cart";
 import WestHomeLogo from "@/components/ui/WestHomeLogo";
+import { Search, ShoppingBag, Menu, X, User, ArrowUpRight } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { useCartStore } from "@/store/cart";
+import { cn } from "@/lib/utils";
 
 const NAV_LINKS = [
   { label: "Home", href: "/" },
   { label: "Shop", href: "/shop" },
-];
-
-const COLLECTIONS = [
-  { label: "Laundry Baskets", href: "/collections/laundry-baskets" },
-  { label: "Frames", href: "/collections/frames" },
-  { label: "Soap Dispensers", href: "/collections/soap-dispensers" },
-];
-
-const SECONDARY_LINKS = [
-  { label: "My Account", href: "/account" },
-  { label: "About Us", href: "/about" },
-  { label: "Contact", href: "/contact" },
+  { label: "Wall Decor", href: "/collections/wall-decor" },
+  { label: "Comforters", href: "/collections/comforters" },
+  { label: "Lamps", href: "/collections/lamps" },
+  { label: "Carpets", href: "/collections/carpets" },
+  { label: "Accessories", href: "/collections/accessories" },
 ];
 
 export default function Header() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const itemCount = useCartStore((state) => state.getItemCount());
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [mounted, setMounted] = useState(false);
-  const getItemCount = useCartStore((s) => s.getItemCount);
-
-  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 10);
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+    const onScroll = () => setIsScrolled(window.scrollY > 16);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Lock body scroll when menu is open
-  useEffect(() => {
-    if (mobileMenuOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => { document.body.style.overflow = ""; };
-  }, [mobileMenuOpen]);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      setMobileMenuOpen(false);
-      setSearchOpen(false);
-      window.location.href = `/search?q=${encodeURIComponent(searchQuery.trim())}`;
-    }
+  const handleSearch = (event: React.FormEvent) => {
+    event.preventDefault();
+    const value = searchQuery.trim();
+    if (!value) return;
+    setSearchOpen(false);
+    router.push(`/search?q=${encodeURIComponent(value)}`);
   };
 
-  const handleNavClick = () => {
-    setMobileMenuOpen(false);
-  };
-
-  const cartCount = mounted ? getItemCount() : 0;
+  const isActive = (href: string) =>
+    href === "/" ? pathname === "/" : pathname.startsWith(href);
 
   return (
     <>
-      <header
-        className={cn(
-          "sticky top-0 z-50 transition-shadow duration-300 scroll-edge-bottom",
-          isScrolled ? "shadow-sm" : ""
-        )}
-        style={{
-          backgroundColor: "rgba(247, 243, 234, 0.72)",
-          backdropFilter: "blur(20px) saturate(180%)",
-          WebkitBackdropFilter: "blur(20px) saturate(180%)" as any,
-        }}
-      >
-        <div className="container-shop">
-          <div className="flex items-center justify-between h-14 md:h-16 lg:h-[72px]">
-            {/* Mobile menu toggle */}
+      <header className="sticky top-0 z-50 px-3 pt-3 md:px-5 md:pt-5">
+        <div
+          className={cn(
+            "material mx-auto max-w-[1400px] rounded-[1.35rem] transition-[box-shadow,background-color] duration-500",
+            isScrolled && "shadow-dropdown"
+          )}
+        >
+          <div className="flex h-[4.25rem] items-center justify-between gap-4 px-4 md:h-[4.75rem] md:px-6">
             <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 -ml-2 hover:bg-surface-muted active:scale-95 rounded-xl transition-all duration-150"
-              aria-label="Menu"
+              type="button"
+              onClick={() => setMobileMenuOpen(true)}
+              className="flex h-10 w-10 items-center justify-center rounded-full text-foreground transition-colors hover:bg-foreground/[.06] active:scale-95 lg:hidden"
+              aria-label="Open menu"
             >
-              {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+              <Menu size={20} strokeWidth={1.8} />
             </button>
-
-            {/* Logo — centered on mobile */}
-            <Link href="/" className="flex-shrink-0 absolute left-1/2 -translate-x-1/2 lg:static lg:translate-x-0">
-              <WestHomeLogo size="md" />
+            <Link href="/" className="shrink-0" aria-label="WESTHOME home">
+              <span className="relative block h-8 w-[9rem] md:h-9 md:w-[10rem]">
+                <WestHomeLogo
+                  variant="default"
+                  size="md"
+                  plain
+                  className="h-8 w-auto md:h-9"
+                />
+              </span>
             </Link>
-
-            {/* Desktop navigation */}
-            <nav className="hidden lg:flex items-center gap-1">
+            <nav
+              className="hidden items-center gap-0.5 lg:flex"
+              aria-label="Primary navigation"
+            >
               {NAV_LINKS.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="px-3 py-2 text-sm font-medium text-secondary hover:text-primary transition-colors rounded-lg hover:bg-surface-muted"
+                  className={cn(
+                    "relative rounded-full px-3 py-2 text-[12px] font-semibold tracking-[-.01em] transition-colors hover:text-foreground",
+                    isActive(link.href)
+                      ? "text-foreground"
+                      : "text-text-secondary"
+                  )}
                 >
                   {link.label}
+                  {isActive(link.href) && (
+                    <span className="absolute inset-x-3 -bottom-0.5 h-px bg-accent" />
+                  )}
                 </Link>
               ))}
-              <div className="relative group">
-                <Link
-                  href="/shop"
-                  className="px-3 py-2 text-sm font-medium text-secondary hover:text-primary transition-colors rounded-lg hover:bg-surface-muted inline-flex items-center gap-1"
-                >
-                  Collections <ChevronRight size={12} className="rotate-90" />
-                </Link>
-                <div className="absolute top-full left-0 pt-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                  <div className="bg-white rounded-xl shadow-dropdown border border-border-light py-1 min-w-[180px]">
-                    {COLLECTIONS.map((col) => (
-                      <Link
-                        key={col.href}
-                        href={col.href}
-                        className="block px-4 py-2.5 text-sm text-secondary hover:text-primary hover:bg-surface-muted transition-colors"
-                      >
-                        {col.label}
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              </div>
             </nav>
-
-            {/* Actions */}
             <div className="flex items-center gap-1">
               <button
-                onClick={() => setSearchOpen(!searchOpen)}
-                className="p-2 hover:bg-surface-muted active:scale-95 rounded-xl transition-all duration-150"
+                type="button"
+                onClick={() => setSearchOpen((value) => !value)}
+                className={cn(
+                  "flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-foreground/[.06] active:scale-95",
+                  searchOpen && "bg-foreground/[.06]"
+                )}
                 aria-label="Search"
               >
-                <Search size={20} />
+                <Search size={19} strokeWidth={1.8} />
               </button>
               <Link
-                href="/cart"
-                className="p-2 hover:bg-surface-muted active:scale-95 rounded-xl transition-all duration-150 relative"
-                aria-label="Cart"
+                href="/account"
+                className="hidden h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-foreground/[.06] active:scale-95 md:flex"
+                aria-label="Account"
               >
-                <ShoppingBag size={20} />
-                {cartCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-primary text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
-                    {cartCount}
+                <User size={19} strokeWidth={1.8} />
+              </Link>
+              <Link
+                href="/cart"
+                className="relative flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-foreground/[.06] active:scale-95"
+                aria-label={`Cart with ${itemCount} items`}
+              >
+                <ShoppingBag size={19} strokeWidth={1.8} />
+                {itemCount > 0 && (
+                  <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[9px] font-bold text-white">
+                    {itemCount > 9 ? "9+" : itemCount}
                   </span>
                 )}
               </Link>
             </div>
           </div>
-        </div>
-
-        {/* Search bar */}
-        <div
-          className={cn(
-            "overflow-hidden transition-all duration-300 border-t border-border-light",
-            searchOpen ? "max-h-20" : "max-h-0 border-t-0"
-          )}
-        >
-          <div className="container-shop py-3">
-            <form onSubmit={handleSearch} className="relative">
-              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search for products..."
-                className="w-full pl-10 pr-4 py-2.5 bg-surface-muted rounded-xl border-0 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 transition-all"
-                autoFocus={searchOpen}
-              />
-            </form>
+          <div
+            className={cn(
+              "grid transition-[grid-template-rows,opacity] duration-[400ms]",
+              searchOpen
+                ? "grid-rows-[1fr] opacity-100"
+                : "grid-rows-[0fr] opacity-0"
+            )}
+          >
+            <div className="overflow-hidden">
+              <form
+                onSubmit={handleSearch}
+                className="border-t border-foreground/[.07] px-4 py-3 md:px-6"
+              >
+                <div className="flex items-center gap-3 rounded-full bg-foreground/[.055] px-4 focus-within:ring-2 focus-within:ring-accent/60">
+                  <Search
+                    size={16}
+                    className="shrink-0 text-text-muted"
+                    aria-hidden="true"
+                  />
+                  <label htmlFor="site-search" className="sr-only">
+                    Search the collection
+                  </label>
+                  <input
+                    id="site-search"
+                    name="search"
+                    type="search"
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    placeholder="Search the collection…"
+                    autoComplete="off"
+                    spellCheck={false}
+                    className="h-11 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-text-muted"
+                  />
+                  <button
+                    type="submit"
+                    className="rounded-full px-2 py-1 text-xs font-semibold text-accent hover:bg-accent/10 hover:text-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+                  >
+                    Search
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       </header>
 
-      {/* ============ MOBILE DRAWER ============ */}
-      {/* Overlay */}
-      <div
-        className={cn(            "fixed inset-0 z-[60] bg-black/30 backdrop-blur-[2px] transition-opacity duration-[250ms] ease-[cubic-bezier(0.25,0.46,0.45,0.94)] lg:hidden",
-          mobileMenuOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-        )}
-        onClick={() => setMobileMenuOpen(false)}
-        aria-hidden="true"
-      />
-
-      {/* Drawer */}
       <div
         className={cn(
-          "fixed top-0 left-0 z-[61] h-full w-[82%] max-w-[320px] overflow-y-auto transition-transform duration-[280ms] ease-[cubic-bezier(0.32,0.72,0,1)] lg:hidden",
-          mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+          "fixed inset-0 z-[60] lg:hidden",
+          mobileMenuOpen
+            ? "pointer-events-auto"
+            : "pointer-events-none"
         )}
-        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)", backgroundColor: "rgba(247, 243, 234, 0.85)", backdropFilter: "blur(24px) saturate(200%)", WebkitBackdropFilter: "blur(24px) saturate(200%)" }}
+        aria-hidden={!mobileMenuOpen}
+        inert={!mobileMenuOpen}
       >
-        {/* Drawer header */}
-        <div className="flex items-center justify-between px-5 pt-5 pb-4 scroll-edge-bottom">
-          <WestHomeLogo size="sm" />
-          <button
-            onClick={() => setMobileMenuOpen(false)}
-            className="p-2 -mr-2 hover:bg-surface-muted active:scale-95 rounded-xl transition-all duration-150"
-            aria-label="Close menu"
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        {/* Primary navigation */}
-        <nav className="px-4 pt-4 pb-2">
-          {NAV_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              onClick={handleNavClick}
-              className="flex items-center justify-between py-3 text-[15px] font-medium text-primary hover:text-accent transition-colors rounded-lg"
+        <button
+          type="button"
+          className={cn(
+            "absolute inset-0 bg-foreground/30 backdrop-blur-sm transition-opacity duration-500",
+            mobileMenuOpen ? "opacity-100" : "opacity-0"
+          )}
+          onClick={() => setMobileMenuOpen(false)}
+          aria-label="Close menu overlay"
+        />
+        <aside
+          role="dialog"
+          aria-modal="true"
+          aria-label="Mobile navigation"
+          className={cn(
+            "material absolute bottom-3 left-3 top-3 flex w-[min(86vw,22rem)] flex-col overscroll-contain rounded-[1.6rem] p-5 transition-transform duration-500 ease-[cubic-bezier(.23,.88,.26,.92)]",
+            mobileMenuOpen ? "translate-x-0" : "-translate-x-[110%]"
+          )}
+        >
+          <div className="flex items-center justify-between">
+            <WestHomeLogo
+                variant="default"
+                size="md"
+                plain
+                className="h-8 w-auto"
+              />
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-foreground/[.06] active:scale-95"
+              aria-label="Close menu"
             >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
-
-        {/* Collections group */}
-        <div className="px-4 pb-2">
-          <p className="py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-text-muted">
-            Collections
-          </p>
-          <div className="space-y-0">
-            {COLLECTIONS.map((col) => (
-              <Link
-                key={col.href}
-                href={col.href}
-                onClick={handleNavClick}
-                className="flex items-center justify-between py-2.5 pl-3 text-[14px] text-secondary hover:text-primary transition-colors rounded-lg"
-              >
-                {col.label}
-              </Link>
-            ))}
+              <X size={19} />
+            </button>
           </div>
-        </div>
-
-        {/* Divider */}
-        <div className="mx-5 border-t border-border-light" />
-
-        {/* Secondary navigation */}
-        <nav className="px-4 pt-3 pb-6">
-          {SECONDARY_LINKS.map((link) => (
+          <div className="mt-10 flex-1">
+            <p className="font-label mb-4 text-[9px] text-accent">
+              Explore WESTHOME
+            </p>
+            <nav className="space-y-1" aria-label="Mobile navigation">
+              {NAV_LINKS.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={cn(
+                    "flex items-center justify-between rounded-2xl px-4 py-3.5 text-[15px] font-semibold transition-colors",
+                    isActive(link.href)
+                      ? "bg-foreground text-white"
+                      : "text-foreground hover:bg-foreground/[.06]"
+                  )}
+                >
+                  {link.label}
+                  {isActive(link.href) && <ArrowUpRight size={15} />}
+                </Link>
+              ))}
+            </nav>
+          </div>
+          <div className="space-y-1 border-t border-foreground/[.08] pt-4">
             <Link
-              key={link.href}
-              href={link.href}
-              onClick={handleNavClick}
-              className="flex items-center justify-between py-2.5 text-[14px] text-secondary hover:text-primary transition-colors rounded-lg"
+              href="/account"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block rounded-2xl px-4 py-3 text-sm font-semibold text-text-secondary hover:bg-foreground/[.06] hover:text-foreground"
             >
-              {link.label}
+              My Account
             </Link>
-          ))}
-        </nav>
+            <Link
+              href="/about"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block rounded-2xl px-4 py-3 text-sm font-semibold text-text-secondary hover:bg-foreground/[.06] hover:text-foreground"
+            >
+              About WESTHOME
+            </Link>
+            <Link
+              href="/contact"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block rounded-2xl px-4 py-3 text-sm font-semibold text-text-secondary hover:bg-foreground/[.06] hover:text-foreground"
+            >
+              Contact us
+            </Link>
+          </div>
+        </aside>
       </div>
     </>
   );

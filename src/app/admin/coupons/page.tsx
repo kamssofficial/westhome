@@ -115,7 +115,7 @@ export default function AdminCouponsPage() {
       </div>
 
       {showForm && (
-        <form onSubmit={handleCreate} className="bg-white rounded-xl border border-border-light p-5 space-y-4">
+        <form onSubmit={handleCreate} className="bg-surface rounded-[1.35rem] border border-border p-5 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="text-xs font-medium text-text-secondary mb-1 block">Code *</label>
@@ -149,10 +149,10 @@ export default function AdminCouponsPage() {
         </form>
       )}
 
-      <div className="bg-white rounded-xl border border-border-light overflow-hidden">
+      <div className="bg-surface rounded-[1.35rem] border border-border overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-border-light bg-surface-muted/50">
+            <tr className="border-b border-border bg-surface-muted/50">
               <th className="text-left px-4 py-3 font-medium text-text-secondary">Code</th>
               <th className="text-left px-4 py-3 font-medium text-text-secondary">Type</th>
               <th className="text-right px-4 py-3 font-medium text-text-secondary">Value</th>
@@ -166,7 +166,7 @@ export default function AdminCouponsPage() {
               <tr><td colSpan={6} className="px-4 py-8 text-center text-text-muted">Loading...</td></tr>
             ) : coupons.length > 0 ? (
               coupons.map((coupon) => (
-                <tr key={coupon.id} className="border-b border-border-light last:border-0">
+                <tr key={coupon.id} className="border-b border-border last:border-0">
                   <td className="px-4 py-3 font-mono font-medium">{coupon.code}</td>
                   <td className="px-4 py-3 text-text-secondary">{coupon.type}</td>
                   <td className="px-4 py-3 text-right">{coupon.type === "PERCENTAGE" ? `${coupon.value}%` : formatPrice(coupon.value)}</td>

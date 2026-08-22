@@ -2,55 +2,52 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Grid3X3, Search, Heart, User } from "lucide-react";
+import { Grid2X2, Home, Search, ShoppingBag, UserRound } from "lucide-react";
 import { useCartStore } from "@/store/cart";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
   { label: "Home", href: "/", icon: Home },
-  { label: "Collections", href: "/shop", icon: Grid3X3 },
+  { label: "Shop", href: "/shop", icon: Grid2X2 },
   { label: "Search", href: "/search", icon: Search },
-  { label: "Wishlist", href: "/wishlist", icon: Heart },
-  { label: "Account", href: "/account", icon: User },
+  { label: "Bag", href: "/cart", icon: ShoppingBag },
+  { label: "Account", href: "/account", icon: UserRound },
 ];
-
-const HIDE_NAV_PATHS = ["/checkout", "/cart", "/account/settings"];
 
 export default function MobileBottomNav() {
   const pathname = usePathname();
-
-  if (HIDE_NAV_PATHS.some((p) => pathname.startsWith(p))) return null;
+  const itemCount = useCartStore((state) => state.getItemCount());
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 scroll-edge-top safe-bottom" style={{ backgroundColor: "rgba(247, 243, 234, 0.72)", backdropFilter: "blur(20px) saturate(180%)", WebkitBackdropFilter: "blur(20px) saturate(180%)" }}>
-      <div className="flex items-center justify-around h-14">
-        {NAV_ITEMS.map((item) => {
-          const isActive =
-            item.href === "/"
-              ? pathname === "/"
-              : pathname.startsWith(item.href);
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors duration-200 relative active:scale-90",
-                isActive ? "text-primary" : "text-text-muted"
-              )}
-            >
-              <Icon
-                size={20}
-                strokeWidth={isActive ? 2.2 : 1.5}
-              />
-              <span className="text-[10px] font-medium">{item.label}</span>
-              {isActive && (
-                <div className="absolute top-0 w-5 h-0.5 bg-primary rounded-full" />
-              )}
-            </Link>
-          );
-        })}
-      </div>
+    <nav
+      className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 mx-auto flex max-w-md touch-manipulation items-center justify-around rounded-[1.35rem] border border-white/70 bg-white/80 px-2 py-2 shadow-[0_12px_40px_rgba(31,33,31,.16)] backdrop-blur-xl md:hidden"
+      aria-label="Mobile navigation"
+    >
+      {NAV_ITEMS.map(({ label, href, icon: Icon }) => {
+        const active =
+          href === "/" ? pathname === "/" : pathname.startsWith(href);
+        return (
+          <Link
+            key={href}
+            href={href}
+            aria-current={active ? "page" : undefined}
+            className={cn(
+              "relative flex min-w-0 flex-1 flex-col items-center gap-1 rounded-2xl px-2 py-2 text-[10px] font-semibold transition-[transform,color,background-color] duration-300 active:scale-95",
+              active
+                ? "bg-foreground text-white"
+                : "text-text-muted hover:bg-foreground/[.06] hover:text-foreground"
+            )}
+          >
+            <Icon size={17} strokeWidth={active ? 2.2 : 1.8} aria-hidden="true" />
+            <span>{label}</span>
+            {href === "/cart" && itemCount > 0 && (
+              <span className="absolute right-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[9px] font-bold text-white">
+                {itemCount > 9 ? "9+" : itemCount}
+              </span>
+            )}
+          </Link>
+        );
+      })}
     </nav>
   );
 }

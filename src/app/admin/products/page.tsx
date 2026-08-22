@@ -243,11 +243,11 @@ export default function AdminProductsPage() {
       )}
 
       {/* Products table */}
-      <div className="bg-white rounded-xl border border-border-light overflow-hidden">
+      <div className="bg-surface rounded-[1.35rem] border border-border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border-light bg-surface-muted/50">
+              <tr className="border-b border-border bg-surface-muted/50">
                 <th className="w-10 px-4 py-3">
                   <button onClick={toggleSelectAll} className="text-text-muted hover:text-primary">
                     {selectedIds.size === products.length && products.length > 0 ? (
@@ -268,7 +268,7 @@ export default function AdminProductsPage() {
             <tbody>
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i} className="border-b border-border-light">
+                  <tr key={i} className="border-b border-border">
                     <td className="px-4 py-3"><Skeleton className="h-4 w-4" /></td>
                     <td className="px-4 py-3"><Skeleton className="h-5 w-40" /></td>
                     <td className="px-4 py-3 hidden md:table-cell"><Skeleton className="h-5 w-24" /></td>
@@ -283,7 +283,7 @@ export default function AdminProductsPage() {
                   <tr
                     key={product.id}
                     className={cn(
-                      "border-b border-border-light last:border-0 hover:bg-surface-muted/50 transition-colors",
+                      "border-b border-border last:border-0 hover:bg-surface-muted/50 transition-colors",
                       selectedIds.has(product.id) && "bg-accent/5"
                     )}
                   >

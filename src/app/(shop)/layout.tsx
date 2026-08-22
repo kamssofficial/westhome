@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Header from "@/components/layout/Header";
 import MobileBottomNav from "@/components/layout/MobileBottomNav";
 import Footer from "@/components/layout/Footer";

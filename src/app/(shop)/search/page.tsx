@@ -195,7 +195,7 @@ function SearchContent() {
   return (
     <div className="animate-fade-in">
       {/* Search bar */}
-      <div className="px-4 pt-3 pb-2">
+      <div className="container-shop pt-3 pb-2">
         <div ref={suggestionsRef} className="relative">
           <form onSubmit={handleSearch} className="relative">
             <SearchIcon
@@ -212,7 +212,7 @@ function SearchContent() {
               }}
               onFocus={() => setShowSuggestions(true)}
               placeholder="Search products..."
-              className="w-full pl-10 pr-10 py-2.5 bg-white rounded-xl border border-border text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
+              className="w-full pl-10 pr-10 py-2.5 bg-surface rounded-[1.35rem] border border-foreground/[.08] border border-border text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
             />
             {query && (
               <button
@@ -226,9 +226,9 @@ function SearchContent() {
 
             {/* Suggestions Panel */}
             {showSuggestionsPanel && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl border border-border shadow-dropdown z-50 overflow-hidden">
+              <div className="absolute top-full left-0 right-0 mt-2 bg-surface rounded-[1.35rem] border border-foreground/[.08] border border-border shadow-dropdown z-50 overflow-hidden">
                 {recentSearches.length > 0 && (
-                  <div className="p-3 border-b border-border-light">
+                  <div className="p-3 border-b border-border">
                     <p className="text-xs font-medium text-text-muted uppercase tracking-wider mb-2">
                       Recent
                     </p>
@@ -257,7 +257,7 @@ function SearchContent() {
                   </div>
                 )}
 
-                <div className="p-3 border-b border-border-light">
+                <div className="p-3 border-b border-border">
                   <p className="text-xs font-medium text-text-muted uppercase tracking-wider mb-2">
                     Popular
                   </p>
@@ -300,13 +300,13 @@ function SearchContent() {
       </div>
 
       {/* Filter & Sort */}
-      <div className="px-4 pb-3">
+      <div className="container-shop pb-3">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-medium transition-colors",
+                "flex items-center gap-1.5 px-3 py-2 rounded-[1.35rem] border text-sm font-medium transition-colors",
                 showFilters
                   ? "bg-primary text-white border-primary"
                   : "border-border bg-white hover:bg-surface-muted"
@@ -339,7 +339,7 @@ function SearchContent() {
               <select
                 value={sort}
                 onChange={(e) => setSort(e.target.value)}
-                className="px-3 py-2 pr-8 rounded-xl border border-border bg-white text-sm focus:outline-none appearance-none"
+                className="px-3 py-2 pr-8 rounded-[1.35rem] border border-border bg-white text-sm focus:outline-none appearance-none"
               >
                 <option value="recommended">Recommended</option>
                 <option value="newest">Newest</option>
@@ -357,7 +357,7 @@ function SearchContent() {
                 "p-2 rounded-lg",
                 viewMode === "grid"
                   ? "bg-primary text-white"
-                  : "bg-white border border-border"
+                  : "bg-surface border border-border"
               )}
             >
               <Grid3X3 size={16} />
@@ -368,7 +368,7 @@ function SearchContent() {
                 "p-2 rounded-lg",
                 viewMode === "list"
                   ? "bg-primary text-white"
-                  : "bg-white border border-border"
+                  : "bg-surface border border-border"
               )}
             >
               <List size={16} />
@@ -378,7 +378,7 @@ function SearchContent() {
 
         {/* Filter Panel */}
         {showFilters && (
-          <div className="mt-3 p-3 bg-white rounded-xl border border-border">
+          <div className="mt-3 p-3 bg-surface rounded-[1.35rem] border border-foreground/[.08] border border-border">
             <p className="text-xs font-medium text-text-muted uppercase tracking-wider mb-2">
               Category
             </p>
@@ -414,7 +414,7 @@ function SearchContent() {
       </div>
 
       {/* Results count */}
-      <div className="px-4 pb-2">
+      <div className="container-shop pb-2">
         {loading ? (
           <p className="text-sm text-secondary">Loading...</p>
         ) : (
@@ -429,7 +429,7 @@ function SearchContent() {
       </div>
 
       {/* Products — infinite scroll */}
-      <div className="px-4 pb-8">
+      <div className="container-shop pb-8">
         {loading ? (
           <ProductGridSkeleton count={8} />
         ) : products.length > 0 ? (
@@ -490,7 +490,7 @@ export default function SearchPage() {
   return (
     <Suspense
       fallback={
-        <div className="px-4 py-8">
+        <div className="container-shop py-8">
           <ProductGridSkeleton count={8} />
         </div>
       }

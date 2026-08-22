@@ -1,121 +1,166 @@
-"use client";
-
 import Link from "next/link";
-import { Phone, Mail, MapPin, MessageCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
 import WestHomeLogo from "@/components/ui/WestHomeLogo";
+import { Mail, MapPin, Phone, ArrowUpRight, MessageCircle } from "lucide-react";
 
 const SHOP_LINKS = [
-  { label: "Laundry Baskets", href: "/collections/laundry-baskets" },
-  { label: "Frames", href: "/collections/frames" },
-  { label: "Soap Dispensers", href: "/collections/soap-dispensers" },
+  { label: "Wall Decor", href: "/collections/wall-decor" },
+  { label: "Laundry", href: "/collections/laundry" },
+  { label: "Comforters", href: "/collections/comforters" },
+  { label: "Lamps", href: "/collections/lamps" },
+  { label: "Carpets", href: "/collections/carpets" },
+  { label: "Clocks", href: "/collections/clocks" },
+  { label: "Accessories", href: "/collections/accessories" },
 ];
-
 const COMPANY_LINKS = [
-  { label: "About Us", href: "/about" },
+  { label: "About us", href: "/about" },
   { label: "Contact", href: "/contact" },
-  { label: "Store Location", href: "/contact#location" },
+  { label: "Store location", href: "/contact#location" },
 ];
-
 const POLICY_LINKS = [
-  { label: "Privacy Policy", href: "/policies/privacy" },
-  { label: "Terms of Service", href: "/policies/terms" },
-  { label: "Shipping Policy", href: "/policies/shipping" },
-  { label: "Return Policy", href: "/policies/returns" },
+  { label: "Privacy", href: "/policies/privacy" },
+  { label: "Terms", href: "/policies/terms" },
+  { label: "Shipping", href: "/policies/shipping" },
 ];
 
 export default function Footer({ className }: { className?: string }) {
   return (
-    <footer className={cn("bg-primary text-white", className)}>
-      <div className="container-shop py-12 md:py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
-          {/* Brand */}
-          <div className="lg:col-span-1">
-            <WestHomeLogo size="sm" variant="light" className="mb-3" />
-            <p className="text-sm text-white/50 mb-6 max-w-xs leading-relaxed">
-              Premium home décor and lifestyle products curated for your comfort.
+    <footer className={`bg-foreground text-white ${className || ""}`}>
+      <div className="container-shop py-16 md:py-24">
+        <div className="mb-16 flex flex-col gap-8 border-b border-white/10 pb-12 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="font-label mb-4 text-[9px] text-[#e0a681]">
+              Make room for living
             </p>
-            <div className="space-y-2 text-sm text-white/50">
-              <a href="tel:+919895071144" className="flex items-center gap-2 hover:text-white transition-colors">
-                <Phone size={14} />
-                <span>+91 98950 71144</span>
+            <h2 className="font-display max-w-xl text-4xl leading-[.98] text-white md:text-6xl">
+              The details make the home.
+            </h2>
+          </div>
+          <Link
+            href="/shop"
+            className="group inline-flex items-center gap-2 self-start rounded-full border border-white/20 px-5 py-3 text-sm font-semibold text-white transition-colors hover:border-white/50 hover:bg-white/10 md:self-end"
+          >
+            Explore the collection{" "}
+            <ArrowUpRight
+              size={16}
+              className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+            />
+          </Link>
+        </div>
+        <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1.2fr] lg:gap-10">
+          <div>
+            <div className="mb-5">
+              <WestHomeLogo
+                variant="inverse"
+                size="md"
+                plain
+                className="h-9 w-auto"
+              />
+            </div>
+            <p className="max-w-xs text-sm leading-relaxed text-white/55">
+              Premium home décor and lifestyle pieces, curated to make everyday
+              spaces feel more like you.
+            </p>
+            <div className="mt-7 space-y-3 text-sm text-white/65">
+              <a
+                href="tel:+919895071144"
+                className="flex items-center gap-2 hover:text-white"
+              >
+                <Phone size={14} /> +91 99999 99999
               </a>
-              <a href="mailto:info@westhomebybmd.com" className="flex items-center gap-2 hover:text-white transition-colors">
-                <Mail size={14} />
-                <span>info@westhomebybmd.com</span>
+              <a
+                href="mailto:info@westhomebybmd.com"
+                className="flex items-center gap-2 hover:text-white"
+              >
+                <Mail size={14} /> info@westhomebybmd.com
               </a>
             </div>
           </div>
-
-          {/* Shop */}
           <div>
-            <h3 className="font-semibold text-xs uppercase tracking-wider mb-4 text-white/70">Shop</h3>
-            <ul className="space-y-2.5">
+            <h3 className="font-label mb-5 text-[9px] text-white/40">Shop</h3>
+            <ul className="space-y-3">
               {SHOP_LINKS.map((link) => (
                 <li key={link.href}>
-                  <Link href={link.href} className="text-sm text-white/50 hover:text-white transition-colors">
+                  <Link
+                    href={link.href}
+                    className="text-sm text-white/65 transition-colors hover:text-white"
+                  >
                     {link.label}
                   </Link>
                 </li>
               ))}
             </ul>
           </div>
-
-          {/* Company */}
           <div>
-            <h3 className="font-semibold text-xs uppercase tracking-wider mb-4 text-white/70">Company</h3>
-            <ul className="space-y-2.5">
+            <h3 className="font-label mb-5 text-[9px] text-white/40">
+              Company
+            </h3>
+            <ul className="space-y-3">
               {COMPANY_LINKS.map((link) => (
                 <li key={link.href}>
-                  <Link href={link.href} className="text-sm text-white/50 hover:text-white transition-colors">
+                  <Link
+                    href={link.href}
+                    className="text-sm text-white/65 transition-colors hover:text-white"
+                  >
                     {link.label}
                   </Link>
                 </li>
               ))}
             </ul>
-            <h3 className="font-semibold text-xs uppercase tracking-wider mt-6 mb-4 text-white/70">Policies</h3>
-            <ul className="space-y-2.5">
+            <h3 className="font-label mb-5 mt-9 text-[9px] text-white/40">
+              Policies
+            </h3>
+            <ul className="space-y-3">
               {POLICY_LINKS.map((link) => (
                 <li key={link.href}>
-                  <Link href={link.href} className="text-sm text-white/50 hover:text-white transition-colors">
+                  <Link
+                    href={link.href}
+                    className="text-sm text-white/65 transition-colors hover:text-white"
+                  >
                     {link.label}
                   </Link>
                 </li>
               ))}
             </ul>
           </div>
-
-          {/* WhatsApp & Location */}
           <div>
-            <h3 className="font-semibold text-xs uppercase tracking-wider mb-4 text-white/70">Connect With Us</h3>
+            <h3 className="font-label mb-5 text-[9px] text-white/40">
+              Visit or message
+            </h3>
             <a
               href="https://wa.me/919895071144"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white rounded-xl text-sm font-medium transition-colors mb-6"
+              className="group flex w-full items-center justify-between rounded-2xl bg-white/10 px-4 py-4 text-sm font-semibold transition-colors hover:bg-white/15"
             >
-              <MessageCircle size={18} />
-              WhatsApp Us
+              <span className="flex items-center gap-3">
+                <MessageCircle size={18} className="text-[#64d88a]" /> Chat on
+                WhatsApp
+              </span>
+              <ArrowUpRight
+                size={16}
+                className="text-white/50 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+              />
             </a>
-            <div className="space-y-3 text-sm text-white/50">
-              <div className="flex items-start gap-2">
-                <MapPin size={14} className="mt-0.5 flex-shrink-0" />
-                <span>City Gate Building, near Press Club Junction, Karandakkad, Kasaragod, Kerala — 671121</span>
-              </div>
+            <div className="mt-5 flex items-start gap-2 text-sm text-white/55">
+              <MapPin size={15} className="mt-0.5 shrink-0" /> Store Location,
+              India
             </div>
           </div>
         </div>
       </div>
-
-      {/* Bottom bar */}
       <div className="border-t border-white/10">
-        <div className="container-shop py-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <p className="text-xs text-white/30">
-            © {new Date().getFullYear()} west home by BM Distributors. All rights reserved.
+        <div className="container-shop flex flex-col gap-2 py-5 text-xs text-white/40 sm:flex-row sm:items-center sm:justify-between">
+          <p>
+            © {new Date().getFullYear()} WESTHOME by BM Distributors. All rights
+            reserved.
           </p>
-          <div className="flex items-center gap-4 text-xs text-white/30">
-            <Link href="/policies/privacy" className="hover:text-white/50 transition-colors">Privacy</Link>
-            <Link href="/policies/terms" className="hover:text-white/50 transition-colors">Terms</Link>
+          <div className="flex gap-5">
+            <Link href="/policies/privacy" className="hover:text-white/70">
+              Privacy
+            </Link>
+            <Link href="/policies/terms" className="hover:text-white/70">
+              Terms
+            </Link>
           </div>
         </div>
       </div>

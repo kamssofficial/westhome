@@ -56,7 +56,7 @@ export default function StaffProductsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold text-stone-900">Products</h1>
-        <p className="text-sm text-stone-500 mt-1">Browse product catalogue</p>
+        <p className="text-sm text-text-muted mt-1">Browse product catalogue</p>
       </div>
 
       {/* Filters */}
@@ -68,14 +68,14 @@ export default function StaffProductsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search products..."
-            className="w-full pl-9 pr-4 py-2.5 bg-white border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+            className="w-full pl-9 pr-4 py-2.5 bg-white border border-border rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
           />
         </form>
         <div className="relative">
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="px-3 py-2.5 pr-8 bg-white border border-stone-200 rounded-lg text-sm focus:outline-none appearance-none"
+            className="px-3 py-2.5 pr-8 bg-white border border-border rounded-full text-sm focus:outline-none appearance-none"
           >
             <option value="">All Categories</option>
             {categories.map(c => (
@@ -88,16 +88,16 @@ export default function StaffProductsPage() {
 
       {/* Products grid */}
       {loading ? (
-        <div className="text-center py-12 text-stone-500 text-sm">Loading products...</div>
+        <div className="text-center py-12 text-text-muted text-sm">Loading products...</div>
       ) : products.length === 0 ? (
-        <div className="text-center py-12 text-stone-500 text-sm">No products found</div>
+        <div className="text-center py-12 text-text-muted text-sm">No products found</div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {products.map((product) => {
             const img = product.images.find(i => i.isPrimary)?.url || product.images[0]?.url;
             return (
-              <div key={product.id} className="bg-white rounded-xl border border-stone-200/60 overflow-hidden">
-                <div className="aspect-square bg-stone-100 relative">
+              <div key={product.id} className="bg-surface rounded-[1.35rem] border border-border overflow-hidden">
+                <div className="aspect-square bg-surface-muted relative">
                   {img ? (
                     <img src={img} alt={product.name} className="w-full h-full object-cover" />
                   ) : (

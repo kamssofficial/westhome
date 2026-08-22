@@ -72,7 +72,7 @@ export default function StaffOrdersPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold text-stone-900">Orders</h1>
-        <p className="text-sm text-stone-500 mt-1">View and manage customer orders</p>
+        <p className="text-sm text-text-muted mt-1">View and manage customer orders</p>
       </div>
 
       {/* Filters */}
@@ -84,14 +84,14 @@ export default function StaffOrdersPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search orders..."
-            className="w-full pl-9 pr-4 py-2.5 bg-white border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+            className="w-full pl-9 pr-4 py-2.5 bg-white border border-border rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
           />
         </form>
         <div className="relative">
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2.5 pr-8 bg-white border border-stone-200 rounded-lg text-sm focus:outline-none appearance-none"
+            className="px-3 py-2.5 pr-8 bg-white border border-border rounded-full text-sm focus:outline-none appearance-none"
           >
             <option value="">All Status</option>
             <option value="PENDING">Pending</option>
@@ -106,38 +106,38 @@ export default function StaffOrdersPage() {
       </div>
 
       {/* Orders table */}
-      <div className="bg-white rounded-xl border border-stone-200/60 overflow-hidden">
+      <div className="bg-surface rounded-[1.35rem] border border-border overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center text-stone-500 text-sm">Loading orders...</div>
+          <div className="p-8 text-center text-text-muted text-sm">Loading orders...</div>
         ) : orders.length === 0 ? (
-          <div className="p-8 text-center text-stone-500 text-sm">No orders found</div>
+          <div className="p-8 text-center text-text-muted text-sm">No orders found</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-stone-100 bg-stone-50/50">
-                  <th className="text-left px-4 py-3 font-medium text-stone-600">Order</th>
-                  <th className="text-left px-4 py-3 font-medium text-stone-600">Customer</th>
-                  <th className="text-left px-4 py-3 font-medium text-stone-600">Items</th>
-                  <th className="text-left px-4 py-3 font-medium text-stone-600">Total</th>
-                  <th className="text-left px-4 py-3 font-medium text-stone-600">Status</th>
-                  <th className="text-left px-4 py-3 font-medium text-stone-600">Actions</th>
+                <tr className="border-b border-border bg-surface-muted/30/50">
+                  <th className="text-left px-4 py-3 font-medium text-text-secondary">Order</th>
+                  <th className="text-left px-4 py-3 font-medium text-text-secondary">Customer</th>
+                  <th className="text-left px-4 py-3 font-medium text-text-secondary">Items</th>
+                  <th className="text-left px-4 py-3 font-medium text-text-secondary">Total</th>
+                  <th className="text-left px-4 py-3 font-medium text-text-secondary">Status</th>
+                  <th className="text-left px-4 py-3 font-medium text-text-secondary">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {orders.map((order) => (
-                  <tr key={order.id} className="border-b border-stone-50 hover:bg-stone-50/50 transition-colors">
+                  <tr key={order.id} className="border-b border-stone-50 hover:bg-surface-muted/30/50 transition-colors">
                     <td className="px-4 py-3">
                       <p className="font-medium text-stone-900">#{order.orderNumber}</p>
-                      <p className="text-xs text-stone-500">{new Date(order.createdAt).toLocaleDateString()}</p>
+                      <p className="text-xs text-text-muted">{new Date(order.createdAt).toLocaleDateString()}</p>
                     </td>
                     <td className="px-4 py-3">
                       <p className="text-stone-700">{order.customerName || "—"}</p>
                     </td>
-                    <td className="px-4 py-3 text-stone-600">{order.items?.length || 0}</td>
+                    <td className="px-4 py-3 text-text-secondary">{order.items?.length || 0}</td>
                     <td className="px-4 py-3 font-medium text-stone-900">₹{Number(order.total).toLocaleString()}</td>
                     <td className="px-4 py-3">
-                      <span className={cn("px-2 py-1 rounded-full text-xs font-medium", STATUS_COLORS[order.status] || "bg-stone-100 text-stone-600")}>
+                      <span className={cn("px-2 py-1 rounded-full text-xs font-medium", STATUS_COLORS[order.status] || "bg-surface-muted text-text-secondary")}>
                         {order.status}
                       </span>
                     </td>
@@ -147,7 +147,7 @@ export default function StaffOrdersPage() {
                           value={order.status}
                           onChange={(e) => updateStatus(order.id, e.target.value)}
                           disabled={updatingId === order.id}
-                          className="px-2 py-1 pr-6 border border-stone-200 rounded text-xs focus:outline-none appearance-none bg-white"
+                          className="px-2 py-1 pr-6 border border-border rounded text-xs focus:outline-none appearance-none bg-white"
                         >
                           <option value="PENDING">Pending</option>
                           <option value="CONFIRMED">Confirmed</option>
