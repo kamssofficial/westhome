@@ -24,6 +24,16 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
   const [quantity, setQuantity] = useState(1);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [openAccordion, setOpenAccordion] = useState<string | null>(null);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [reviewAvg, setReviewAvg] = useState<number | null>(null);
+  const [realReviewCount, setRealReviewCount] = useState(0);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewTitle, setReviewTitle] = useState('');
+  const [reviewComment, setReviewComment] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviewMessage, setReviewMessage] = useState('');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const addToCart = useCartStore((s) => s.addItem);
   const toggleWishlist = useWishlistStore((s) => s.toggleItem);
@@ -45,6 +55,20 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
               const relData = await relRes.json();
               setRelatedProducts((relData.products || []).filter((p: Product) => p.id !== data.product.id).slice(0, 4));
             }
+          }
+          // Fetch reviews
+          const revRes = await fetch(`/api/reviews?productId=${data.product.id}`);
+          if (revRes.ok) {
+            const revData = await revRes.json();
+            setReviews(revData.reviews || []);
+            setReviewAvg(revData.avgRating);
+            setRealReviewCount(revData.reviewCount);
+          }
+          // Check if logged in
+          const sessRes = await fetch('/api/auth/session');
+          if (sessRes.ok) {
+            const sessData = await sessRes.json();
+            setIsLoggedIn(!!sessData?.user?.id);
           }
         }
       } catch (err) {
@@ -82,8 +106,8 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
   const originalPrice = product.regularPrice;
   const discount = calculateDiscount(originalPrice, currentPrice);
   const inStock = product.trackInventory ? (selectedVariant?.stockQuantity ?? product.stockQuantity) > 0 : true;
-  const rating = product.rating || 4.8;
-  const reviewCount = product.reviewCount || 56;
+  const rating = reviewAvg !== null ? reviewAvg : (product.rating || 0);
+  const totalReviews = realReviewCount;
 
   const handleAddToCart = () => {
     if (!inStock) return;
@@ -198,7 +222,7 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
             ))}
           </div>
           <span className="text-sm font-medium text-primary">{rating}</span>
-          <span className="text-sm text-secondary">({reviewCount} Reviews)</span>
+          <span className="text-sm text-secondary">({totalReviews} Reviews)</span>
         </div>
 
         {/* Description */}
@@ -556,6 +580,123 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
             </div>
           </div>
         )}
+
+
+        {/* Reviews Section */}
+        <div className="mt-6 border-t border-border pt-6 pb-4">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-primary">Customer Reviews</h2>
+            {isLoggedIn && (
+              <button
+                onClick={() => setShowReviewForm(!showReviewForm)}
+                className="text-sm text-accent font-medium hover:underline"
+              >
+                {showReviewForm ? 'Cancel' : 'Write a Review'}
+              </button>
+            )}
+          </div>
+
+          {/* Review Form */}
+          {showReviewForm && (
+            <div className="bg-surface border border-border rounded-2xl p-4 mb-5">
+              <p className="text-sm font-medium text-primary mb-3">Your Rating</p>
+              <div className="flex items-center gap-1 mb-3">
+                {[1,2,3,4,5].map((s) => (
+                  <button key={s} onClick={() => setReviewRating(s)} className="p-0.5">
+                    <Star
+                      size={24}
+                      className={s <= reviewRating ? 'text-amber-400 fill-amber-400' : 'text-stone-200'}
+                    />
+                  </button>
+                ))}
+              </div>
+              <input
+                type="text"
+                placeholder="Review title (optional)"
+                value={reviewTitle}
+                onChange={(e) => setReviewTitle(e.target.value)}
+                className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-accent/30"
+              />
+              <textarea
+                placeholder="Share your experience with this product..."
+                value={reviewComment}
+                onChange={(e) => setReviewComment(e.target.value)}
+                rows={3}
+                className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-accent/30 resize-none"
+              />
+              {reviewMessage && (
+                <p className="text-sm mb-3 text-green-600">{reviewMessage}</p>
+              )}
+              <button
+                onClick={async () => {
+                  setSubmittingReview(true);
+                  setReviewMessage('');
+                  try {
+                    const res = await fetch('/api/reviews', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        productId: product.id,
+                        rating: reviewRating,
+                        title: reviewTitle || undefined,
+                        comment: reviewComment || undefined,
+                      }),
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                      setReviewMessage(data.message || 'Review submitted!');
+                      setShowReviewForm(false);
+                      setReviewTitle('');
+                      setReviewComment('');
+                      setReviewRating(5);
+                    } else {
+                      setReviewMessage(data.error || 'Failed to submit');
+                    }
+                  } catch {
+                    setReviewMessage('Failed to submit review');
+                  } finally {
+                    setSubmittingReview(false);
+                  }
+                }}
+                disabled={submittingReview}
+                className="w-full py-2.5 bg-primary text-white text-sm font-semibold rounded-xl hover:bg-primary-hover transition-colors disabled:opacity-50"
+              >
+                {submittingReview ? 'Submitting...' : 'Submit Review'}
+              </button>
+            </div>
+          )}
+
+          {!isLoggedIn && (
+            <p className="text-sm text-secondary mb-4">
+              <a href="/login" className="text-accent hover:underline font-medium">Sign in</a> to leave a review.
+            </p>
+          )}
+
+          {/* Reviews List */}
+          {reviews.length > 0 ? (
+            <div className="space-y-4">
+              {reviews.map((review) => (
+                <div key={review.id} className="border-b border-border pb-4 last:border-0">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <div className="flex items-center gap-0.5">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star key={i} size={12} className={i < review.rating ? 'text-amber-400 fill-amber-400' : 'text-stone-200'} />
+                      ))}
+                    </div>
+                    <span className="text-sm font-medium text-primary">{review.user?.name || 'Customer'}</span>
+                  </div>
+                  {review.title && <p className="text-sm font-semibold text-primary mb-1">{review.title}</p>}
+                  {review.comment && <p className="text-sm text-secondary leading-relaxed">{review.comment}</p>}
+                  <p className="text-xs text-text-muted mt-1.5">
+                    {new Date(review.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-secondary">No reviews yet. Be the first to review this product!</p>
+          )}
+        </div>
 
         {/* Related Products */}
         {relatedProducts.length > 0 && (
