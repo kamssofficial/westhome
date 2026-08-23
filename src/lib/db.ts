@@ -11,15 +11,14 @@ function createPrismaClient() {
   if (!connectionString) {
     throw new Error("DATABASE_URL environment variable is not set");
   }
-  const isSupabase = connectionString.includes("supabase");
-  const adapter = isSupabase
-    ? new PrismaPg({
-        connectionString,
-        ssl: { rejectUnauthorized: false },
-      })
-    : new PrismaPg({ connectionString });
+
+  const adapter = new PrismaPg({
+    connectionString,
+    ssl: { rejectUnauthorized: false },
+  } as any);
+
   return new PrismaClient({
-    adapter,
+    adapter: adapter as any,
     log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
   });
 }
