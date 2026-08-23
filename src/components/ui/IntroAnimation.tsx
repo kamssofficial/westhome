@@ -7,7 +7,7 @@ import Image from "next/image";
  * Premium splash screen — clean, minimal, fast.
  *
  * Phases:
- *   1. Logo fades in with a blur-to-sharp + subtle scale
+ *   1. Logo fades in with a subtle scale
  *   2. Thin gold line expands beneath the logo
  *   3. Tagline "by BM Distributors" fades in
  *   4. White wipe reveals the page
@@ -17,6 +17,7 @@ import Image from "next/image";
 export default function IntroAnimation({ children }: { children: React.ReactNode }) {
   const [phase, setPhase] = useState<"idle" | "logo" | "line" | "tagline" | "wipe" | "done">("idle");
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const started = useRef(false);
 
   const skip = useCallback(() => {
     timers.current.forEach(clearTimeout);
@@ -26,13 +27,13 @@ export default function IntroAnimation({ children }: { children: React.ReactNode
   }, []);
 
   useEffect(() => {
-    if (phase === "done" || phase === "wipe") return;
+    if (started.current) return;
+    started.current = true;
 
     const at = (fn: () => void, ms: number) => {
       timers.current.push(setTimeout(fn, ms));
     };
 
-    // Kick off — small pause so the element mounts before animating
     at(() => setPhase("logo"), 50);
     at(() => setPhase("line"), 1200);
     at(() => setPhase("tagline"), 1800);
@@ -40,7 +41,7 @@ export default function IntroAnimation({ children }: { children: React.ReactNode
     at(() => setPhase("done"), 3600);
 
     return () => timers.current.forEach(clearTimeout);
-  }, [phase]);
+  }, []);
 
   return (
     <>
@@ -83,10 +84,6 @@ export default function IntroAnimation({ children }: { children: React.ReactNode
                     phase === "idle"
                       ? "scale(0.94) translateY(10px)"
                       : "scale(1) translateY(0)",
-                  filter:
-                    phase === "logo"
-                      ? "blur(0px)"
-                      : "blur(0px)",
                   transition: "opacity 900ms cubic-bezier(.22,1,.36,1), transform 900ms cubic-bezier(.22,1,.36,1)",
                 }}
               >
