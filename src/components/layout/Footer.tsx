@@ -56,7 +56,7 @@ export default function Footer({ className }: { className?: string }) {
                 className="h-9 w-auto"
               />
             </div>
-            <p className="max-w-xs text-sm leading-relaxed text-white/55">
+            <p className="max-w-xs text-sm leading-relaxed text-white/65">
               Premium home décor and lifestyle pieces, curated to make everyday
               spaces feel more like you.
             </p>

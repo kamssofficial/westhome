@@ -65,7 +65,7 @@ export default function Header() {
             <button
               type="button"
               onClick={() => setMobileMenuOpen(true)}
-              className="flex h-10 w-10 items-center justify-center rounded-full text-foreground transition-colors hover:bg-foreground/[.06] active:scale-95 lg:hidden"
+              className="flex h-10 w-10 items-center justify-center rounded-full text-foreground transition-colors hover:bg-foreground/[.06] active:scale-95 lg:hidden touch-target"
               aria-label="Open menu"
             >
               <Menu size={20} strokeWidth={1.8} />
@@ -107,7 +107,7 @@ export default function Header() {
                 type="button"
                 onClick={() => setSearchOpen((value) => !value)}
                 className={cn(
-                  "flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-foreground/[.06] active:scale-95",
+                  "flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-foreground/[.06] active:scale-95 touch-target",
                   searchOpen && "bg-foreground/[.06]"
                 )}
                 aria-label="Search"

@@ -84,11 +84,11 @@ export default function HomePage() {
                 Premium home, thoughtfully chosen
               </p>
             </div>
-            <h1 className="max-w-xl font-display text-[3.4rem] leading-[.92] tracking-[-.045em] sm:text-6xl md:text-7xl">
+            <h1 className="max-w-xl font-display text-[2.8rem] leading-[.92] tracking-[-.045em] sm:text-5xl md:text-6xl lg:text-7xl">
               Make space for{" "}
               <span className="text-[#e0a681]">living.</span>
             </h1>
-            <p className="mt-5 max-w-md text-[13px] leading-6 text-white/70 sm:text-sm sm:leading-7 md:text-lg md:leading-8">
+            <p className="mt-5 max-w-md text-[13px] leading-6 text-white/80 sm:text-sm sm:leading-7 md:text-base md:leading-7">
               Objects with a point of view. Soft textures, warm light, and
               everyday details that make a house feel like yours.
             </p>
@@ -234,7 +234,7 @@ export default function HomePage() {
 
             {/* THE COMFORT EDIT */}
       <section className="container-shop py-20 md:py-28">
-        <div className="grid overflow-hidden rounded-[2rem] bg-[#d9c9b8] md:grid-cols-[1fr_1.1fr] md:items-center">
+        <div className="grid overflow-hidden rounded-[2rem] bg-[#c9b8a6] md:grid-cols-[1fr_1.1fr] md:items-center">
           <div className="relative min-h-[280px] overflow-hidden md:min-h-[480px] order-2 md:order-1">
             <Image
               src="/images/banners/hero.png"
@@ -251,7 +251,7 @@ export default function HomePage() {
             <h2 className="font-display max-w-md text-4xl leading-[.95] text-[#322923] md:text-5xl lg:text-[3.4rem]">
               A softer way to end the day.
             </h2>
-            <p className="mt-5 max-w-md text-sm leading-7 text-[#5d5049] md:text-base md:leading-8">
+            <p className="mt-5 max-w-md text-sm leading-7 text-[#4a3f38] md:text-base md:leading-8">
               Layer your space with breathable textures and considered comfort.
               Made to feel good, every night.
             </p>
@@ -318,7 +318,7 @@ export default function HomePage() {
               <h2 className="font-display max-w-md text-4xl leading-[.95] md:text-6xl">
                 Good design should feel easy.
               </h2>
-              <p className="mt-6 max-w-sm text-sm leading-7 text-white/55">
+              <p className="mt-6 max-w-sm text-sm leading-7 text-white/65">
                 We keep the experience considered from the first scroll to the
                 moment your order arrives.
               </p>
@@ -327,28 +327,28 @@ export default function HomePage() {
               <div>
                 <Truck size={21} className="mb-5 text-[#e0a681]" />
                 <h3 className="text-sm font-semibold">Fast delivery</h3>
-                <p className="mt-2 text-xs leading-5 text-white/50">
+                <p className="mt-2 text-xs leading-5 text-white/60">
                   Reliable delivery across India.
                 </p>
               </div>
               <div>
                 <ShieldCheck size={21} className="mb-5 text-[#e0a681]" />
                 <h3 className="text-sm font-semibold">Quality assured</h3>
-                <p className="mt-2 text-xs leading-5 text-white/50">
+                <p className="mt-2 text-xs leading-5 text-white/60">
                   Pieces chosen to last.
                 </p>
               </div>
               <div>
                 <User size={21} className="mb-5 text-[#e0a681]" />
                 <h3 className="text-sm font-semibold">Personal assistance</h3>
-                <p className="mt-2 text-xs leading-5 text-white/50">
+                <p className="mt-2 text-xs leading-5 text-white/60">
                   Real help when you need it.
                 </p>
               </div>
               <div>
                 <Headphones size={21} className="mb-5 text-[#e0a681]" />
                 <h3 className="text-sm font-semibold">Real support</h3>
-                <p className="mt-2 text-xs leading-5 text-white/50">
+                <p className="mt-2 text-xs leading-5 text-white/60">
                   We are here when you need us.
                 </p>
               </div>

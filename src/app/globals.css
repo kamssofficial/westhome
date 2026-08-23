@@ -39,12 +39,11 @@
   --shadow-modal: 0 30px 90px rgba(31, 33, 31, 0.22);
 }
 
-* { -webkit-tap-highlight-color: transparent; }
-
 html {
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  color-scheme: light;
 }
 
 body {
@@ -61,6 +60,7 @@ h1, h2, h3, h4, h5, h6 {
   line-height: 1.08;
   font-weight: 500;
   letter-spacing: -0.035em;
+  text-wrap: balance;
 }
 
 .font-display { font-family: var(--font-serif); font-weight: 400; }
@@ -116,6 +116,7 @@ h1, h2, h3, h4, h5, h6 {
 @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 @keyframes pulse-ring { 0%, 100% { transform: scale(0.92); opacity: 0.4; } 50% { transform: scale(1.04); opacity: 0.85; } }
 @keyframes skeleton-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.52; } }
+@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
 
 .animate-fade-in { animation: fade-in 700ms cubic-bezier(.23,.88,.26,.92) both; }
 .float-slow { animation: float-slow 7s ease-in-out infinite; }
@@ -134,9 +135,24 @@ h1, h2, h3, h4, h5, h6 {
 .safe-bottom { padding-bottom: max(1.5rem, env(safe-area-inset-bottom)); }
 .bottom-nav-safe { padding-bottom: max(4.5rem, calc(4.5rem + env(safe-area-inset-bottom))); }
 
+.card-press { transition: transform 180ms cubic-bezier(.23,.88,.26,.92); }
+.card-press:active { transform: scale(0.97); }
+
+.img-reveal { opacity: 0; transition: opacity 400ms ease; }
+.img-reveal[data-loaded="true"] { opacity: 1; }
+
+.focus-ring { outline: none; }
+.focus-ring:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; border-radius: 4px; }
+.touch-target { touch-action: manipulation; }
+.overscroll-contain { overscroll-behavior: contain; }
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
   .marquee-track { animation: none; }
 }
 

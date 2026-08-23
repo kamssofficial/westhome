@@ -72,6 +72,9 @@ function LoginForm() {
             <label className="text-xs font-medium text-text-secondary mb-1 block">Email</label>
             <input
               type="email"
+              name="email"
+              autoComplete="email"
+              spellCheck={false}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -84,6 +87,8 @@ function LoginForm() {
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
+                name="password"
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required

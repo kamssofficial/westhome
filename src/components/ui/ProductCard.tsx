@@ -41,7 +41,7 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
   return (
     <Link
       href={`/products/${product.slug}`}
-      className="group block card-press"
+      className="group block card-press touch-target"
     >
       <div className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-card-hover transition-all duration-300">
         {/* Image */}
