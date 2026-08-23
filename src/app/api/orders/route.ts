@@ -76,6 +76,34 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing required address information" }, { status: 400 });
     }
 
+    // SECURITY: Server-side price validation — recalculate from database
+    // Fetch all products in the order to validate prices
+    const productIds = items.map((item: any) => item.productId);
+    const products = await db.product.findMany({
+      where: { id: { in: productIds } },
+      select: { id: true, regularPrice: true, salePrice: true, isActive: true, stockQuantity: true, trackInventory: true },
+    });
+    
+    const productMap = new Map(products.map(p => [p.id, p]));
+    
+    // Validate and recalculate server-side
+    let serverSubtotal = 0;
+    const validatedItems = items.map((item: any) => {
+      const product = productMap.get(item.productId);
+      if (!product || !product.isActive) {
+        throw new Error(`Product ${item.productId} not found or inactive`);
+      }
+      if (product.trackInventory && product.stockQuantity < item.quantity) {
+        throw new Error(`Insufficient stock for ${item.productName}`);
+      }
+      const unitPrice = Number(product.regularPrice);
+      const salePrice = product.salePrice ? Number(product.salePrice) : null;
+      const effectivePrice = salePrice || unitPrice;
+      const totalPrice = effectivePrice * item.quantity;
+      serverSubtotal += totalPrice;
+      return { ...item, unitPrice, salePrice, totalPrice };
+    });
+    
     // Server-side delivery charge validation
     const settings = await db.siteSetting.findMany();
     const settingsObj: Record<string, any> = {};
@@ -83,17 +111,18 @@ export async function POST(request: NextRequest) {
     const freeThreshold = Number(settingsObj.freeDeliveryThreshold) || 2000;
     const defaultDeliveryCharge = Number(settingsObj.defaultDeliveryCharge) || 149;
     
-    // Recalculate delivery charge server-side
     let serverDeliveryCharge: number;
     if (deliveryMethod === "express") {
       serverDeliveryCharge = 299;
     } else {
-      serverDeliveryCharge = subtotal > freeThreshold ? 0 : defaultDeliveryCharge;
+      serverDeliveryCharge = serverSubtotal > freeThreshold ? 0 : defaultDeliveryCharge;
     }
     
-    // Use server-calculated delivery charge (prevents client manipulation)
     const finalDeliveryCharge = serverDeliveryCharge;
-    const finalTotal = subtotal - (discount || 0) + finalDeliveryCharge + (tax || 0);
+    const finalSubtotal = serverSubtotal;
+    const finalDiscount = Math.min(Number(discount) || 0, finalSubtotal); // Prevent negative discount
+    const finalTax = Number(tax) || 0;
+    const finalTotal = finalSubtotal - finalDiscount + finalDeliveryCharge + finalTax;
 
     // Generate order number
     const date = new Date();
@@ -117,17 +146,17 @@ export async function POST(request: NextRequest) {
         state,
         pinCode,
         country: country || "India",
-        subtotal,
-        discount: discount || 0,
+        subtotal: finalSubtotal,
+        discount: finalDiscount,
         deliveryCharge: finalDeliveryCharge,
-        tax: tax || 0,
+        tax: finalTax,
         total: finalTotal,
         paymentMethod: paymentMethod || null,
         paymentStatus: paymentMethod === "cod" ? "PENDING" : "PENDING",
         deliveryMethod: deliveryMethod || "delivery",
         customerNotes: customerNotes || null,
         items: {
-          create: items.map((item: any) => ({
+          create: validatedItems.map((item: any) => ({
             productId: item.productId,
             variantId: item.variantId || null,
             productName: item.productName,
@@ -155,7 +184,7 @@ export async function POST(request: NextRequest) {
       data: {
         type: "ORDER_PLACED",
         title: "New Order",
-        message: `Order ${orderNumber} placed by ${customerName} for ₹${total}`,
+        message: `Order ${orderNumber} placed by ${customerName} for ₹${finalTotal}`,
         orderId: order.id,
       },
     });
