@@ -99,27 +99,13 @@ export default function IntroAnimation({ children }: { children: React.ReactNode
 
               {/* Gold line */}
               <div
-                className="mx-auto my-4 h-[1px] transition-all duration-700"
+                className="mx-auto mt-2 h-[1px] transition-all duration-700"
                 style={{
                   width: phase === "idle" || phase === "logo" ? 0 : 32,
                   background: "linear-gradient(90deg, transparent, rgba(181,108,69,0.6), transparent)",
                   opacity: ["line", "tagline", "wipe"].includes(phase) ? 1 : 0,
                 }}
               />
-
-              {/* Tagline */}
-              <p
-                className="text-[11px] tracking-[.25em] uppercase font-light transition-all duration-700"
-                style={{
-                  color: "rgba(250,248,245,0.45)",
-                  opacity: ["tagline", "wipe"].includes(phase) ? 1 : 0,
-                  transform: ["tagline", "wipe"].includes(phase)
-                    ? "translateY(0)"
-                    : "translateY(6px)",
-                }}
-              >
-                by BM Distributors
-              </p>
             </div>
           </div>
 
