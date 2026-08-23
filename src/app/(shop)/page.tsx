@@ -237,7 +237,7 @@ export default function HomePage() {
         <div className="grid overflow-hidden rounded-[2rem] bg-[#c9b8a6] md:grid-cols-[1fr_1.1fr] md:items-center">
           <div className="relative min-h-[280px] overflow-hidden md:min-h-[480px] order-2 md:order-1">
             <Image
-              src="/images/banners/hero.png"
+              src="/images/banners/comfort-edit.png"
               alt="Soft comforters collection"
               fill
               className="object-cover transition-transform duration-1000 hover:scale-105"
