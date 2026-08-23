@@ -34,7 +34,7 @@ async function main() {
     salePrice?: number;
     categorySlug: string;
     subcategorySlug?: string;
-    image: string;
+    image?: string;
     isFeatured?: boolean;
     isBestseller?: boolean;
     isNewArrival?: boolean;
