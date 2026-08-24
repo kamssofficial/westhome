@@ -20,6 +20,14 @@ export async function middleware(request: NextRequest) {
     if (role !== "ADMIN") {
       const staffRoles = ["MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER"];
       if (staffRoles.includes(role)) {
+        // Staff can access product management routes
+        if (pathname.startsWith("/admin/products")) {
+          return NextResponse.next();
+        }
+        // Staff can access categories (read-only useful for product context)
+        if (pathname.startsWith("/admin/categories")) {
+          return NextResponse.next();
+        }
         return NextResponse.redirect(new URL("/staff/dashboard", request.url));
       }
       return NextResponse.redirect(new URL("/account", request.url));
