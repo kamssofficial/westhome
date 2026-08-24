@@ -265,16 +265,6 @@ function SearchContent() {
         </div>
       )}
 
-      {/* Results count */}
-      <div className="container-shop pb-2">
-        {loading ? <p className="text-sm text-[#6b6560]">Loading...</p> : (
-          <p className="text-sm text-[#6b6560]">
-            {total} product{total !== 1 ? "s" : ""}
-            {initialQuery ? " matching \"" + initialQuery + "\"" : ""}
-          </p>
-        )}
-      </div>
-
       {/* Products */}
       <div className="container-shop pb-8">
         {loading ? <ProductGridSkeleton count={8} /> : products.length > 0 ? (
@@ -284,7 +274,6 @@ function SearchContent() {
             </div>
             <div ref={sentinelRef} className="py-4">
               {loadingMore && <div className="flex items-center justify-center gap-2 text-[#b0aba6]"><Loader2 size={16} className="animate-spin" /><span className="text-sm">Loading more...</span></div>}
-              {!hasMore && products.length > PAGE_SIZE && <p className="text-center text-sm text-[#b0aba6]">All {total} products loaded</p>}
             </div>
           </>
         ) : (

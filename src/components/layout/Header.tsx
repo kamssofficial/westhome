@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 
 const BASE_NAV = [
   { label: "Home", href: "/" },
-  { label: "Shop", href: "/shop" },
+  { label: "About Us", href: "/about" },
 ];
 
 interface NavCat { label: string; href: string; }

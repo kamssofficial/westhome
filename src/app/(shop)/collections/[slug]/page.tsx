@@ -90,7 +90,7 @@ function CategoryContent() {
       {/* Title + count */}
       <div className="container-shop pb-3">
         <h1 className="text-2xl font-semibold text-primary">{category?.name || slug.replace(/-/g, " ")}</h1>
-        <p className="text-sm text-secondary mt-0.5">{total || 0} Items</p>
+        
       </div>
 
       {/* Filter / Sort bar — always visible */}
@@ -189,7 +189,7 @@ function CategoryContent() {
                   <div className="p-3 flex items-center justify-between">
                     <div>
                       <h3 className="text-sm font-semibold text-primary">{sub.name}</h3>
-                      <p className="text-xs text-secondary">{sub.productCount || 0} Items</p>
+                      
                     </div>
                     <ArrowRight size={16} className="text-text-muted group-hover:text-primary transition-colors" />
                   </div>

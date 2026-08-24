@@ -178,7 +178,7 @@ export default function HomePage() {
                   />
                 ) : (
                   <div className="w-full h-full bg-[#f0ede8] flex items-center justify-center">
-                    <span className="text-[10px] font-medium text-[#b0aba6]">{category.productCount} items</span>
+                    <span className="text-[10px] font-medium text-[#b0aba6]">View</span>
                   </div>
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />

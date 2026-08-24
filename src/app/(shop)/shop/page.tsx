@@ -74,12 +74,9 @@ export default function ShopPage() {
                     <ArrowUpRight size={14} />
                   </span>
                 </div>
-                <div className="mt-3 flex items-center justify-between">
+                <div className="mt-3">
                   <p className="text-sm font-semibold text-foreground">
                     {cat.name}
-                  </p>
-                  <p className="text-xs text-text-secondary">
-                    {cat.productCount || 0} items
                   </p>
                 </div>
               </Link>
