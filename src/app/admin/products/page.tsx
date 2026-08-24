@@ -21,6 +21,7 @@ interface Product {
   isFeatured: boolean;
   isNewArrival: boolean;
   category: { name: string };
+  subcategory?: { name: string } | null;
   images: { url: string }[];
 }
 
@@ -312,7 +313,7 @@ export default function AdminProductsPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3 hidden md:table-cell text-text-secondary">{product.category?.name}</td>
+                    <td className="px-4 py-3 hidden md:table-cell text-text-secondary">{product.subcategory?.name || product.category?.name}</td>
                     <td className="px-4 py-3 text-right font-medium">{formatPrice(product.salePrice || product.regularPrice)}</td>
                     <td className="px-4 py-3 text-right hidden md:table-cell">
                       <span className={cn(product.stockQuantity <= 5 ? "text-error font-medium" : "")}>

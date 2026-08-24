@@ -100,7 +100,7 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
         {/* Info */}
         <div className="p-2.5">
           <p className="font-label text-[9px] tracking-[0.15em] text-accent mb-0.5">
-            {product.category?.name}
+            {product.subcategory?.name || product.category?.name}
           </p>
           <h3 className="text-[13px] font-medium text-primary line-clamp-1 leading-snug">
             {product.name}

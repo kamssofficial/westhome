@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 interface Product {
   id: string; name: string; slug: string; regularPrice: number; salePrice: number | null;
   stockQuantity: number; status: string; isActive: boolean;
-  category: { name: string } | null; images: { url: string; isPrimary: boolean }[];
+  category: { name: string } | null; subcategory: { name: string } | null; images: { url: string; isPrimary: boolean }[];
 }
 
 export default function StaffProductsPage() {
@@ -79,7 +79,7 @@ export default function StaffProductsPage() {
                   </span>
                 </div>
                 <div className="p-3">
-                  <p className="text-[10px] text-[#d4a574] font-medium uppercase tracking-wider">{product.category?.name || "\u2014"}</p>
+                  <p className="text-[10px] text-[#d4a574] font-medium uppercase tracking-wider">{product.subcategory?.name || product.category?.name || "—"}</p>
                   <h3 className="text-sm font-medium text-[#1a1917] mt-0.5 line-clamp-1">{product.name}</h3>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-sm font-semibold text-[#1a1917]">₹{Number(product.regularPrice).toLocaleString()}</span>

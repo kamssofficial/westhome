@@ -155,7 +155,7 @@ export default function StaffDashboard() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-[#1a1917] truncate">{p.name}</p>
-                    <p className="text-xs text-[#b0aba6]">{p.category?.name || ""}</p>
+                    <p className="text-xs text-[#b0aba6]">{p.subcategory?.name || p.category?.name || ""}</p>
                   </div>
                   <div className="text-right flex-shrink-0">
                     <span className={cn("text-xs font-semibold", crit ? "text-red-600" : "text-amber-600")}>

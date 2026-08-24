@@ -1,0 +1,823 @@
+▲ Next.js 16.3.1 (Turbopack)
+- Local:         http://localhost:3001
+- Network:       http://172.23.176.1:3001
+- Environments: .env
+✓ Ready in 504ms
+✓ Running next.config.ts took 49ms
+- Experiments (use with caution):
+  · serverActions
+
+ GET / 200 in 469ms (next.js: 200ms, application-code: 269ms)
+ GET / 200 in 86ms (next.js: 7ms, application-code: 79ms)
+ GET / 200 in 77ms (next.js: 3ms, application-code: 74ms)
+ GET / 200 in 147ms (next.js: 7ms, application-code: 140ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].category.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1lh_12m._.js:93:169
+
+  90 ;
+  91 async function GET() {
+  92     try {
+→ 93         const categories = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].category.findMany(
+
+ GET /api/categories 200 in 534ms (next.js: 101ms, application-code: 432ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:290:147
+
+  287 // Rating filter - applied after fetch since it's computed
+  288 const minRatingNum = minRating ? parseFloat(minRating) : 0;
+  289 const [products, total] = await Promise.all([
+→ 290     __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany(
+
+ GET /api/products?featured=true&limit=4 200 in 119ms (next.js: 53ms, application-code: 67ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:344:147
+
+  341     skip: (page - 1) * limit,
+  342     take: limit
+  343 }),
+→ 344 __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count(
+
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:290:147
+
+  287 // Rating filter - applied after fetch since it's computed
+  288 const minRatingNum = minRating ? parseFloat(minRating) : 0;
+  289 const [products, total] = await Promise.all([
+→ 290     __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany(
+
+ GET /api/products?newArrivals=true&limit=4 200 in 121ms (next.js: 85ms, application-code: 37ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:344:147
+
+  341     skip: (page - 1) * limit,
+  342     take: limit
+  343 }),
+→ 344 __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count(
+
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].category.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1lh_12m._.js:93:169
+
+  90 ;
+  91 async function GET() {
+  92     try {
+→ 93         const categories = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].category.findMany(
+
+ GET /api/categories 200 in 104ms (next.js: 15ms, application-code: 89ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:290:147
+
+  287 // Rating filter - applied after fetch since it's computed
+  288 const minRatingNum = minRating ? parseFloat(minRating) : 0;
+  289 const [products, total] = await Promise.all([
+→ 290     __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany(
+
+ GET /api/products?featured=true&limit=4 200 in 33ms (next.js: 9ms, application-code: 24ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:344:147
+
+  341     skip: (page - 1) * limit,
+  342     take: limit
+  343 }),
+→ 344 __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count(
+
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:290:147
+
+  287 // Rating filter - applied after fetch since it's computed
+  288 const minRatingNum = minRating ? parseFloat(minRating) : 0;
+  289 const [products, total] = await Promise.all([
+→ 290     __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany(
+
+ GET /api/products?newArrivals=true&limit=4 200 in 37ms (next.js: 17ms, application-code: 20ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:344:147
+
+  341     skip: (page - 1) * limit,
+  342     take: limit
+  343 }),
+→ 344 __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count(
+
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].category.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1lh_12m._.js:93:169
+
+  90 ;
+  91 async function GET() {
+  92     try {
+→ 93         const categories = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].category.findMany(
+
+ GET /api/categories 200 in 38ms (next.js: 13ms, application-code: 24ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:290:147
+
+  287 // Rating filter - applied after fetch since it's computed
+  288 const minRatingNum = minRating ? parseFloat(minRating) : 0;
+  289 const [products, total] = await Promise.all([
+→ 290     __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany(
+
+ GET /api/products?limit=4&sort=newest 200 in 43ms (next.js: 18ms, application-code: 25ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:344:147
+
+  341     skip: (page - 1) * limit,
+  342     take: limit
+  343 }),
+→ 344 __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count(
+
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].category.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1lh_12m._.js:93:169
+
+  90 ;
+  91 async function GET() {
+  92     try {
+→ 93         const categories = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].category.findMany(
+
+ GET /api/categories 200 in 19ms (next.js: 5ms, application-code: 14ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:290:147
+
+  287 // Rating filter - applied after fetch since it's computed
+  288 const minRatingNum = minRating ? parseFloat(minRating) : 0;
+  289 const [products, total] = await Promise.all([
+→ 290     __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany(
+
+ GET /api/products?limit=4&sort=newest 200 in 25ms (next.js: 4ms, application-code: 21ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:344:147
+
+  341     skip: (page - 1) * limit,
+  342     take: limit
+  343 }),
+→ 344 __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count(
+
+ GET /api/auth/session 200 in 1099ms (next.js: 1083ms, application-code: 16ms)
+ GET /api/auth/session 200 in 60ms (next.js: 51ms, application-code: 9ms)
+ GET /api/auth/session 200 in 9ms (next.js: 3ms, application-code: 6ms)
+ GET /api/auth/session 200 in 8ms (next.js: 2ms, application-code: 6ms)
+ GET / 200 in 80ms (next.js: 3ms, application-code: 77ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].category.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1lh_12m._.js:93:169
+
+  90 ;
+  91 async function GET() {
+  92     try {
+→ 93         const categories = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].category.findMany(
+
+ GET /api/categories 200 in 25ms (next.js: 4ms, application-code: 21ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:290:147
+
+  287 // Rating filter - applied after fetch since it's computed
+  288 const minRatingNum = minRating ? parseFloat(minRating) : 0;
+  289 const [products, total] = await Promise.all([
+→ 290     __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany(
+
+ GET /api/products?featured=true&limit=4 200 in 27ms (next.js: 5ms, application-code: 22ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:344:147
+
+  341     skip: (page - 1) * limit,
+  342     take: limit
+  343 }),
+→ 344 __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count(
+
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:290:147
+
+  287 // Rating filter - applied after fetch since it's computed
+  288 const minRatingNum = minRating ? parseFloat(minRating) : 0;
+  289 const [products, total] = await Promise.all([
+→ 290     __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany(
+
+ GET /api/products?newArrivals=true&limit=4 200 in 30ms (next.js: 14ms, application-code: 16ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:344:147
+
+  341     skip: (page - 1) * limit,
+  342     take: limit
+  343 }),
+→ 344 __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count(
+
+ GET /api/auth/session 200 in 25ms (next.js: 17ms, application-code: 8ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].category.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1lh_12m._.js:93:169
+
+  90 ;
+  91 async function GET() {
+  92     try {
+→ 93         const categories = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].category.findMany(
+
+ GET /api/categories 200 in 48ms (next.js: 5ms, application-code: 43ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:290:147
+
+  287 // Rating filter - applied after fetch since it's computed
+  288 const minRatingNum = minRating ? parseFloat(minRating) : 0;
+  289 const [products, total] = await Promise.all([
+→ 290     __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany(
+
+ GET /api/products?featured=true&limit=4 200 in 35ms (next.js: 4ms, application-code: 31ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:344:147
+
+  341     skip: (page - 1) * limit,
+  342     take: limit
+  343 }),
+→ 344 __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count(
+
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:290:147
+
+  287 // Rating filter - applied after fetch since it's computed
+  288 const minRatingNum = minRating ? parseFloat(minRating) : 0;
+  289 const [products, total] = await Promise.all([
+→ 290     __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany(
+
+ GET /api/products?newArrivals=true&limit=4 200 in 38ms (next.js: 11ms, application-code: 27ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:344:147
+
+  341     skip: (page - 1) * limit,
+  342     take: limit
+  343 }),
+→ 344 __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count(
+
+ GET /api/auth/session 200 in 11ms (next.js: 5ms, application-code: 6ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].category.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1lh_12m._.js:93:169
+
+  90 ;
+  91 async function GET() {
+  92     try {
+→ 93         const categories = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].category.findMany(
+
+ GET /api/categories 200 in 33ms (next.js: 5ms, application-code: 28ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:290:147
+
+  287 // Rating filter - applied after fetch since it's computed
+  288 const minRatingNum = minRating ? parseFloat(minRating) : 0;
+  289 const [products, total] = await Promise.all([
+→ 290     __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany(
+
+ GET /api/products?limit=4&sort=newest 200 in 35ms (next.js: 8ms, application-code: 26ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:344:147
+
+  341     skip: (page - 1) * limit,
+  342     take: limit
+  343 }),
+→ 344 __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count(
+
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].category.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1lh_12m._.js:93:169
+
+  90 ;
+  91 async function GET() {
+  92     try {
+→ 93         const categories = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].category.findMany(
+
+ GET /api/categories 200 in 15ms (next.js: 4ms, application-code: 10ms)
+ GET /api/auth/session 200 in 11ms (next.js: 6ms, application-code: 6ms)
+ GET /api/auth/session 200 in 14ms (next.js: 3ms, application-code: 11ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:290:147
+
+  287 // Rating filter - applied after fetch since it's computed
+  288 const minRatingNum = minRating ? parseFloat(minRating) : 0;
+  289 const [products, total] = await Promise.all([
+→ 290     __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany(
+
+ GET /api/products?limit=4&sort=newest 200 in 17ms (next.js: 7ms, application-code: 10ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:344:147
+
+  341     skip: (page - 1) * limit,
+  342     take: limit
+  343 }),
+→ 344 __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count(
+
+ GET / 200 in 98ms (next.js: 5ms, application-code: 93ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].category.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1lh_12m._.js:93:169
+
+  90 ;
+  91 async function GET() {
+  92     try {
+→ 93         const categories = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].category.findMany(
+
+ GET /api/categories 200 in 36ms (next.js: 3ms, application-code: 33ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:290:147
+
+  287 // Rating filter - applied after fetch since it's computed
+  288 const minRatingNum = minRating ? parseFloat(minRating) : 0;
+  289 const [products, total] = await Promise.all([
+→ 290     __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany(
+
+ GET /api/products?featured=true&limit=4 200 in 33ms (next.js: 5ms, application-code: 27ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:344:147
+
+  341     skip: (page - 1) * limit,
+  342     take: limit
+  343 }),
+→ 344 __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count(
+
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:290:147
+
+  287 // Rating filter - applied after fetch since it's computed
+  288 const minRatingNum = minRating ? parseFloat(minRating) : 0;
+  289 const [products, total] = await Promise.all([
+→ 290     __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany(
+
+ GET /api/products?newArrivals=true&limit=4 200 in 37ms (next.js: 13ms, application-code: 24ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:344:147
+
+  341     skip: (page - 1) * limit,
+  342     take: limit
+  343 }),
+→ 344 __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count(
+
+ GET /api/auth/session 200 in 26ms (next.js: 18ms, application-code: 8ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].category.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1lh_12m._.js:93:169
+
+  90 ;
+  91 async function GET() {
+  92     try {
+→ 93         const categories = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].category.findMany(
+
+ GET /api/categories 200 in 47ms (next.js: 6ms, application-code: 42ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:290:147
+
+  287 // Rating filter - applied after fetch since it's computed
+  288 const minRatingNum = minRating ? parseFloat(minRating) : 0;
+  289 const [products, total] = await Promise.all([
+→ 290     __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany(
+
+ GET /api/products?featured=true&limit=4 200 in 31ms (next.js: 4ms, application-code: 26ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:344:147
+
+  341     skip: (page - 1) * limit,
+  342     take: limit
+  343 }),
+→ 344 __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count(
+
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:290:147
+
+  287 // Rating filter - applied after fetch since it's computed
+  288 const minRatingNum = minRating ? parseFloat(minRating) : 0;
+  289 const [products, total] = await Promise.all([
+→ 290     __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany(
+
+ GET /api/products?newArrivals=true&limit=4 200 in 34ms (next.js: 12ms, application-code: 22ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:344:147
+
+  341     skip: (page - 1) * limit,
+  342     take: limit
+  343 }),
+→ 344 __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count(
+
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].category.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1lh_12m._.js:93:169
+
+  90 ;
+  91 async function GET() {
+  92     try {
+→ 93         const categories = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].category.findMany(
+
+ GET /api/categories 200 in 34ms (next.js: 13ms, application-code: 21ms)
+ GET /api/auth/session 200 in 17ms (next.js: 8ms, application-code: 9ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:290:147
+
+  287 // Rating filter - applied after fetch since it's computed
+  288 const minRatingNum = minRating ? parseFloat(minRating) : 0;
+  289 const [products, total] = await Promise.all([
+→ 290     __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany(
+
+ GET /api/products?limit=4&sort=newest 200 in 25ms (next.js: 4ms, application-code: 21ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:344:147
+
+  341     skip: (page - 1) * limit,
+  342     take: limit
+  343 }),
+→ 344 __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count(
+
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].category.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1lh_12m._.js:93:169
+
+  90 ;
+  91 async function GET() {
+  92     try {
+→ 93         const categories = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].category.findMany(
+
+ GET /api/categories 200 in 14ms (next.js: 4ms, application-code: 10ms)
+ GET /api/auth/session 200 in 15ms (next.js: 4ms, application-code: 11ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:290:147
+
+  287 // Rating filter - applied after fetch since it's computed
+  288 const minRatingNum = minRating ? parseFloat(minRating) : 0;
+  289 const [products, total] = await Promise.all([
+→ 290     __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany(
+
+ GET /api/products?limit=4&sort=newest 200 in 16ms (next.js: 4ms, application-code: 12ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:344:147
+
+  341     skip: (page - 1) * limit,
+  342     take: limit
+  343 }),
+→ 344 __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count(
+
+ GET /api/auth/session 200 in 17ms (next.js: 8ms, application-code: 8ms)
+ GET / 200 in 101ms (next.js: 5ms, application-code: 96ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].category.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1lh_12m._.js:93:169
+
+  90 ;
+  91 async function GET() {
+  92     try {
+→ 93         const categories = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].category.findMany(
+
+ GET /api/categories 200 in 25ms (next.js: 3ms, application-code: 22ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:290:147
+
+  287 // Rating filter - applied after fetch since it's computed
+  288 const minRatingNum = minRating ? parseFloat(minRating) : 0;
+  289 const [products, total] = await Promise.all([
+→ 290     __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany(
+
+ GET /api/products?featured=true&limit=4 200 in 29ms (next.js: 4ms, application-code: 25ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:344:147
+
+  341     skip: (page - 1) * limit,
+  342     take: limit
+  343 }),
+→ 344 __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count(
+
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:290:147
+
+  287 // Rating filter - applied after fetch since it's computed
+  288 const minRatingNum = minRating ? parseFloat(minRating) : 0;
+  289 const [products, total] = await Promise.all([
+→ 290     __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany(
+
+ GET /api/products?newArrivals=true&limit=4 200 in 33ms (next.js: 16ms, application-code: 17ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:344:147
+
+  341     skip: (page - 1) * limit,
+  342     take: limit
+  343 }),
+→ 344 __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count(
+
+ GET /api/auth/session 200 in 26ms (next.js: 20ms, application-code: 6ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].category.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1lh_12m._.js:93:169
+
+  90 ;
+  91 async function GET() {
+  92     try {
+→ 93         const categories = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].category.findMany(
+
+ GET /api/categories 200 in 51ms (next.js: 8ms, application-code: 43ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:290:147
+
+  287 // Rating filter - applied after fetch since it's computed
+  288 const minRatingNum = minRating ? parseFloat(minRating) : 0;
+  289 const [products, total] = await Promise.all([
+→ 290     __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany(
+
+ GET /api/products?featured=true&limit=4 200 in 31ms (next.js: 6ms, application-code: 24ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:344:147
+
+  341     skip: (page - 1) * limit,
+  342     take: limit
+  343 }),
+→ 344 __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count(
+
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:290:147
+
+  287 // Rating filter - applied after fetch since it's computed
+  288 const minRatingNum = minRating ? parseFloat(minRating) : 0;
+  289 const [products, total] = await Promise.all([
+→ 290     __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany(
+
+ GET /api/products?newArrivals=true&limit=4 200 in 34ms (next.js: 10ms, application-code: 24ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:344:147
+
+  341     skip: (page - 1) * limit,
+  342     take: limit
+  343 }),
+→ 344 __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count(
+
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].category.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1lh_12m._.js:93:169
+
+  90 ;
+  91 async function GET() {
+  92     try {
+→ 93         const categories = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].category.findMany(
+
+ GET /api/categories 200 in 31ms (next.js: 4ms, application-code: 27ms)
+ GET /api/auth/session 200 in 15ms (next.js: 3ms, application-code: 12ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:290:147
+
+  287 // Rating filter - applied after fetch since it's computed
+  288 const minRatingNum = minRating ? parseFloat(minRating) : 0;
+  289 const [products, total] = await Promise.all([
+→ 290     __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany(
+
+ GET /api/products?limit=4&sort=newest 200 in 36ms (next.js: 11ms, application-code: 26ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:344:147
+
+  341     skip: (page - 1) * limit,
+  342     take: limit
+  343 }),
+→ 344 __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count(
+
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].category.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1lh_12m._.js:93:169
+
+  90 ;
+  91 async function GET() {
+  92     try {
+→ 93         const categories = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].category.findMany(
+
+ GET /api/categories 200 in 23ms (next.js: 6ms, application-code: 17ms)
+ GET /api/auth/session 200 in 16ms (next.js: 3ms, application-code: 12ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:290:147
+
+  287 // Rating filter - applied after fetch since it's computed
+  288 const minRatingNum = minRating ? parseFloat(minRating) : 0;
+  289 const [products, total] = await Promise.all([
+→ 290     __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany(
+
+ GET /api/products?limit=4&sort=newest 200 in 21ms (next.js: 4ms, application-code: 17ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:344:147
+
+  341     skip: (page - 1) * limit,
+  342     take: limit
+  343 }),
+→ 344 __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count(
+
+ GET /api/auth/session 200 in 13ms (next.js: 5ms, application-code: 8ms)
+✓ Compiled in 325ms
+ GET / 200 in 75ms (next.js: 24ms, application-code: 51ms)
+✓ Compiled in 217ms
+ GET / 200 in 48ms (next.js: 13ms, application-code: 36ms)
+✓ Compiled in 329ms
+ GET / 200 in 104ms (next.js: 10ms, application-code: 94ms)
+ GET / 200 in 215ms (next.js: 6ms, application-code: 209ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].category.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1lh_12m._.js:93:169
+
+  90 ;
+  91 async function GET() {
+  92     try {
+→ 93         const categories = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].category.findMany(
+
+ GET /api/categories 200 in 48ms (next.js: 6ms, application-code: 42ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:290:147
+
+  287 // Rating filter - applied after fetch since it's computed
+  288 const minRatingNum = minRating ? parseFloat(minRating) : 0;
+  289 const [products, total] = await Promise.all([
+→ 290     __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany(
+
+ GET /api/products?featured=true&limit=4 200 in 85ms (next.js: 8ms, application-code: 77ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:344:147
+
+  341     skip: (page - 1) * limit,
+  342     take: limit
+  343 }),
+→ 344 __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count(
+
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:290:147
+
+  287 // Rating filter - applied after fetch since it's computed
+  288 const minRatingNum = minRating ? parseFloat(minRating) : 0;
+  289 const [products, total] = await Promise.all([
+→ 290     __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany(
+
+ GET /api/products?newArrivals=true&limit=4 200 in 101ms (next.js: 30ms, application-code: 71ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:344:147
+
+  341     skip: (page - 1) * limit,
+  342     take: limit
+  343 }),
+→ 344 __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count(
+
+ GET /api/auth/session 200 in 46ms (next.js: 33ms, application-code: 13ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].category.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1lh_12m._.js:93:169
+
+  90 ;
+  91 async function GET() {
+  92     try {
+→ 93         const categories = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].category.findMany(
+
+ GET /api/categories 200 in 89ms (next.js: 24ms, application-code: 64ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:290:147
+
+  287 // Rating filter - applied after fetch since it's computed
+  288 const minRatingNum = minRating ? parseFloat(minRating) : 0;
+  289 const [products, total] = await Promise.all([
+→ 290     __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany(
+
+ GET /api/products?featured=true&limit=4 200 in 54ms (next.js: 10ms, application-code: 44ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:344:147
+
+  341     skip: (page - 1) * limit,
+  342     take: limit
+  343 }),
+→ 344 __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count(
+
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:290:147
+
+  287 // Rating filter - applied after fetch since it's computed
+  288 const minRatingNum = minRating ? parseFloat(minRating) : 0;
+  289 const [products, total] = await Promise.all([
+→ 290     __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany(
+
+ GET /api/products?newArrivals=true&limit=4 200 in 48ms (next.js: 11ms, application-code: 37ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:344:147
+
+  341     skip: (page - 1) * limit,
+  342     take: limit
+  343 }),
+→ 344 __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count(
+
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].category.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1lh_12m._.js:93:169
+
+  90 ;
+  91 async function GET() {
+  92     try {
+→ 93         const categories = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].category.findMany(
+
+ GET /api/categories 200 in 65ms (next.js: 16ms, application-code: 49ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:290:147
+
+  287 // Rating filter - applied after fetch since it's computed
+  288 const minRatingNum = minRating ? parseFloat(minRating) : 0;
+  289 const [products, total] = await Promise.all([
+→ 290     __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany(
+
+ GET /api/products?limit=4&sort=newest 200 in 75ms (next.js: 29ms, application-code: 46ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:344:147
+
+  341     skip: (page - 1) * limit,
+  342     take: limit
+  343 }),
+→ 344 __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count(
+
+ GET /api/auth/session 200 in 41ms (next.js: 6ms, application-code: 35ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].category.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1lh_12m._.js:93:169
+
+  90 ;
+  91 async function GET() {
+  92     try {
+→ 93         const categories = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].category.findMany(
+
+ GET /api/categories 200 in 31ms (next.js: 8ms, application-code: 22ms)
+ GET /api/auth/session 200 in 29ms (next.js: 7ms, application-code: 22ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:290:147
+
+  287 // Rating filter - applied after fetch since it's computed
+  288 const minRatingNum = minRating ? parseFloat(minRating) : 0;
+  289 const [products, total] = await Promise.all([
+→ 290     __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.findMany(
+
+ GET /api/products?limit=4&sort=newest 200 in 39ms (next.js: 10ms, application-code: 29ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count()` invocation in
+C:\Users\Lenovo\Documents\New folder\westhome\.next\dev\server\chunks\[root-of-the-server]__1ze8c1n._.js:344:147
+
+  341     skip: (page - 1) * limit,
+  342     take: limit
+  343 }),
+→ 344 __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].product.count(
+
+ GET /api/auth/session 200 in 19ms (next.js: 6ms, application-code: 13ms)
+▲ Next.js 16.3.1 (Turbopack)
+- Local:         http://localhost:3001
+- Network:       http://172.23.176.1:3001
+- Environments: .env
+✓ Ready in 579ms
+✓ Running next.config.ts took 57ms
+- Experiments (use with caution):
+  · serverActions
+
+ GET / 200 in 3.1s (next.js: 2.7s, application-code: 380ms)

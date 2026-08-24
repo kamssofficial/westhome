@@ -162,6 +162,28 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
         </div>
       </div>
 
+      {/* Breadcrumb */}
+      <div className="container-shop py-2">
+        <nav className="flex items-center gap-1.5 text-[11px] text-text-muted">
+          <Link href="/" className="hover:text-primary transition-colors">Home</Link>
+          <span>/</span>
+          <Link href="/shop" className="hover:text-primary transition-colors">Shop</Link>
+          {product.subcategory ? (
+            <>
+              <span>/</span>
+              <Link href={`/collections/${product.category?.slug}`} className="hover:text-primary transition-colors">{product.category?.name}</Link>
+              <span>/</span>
+              <Link href={`/collections/${product.category?.slug}/${product.subcategory?.slug}`} className="hover:text-primary transition-colors">{product.subcategory?.name}</Link>
+            </>
+          ) : product.category ? (
+            <>
+              <span>/</span>
+              <Link href={`/collections/${product.category?.slug}`} className="hover:text-primary transition-colors">{product.category?.name}</Link>
+            </>
+          ) : null}
+        </nav>
+      </div>
+
       {/* Main image */}
       <div className="container-shop">
         <div className="relative aspect-square bg-white rounded-2xl overflow-hidden">
