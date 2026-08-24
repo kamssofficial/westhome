@@ -70,19 +70,10 @@ function SearchContent() {
       const params = new URLSearchParams();
       if (initialQuery) params.set("q", initialQuery);
       if (filters.category) params.set("category", filters.category);
+      if (filters.subcategory) params.set("subcategory", filters.subcategory);
       if (filters.minPrice) params.set("minPrice", filters.minPrice);
       if (filters.maxPrice) params.set("maxPrice", filters.maxPrice);
       if (filters.inStock) params.set("inStock", filters.inStock);
-      if (filters.dimensions) {
-        const parts = filters.dimensions.split("×").map(s => parseInt(s.trim()));
-        if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-          const [a, b] = parts[0] <= parts[1] ? parts : [parts[1], parts[0]];
-          params.set("minWidth", String(a));
-          params.set("maxWidth", String(a));
-          params.set("minHeight", String(b));
-          params.set("maxHeight", String(b));
-        }
-      }
       params.set("sort", sort);
       params.set("page", String(pageNum));
       params.set("limit", String(PAGE_SIZE));
@@ -94,7 +85,7 @@ function SearchContent() {
       setHasMore(pageNum * PAGE_SIZE < (data.total || 0));
     } catch { if (!append) setProducts([]); }
     finally { setLoading(false); setLoadingMore(false); }
-  }, [initialQuery, filters, sort]);
+  }, [initialQuery, filters.category, filters.subcategory, filters.minPrice, filters.maxPrice, filters.inStock, sort]);
 
   useEffect(() => { setPage(1); setHasMore(true); fetchProducts(1, false); if (initialQuery) saveRecentSearch(initialQuery); }, [fetchProducts]);
 
@@ -138,7 +129,7 @@ function SearchContent() {
   // Count active filter groups
   const filterCount = [
     filters.category !== "",
-    filters.size !== "" || filters.dimensions !== "",
+    filters.subcategory !== "",
     filters.minPrice !== "" || filters.maxPrice !== "",
     filters.inStock !== "",
   ].filter(Boolean).length;
@@ -251,16 +242,10 @@ function SearchContent() {
                 <button onClick={() => setFilters(p => ({...p, category: ""}))} className="ml-0.5 hover:opacity-60"><X size={12} /></button>
               </span>
             )}
-            {filters.dimensions && (
+            {filters.subcategory && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#1a1917] text-white rounded-full text-xs font-medium">
-                {filters.dimensions}
-                <button onClick={() => setFilters(p => ({...p, dimensions: ""}))} className="ml-0.5 hover:opacity-60"><X size={12} /></button>
-              </span>
-            )}
-            {filters.size && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#1a1917] text-white rounded-full text-xs font-medium">
-                {filters.size}
-                <button onClick={() => setFilters(p => ({...p, size: ""}))} className="ml-0.5 hover:opacity-60"><X size={12} /></button>
+                {filters.subcategory.replace(/-/g, " ")}
+                <button onClick={() => setFilters(p => ({...p, subcategory: ""}))} className="ml-0.5 hover:opacity-60"><X size={12} /></button>
               </span>
             )}
             {(filters.minPrice || filters.maxPrice) && (

@@ -1,36 +1,27 @@
 "use client";
 
-import { useState, useEffect, useCallback, Fragment } from "react";
-import { X, SlidersHorizontal, ChevronDown } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { X, SlidersHorizontal, ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Category } from "@/types";
 
 export interface FilterState {
   category: string;
-  size: string;
-  dimensions: string;
+  subcategory: string;
   minPrice: string;
   maxPrice: string;
   inStock: string;
+  sort: string;
 }
 
 export const EMPTY_FILTERS: FilterState = {
-  category: "", size: "", dimensions: "", minPrice: "", maxPrice: "", inStock: "",
+  category: "", subcategory: "", minPrice: "", maxPrice: "", inStock: "", sort: "recommended",
 };
 
-const PRICE_RANGES = [
-  { label: "Under ₹500", min: "", max: "500" },
-  { label: "₹500 – ₹1,000", min: "500", max: "1000" },
-  { label: "₹1,000 – ₹2,000", min: "1000", max: "2000" },
-  { label: "₹2,000 – ₹5,000", min: "2000", max: "5000" },
-  { label: "₹5,000+", min: "5000", max: "" },
-];
-
-const SIZE_OPTIONS = [
-  { label: "Small", value: "small", desc: "Under 50cm" },
-  { label: "Medium", value: "medium", desc: "50–100cm" },
-  { label: "Large", value: "large", desc: "100–150cm" },
-  { label: "Extra Large", value: "xl", desc: "Over 150cm" },
+// Accessories subcategories
+const ACCESSORIES_SUBS = [
+  "Soap Dispensers", "Cushion Covers", "Vases", "Tissue Boxes",
+  "Dustbins", "Flower Pots", "Trays & Holders", "Decor Accents",
 ];
 
 interface FilterPanelProps {
@@ -42,224 +33,156 @@ interface FilterPanelProps {
   resultCount: number;
 }
 
-// Check if a category name suggests frame-type products
-function isFrameCategory(name: string): boolean {
-  return name.toLowerCase().includes("frame");
+function Section({ title, defaultOpen = false, children }: { title: string; defaultOpen?: boolean; children: React.ReactNode }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="border-b border-black/[.04] last:border-0">
+      <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between py-4 text-left">
+        <span className="text-sm font-semibold text-[#1a1917]">{title}</span>
+        <ChevronDown size={16} className={cn("text-[#b0aba6] transition-transform duration-200", open && "rotate-180")} />
+      </button>
+      {open && <div className="pb-4">{children}</div>}
+    </div>
+  );
 }
 
 export default function FilterPanel({ open, onClose, onApply, initialFilters, categories, resultCount }: FilterPanelProps) {
-  const [filters, setFilters] = useState<FilterState>(initialFilters);
-  const [dynamicDimensions, setDynamicDimensions] = useState<string[]>([]);
-  const [loadingDims, setLoadingDims] = useState(false);
+  const [f, setF] = useState<FilterState>(initialFilters);
+  const [dynamicSubs, setDynamicSubs] = useState<{name:string;slug:string;count:number}[]>([]);
+  const [loadingSubs, setLoadingSubs] = useState(false);
 
-  // Reset local state when opening
+  useEffect(() => { if (open) setF(initialFilters); }, [open, initialFilters]);
+
+  // Fetch subcategories when Accessories is selected
   useEffect(() => {
-    if (open) setFilters(initialFilters);
-  }, [open, initialFilters]);
-
-  // Fetch dimensions for a category
-  const fetchDimensions = useCallback(async (catSlug: string) => {
-    if (!catSlug) { setDynamicDimensions([]); return; }
-    setLoadingDims(true);
-    try {
-      const res = await fetch("/api/products?category=" + catSlug + "&limit=200");
-      const data = await res.json();
-      const dims = new Set<string>();
-      (data.products || []).forEach((p: any) => {
-        if (p.width && p.height) {
-          const w = Math.round(Number(p.width));
-          const h = Math.round(Number(p.height));
-          if (w > 0 && h > 0) {
-            const [a, b] = w <= h ? [w, h] : [h, w];
-            dims.add(a + " × " + b);
-          }
-        }
-      });
-      setDynamicDimensions([...dims].sort((x, y) => parseInt(x) - parseInt(y)));
-    } catch { setDynamicDimensions([]); }
-    finally { setLoadingDims(false); }
-  }, []);
-
-  // Fetch dimensions when category changes
-  useEffect(() => {
-    if (!open) return;
-    if (filters.category) {
-      const cat = categories.find(c => c.slug === filters.category);
-      if (cat && isFrameCategory(cat.name)) {
-        fetchDimensions(filters.category);
-      } else {
-        setDynamicDimensions([]);
-        if (filters.dimensions) setFilters(p => ({ ...p, dimensions: "" }));
-      }
+    if (!open || !f.category) { setDynamicSubs([]); return; }
+    const cat = categories.find(c => c.slug === f.category);
+    if (cat?.subcategories?.length) {
+      setDynamicSubs(cat.subcategories.map((s:any) => ({ name: s.name, slug: s.slug, count: s.productCount || 0 })));
     } else {
-      setDynamicDimensions([]);
+      setDynamicSubs([]);
+      if (f.subcategory) setF(p => ({ ...p, subcategory: "" }));
     }
-  }, [open, filters.category, categories, fetchDimensions]);
+  }, [open, f.category, categories]);
 
   const set = <K extends keyof FilterState>(key: K, val: FilterState[K]) => {
-    setFilters(prev => ({ ...prev, [key]: val }));
+    setF(prev => {
+      const next = { ...prev, [key]: val };
+      // Clear subcategory when category changes to non-Accessories
+      if (key === "category") {
+        const cat = categories.find(c => c.slug === val);
+        if (!cat?.subcategories?.length) next.subcategory = "";
+      }
+      return next;
+    });
   };
 
-  const clearAll = () => { setFilters(EMPTY_FILTERS); setDynamicDimensions([]); };
+  const clearAll = () => setF(EMPTY_FILTERS);
 
-  const apply = () => { onApply(filters); onClose(); };
-
-  // Count active filter groups (category=1, size/dims=1, price=1, inStock=1)
   const activeCount = [
-    filters.category !== "",
-    filters.size !== "" || filters.dimensions !== "",
-    filters.minPrice !== "" || filters.maxPrice !== "",
-    filters.inStock !== "",
+    f.category !== "",
+    f.subcategory !== "",
+    f.minPrice !== "" || f.maxPrice !== "",
+    f.inStock !== "",
   ].filter(Boolean).length;
 
   if (!open) return null;
 
   return (
-    <Fragment>
+    <>
       <div className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className={cn(
         "fixed z-[70] bg-[#faf8f5] overflow-hidden flex flex-col transition-transform duration-300",
-        "inset-x-0 bottom-0 top-[10vh] rounded-t-[1.5rem]",
+        "inset-x-0 bottom-0 top-[8vh] rounded-t-[1.5rem]",
         "md:inset-y-0 md:right-0 md:left-auto md:w-[380px] md:top-0 md:rounded-t-none md:rounded-l-[1.5rem]"
       )}>
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-black/[.06] shrink-0">
-          <div className="flex items-center gap-2.5">
-            <SlidersHorizontal size={18} className="text-[#1a1917]" />
+        <div className="flex items-center justify-between px-5 py-4 border-b border-black/[.06] shrink-0">
+          <div className="flex items-center gap-2">
+            <SlidersHorizontal size={17} className="text-[#1a1917]" />
             <span className="text-base font-semibold text-[#1a1917]">Filters</span>
-            {activeCount > 0 && (
-              <span className="w-5 h-5 rounded-full bg-[#d4a574] text-white text-[10px] font-bold flex items-center justify-center">{activeCount}</span>
-            )}
+            {activeCount > 0 && <span className="w-5 h-5 rounded-full bg-[#d4a574] text-white text-[10px] font-bold flex items-center justify-center">{activeCount}</span>}
           </div>
           <div className="flex items-center gap-3">
-            {activeCount > 0 && (
-              <button type="button" onClick={clearAll} className="text-xs font-medium text-[#d4a574] hover:text-[#c49564] transition-colors">Clear all</button>
-            )}
-            <button type="button" onClick={onClose} className="w-8 h-8 flex items-center justify-center hover:bg-black/[.04] rounded-full transition-colors">
-              <X size={18} className="text-[#6b6560]" />
-            </button>
+            {activeCount > 0 && <button onClick={clearAll} className="text-xs font-medium text-[#d4a574] hover:text-[#c49564]">Clear All</button>}
+            <button onClick={onClose} className="w-8 h-8 flex items-center justify-center hover:bg-black/[.04] rounded-full"><X size={18} className="text-[#6b6560]" /></button>
           </div>
         </div>
 
         {/* Scrollable body */}
-        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-7">
+        <div className="flex-1 overflow-y-auto px-5">
           {/* CATEGORY */}
-          <div>
-            <h3 className="text-[11px] font-semibold text-[#b0aba6] uppercase tracking-[.12em] mb-3">Category</h3>
-            <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={() => set("category", "")}
-                className={cn("px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-200 min-h-[44px]",
-                  !filters.category ? "bg-[#1a1917] text-white shadow-sm" : "bg-white text-[#6b6560] border border-black/[.08] hover:border-black/[.15]"
+          <Section title="Category" defaultOpen={true}>
+            <div className="flex flex-wrap gap-1.5">
+              <button onClick={() => set("category", "")}
+                className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all",
+                  !f.category ? "bg-[#1a1917] text-white" : "bg-white text-[#6b6560] border border-black/[.08] hover:border-black/[.15]"
                 )}>All</button>
               {categories.map(cat => (
-                <button key={cat.slug} type="button" onClick={() => {
-                  const isFrames = isFrameCategory(cat.name);
-                  setFilters(prev => ({
-                    ...prev,
-                    category: cat.slug,
-                    dimensions: isFrames ? prev.dimensions : "",
-                  }));
-                }}
-                  className={cn("px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-200 min-h-[44px]",
-                    filters.category === cat.slug ? "bg-[#1a1917] text-white shadow-sm" : "bg-white text-[#6b6560] border border-black/[.08] hover:border-black/[.15]"
+                <button key={cat.slug} onClick={() => set("category", cat.slug)}
+                  className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all",
+                    f.category === cat.slug ? "bg-[#1a1917] text-white" : "bg-white text-[#6b6560] border border-black/[.08] hover:border-black/[.15]"
                   )}>{cat.name}</button>
               ))}
             </div>
-          </div>
+          </Section>
 
-          {/* DIMENSIONS — show when frame category selected and dims exist */}
-          {dynamicDimensions.length > 0 && (
-            <div>
-              <h3 className="text-[11px] font-semibold text-[#b0aba6] uppercase tracking-[.12em] mb-3">Dimensions</h3>
-              {loadingDims ? (
-                <div className="flex items-center gap-2 text-xs text-[#b0aba6] py-2">
-                  <div className="w-4 h-4 border-2 border-[#d4a574] border-t-transparent rounded-full animate-spin" />
-                  Loading dimensions...
-                </div>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {dynamicDimensions.map(dim => (
-                    <button key={dim} type="button" onClick={() => set("dimensions", filters.dimensions === dim ? "" : dim)}
-                      className={cn("px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-200 min-h-[44px]",
-                        filters.dimensions === dim
-                          ? "bg-[#1a1917] text-white shadow-sm"
-                          : "bg-white text-[#6b6560] border border-black/[.08] hover:border-black/[.15]"
-                      )}>{dim}</button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* SIZE — show when NOT a frame category with dims */}
-          {dynamicDimensions.length === 0 && (
-            <div>
-              <h3 className="text-[11px] font-semibold text-[#b0aba6] uppercase tracking-[.12em] mb-3">Size</h3>
-              <div className="grid grid-cols-2 gap-2">
-                {SIZE_OPTIONS.map(s => (
-                  <button key={s.value} type="button" onClick={() => set("size", filters.size === s.value ? "" : s.value)}
-                    className={cn("px-4 py-3 rounded-xl text-left transition-all duration-200 min-h-[48px] flex flex-col justify-center",
-                      filters.size === s.value
-                        ? "bg-[#1a1917] text-white shadow-sm"
-                        : "bg-white text-[#6b6560] border border-black/[.08] hover:border-black/[.15]"
-                    )}>
-                    <span className="text-sm font-medium">{s.label}</span>
-                    <span className={cn("text-[10px] mt-0.5", filters.size === s.value ? "text-white/60" : "text-[#b0aba6]")}>{s.desc}</span>
-                  </button>
+          {/* SUBCATEGORY — only when category has subcategories */}
+          {dynamicSubs.length > 0 && (
+            <Section title="Subcategory" defaultOpen={true}>
+              <div className="flex flex-wrap gap-1.5">
+                <button onClick={() => set("subcategory", "")}
+                  className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all",
+                    !f.subcategory ? "bg-[#1a1917] text-white" : "bg-white text-[#6b6560] border border-black/[.08] hover:border-black/[.15]"
+                  )}>All</button>
+                {dynamicSubs.map(sub => (
+                  <button key={sub.slug} onClick={() => set("subcategory", sub.slug)}
+                    className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all",
+                      f.subcategory === sub.slug ? "bg-[#1a1917] text-white" : "bg-white text-[#6b6560] border border-black/[.08] hover:border-black/[.15]"
+                    )}>{sub.name}{sub.count > 0 && <span className="ml-1 text-[10px] opacity-60">{sub.count}</span>}</button>
                 ))}
               </div>
-            </div>
+            </Section>
           )}
 
           {/* PRICE */}
-          <div>
-            <h3 className="text-[11px] font-semibold text-[#b0aba6] uppercase tracking-[.12em] mb-3">Price</h3>
-            <div className="space-y-2">
-              {PRICE_RANGES.map(r => {
-                const isActive = filters.minPrice === r.min && filters.maxPrice === r.max;
-                return (
-                  <button key={r.label} type="button"
-                    onClick={() => {
-                      if (isActive) { set("minPrice", ""); set("maxPrice", ""); }
-                      else { set("minPrice", r.min); set("maxPrice", r.max); }
-                    }}
-                    className={cn("w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 min-h-[44px] flex items-center",
-                      isActive
-                        ? "bg-[#1a1917] text-white shadow-sm"
-                        : "bg-white text-[#6b6560] border border-black/[.08] hover:border-black/[.15]"
-                    )}>
-                    {isActive && <span className="w-1.5 h-1.5 rounded-full bg-[#d4a574] mr-2.5 shrink-0" />}
-                    {r.label}
-                  </button>
-                );
-              })}
+          <Section title="Price" defaultOpen={true}>
+            <div className="flex items-center gap-2">
+              <div className="flex-1">
+                <label className="text-[10px] font-medium text-[#b0aba6] uppercase tracking-wider mb-1 block">Min</label>
+                <input type="number" min="0" value={f.minPrice} onChange={e => set("minPrice", e.target.value)}
+                  placeholder="₹0" className="w-full px-3 py-2 bg-white border border-black/[.08] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#d4a574]/30" />
+              </div>
+              <span className="text-[#b0aba6] mt-4">—</span>
+              <div className="flex-1">
+                <label className="text-[10px] font-medium text-[#b0aba6] uppercase tracking-wider mb-1 block">Max</label>
+                <input type="number" min="0" value={f.maxPrice} onChange={e => set("maxPrice", e.target.value)}
+                  placeholder="Any" className="w-full px-3 py-2 bg-white border border-black/[.08] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#d4a574]/30" />
+              </div>
             </div>
-          </div>
+          </Section>
 
           {/* AVAILABILITY */}
-          <div>
-            <h3 className="text-[11px] font-semibold text-[#b0aba6] uppercase tracking-[.12em] mb-3">Availability</h3>
-            <div className="flex flex-wrap gap-2">
+          <Section title="Availability">
+            <div className="flex gap-1.5">
               {[{ label: "All", value: "" }, { label: "In Stock", value: "true" }].map(opt => (
-                <button key={opt.value} type="button" onClick={() => set("inStock", opt.value)}
-                  className={cn("px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-200 min-h-[44px]",
-                    filters.inStock === opt.value
-                      ? "bg-[#1a1917] text-white shadow-sm"
-                      : "bg-white text-[#6b6560] border border-black/[.08] hover:border-black/[.15]"
+                <button key={opt.value} onClick={() => set("inStock", opt.value)}
+                  className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all",
+                    f.inStock === opt.value ? "bg-[#1a1917] text-white" : "bg-white text-[#6b6560] border border-black/[.08] hover:border-black/[.15]"
                   )}>{opt.label}</button>
               ))}
             </div>
-          </div>
+          </Section>
         </div>
 
         {/* Sticky footer */}
-        <div className="px-6 py-4 border-t border-black/[.06] shrink-0 bg-[#faf8f5]">
-          <button type="button" onClick={apply}
+        <div className="px-5 py-4 border-t border-black/[.06] shrink-0 bg-[#faf8f5]">
+          <button onClick={() => { onApply(f); onClose(); }}
             className="w-full py-3.5 bg-[#1a1917] text-white rounded-2xl text-sm font-semibold hover:bg-[#2d2926] transition-colors min-h-[48px]">
-            Show {resultCount} product{resultCount !== 1 ? "s" : ""}
+            Show {resultCount} Result{resultCount !== 1 ? "s" : ""}
           </button>
         </div>
       </div>
-    </Fragment>
+    </>
   );
 }
