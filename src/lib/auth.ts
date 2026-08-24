@@ -98,8 +98,22 @@ export const authOptions: NextAuthConfig = {
     signIn: "/login",
     error: "/login",
   },
+  cookies: {
+    csrfToken: {
+      name: "authjs.csrf-token",
+      options: { httpOnly: true, sameSite: "lax", path: "/", secure: true },
+    },
+    sessionToken: {
+      name: "authjs.session-token",
+      options: { httpOnly: true, sameSite: "lax", path: "/", secure: true },
+    },
+    callbackUrl: {
+      name: "authjs.callback-url",
+      options: { httpOnly: true, sameSite: "lax", path: "/", secure: true },
+    },
+  },
   trustHost: true,
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
 };
 
 export const { handlers, signIn, signOut, auth } = NextAuth(authOptions);
