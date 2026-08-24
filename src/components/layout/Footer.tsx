@@ -22,7 +22,15 @@ const POLICY_LINKS = [
   { label: "Shipping", href: "/policies/shipping" },
 ];
 
-export default function Footer({ className }: { className?: string }) {
+import db from "@/lib/db";
+
+export default async function Footer({ className }: { className?: string }) {
+  const settings = await db.siteSetting.findMany();
+  const s = Object.fromEntries(settings.map((s: any) => [s.key, s.value]));
+  const phone = s.contactPhone || "+91 98950 71144";
+  const phoneHref = (s.contactPhone || "+91 98950 71144").replace(/s+/g, "").replace("+", "");
+  const email = s.contactEmail || "info@westhomebybmd.com";
+  const whatsapp = (s.whatsappNumber || "+91 98950 71144").replace(/s+/g, "").replace("+", "");
   return (
     <footer className={`bg-foreground text-white ${className || ""}`}>
       <div className="container-shop py-16 md:py-24">
@@ -62,16 +70,16 @@ export default function Footer({ className }: { className?: string }) {
             </p>
             <div className="mt-7 space-y-3 text-sm text-white/65">
               <a
-                href="tel:+919895071144"
+                href={`tel:${phoneHref}`}
                 className="flex items-center gap-2 hover:text-white"
               >
-                <Phone size={14} /> +91 99999 99999
+                <Phone size={14} /> {phone}
               </a>
               <a
-                href="mailto:info@westhomebybmd.com"
+                href={`mailto:${email}`}
                 className="flex items-center gap-2 hover:text-white"
               >
-                <Mail size={14} /> info@westhomebybmd.com
+                <Mail size={14} /> {email}
               </a>
             </div>
           </div>
@@ -127,7 +135,7 @@ export default function Footer({ className }: { className?: string }) {
               Visit or message
             </h3>
             <a
-              href="https://wa.me/919895071144"
+              href={`https://wa.me/${whatsapp}`}
               target="_blank"
               rel="noopener noreferrer"
               className="group flex w-full items-center justify-between rounded-2xl bg-white/10 px-4 py-4 text-sm font-semibold transition-colors hover:bg-white/15"
