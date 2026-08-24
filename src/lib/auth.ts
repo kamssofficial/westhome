@@ -105,7 +105,7 @@ export const authOptions: NextAuthConfig = {
     },
     sessionToken: {
       name: "authjs.session-token",
-      options: { httpOnly: true, sameSite: "lax", path: "/", secure: true },
+      options: { httpOnly: true, sameSite: "lax", path: "/", secure: true, maxAge: 30 * 24 * 60 * 60 },
     },
     callbackUrl: {
       name: "authjs.callback-url",
