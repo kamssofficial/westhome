@@ -134,21 +134,21 @@ export default function AdminDashboard() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {[
-          { label: "Revenue", sub: "Last 30 days", value: formatPrice(stats.revenue), icon: DollarSign, accent: "text-emerald-700", bg: "bg-emerald-50" },
-          { label: "Orders", sub: "All time", value: stats.orders, icon: ShoppingBag, accent: "text-blue-700", bg: "bg-blue-50" },
-          { label: "Products", sub: "Active", value: stats.products, icon: Package, accent: "text-amber-700", bg: "bg-amber-50" },
-          { label: "Customers", sub: "Registered", value: stats.customers, icon: Users, accent: "text-violet-700", bg: "bg-violet-50" },
-          { label: "Pending", sub: "Needs action", value: stats.pendingOrders, icon: Clock, accent: "text-orange-700", bg: "bg-orange-50" },
-          { label: "Low Stock", sub: "Alerts", value: stats.lowStockProducts, icon: AlertTriangle, accent: "text-rose-700", bg: "bg-rose-50" },
+          { label: "Revenue", sub: "Last 30 days", value: formatPrice(stats.revenue), icon: DollarSign, accent: "text-emerald-700", bg: "bg-emerald-50", href: "/admin/orders" },
+          { label: "Orders", sub: "All time", value: stats.orders, icon: ShoppingBag, accent: "text-blue-700", bg: "bg-blue-50", href: "/admin/orders" },
+          { label: "Products", sub: "Active", value: stats.products, icon: Package, accent: "text-amber-700", bg: "bg-amber-50", href: "/admin/products" },
+          { label: "Customers", sub: "Registered", value: stats.customers, icon: Users, accent: "text-violet-700", bg: "bg-violet-50", href: "/admin/customers" },
+          { label: "Pending", sub: "Needs action", value: stats.pendingOrders, icon: Clock, accent: "text-orange-700", bg: "bg-orange-50", href: "/admin/orders?status=NEW" },
+          { label: "Low Stock", sub: "Alerts", value: stats.lowStockProducts, icon: AlertTriangle, accent: "text-rose-700", bg: "bg-rose-50", href: "/admin/products" },
         ].map((card) => (
-          <div key={card.label} className="bg-white rounded-xl border border-black/[.06] p-4 hover:shadow-sm transition-shadow">
+          <Link key={card.label} href={card.href} className="bg-white rounded-xl border border-black/[.06] p-4 hover:shadow-sm transition-shadow block group">
             <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center mb-3", card.bg)}>
               <card.icon size={16} className={card.accent} />
             </div>
             <p className="text-2xl font-semibold tracking-tight text-[#1a1917]">{card.value}</p>
             <p className="text-xs font-medium text-[#6b6560] mt-0.5">{card.label}</p>
             <p className="text-[10px] text-[#b0aba6] mt-0.5">{card.sub}</p>
-          </div>
+          </Link>
         ))}
       </div>
 
@@ -277,15 +277,15 @@ export default function AdminDashboard() {
           {lowStockProducts.length > 0 ? (
             <div className="space-y-1.5">
               {lowStockProducts.map((product) => (
-                <div key={product.id} className="flex items-center justify-between p-2.5 -mx-2.5 rounded-xl hover:bg-[#f7f5f2] transition-all">
+                <Link key={product.id} href={`/admin/products/${product.id}`} className="flex items-center justify-between p-2.5 -mx-2.5 rounded-xl hover:bg-[#f7f5f2] transition-all group">
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate text-[#1a1917]">{product.name}</p>
+                    <p className="text-sm font-medium truncate text-[#1a1917] group-hover:text-[#d4a574] transition-colors">{product.name}</p>
                     <p className="text-[11px] text-[#b0aba6]">{formatPrice(product.regularPrice)}</p>
                   </div>
                   <span className={cn("text-[11px] font-semibold px-2.5 py-1 rounded-full shrink-0 ml-3", product.stockQuantity === 0 ? "bg-rose-50 text-rose-700" : product.stockQuantity <= 2 ? "bg-rose-50 text-rose-700" : "bg-amber-50 text-amber-700")}>
                     {product.stockQuantity === 0 ? "Out of stock" : `${product.stockQuantity} left`}
                   </span>
-                </div>
+                </Link>
               ))}
               <Link href="/admin/products" className="flex items-center justify-center gap-1.5 text-xs font-medium text-[#d4a574] hover:text-[#c49564] mt-3 pt-3 border-t border-black/[.06] transition-colors">
                 Manage inventory <ArrowRight size={12} />
@@ -316,7 +316,7 @@ export default function AdminDashboard() {
           {notifications.length > 0 ? (
             <div className="space-y-1">
               {notifications.map((notif) => (
-                <div key={notif.id} className={cn("p-2.5 -mx-2.5 rounded-xl transition-all", !notif.isRead ? "bg-[#d4a574]/5" : "hover:bg-[#f7f5f2]")}>
+                <Link key={notif.id} href={notif.type === "order" ? "/admin/orders" : "/admin/dashboard"} className={cn("block p-2.5 -mx-2.5 rounded-xl transition-all", !notif.isRead ? "bg-[#d4a574]/5" : "hover:bg-[#f7f5f2]")}>
                   <div className="flex items-start gap-2.5">
                     {!notif.isRead && <span className="w-1.5 h-1.5 rounded-full bg-[#d4a574] mt-1.5 shrink-0" />}
                     <div className="min-w-0">
@@ -325,7 +325,7 @@ export default function AdminDashboard() {
                       <p className="text-[10px] text-[#d1ccc6] mt-1">{formatDate(notif.createdAt)}</p>
                     </div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           ) : (

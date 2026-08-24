@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Search, Eye, ChevronDown } from "lucide-react";
 import Button from "@/components/ui/Button";
@@ -28,10 +29,11 @@ const STATUS_FILTERS = [
   { value: "CANCELLED", label: "Cancelled" },
 ];
 
-export default function AdminOrdersPage() {
+function AdminOrdersPageContent() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState("");
+  const searchParams = useSearchParams();
+  const [statusFilter, setStatusFilter] = useState(searchParams.get("status") || "");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
 
@@ -162,4 +164,8 @@ export default function AdminOrdersPage() {
       )}
     </div>
   );
+}
+
+export default function AdminOrdersPage() {
+  return <Suspense fallback={<div className="space-y-4"><div className="h-8 w-32 bg-gray-100 rounded animate-pulse" /></div>}><AdminOrdersPageContent /></Suspense>;
 }
