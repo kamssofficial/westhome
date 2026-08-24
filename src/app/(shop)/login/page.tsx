@@ -22,35 +22,42 @@ function LoginForm() {
     setLoading(true);
 
     try {
-      const result = await nextAuthSignIn("credentials", {
+      // Step 1: Clear any stale auth cookies by hitting signout
+      await fetch("/api/clear-cookies", { method: "POST", credentials: "same-origin" }).catch(() => {});
+      await new Promise((r) => setTimeout(r, 200));
+
+      // Step 2: Sign in using redirect-based flow for clean cookie handling
+      await nextAuthSignIn("credentials", {
         email,
         password,
         redirect: false,
-      });
+      }).then(async (result) => {
+        if (result?.error) {
+          toast.error("Invalid email or password");
+          setLoading(false);
+          return;
+        }
 
-      if (result?.error) {
-        toast.error("Invalid email or password");
-        setLoading(false);
-      } else {
         toast.success("Signed in successfully");
-        // Wait for the JWT cookie to be set before checking session
-        await new Promise((r) => setTimeout(r, 500));
+        // Wait for cookies to propagate
+        await new Promise((r) => setTimeout(r, 800));
+        
+        // Check session to determine role
         const sessionRes = await fetch("/api/auth/session");
         const sessionData = await sessionRes.json();
         const role = sessionData?.user?.role;
 
-        // Route to the correct area based on role
+        // Route based on role
         if (role === "ADMIN") {
           window.location.href = "/admin/dashboard";
         } else if (["MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER"].includes(role)) {
           window.location.href = "/staff/dashboard";
         } else {
-          // Full page reload so the middleware picks up the fresh JWT
           window.location.href = callbackUrl.startsWith("/account")
             ? callbackUrl
             : "/account";
         }
-      }
+      });
     } catch {
       toast.error("Failed to sign in");
       setLoading(false);
