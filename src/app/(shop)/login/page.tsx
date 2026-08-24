@@ -4,7 +4,6 @@ import { useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
-import { loginAction } from "./actions";
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -12,6 +11,54 @@ function LoginForm() {
   const error = searchParams.get("error");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(error === "CredentialsSignin" ? "Invalid email or password" : error ? "Sign in failed. Please try again." : "");
+  
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setLoading(true);
+    setErrorMsg("");
+
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+
+    try {
+      // Step 1: Get CSRF token
+      const csrfResp = await fetch("/api/auth/csrf");
+      const { csrfToken } = await csrfResp.json();
+
+      // Step 2: Submit credentials
+      const resp = await fetch("/api/auth/callback/credentials", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          csrfToken,
+          email,
+          password,
+          callbackUrl,
+          json: "true",
+        }),
+        redirect: "manual",
+      });
+
+      // Step 3: Check if login succeeded by checking session
+      const sessionResp = await fetch("/api/auth/session");
+      const session = await sessionResp.json();
+
+      if (session?.user) {
+        // Login succeeded — redirect
+        window.location.href = callbackUrl;
+      } else {
+        setErrorMsg("Invalid email or password");
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error("Login error:", err);
+      setErrorMsg("An error occurred. Please try again.");
+      setLoading(false);
+    }
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12">
@@ -21,28 +68,14 @@ function LoginForm() {
           <p className="text-sm text-[#6b6560] mt-1">Sign in to your WESTHOME account</p>
         </div>
 
-        {error && (
+        {errorMsg && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600 text-center">
-            {error === "CredentialsSignin" ? "Invalid email or password" : "Sign in failed. Please try again."}
+            {errorMsg}
           </div>
         )}
 
         <form
-          action={async (formData) => {
-            setLoading(true);
-            try {
-              await loginAction(formData);
-            } catch (e) {
-              // signIn throws a redirect error which is expected — the browser follows it
-              // If it's not a redirect, it's a real error
-              if (e instanceof Error && e.message.includes("NEXT_REDIRECT")) {
-                // This is expected — the redirect is happening
-                return;
-              }
-              console.error("Login error:", e);
-              setLoading(false);
-            }
-          }}
+          onSubmit={handleSubmit}
           className="bg-white border border-black/[.06] rounded-2xl p-5 md:p-6 space-y-4"
         >
           <input type="hidden" name="callbackUrl" value={callbackUrl} />
