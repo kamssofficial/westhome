@@ -167,15 +167,18 @@ export default function HomePage() {
               className="group min-w-[145px] snap-start md:min-w-0"
             >
               <div className="relative aspect-[.82] overflow-hidden rounded-[1.35rem] bg-surface-muted">
-                <Image
-                  src={
-                    category.image ||
-                    "/images/products/placeholder-product.svg"
-                  }
-                  alt={category.name}
-                  fill
-                  className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
-                />
+                {category.productCount > 0 && category.image ? (
+                  <Image
+                    src={category.image}
+                    alt={category.name}
+                    fill
+                    className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-[#f0ede8] flex items-center justify-center">
+                    <span className="text-[10px] font-medium text-[#b0aba6]">{category.productCount} items</span>
+                  </div>
+                )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />
                 
                 <span className="absolute bottom-3 left-3 right-3 text-sm font-semibold text-white">

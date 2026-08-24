@@ -50,7 +50,7 @@ export default function ShopPage() {
                 className="group block"
               >
                 <div className="relative aspect-[.82] overflow-hidden rounded-[1.35rem] bg-surface-muted border border-foreground/[.08] transition-[transform,box-shadow,border-color] duration-500 ease-out group-hover:-translate-y-1 group-hover:border-foreground/[.16] group-hover:shadow-card-hover">
-                  {cat.image ? (
+                  {cat.image && cat.productCount > 0 ? (
                     <Image
                       src={cat.image}
                       alt={cat.name}
@@ -59,7 +59,7 @@ export default function ShopPage() {
                       sizes="(max-width: 640px) 50vw, 33vw"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-text-muted text-sm font-medium">
+                    <div className="w-full h-full flex items-center justify-center text-text-muted text-sm font-medium bg-[#f7f5f2]">
                       {cat.name}
                     </div>
                   )}

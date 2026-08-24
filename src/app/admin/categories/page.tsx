@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Plus, Edit, Trash2, GripVertical, ChevronRight, ChevronDown, Save, ArrowUpDown } from "lucide-react";
+import Image from "next/image";
+import { Plus, Edit, Trash2, GripVertical, ChevronRight, ChevronDown, Save, ArrowUpDown, Camera, X } from "lucide-react";
 import Button from "@/components/ui/Button";
 import toast from "react-hot-toast";
 
@@ -18,6 +19,7 @@ interface Category {
   name: string;
   slug: string;
   description: string;
+  image: string | null;
   position: number;
   isActive: boolean;
   productCount: number;
@@ -154,6 +156,25 @@ export default function AdminCategoriesPage() {
     }
   };
 
+  const handleUploadImage = async (categoryId: string, file: File) => {
+    try {
+      const fd = new FormData(); fd.append("file", file); fd.append("folder", "categories");
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      if (res.ok) {
+        const data = await res.json();
+        await fetch("/api/categories/" + categoryId, { method: "PUT", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ image: data.url || data.filePath }) });
+        toast.success("Category image updated"); fetchCategories();
+      } else toast.error("Failed to upload image");
+    } catch { toast.error("Failed to upload image"); }
+  };
+
+  const handleRemoveImage = async (categoryId: string) => {
+    try {
+      await fetch("/api/categories/" + categoryId, { method: "PUT", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ image: null }) });
+      toast.success("Category image removed"); fetchCategories();
+    } catch { toast.error("Failed to remove image"); }
+  };
+
   const handleAddSubcategory = async (categoryId: string) => {
     if (!newSubcategoryName.trim()) return;
     try {
@@ -228,6 +249,11 @@ export default function AdminCategoriesPage() {
                 </div>
               )}
               <span className="text-xs font-mono text-text-muted w-6 text-center">#{categories.indexOf(cat) + 1}</span>
+              {cat.image && (
+                <div className="w-8 h-8 rounded-lg overflow-hidden bg-surface-muted flex-shrink-0">
+                  <Image src={cat.image} alt={cat.name} width={32} height={32} className="w-full h-full object-cover" />
+                </div>
+              )}
               {!reorderMode && (<button
                 onClick={() => setExpandedId(expandedId === cat.id ? null : cat.id)}
                 className="p-1 hover:bg-surface-muted rounded"
@@ -258,6 +284,15 @@ export default function AdminCategoriesPage() {
                     <button onClick={() => { setEditingId(cat.id); setEditName(cat.name); }} className="p-1.5 hover:bg-surface-muted rounded-lg">
                       <Edit size={14} className="text-text-muted" />
                     </button>
+                    <label className="p-1.5 hover:bg-surface-muted rounded-lg cursor-pointer" title="Upload image">
+                      <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUploadImage(cat.id, f); }} />
+                      <Camera size={14} className="text-text-muted" />
+                    </label>
+                    {cat.image && (
+                      <button onClick={() => handleRemoveImage(cat.id)} className="p-1.5 hover:bg-error/10 rounded-lg" title="Remove image">
+                        <X size={14} className="text-error" />
+                      </button>
+                    )}
                     <button onClick={() => handleDeleteCategory(cat.id, cat.name)} className="p-1.5 hover:bg-error/10 rounded-lg">
                       <Trash2 size={14} className="text-error" />
                     </button>
