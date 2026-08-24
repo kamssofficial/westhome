@@ -22,58 +22,38 @@ function LoginForm() {
     setLoading(true);
 
     try {
-      // Step 1: Clear any stale auth cookies
+      // Clear stale cookies
       await fetch("/api/clear-cookies", { method: "POST", credentials: "same-origin" }).catch(() => {});
 
-      // Step 2: Get CSRF token directly
-      const csrfRes = await fetch("/api/auth/csrf");
+      // Get CSRF token
+      const csrfRes = await fetch("/api/auth/csrf", { credentials: "same-origin" });
       const { csrfToken } = await csrfRes.json();
 
-      // Step 3: Submit credentials directly via fetch (bypass nextAuthSignIn)
-      const formData = new URLSearchParams();
-      formData.append("csrfToken", csrfToken);
-      formData.append("email", email);
-      formData.append("password", password);
-      formData.append("redirect", "false");
-      formData.append("json", "true");
+      // Create and submit a hidden form — this lets the browser handle
+      // cookies natively through the form POST redirect, just like curl does
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = "/api/auth/callback/credentials";
 
-      const callbackRes = await fetch("/api/auth/callback/credentials", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: formData.toString(),
-        redirect: "manual",
-      });
+      const fields: Record<string, string> = {
+        csrfToken,
+        email,
+        password,
+        callbackUrl: callbackUrl || "/admin/dashboard",
+        redirect: "true",
+      };
 
-      // A successful login returns 302 redirect
-      if (callbackRes.type === "opaqueredirect" || callbackRes.status === 302) {
-        toast.success("Signed in successfully");
-        // Give cookies a moment to propagate
-        await new Promise((r) => setTimeout(r, 500));
-
-        // Verify session and route based on role
-        const sessionRes = await fetch("/api/auth/session");
-        const sessionData = await sessionRes.json();
-        const role = sessionData?.user?.role;
-
-        if (role === "ADMIN") {
-          window.location.href = "/admin/dashboard";
-        } else if (["MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER"].includes(role)) {
-          window.location.href = "/staff/dashboard";
-        } else {
-          window.location.href = callbackUrl.startsWith("/account")
-            ? callbackUrl
-            : "/account";
-        }
-      } else {
-        // Try json response for error
-        const body = await callbackRes.json().catch(() => null);
-        if (body?.error) {
-          toast.error("Invalid email or password");
-        } else {
-          toast.error("Invalid email or password");
-        }
-        setLoading(false);
+      for (const [name, value] of Object.entries(fields)) {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = name;
+        input.value = value;
+        form.appendChild(input);
       }
+
+      document.body.appendChild(form);
+      form.submit();
+      // Browser navigates away — no setLoading(false) needed
     } catch (err) {
       console.error("Login error:", err);
       toast.error("Failed to sign in");
