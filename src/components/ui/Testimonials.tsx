@@ -11,7 +11,6 @@ interface Review {
   name: string;
   rating: number;
   text: string;
-  date: string;
 }
 
 /*
@@ -23,31 +22,33 @@ interface Review {
 const reviews: Review[] = [
   {
     id: "r1",
-    name: "JustDial Customer",
+    name: "Murshi",
     rating: 5,
-    text: "I had been to Westhome, and their collections were exceptionally unique and impressive, with their service being the highlight.",
-    date: "2025",
+    text: "I recently purchased some home decor products and frames from westhome, and I am absolutely thrilled with my experience. They have a wonderful collection with unique designs that I have honestly never seen anywhere else. The quality of the products is excellent, and it's the perfect place to find standout pieces to style your space. Highly recommended!",
   },
   {
     id: "r2",
-    name: "JustDial Customer",
+    name: "Mohammed Abdullah alhasany",
     rating: 5,
-    text: "West home by BM distributors is one of the best Mattress Dealers where you can buy a good quality mattress.",
-    date: "2025",
+    text: "The store is beautiful and luxurious in every detail, but its true beauty lay in the respect and refined taste of the staff. Their approach was so welcoming and made you feel happy when you shopped. It's rare to find places that care about their customers like this. Thank you from the bottom of my heart",
   },
   {
     id: "r3",
-    name: "JustDial Customer",
+    name: "Farhan Paru",
     rating: 5,
-    text: "Really amazing store for home interior decor. Wide range of varieties in every category.",
-    date: "2025",
+    text: "I had a great experience over there. They have lots of unique collections. If you are looking for home decor products, must visit!",
   },
   {
     id: "r4",
-    name: "JustDial Customer",
+    name: "Husain Faris",
     rating: 5,
-    text: "All products were really worth buying. Love to have all those products in my home.",
-    date: "2025",
+    text: "Great service from a specialist group of westhome distributors! Constant and clear communication and an earlier than planned completion! Thank you Sanooj and team BM Distributors.",
+  },
+  {
+    id: "r5",
+    name: "Fayas Faya",
+    rating: 5,
+    text: "I had been to Westhome, and their collections were exceptionally unique and impressive, with their service being the highlight.",
   },
 ];
 
@@ -129,7 +130,7 @@ export default function Testimonials() {
               {avgRating}
             </span>
             <span className="text-xs text-text-muted">
-              {reviews.length} Google Reviews
+              Verified Google Reviews
             </span>
           </div>
         </div>
@@ -248,10 +249,7 @@ function ReviewCard({ review }: { review: Review }) {
       <p className="flex-1 text-sm leading-6 text-text-secondary">&ldquo;{review.text}&rdquo;</p>
       <div className="mt-4 flex items-center justify-between border-t border-border/40 pt-4">
         <span className="text-xs font-medium text-primary">{review.name}</span>
-        <div className="flex items-center gap-1.5">
-          <GoogleIcon size={12} />
-          <span className="text-[10px] text-text-muted">{review.date}</span>
-        </div>
+        <GoogleIcon size={14} />
       </div>
     </article>
   );
