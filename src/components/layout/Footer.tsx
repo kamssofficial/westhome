@@ -1,3 +1,4 @@
+import { useSettings } from "@/components/ui/SettingsContext";
 import Link from "next/link";
 import WestHomeLogo from "@/components/ui/WestHomeLogo";
 import { Mail, MapPin, Phone, ArrowUpRight, MessageCircle } from "lucide-react";
