@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import db from "@/lib/db";
+import { notifyLowStock } from "@/lib/notifications";
 import { requireAuth } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
@@ -117,6 +118,16 @@ export async function POST(request: NextRequest) {
           });
         }
       }
+
+      // Check for low stock and notify
+        for (const item of order.items) {
+          try {
+            const product = await db.product.findUnique({ where: { id: item.productId } });
+            if (product && product.trackInventory && product.stockQuantity <= (product.lowStockThreshold || 5)) {
+              notifyLowStock(product.id, product.name, product.stockQuantity).catch(() => {});
+            }
+          } catch {}
+        }
 
       // Increment coupon usage if applicable
       if (order.couponId) {

@@ -41,7 +41,7 @@ export default function AdminSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  useEffect(() => { (async () => { setLoading(true); try { const r = await fetch("/api/settings"); if (r.ok) { const d = await r.json(); if (d.settings) setS((p) => ({ ...p, ...d.settings })); } } catch {} finally { setLoading(false); } })(); }, []);
+  useEffect(() => { (async () => { setLoading(true); try { const r = await fetch("/api/settings"); if (r.ok) { const d = await r.json(); if (d.settings) setS((p) => ({ ...p, ...d.settings, storePickup: d.settings.storePickup === true || d.settings.storePickup === "true" })); } } catch {} finally { setLoading(false); } })(); }, []);
 
   const u = (k: keyof Settings, v: string | boolean) => { setS((p) => ({ ...p, [k]: v })); setErrs((p) => { const n = { ...p }; delete n[k]; return n; }); setSaved(false); };
 
@@ -90,7 +90,7 @@ export default function AdminSettingsPage() {
             <Field label="Est. Delivery Days" error={errs.estimatedDeliveryDays}><input type="number" value={s.estimatedDeliveryDays} min="1" onChange={(e) => u("estimatedDeliveryDays", e.target.value)} className={ic + (errs.estimatedDeliveryDays ? " " + ie : "")} /></Field>
           </div>
           <label className="flex items-center gap-2.5 text-sm text-[#1a1917] cursor-pointer select-none">
-            <input type="checkbox" checked={s.storePickup} onChange={(e) => u("storePickup", e.target.checked)} className="w-4 h-4 rounded border-black/[.06] accent-[#d4a574]" />Enable Store Pickup
+            <input type="checkbox" checked={!!s.storePickup} onChange={(e) => u("storePickup", e.target.checked)} className="w-4 h-4 rounded border-black/[.06] accent-[#d4a574]" />Enable Store Pickup
           </label>
         </div>
       </div>

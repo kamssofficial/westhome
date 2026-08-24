@@ -9,6 +9,7 @@ import {
   Zap, Layers, Crown, Eye,
 } from "lucide-react";
 import { formatPrice, formatDate, getStatusColor, cn } from "@/lib/utils";
+import { useSession } from "next-auth/react";
 
 interface DashboardStats {
   revenue: number;
@@ -74,6 +75,20 @@ export default function AdminDashboard() {
   const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const { data: session } = useSession();
+  const user = session?.user as any;
+  const userName = user?.name || "there";
+  const greetingHour = new Date().getHours();
+  const greeting = greetingHour < 12 ? "Good morning" : greetingHour < 17 ? "Good afternoon" : "Good evening";
+
+  useEffect(() => {
+    fetch("/api/notifications?limit=8")
+      .then((r) => r.json())
+      .then((data) => {
+        setNotifications(data.notifications || []);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     fetch("/api/admin/dashboard")
@@ -85,7 +100,7 @@ export default function AdminDashboard() {
         setSalesTrend(data.salesTrend);
         setStatusBreakdown(data.statusBreakdown);
         setTopProducts(data.topProducts);
-        setNotifications(data.notifications);
+        // notifications loaded separately
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -117,8 +132,9 @@ export default function AdminDashboard() {
             <span className="block text-[9px] text-[#b0aba6] tracking-[0.15em] uppercase">by BM Distributors</span>
           </div>
           <h1 className="text-2xl md:text-3xl font-light tracking-tight mt-3">
-            Good {new Date().getHours() < 12 ? "morning" : new Date().getHours() < 17 ? "afternoon" : "evening"}
+            {greeting}
           </h1>
+          <p className="text-white/90 text-lg sm:text-xl mt-0.5" style={{ fontFamily: "Iowan Old Style, Baskerville, Times New Roman, serif" }}>{userName}</p>
           <p className="text-[#8a857f] text-sm mt-1">Here&apos;s what&apos;s happening with your store today.</p>
           <div className="flex items-center gap-3 mt-4">
             <Link href="/admin/orders" className="flex items-center gap-1.5 text-xs font-medium bg-white/10 hover:bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full transition-colors">

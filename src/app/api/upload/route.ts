@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
-import crypto from "crypto";
 import { requireAuthRole } from "@/lib/apiAuth";
+import { writeFile, mkdir } from "fs/promises";
+import { existsSync } from "fs";
+import path from "path";
 
 export async function POST(request: NextRequest) {
   const authResult = await requireAuthRole(["ADMIN", "MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER"]);
@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
     const rawFolder = (formData.get("folder") as string) || "products";
-    // SECURITY: Allowlist valid upload folders to prevent path traversal
+
     const ALLOWED_FOLDERS = ["products", "categories", "banners", "avatars", "homepage", "staff"];
     const folder = ALLOWED_FOLDERS.includes(rawFolder) ? rawFolder : "products";
 
@@ -20,47 +20,39 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    // Validate file type
     const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
     if (!allowedTypes.includes(file.type)) {
       return NextResponse.json(
-        { error: "Invalid file type. Allowed: JPEG, PNG, WebP, GIF" },
+        { error: "Unsupported image format. Please upload JPG, PNG, WebP, or GIF." },
         { status: 400 }
       );
     }
 
-    // Validate file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024;
+    const maxSize = 10 * 1024 * 1024;
     if (file.size > maxSize) {
-      return NextResponse.json(
-        { error: "File too large. Maximum size: 5MB" },
-        { status: 400 }
-      );
+      const maxMB = Math.round(maxSize / (1024 * 1024));
+      return NextResponse.json({ error: "Image is too large. Maximum size is " + maxMB + " MB." }, { status: 400 });
     }
 
-    // Generate unique filename
-    const ext = file.name.split(".").pop() || "jpg";
-    const filename = `${Date.now()}-${crypto.randomBytes(4).toString("hex")}.${ext}`;
+    const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substring(2, 8);
+    const filename = timestamp + "-" + random + "." + ext;
 
-    // Create upload directory
-    const uploadDir = join(process.cwd(), "public", "images", folder);
-    await mkdir(uploadDir, { recursive: true });
+    // Save to public/images/{folder}/
+    const publicDir = path.join(process.cwd(), "public", "images", folder);
+    if (!existsSync(publicDir)) {
+      await mkdir(publicDir, { recursive: true });
+    }
 
-    // Write file
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    const filepath = join(uploadDir, filename);
-    await writeFile(filepath, buffer);
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const filePath = path.join(publicDir, filename);
+    await writeFile(filePath, buffer);
 
-    // Return public URL
-    const url = `/images/${folder}/${filename}`;
-
-    return NextResponse.json({ url, filename }, { status: 201 });
-  } catch (error) {
+    const url = "/images/" + folder + "/" + filename;
+    return NextResponse.json({ url, pathname: url }, { status: 201 });
+  } catch (error: any) {
     console.error("Upload error:", error);
-    return NextResponse.json(
-      { error: "Failed to upload file" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Upload failed: " + (error.message || "Unknown error") }, { status: 500 });
   }
 }

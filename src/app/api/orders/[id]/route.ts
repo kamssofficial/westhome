@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import db from "@/lib/db";
+import { notifyOrderStatusChange } from "@/lib/notifications";
 
 export async function GET(
   request: NextRequest,
@@ -105,6 +106,11 @@ export async function PATCH(
       where: { id },
       data: updates,
     });
+
+    // Send notification for status changes
+    if (body.status) {
+      notifyOrderStatusChange(order.id, order.orderNumber, body.status).catch(() => {});
+    }
 
     return NextResponse.json({ order });
   } catch (error) {

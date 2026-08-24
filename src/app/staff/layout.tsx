@@ -3,13 +3,15 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useSession, signOut } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import {
   LayoutDashboard, Package, ShoppingCart, Users,
-  Menu, X, Bell, LogOut, Store,
+  Menu, Store,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import WestHomeLogo from "@/components/ui/WestHomeLogo";
+import NotificationBell from "@/components/admin/NotificationBell";
+import ProfileMenu from "@/components/admin/ProfileMenu";
 
 type NavItem = { label: string; href: string; icon: React.ComponentType<{ size?: number; className?: string }> };
 
@@ -48,7 +50,7 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
   const initials = userName.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2);
   const pageTitle = PAGE_TITLES[pathname] || "Dashboard";
 
-  const handleSignOut = async () => { await signOut({ callbackUrl: "/login" }); };
+
 
   return (
     <div className="min-h-screen bg-[#f7f5f2]">
@@ -114,10 +116,10 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
             View Store
           </Link>
           <button
-            onClick={handleSignOut}
+            onClick={async () => { const { signOut } = await import("next-auth/react"); await signOut({ callbackUrl: "/login" }); }}
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium text-[#6b6560] hover:text-[#1a1917] hover:bg-black/[.04] transition-all w-full"
           >
-            <LogOut size={17} className="text-[#b0aba6]" />
+            <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#b0aba6]"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
             Sign Out
           </button>
         </div>
@@ -141,20 +143,9 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
           </div>
 
           <div className="flex items-center gap-2">
-            <button className="relative p-2 hover:bg-black/[.04] rounded-xl transition-colors">
-              <Bell size={17} className="text-[#6b6560]" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#d4a574] rounded-full ring-2 ring-[#faf8f5]" />
-            </button>
+            <NotificationBell accentRing="ring-[#faf8f5]" />
             <div className="w-px h-6 bg-black/[.08] mx-1" />
-            <div className="flex items-center gap-2.5 pl-1">
-              <div className="w-8 h-8 rounded-full bg-stone-800 flex items-center justify-center">
-                <span className="text-white text-xs font-medium">{initials}</span>
-              </div>
-              <div className="hidden md:block">
-                <p className="text-sm font-medium text-[#1a1917] leading-none">{userName}</p>
-                <p className="text-[10px] text-[#b0aba6] mt-0.5">Staff</p>
-              </div>
-            </div>
+            <ProfileMenu userName={userName} userRole={userRole} userInitials={initials} basePath="/staff" accentRing="ring-[#faf8f5]" />
           </div>
         </header>
 

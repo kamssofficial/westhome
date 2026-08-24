@@ -1,3 +1,4 @@
+import { notifyProductUpdated } from "@/lib/notifications";
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { requireAuthRole } from "@/lib/apiAuth";
@@ -215,6 +216,7 @@ export async function POST(request: NextRequest) {
         details: { name: product.name, slug: product.slug },
       },
     });
+    notifyProductUpdated(product.name, "added").catch(() => {});
 
     return NextResponse.json({ product }, { status: 201 });
   } catch (error) {

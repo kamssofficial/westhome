@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, ToggleLeft, ToggleRight } from "lucide-react";
+import { Plus, Trash2, ToggleLeft, ToggleRight } from "lucide-react";
 import Button from "@/components/ui/Button";
-import { formatPrice, getStatusColor, cn } from "@/lib/utils";
+import { formatPrice, cn } from "@/lib/utils";
 import toast from "react-hot-toast";
 
 interface Coupon {

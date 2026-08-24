@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import db from "@/lib/db";
+import { notifyNewCustomer } from "@/lib/notifications";
 
 // SECURITY: Simple in-memory rate limiter for registration
 const registrationAttempts = new Map<string, { count: number; resetAt: number }>();
@@ -80,6 +81,8 @@ export async function POST(request: NextRequest) {
         role: true,
       },
     });
+
+    notifyNewCustomer(user.name || "A new user").catch(() => {});
 
     return NextResponse.json(
       { message: "Account created successfully", user },

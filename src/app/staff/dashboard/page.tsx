@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Package, ShoppingCart, Users, AlertTriangle, Eye, ArrowUpRight, Clock, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSession } from "next-auth/react";
 
 interface Stats { totalProducts: number; totalOrders: number; totalCustomers: number; pendingOrders: number; lowStock: number; ordersToday: number; recentOrders: any[]; lowStockProducts: any[]; }
 
@@ -20,6 +21,11 @@ const STATUS_STYLES: Record<string, string> = {
 export default function StaffDashboard() {
   const [stats, setStats] = useState<Stats>({ totalProducts:0, totalOrders:0, totalCustomers:0, pendingOrders:0, lowStock:0, ordersToday:0, recentOrders:[], lowStockProducts:[] });
   const [loading, setLoading] = useState(true);
+  const { data: session } = useSession();
+  const user = session?.user as any;
+  const userName = user?.name || "there";
+  const greetingHour = new Date().getHours();
+  const greeting = greetingHour < 12 ? "Good morning" : greetingHour < 17 ? "Good afternoon" : "Good evening";
 
   useEffect(() => {
     Promise.all([
@@ -59,9 +65,17 @@ export default function StaffDashboard() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold text-[#1a1917]">Staff Dashboard</h1>
-        <p className="text-sm text-[#6b6560] mt-1">Overview of store activity</p>
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1a1917] via-[#2d2926] to-[#1a1917] p-6 md:p-8 text-white">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-[#d4a574]/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
+        <div className="relative z-10">
+          <div className="mb-1">
+            <span className="text-base font-serif tracking-wide text-white/90 font-semibold">WESTHOME</span>
+            <span className="block text-[9px] text-[#b0aba6] tracking-[0.15em] uppercase">Staff Panel</span>
+          </div>
+          <h1 className="text-2xl md:text-3xl font-light tracking-tight mt-3">{greeting}</h1>
+          <p className="text-white/90 text-lg sm:text-xl mt-0.5" style={{ fontFamily: "Iowan Old Style, Baskerville, Times New Roman, serif" }}>{userName}</p>
+          <p className="text-[#8a857f] text-sm mt-1">Here&apos;s your store overview for today.</p>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">

@@ -1,3 +1,4 @@
+import { notifyProductUpdated } from "@/lib/notifications";
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { requireAuthRole } from "@/lib/apiAuth";
@@ -47,6 +48,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   await db.auditLog.create({
     data: { action: "CREATE", entity: "PRODUCT", entityId: duplicate.id, details: { name: duplicate.name, duplicatedFrom: original.id } },
   });
+
+  notifyProductUpdated(duplicate.name, "added (duplicated)").catch(() => {});
 
   return NextResponse.json({ product: duplicate });
 }

@@ -322,11 +322,25 @@ model Category {
 
   products     Product[]
   subcategories Subcategory[]
+  images       CategoryImage[]
   promotionCategories PromotionCategory[]
   couponCategories CouponCategory[]
 
   @@index([slug])
   @@index([position])
+}
+
+model CategoryImage {
+  id         String  @id @default(cuid())
+  categoryId String
+  url        String
+  alt        String?
+  position   Int     @default(0)
+  isPrimary  Boolean @default(false)
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@index([categoryId])
 }
 
 model Subcategory {
@@ -834,6 +848,11 @@ enum NotificationType {
   DELIVERED
   CANCELLED
   REFUNDED
+  NEW_CUSTOMER
+  LOW_STOCK
+  PRODUCT_UPDATED
+  STAFF_UPDATED
+  GENERAL
 }
 
 model Notification {
@@ -842,12 +861,11 @@ model Notification {
   title     String
   message   String
   orderId   String?
-  isRead    Boolean          @default(false)
+  readBy    String           @default("[]") // JSON array of user IDs who have read this
   channel   String           @default("internal") // email, whatsapp, sms, internal
   sentAt    DateTime?
   createdAt DateTime         @default(now())
 
   @@index([type])
-  @@index([isRead])
   @@index([createdAt])
 }

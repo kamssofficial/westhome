@@ -5,17 +5,32 @@ import { requireAuthRole } from "@/lib/apiAuth";
 
 export async function GET() {
   try {
-    const categories = await db.category.findMany({
-      where: { isActive: true },
-      include: {
-        subcategories: { where: { isActive: true }, orderBy: { position: "asc" }, include: { _count: { select: { products: { where: { isActive: true, status: "ACTIVE" } } } } } },
-        _count: { select: { products: { where: { isActive: true, status: "ACTIVE" } } } },
-      },
-      orderBy: { position: "asc" },
-    });
-    const transformed = categories.map((cat) => ({
-      id: cat.id, name: cat.name, slug: cat.slug, description: cat.description, image: cat.image, position: cat.position, productCount: cat._count.products,
-      subcategories: cat.subcategories.map((sub) => ({ id: sub.id, name: sub.name, slug: sub.slug, description: sub.description, image: sub.image, position: sub.position, productCount: sub._count.products })),
+    let categories;
+    try {
+      // Try with images relation (requires CategoryImage table)
+      categories = await db.category.findMany({
+        where: { isActive: true },
+        include: {
+          subcategories: { where: { isActive: true }, orderBy: { position: "asc" }, include: { _count: { select: { products: { where: { isActive: true, status: "ACTIVE" } } } } } },
+          images: { orderBy: { position: "asc" } },
+          _count: { select: { products: { where: { isActive: true, status: "ACTIVE" } } } },
+        },
+        orderBy: { position: "asc" },
+      });
+    } catch {
+      // Fallback without images if CategoryImage table doesn't exist
+      categories = await db.category.findMany({
+        where: { isActive: true },
+        include: {
+          subcategories: { where: { isActive: true }, orderBy: { position: "asc" }, include: { _count: { select: { products: { where: { isActive: true, status: "ACTIVE" } } } } } },
+          _count: { select: { products: { where: { isActive: true, status: "ACTIVE" } } } },
+        },
+        orderBy: { position: "asc" },
+      });
+    }
+    const transformed = categories.map((cat: any) => ({
+      id: cat.id, name: cat.name, slug: cat.slug, description: cat.description, image: cat.image, position: cat.position, productCount: cat._count.products, images: cat.images || [],
+      subcategories: cat.subcategories.map((sub: any) => ({ id: sub.id, name: sub.name, slug: sub.slug, description: sub.description, image: sub.image, position: sub.position, productCount: sub._count.products })),
     }));
     return NextResponse.json({ categories: transformed });
   } catch (error) {

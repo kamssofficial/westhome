@@ -1,3 +1,4 @@
+import { notifyOrderStatusChange } from "@/lib/notifications";
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { requireOrderManager } from "@/lib/apiAuth";
@@ -162,6 +163,7 @@ export async function PATCH(
       await db.orderStatusHistory.create({
         data: { orderId: id, status: "CONFIRMED", note: "Order confirmed by staff" },
       });
+      { const o = await db.order.findUnique({ where: { id }, select: { orderNumber: true } }); if (o) notifyOrderStatusChange(id, o.orderNumber, "CONFIRMED").catch(() => {}); }
 
       return NextResponse.json({ success: true, status: "CONFIRMED" });
     }
@@ -205,6 +207,7 @@ export async function PATCH(
       await db.orderStatusHistory.create({
         data: { orderId: id, status: "SHIPPED", note: body.note || "Shipped" },
       });
+      { const o = await db.order.findUnique({ where: { id }, select: { orderNumber: true } }); if (o) notifyOrderStatusChange(id, o.orderNumber, "SHIPPED").catch(() => {}); }
 
       return NextResponse.json({ success: true, status: "SHIPPED" });
     }
@@ -223,6 +226,7 @@ export async function PATCH(
       await db.orderStatusHistory.create({
         data: { orderId: id, status: "DELIVERED", note: body.note || "Delivered" },
       });
+      { const o = await db.order.findUnique({ where: { id }, select: { orderNumber: true } }); if (o) notifyOrderStatusChange(id, o.orderNumber, "DELIVERED").catch(() => {}); }
 
       return NextResponse.json({ success: true, status: "DELIVERED" });
     }
@@ -236,6 +240,7 @@ export async function PATCH(
       await db.orderStatusHistory.create({
         data: { orderId: id, status: "CANCELLED", note: body.note || "Cancelled by staff" },
       });
+      { const o = await db.order.findUnique({ where: { id }, select: { orderNumber: true } }); if (o) notifyOrderStatusChange(id, o.orderNumber, "CANCELLED").catch(() => {}); }
 
       return NextResponse.json({ success: true, status: "CANCELLED" });
     }

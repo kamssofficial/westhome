@@ -23,7 +23,7 @@ export async function GET() {
       thirtyDayRevenue,
       orderStatusCounts,
       topProducts,
-      recentNotifications,
+      ,
     ] = await Promise.all([
       db.order.count(),
       db.product.count({ where: { isActive: true } }),
@@ -75,19 +75,7 @@ export async function GET() {
         orderBy: { _sum: { quantity: "desc" } },
         take: 5,
       }),
-      // Recent notifications
-      db.notification.findMany({
-        orderBy: { createdAt: "desc" },
-        take: 5,
-        select: {
-          id: true,
-          type: true,
-          title: true,
-          message: true,
-          isRead: true,
-          createdAt: true,
-        },
-      }),
+      null, // notifications loaded via /api/notifications
     ]);
 
     // Build 7-day revenue chart data
@@ -150,10 +138,7 @@ export async function GET() {
       salesTrend: dailyRevenue,
       statusBreakdown,
       topProducts: enrichedTopProducts,
-      notifications: recentNotifications.map((n) => ({
-        ...n,
-        createdAt: n.createdAt.toISOString(),
-      })),
+      notifications: [],
     });
   } catch (error) {
     console.error("Dashboard API error:", error);

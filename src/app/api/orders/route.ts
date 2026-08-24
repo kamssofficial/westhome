@@ -186,6 +186,7 @@ export async function POST(request: NextRequest) {
         title: "New Order",
         message: `Order ${orderNumber} placed by ${customerName} for ₹${finalTotal}`,
         orderId: order.id,
+        readBy: "[]",
       },
     });
 

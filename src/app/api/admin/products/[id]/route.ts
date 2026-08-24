@@ -1,3 +1,4 @@
+import { notifyProductUpdated } from "@/lib/notifications";
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { requireAuthRole } from "@/lib/apiAuth";
@@ -22,6 +23,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   await db.auditLog.create({
     data: { action: "UPDATE", entity: "PRODUCT", entityId: id, details: { name: updated.name, status: updated.status } },
   });
+  notifyProductUpdated(updated.name, "status changed to " + updated.status.toLowerCase()).catch(() => {});
 
   return NextResponse.json({ product: updated });
 }

@@ -39,6 +39,28 @@ export async function DELETE(
 
   try {
     const { id } = await params;
+
+    // Check for attached products and subcategories before deleting
+    const productCount = await db.product.count({
+      where: { categoryId: id, isActive: true },
+    });
+
+    const subcategoryCount = await db.subcategory.count({
+      where: { categoryId: id },
+    });
+
+    if (productCount > 0) {
+      return NextResponse.json(
+        {
+          error: "Cannot delete category with active products",
+          productCount,
+          subcategoryCount,
+          hasProducts: true,
+        },
+        { status: 409 }
+      );
+    }
+
     await db.category.delete({ where: { id } });
     return NextResponse.json({ message: "Category deleted" });
   } catch (error) {

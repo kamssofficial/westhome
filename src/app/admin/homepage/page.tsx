@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Edit, Eye, EyeOff, GripVertical, ChevronDown, Trash2 } from "lucide-react";
+import { Plus, Edit, Eye, EyeOff, GripVertical } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
