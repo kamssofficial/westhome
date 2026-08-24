@@ -3,6 +3,7 @@
 import { useState, useEffect, use } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useSettings } from "@/components/ui/SettingsContext";
 import {
   Heart, Minus, Plus, Star, ChevronLeft, ChevronRight,
   MessageCircle, Share2, ChevronDown, ShieldCheck, Truck, Headphones,
@@ -16,6 +17,7 @@ import toast from "react-hot-toast";
 import type { Product, ProductVariant } from "@/types";
 
 export default function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { whatsappNumber } = useSettings();
   const { slug } = use(params);
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
@@ -127,7 +129,7 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
   };
 
   const whatsappUrl = getWhatsAppUrl(
-    "919895071144",
+    whatsappNumber.replace(/[^0-9]/g, ""),
     generateProductWhatsAppMessage(product.name, `${typeof window !== "undefined" ? window.location.origin : ""}/products/${product.slug}`)
   );
 
@@ -545,7 +547,7 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
                 </p>
                 <a
                   href={getWhatsAppUrl(
-                    "919895071144",
+                    whatsappNumber.replace(/[^0-9]/g, ""),
                     `Hi, I'd like to inquire about a custom size for: ${product.name}\n\nProduct URL: ${typeof window !== "undefined" ? window.location.href : ""}`
                   )}
                   target="_blank"

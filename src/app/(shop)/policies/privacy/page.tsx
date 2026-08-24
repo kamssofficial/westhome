@@ -1,6 +1,8 @@
 "use client";
+import { useSettings } from "@/components/ui/SettingsContext";
 
 export default function PrivacyPolicyPage() {
+  const { contactPhone, contactEmail } = useSettings();
   return (
     <div className="animate-fade-in px-4 py-6 max-w-3xl mx-auto">
       <h1 className="text-2xl font-semibold text-primary mb-2">Privacy Policy</h1>
@@ -34,7 +36,7 @@ export default function PrivacyPolicyPage() {
 
         <section>
           <h2 className="text-base font-semibold text-primary mb-2">6. Contact Us</h2>
-          <p>If you have any questions about this Privacy Policy, please contact us at <a href="mailto:info@westhomebybmd.com" className="text-accent hover:underline">info@westhomebybmd.com</a> or call us at <a href="tel:+919895071144" className="text-accent hover:underline">+91 98950 71144</a>.</p>
+          <p>If you have any questions about this Privacy Policy, please contact us at <a href={`mailto:${contactEmail}`} className="text-accent hover:underline">{contactEmail}</a> or call us at <a href={`tel:${contactPhone.replace(/[^0-9+]/g, "")}`} className="text-accent hover:underline">{contactPhone}</a>.</p>
         </section>
       </div>
     </div>

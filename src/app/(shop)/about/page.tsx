@@ -1,8 +1,10 @@
 "use client";
+import { useSettings } from "@/components/ui/SettingsContext";
 
 import { Shield, Sparkles, Users } from "lucide-react";
 
 export default function AboutPage() {
+  const { contactPhone } = useSettings();
   return (
     <div className="animate-fade-in">
       {/* Hero section */}
@@ -39,7 +41,7 @@ export default function AboutPage() {
             <p>City Gate Building, near Press Club Junction,</p>
             <p>Karandakkad, Kasaragod, Kerala — 671121</p>
             <div className="pt-2">
-              <a href="tel:+919895071144" className="text-accent hover:underline">+91 98950 71144</a>
+              <a href={`tel:${contactPhone.replace(/[^0-9+]/g, "")}`} className="text-accent hover:underline">{contactPhone}</a>
             </div>
           </div>
         </div>

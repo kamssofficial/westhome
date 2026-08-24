@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useSettings } from "@/components/ui/SettingsContext";
 import { ArrowLeft, Phone, Mail, MapPin, MessageCircle, Clock } from "lucide-react";
 
 export default function ContactPage() {
+  const { contactPhone, contactEmail, whatsappNumber } = useSettings();
   return (
     <div className="animate-fade-in">
       <div className="container-shop pt-3 pb-2 flex items-center gap-3">
@@ -49,7 +51,7 @@ export default function ContactPage() {
               </div>
               <div>
                 <p className="text-sm font-medium text-primary">Phone</p>
-                <a href="tel:+919895071144" className="text-sm text-accent hover:underline">
+                <a href={`tel:${contactPhone.replace(/[^0-9+]/g, "")}`} className="text-sm text-accent hover:underline">
                   +91 98950 71144
                 </a>
               </div>
@@ -62,7 +64,7 @@ export default function ContactPage() {
               </div>
               <div>
                 <p className="text-sm font-medium text-primary">Email</p>
-                <a href="mailto:info@westhomebybmd.com" className="text-sm text-accent hover:underline">
+                <a href={`mailto:${contactEmail}`} className="text-sm text-accent hover:underline">
                   info@westhomebybmd.com
                 </a>
               </div>
@@ -76,7 +78,7 @@ export default function ContactPage() {
               <div>
                 <p className="text-sm font-medium text-primary">WhatsApp</p>
                 <a
-                  href="https://wa.me/919895071144"
+                  href={`https://wa.me/${whatsappNumber.replace(/[^0-9]/g, "")}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-sm text-accent hover:underline"
@@ -107,7 +109,7 @@ export default function ContactPage() {
       <div className="container-shop pb-4">
         <div className="grid grid-cols-2 gap-3">
           <a
-            href="https://wa.me/919895071144"
+            href={`https://wa.me/${whatsappNumber.replace(/[^0-9]/g, "")}`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center gap-2 py-3.5 bg-[#25D366] text-white rounded-2xl text-sm font-semibold hover:bg-[#20BD5C] transition-colors"
@@ -116,7 +118,7 @@ export default function ContactPage() {
             WhatsApp Us
           </a>
           <a
-            href="tel:+919895071144"
+            href={`tel:${contactPhone.replace(/[^0-9+]/g, "")}`}
             className="flex items-center justify-center gap-2 py-3.5 bg-primary text-white rounded-full text-sm font-semibold hover:bg-primary-hover transition-colors"
           >
             <Phone size={18} />

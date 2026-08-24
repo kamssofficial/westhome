@@ -1,6 +1,8 @@
 "use client";
+import { useSettings } from "@/components/ui/SettingsContext";
 
 export default function ShippingPolicyPage() {
+  const { contactEmail, whatsappNumber } = useSettings();
   return (
     <div className="animate-fade-in px-4 py-6 max-w-3xl mx-auto">
       <h1 className="text-2xl font-semibold text-primary mb-2">Shipping Policy</h1>
@@ -39,7 +41,7 @@ export default function ShippingPolicyPage() {
 
         <section>
           <h2 className="text-base font-semibold text-primary mb-2">7. Contact</h2>
-          <p>For shipping inquiries, reach us at <a href="mailto:info@westhomebybmd.com" className="text-accent hover:underline">info@westhomebybmd.com</a> or <a href="https://wa.me/919895071144" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">WhatsApp us</a>.</p>
+          <p>For shipping inquiries, reach us at <a href={`mailto:${contactEmail}`} className="text-accent hover:underline">{contactEmail}</a> or <a href={`https://wa.me/${whatsappNumber.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">WhatsApp us</a>.</p>
         </section>
       </div>
     </div>

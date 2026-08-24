@@ -1,6 +1,8 @@
 "use client";
+import { useSettings } from "@/components/ui/SettingsContext";
 
 export default function ReturnPolicyPage() {
+  const { contactEmail, whatsappNumber } = useSettings();
   return (
     <div className="animate-fade-in px-4 py-6 max-w-3xl mx-auto">
       <h1 className="text-2xl font-semibold text-primary mb-2">Contact &amp; Support</h1>
@@ -35,7 +37,7 @@ export default function ReturnPolicyPage() {
               Email: <a href="mailto:info@westhomebybmd.com" className="text-accent hover:underline">info@westhomebybmd.com</a>
             </li>
             <li>
-              WhatsApp: <a href="https://wa.me/919895071144" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">WhatsApp us</a>
+              WhatsApp: <a href={`https://wa.me/${whatsappNumber.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">WhatsApp us</a>
             </li>
           </ul>
         </section>

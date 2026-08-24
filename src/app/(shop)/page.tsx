@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSettings } from "@/components/ui/SettingsContext";
 import Image from "next/image";
 import {
   ArrowRight,
@@ -21,6 +22,7 @@ import type { Category, Product } from "@/types";
 import Testimonials from "@/components/ui/Testimonials";
 
 export default function HomePage() {
+  const { whatsappNumber } = useSettings();
   const [categories, setCategories] = useState<Category[]>([]);
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [newArrivals, setNewArrivals] = useState<Product[]>([]);
@@ -381,7 +383,7 @@ export default function HomePage() {
               send a photo. We will help you find the right fit.
             </p>
             <a
-              href="https://wa.me/919895071144?text=Hi!%20I%20need%20help%20choosing%20a%20WESTHOME%20product."
+              href={`https://wa.me/${whatsappNumber.replace(/[^0-9+]/g, "").replace("+", "")}?text=Hi!%20I%20need%20help%20choosing%20a%20WESTHOME%20product.`}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-8 inline-flex items-center gap-2 rounded-full bg-foreground px-5 py-3 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5 active:scale-[.97]"
