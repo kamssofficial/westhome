@@ -18,6 +18,7 @@ import ProductCard from "@/components/ui/ProductCard";
 import Button from "@/components/ui/Button";
 import { ProductGridSkeleton } from "@/components/ui/Skeleton";
 import type { Category, Product } from "@/types";
+import Testimonials from "@/components/ui/Testimonials";
 
 export default function HomePage() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -356,6 +357,9 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* TESTIMONIALS */}
+      <Testimonials />
 
       {/* WHATSAPP CTA */}
       <section className="container-shop py-20 md:py-28">
