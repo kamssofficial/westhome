@@ -204,7 +204,51 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
           </p>
         )}
 
-        {/* Quantity */}
+                {/* Variant Selection */}
+        {product.variants && product.variants.length > 0 && (() => {
+          const attrGroups: Record<string, { name: string; values: { value: string; colorCode?: string; variantId: string }[] }> = {};
+          product.variants.forEach((v: any) => {
+            v.attributes?.forEach((a: any) => {
+              if (!attrGroups[a.attributeName]) attrGroups[a.attributeName] = { name: a.attributeName, values: [] };
+              if (!attrGroups[a.attributeName].values.find((x: any) => x.value === a.value)) {
+                attrGroups[a.attributeName].values.push({ value: a.value, colorCode: a.colorCode, variantId: v.id });
+              }
+            });
+          });
+          const groups = Object.values(attrGroups);
+          if (groups.length === 0) return null;
+          return (
+            <div className="mt-4 space-y-4">
+              {groups.map((group) => (
+                <div key={group.name}>
+                  <p className="text-xs font-medium text-text-muted uppercase tracking-wider mb-2">{group.name}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {group.values.map((val) => {
+                      const isSelected = selectedVariant?.id === val.variantId;
+                      const isColor = group.name.toLowerCase() === 'color';
+                      if (isColor) {
+                        return (
+                          <button key={val.value} onClick={() => { const variant = product.variants.find((v: any) => v.id === val.variantId); if (variant) setSelectedVariant(variant); }}
+                            className={cn('w-9 h-9 rounded-full border-2 transition-all flex items-center justify-center', isSelected ? 'border-primary scale-110 ring-2 ring-primary/30' : 'border-border hover:border-foreground/30')}
+                            title={val.value}>
+                            <div className='w-6 h-6 rounded-full' style={{ backgroundColor: val.colorCode || val.value }} />
+                          </button>
+                        );
+                      }
+                      return (
+                        <button key={val.value} onClick={() => { const variant = product.variants.find((v: any) => v.id === val.variantId); if (variant) setSelectedVariant(variant); }}
+                          className={cn('px-4 py-2 rounded-xl text-sm font-medium border transition-all', isSelected ? 'border-primary bg-primary text-white' : 'border-border bg-white text-primary hover:border-foreground/30')}>
+                          {val.value}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
+{/* Quantity */}
         <div className="flex items-center gap-4 mt-5">
           <div className="flex items-center border border-border rounded-[1.35rem] overflow-hidden">
             <button

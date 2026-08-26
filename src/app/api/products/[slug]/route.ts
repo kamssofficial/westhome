@@ -172,6 +172,78 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       }
     }
 
+    // Handle variant attributes
+    if (body.variantAttributes && Array.isArray(body.variantAttributes)) {
+      // Delete existing variant attributes and their values
+      const existingAttrs = await db.variantAttribute.findMany({ where: { productId: product.id } });
+      for (const attr of existingAttrs) {
+        await db.variantAttributeValue.deleteMany({ where: { variantAttributeId: attr.id } });
+      }
+      await db.variantAttribute.deleteMany({ where: { productId: product.id } });
+      
+      // Create new attributes
+      const attrMap: Record<string, string> = {};
+      for (let i = 0; i < body.variantAttributes.length; i++) {
+        const a = body.variantAttributes[i];
+        const created = await db.variantAttribute.create({
+          data: { productId: product.id, name: a.name, type: a.name.toLowerCase() === "color" ? "COLOR" : "TEXT", position: i },
+        });
+        attrMap[a.name] = created.id;
+        // Create values
+        if (a.values && Array.isArray(a.values)) {
+          for (let j = 0; j < a.values.length; j++) {
+            await db.variantAttributeValue.create({
+              data: { variantAttributeId: created.id, variantId: "", value: a.values[j].value, colorCode: a.values[j].colorCode || null, position: j },
+            });
+          }
+        }
+      }
+    }
+
+    // Handle variants
+    if (body.variants && Array.isArray(body.variants)) {
+      // Delete existing variants
+      const existingVariants = await db.productVariant.findMany({ where: { productId: product.id } });
+      for (const v of existingVariants) {
+        await db.variantAttributeValue.deleteMany({ where: { variantId: v.id } });
+      }
+      await db.productVariant.deleteMany({ where: { productId: product.id } });
+      
+      // Create new variants
+      for (let i = 0; i < body.variants.length; i++) {
+        const v = body.variants[i];
+        const variant = await db.productVariant.create({
+          data: {
+            productId: product.id,
+            name: v.name,
+            price: v.price,
+            salePrice: v.salePrice || null,
+            stockQuantity: v.stockQuantity || 0,
+            sku: v.sku || null,
+            position: i,
+          },
+        });
+        // Create variant attribute values
+        if (v.attributes && Array.isArray(v.attributes)) {
+          for (const a of v.attributes) {
+            // Find the attribute by name
+            const attr = await db.variantAttribute.findFirst({ where: { productId: product.id, name: a.attributeName } });
+            if (attr) {
+              // Find or create the value
+              let attrValue = await db.variantAttributeValue.findFirst({ where: { variantAttributeId: attr.id, value: a.value } });
+              if (!attrValue) {
+                attrValue = await db.variantAttributeValue.create({
+                  data: { variantAttributeId: attr.id, variantId: variant.id, value: a.value, colorCode: a.colorCode || null, position: 0 },
+                });
+              } else {
+                await db.variantAttributeValue.update({ where: { id: attrValue.id }, data: { variantId: variant.id } });
+              }
+            }
+          }
+        }
+      }
+    }
+
     // Log the action
     await db.auditLog.create({
       data: {
