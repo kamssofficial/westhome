@@ -9,7 +9,7 @@ import {
   MessageCircle, Share2, ChevronDown, ShieldCheck, Truck, Headphones,
 } from "lucide-react";
 import ProductCard from "@/components/ui/ProductCard";
-import { cn, formatPrice, getWhatsAppUrl, generateProductWhatsAppMessage } from "@/lib/utils";
+import { cn, formatPrice, getWhatsAppUrl, generateProductWhatsAppMessage, UPI_ID, UPI_PAYEE_NAME, generateUpiIntent, isMobileDevice } from "@/lib/utils";
 import { useCartStore } from "@/store/cart";
 import { useWishlistStore } from "@/store/wishlist";
 import toast from "react-hot-toast";
@@ -74,6 +74,23 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
       maxStock: selectedVariant?.stockQuantity ?? product.stockQuantity,
     });
     toast.success("Added to cart");
+  };
+
+  const handleBuyNow = () => {
+    if (!inStock) return;
+    addToCart({
+      id: selectedVariant?.id || product.id,
+      productId: product.id,
+      variantId: selectedVariant?.id,
+      name: product.name,
+      variantName: selectedVariant?.name,
+      price: Number(currentPrice),
+      salePrice: selectedVariant?.salePrice ? Number(selectedVariant.salePrice) : product.salePrice ? Number(product.salePrice) : undefined,
+      quantity,
+      image: images[selectedImageIndex]?.url,
+      maxStock: selectedVariant?.stockQuantity ?? product.stockQuantity,
+    });
+    window.location.href = '/checkout';
   };
 
   const whatsappUrl = getWhatsAppUrl(
@@ -267,29 +284,43 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
           </div>
         </div>
 
+        {/* Buy Now - UPI Payment */}
+        <button
+          onClick={handleBuyNow}
+          disabled={!inStock}
+          className={cn(
+            "w-full py-3.5 rounded-2xl text-sm font-semibold transition-all duration-200 mt-5",
+            inStock
+              ? "bg-[#5F259F] text-white hover:bg-[#4A1D7F] active:scale-[0.98]"
+              : "bg-surface-muted text-text-muted cursor-not-allowed"
+          )}
+        >
+          {inStock ? "Buy Now — Pay with UPI" : "Out of Stock"}
+        </button>
+
         {/* Add to Cart */}
         <button
           onClick={handleAddToCart}
           disabled={!inStock}
           className={cn(
-            "w-full py-3.5 rounded-2xl text-sm font-semibold transition-all duration-200 mt-5",
+            "w-full py-3.5 rounded-2xl text-sm font-semibold transition-all duration-200 mt-3 border-2 border-primary",
             inStock
-              ? "bg-primary text-white hover:bg-primary-hover active:scale-[0.98]"
-              : "bg-surface-muted text-text-muted cursor-not-allowed"
+              ? "text-primary hover:bg-primary hover:text-white active:scale-[0.98]"
+              : "bg-surface-muted text-text-muted cursor-not-allowed border-border"
           )}
         >
           {inStock ? "Add to Cart" : "Out of Stock"}
         </button>
 
-        {/* Buy on WhatsApp */}
+        {/* Enquire on WhatsApp */}
         <a
           href={whatsappUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="w-full py-3.5 rounded-2xl text-sm font-semibold border-2 border-primary text-primary hover:bg-primary hover:text-white transition-all duration-200 text-center flex items-center justify-center gap-2 mt-3"
+          className="w-full py-3.5 rounded-2xl text-sm font-semibold border-2 border-[#25D366] text-[#25D366] hover:bg-[#25D366] hover:text-white transition-all duration-200 text-center flex items-center justify-center gap-2 mt-3"
         >
           <MessageCircle size={18} />
-          Buy on WhatsApp
+          Enquire on WhatsApp
         </a>
 
         {/* Accordion sections */}

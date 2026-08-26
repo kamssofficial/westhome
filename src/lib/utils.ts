@@ -79,7 +79,7 @@ export function generateProductWhatsAppMessage(
   if (variant) message += `🎨 Variant: ${variant}\n`;
   if (size) message += `📏 Size: ${size}\n`;
   if (customSize) message += `📐 Custom Size: ${customSize}\n`;
-  message += `\nPlease share the details. Thank you!`;
+  message += `\nCould you please provide more information? Thank you!`;
   return message;
 }
 
@@ -138,4 +138,18 @@ export function validatePhone(phone: string): boolean {
 export function validatePinCode(pin: string): boolean {
   const re = /^[1-9][0-9]{5}$/;
   return re.test(pin);
+}
+
+
+export const UPI_ID = "bmdistributorsindia-1@okicici";
+export const UPI_PAYEE_NAME = "WESTHOME by BM Distributors";
+
+export function generateUpiIntent(upiId: string, amount: number, orderRef: string, payeeName: string): string {
+  const params = new URLSearchParams({ pa: upiId, pn: payeeName, am: amount.toFixed(2), cu: 'INR', tn: orderRef });
+  return `upi://pay?${params.toString()}`;
+}
+
+export function isMobileDevice(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 }

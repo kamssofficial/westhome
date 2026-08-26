@@ -267,7 +267,7 @@ export default function NewProductPage() {
               <label className="text-xs font-medium text-text-secondary mb-1 block">Purchase Method</label>
               <select value={form.purchaseMethod} onChange={(e) => setForm({ ...form, purchaseMethod: e.target.value })} className={inputClass}>
                 <option value="BUY_ONLINE">Buy Online</option>
-                <option value="WHATSAPP">WhatsApp Only</option>
+                <option value="ENQUIRY">Enquiry Only</option>
                 <option value="BOTH">Both</option>
               </select>
             </div>

@@ -21,7 +21,7 @@ export default function ShippingPolicyPage() {
 
         <section>
           <h2 className="text-base font-semibold text-primary mb-2">3. Shipping Charges</h2>
-          <p>Free shipping on orders above ₹999. A flat shipping fee of ₹49 applies to orders below ₹999. Cash on Delivery (COD) may carry additional charges.</p>
+          <p>Free shipping on orders above ₹999. A flat shipping fee of ₹49 applies to orders below ₹999. UPI is the preferred payment method.</p>
         </section>
 
         <section>

@@ -154,7 +154,7 @@ export async function POST(request: NextRequest) {
         tax: finalTax,
         total: finalTotal,
         paymentMethod: paymentMethod || null,
-        paymentStatus: paymentMethod === "cod" ? "PENDING" : "PENDING",
+        paymentStatus: "PENDING",
         deliveryMethod: deliveryMethod || "delivery",
         customerNotes: customerNotes || null,
         items: {

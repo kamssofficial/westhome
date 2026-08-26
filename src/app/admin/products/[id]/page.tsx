@@ -240,7 +240,7 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
           <h2 className="font-semibold mb-4">Status & Flags</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div><label className="text-xs font-medium text-text-secondary mb-1 block">Status</label><select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className={inputClass}><option value="DRAFT">Draft</option><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option><option value="ARCHIVED">Archived</option></select></div>
-            <div><label className="text-xs font-medium text-text-secondary mb-1 block">Purchase Method</label><select value={form.purchaseMethod} onChange={(e) => setForm({ ...form, purchaseMethod: e.target.value })} className={inputClass}><option value="BUY_ONLINE">Buy Online</option><option value="WHATSAPP">WhatsApp Only</option><option value="BOTH">Both</option></select></div>
+            <div><label className="text-xs font-medium text-text-secondary mb-1 block">Purchase Method</label><select value={form.purchaseMethod} onChange={(e) => setForm({ ...form, purchaseMethod: e.target.value })} className={inputClass}><option value="BUY_ONLINE">Buy Online</option><option value="ENQUIRY">Enquiry Only</option><option value="BOTH">Both</option></select></div>
           </div>
           <div className="flex flex-wrap items-center gap-4">
             {([["isFeatured", "Featured"], ["isBestseller", "Bestseller"], ["isNewArrival", "New Arrival"], ["isComingSoon", "Coming Soon"]] as const).map(([key, label]) => (
