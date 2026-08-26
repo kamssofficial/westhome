@@ -89,9 +89,8 @@ export default function StaffProductsPage() {
                                         </div>
                     <Link href={"/admin/products/" + product.id} className="mt-2 inline-flex items-center gap-1 text-[11px] font-medium text-[#d4a574] hover:text-[#c08a5a] transition-colors">
                       <Pencil size={10} /> Edit product
+                    </Link>
                   </div>
-                </div>
-              </div>
             );
           })}
         </div>

@@ -42,7 +42,8 @@ export default function AdminSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-
+  useEffect(() => {
+    fetch("/api/admin/settings").then(r => r.ok ? r.json() : null).then(d => { if (d) setS(d); }).finally(() => setLoading(false));
   }, []);
 
 

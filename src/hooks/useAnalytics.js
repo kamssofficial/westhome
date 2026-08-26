@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef } from "react";
 
 function getSessionId() {
   if (typeof window === "undefined") return null;
@@ -13,24 +13,50 @@ function getSessionId() {
 
 function getDeviceType() {
   if (typeof navigator === "undefined") return "desktop";
-  const w = window.innerWidth;
   if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) return "mobile";
+  const w = window.innerWidth;
   if (w < 768) return "mobile";
   if (w < 1024) return "tablet";
   return "desktop";
 }
 
+function getTrafficSource() {
+  if (typeof window === "undefined") return {};
+  const url = new URL(window.location.href);
+  const referrer = document.referrer || "";
+  const utmSource = url.searchParams.get("utm_source") || "";
+  const utmMedium = url.searchParams.get("utm_medium") || "";
+  const utmCampaign = url.searchParams.get("utm_campaign") || "";
+
+  let source = "direct";
+  if (utmSource) {
+    source = utmSource.toLowerCase();
+  } else if (referrer) {
+    const r = referrer.toLowerCase();
+    if (r.includes("google")) source = "google";
+    else if (r.includes("facebook") || r.includes("fb.")) source = "facebook";
+    else if (r.includes("instagram")) source = "instagram";
+    else if (r.includes("wa.me") || r.includes("whatsapp")) source = "whatsapp";
+    else if (r.includes("twitter") || r.includes("x.com")) source = "twitter";
+    else if (r.includes("pinterest")) source = "pinterest";
+    else source = "referral";
+  }
+
+  return { source, utmSource, utmMedium, utmCampaign, referrer: referrer || undefined };
+}
+
 export function trackEvent(eventType, data = {}) {
   if (typeof window === "undefined") return;
   const sessionId = getSessionId();
+  const traffic = getTrafficSource();
   const body = {
     eventType,
     sessionId,
     deviceType: getDeviceType(),
     userAgent: navigator.userAgent,
+    ...traffic,
     ...data,
   };
-  // Fire-and-forget — never block the UI
   fetch("/api/analytics/track", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -43,20 +69,15 @@ export function useHeartbeat() {
   useEffect(() => {
     const sessionId = getSessionId();
     if (!sessionId) return;
-    // Send initial heartbeat
-    fetch("/api/analytics/live", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sessionId, deviceType: getDeviceType(), userAgent: navigator.userAgent }),
-    }).catch(() => {});
-    // Send heartbeat every 60s
-    intervalRef.current = setInterval(() => {
+    const send = () => {
       fetch("/api/analytics/live", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sessionId, deviceType: getDeviceType(), userAgent: navigator.userAgent }),
       }).catch(() => {});
-    }, 60000);
+    };
+    send();
+    intervalRef.current = setInterval(send, 60000);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, []);
 }

@@ -135,15 +135,15 @@ export async function POST(request: NextRequest) {
     // Save new active
     await db.siteSetting.upsert({
       where: { key: HERO_ACTIVE_KEY },
-      update: { value: newHero },
-      create: { key: HERO_ACTIVE_KEY, value: newHero, group: "hero" },
+      update: { value: newHero as any },
+      create: { key: HERO_ACTIVE_KEY, value: newHero as any, group: "hero" },
     });
 
     // Save history
     await db.siteSetting.upsert({
       where: { key: HERO_HISTORY_KEY },
-      update: { value: { images: updatedHistory } },
-      create: { key: HERO_HISTORY_KEY, value: { images: updatedHistory }, group: "hero" },
+      update: { value: { images: updatedHistory as any } },
+      create: { key: HERO_HISTORY_KEY, value: { images: updatedHistory as any }, group: "hero" },
     });
 
     // Clean up old blob (best effort, keep history copies)
@@ -179,8 +179,8 @@ export async function PATCH(request: NextRequest) {
       active.position = position;
       await db.siteSetting.upsert({
         where: { key: HERO_ACTIVE_KEY },
-        update: { value: active },
-        create: { key: HERO_ACTIVE_KEY, value: active, group: "hero" },
+        update: { value: active as any },
+        create: { key: HERO_ACTIVE_KEY, value: active as any, group: "hero" },
       });
       return NextResponse.json({ active, success: true });
     }
@@ -198,13 +198,13 @@ export async function PATCH(request: NextRequest) {
       const updatedHistory = [active, ...history.filter((h) => h.url !== restoreUrl)].slice(0, 20);
       await db.siteSetting.upsert({
         where: { key: HERO_ACTIVE_KEY },
-        update: { value: restore },
-        create: { key: HERO_ACTIVE_KEY, value: restore, group: "hero" },
+        update: { value: restore as any },
+        create: { key: HERO_ACTIVE_KEY, value: restore as any, group: "hero" },
       });
       await db.siteSetting.upsert({
         where: { key: HERO_HISTORY_KEY },
-        update: { value: { images: updatedHistory } },
-        create: { key: HERO_HISTORY_KEY, value: { images: updatedHistory }, group: "hero" },
+        update: { value: { images: updatedHistory as any } },
+        create: { key: HERO_HISTORY_KEY, value: { images: updatedHistory as any }, group: "hero" },
       });
 
       return NextResponse.json({ active: restore, success: true });
@@ -232,8 +232,8 @@ export async function DELETE() {
       const updatedHistory = [active, ...history].slice(0, 20);
       await db.siteSetting.upsert({
         where: { key: HERO_HISTORY_KEY },
-        update: { value: { images: updatedHistory } },
-        create: { key: HERO_HISTORY_KEY, value: { images: updatedHistory }, group: "hero" },
+        update: { value: { images: updatedHistory as any } },
+        create: { key: HERO_HISTORY_KEY, value: { images: updatedHistory as any }, group: "hero" },
       });
     }
 
