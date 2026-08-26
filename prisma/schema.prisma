@@ -21,6 +21,7 @@ enum UserRole {
   ORDER_MANAGER
   PRODUCT_MANAGER
   CONTENT_MANAGER
+  STAFF
 }
 
 model User {

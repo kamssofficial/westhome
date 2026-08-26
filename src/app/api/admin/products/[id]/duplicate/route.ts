@@ -4,7 +4,7 @@ import db from "@/lib/db";
 import { requireAuthRole } from "@/lib/apiAuth";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const authResult = await requireAuthRole(["ADMIN", "MANAGER", "PRODUCT_MANAGER"]);
+  const authResult = await requireAuthRole(["ADMIN", "MANAGER", "PRODUCT_MANAGER", "STAFF"]);
   if (authResult.error) return authResult.error;
 
   const { id } = await params;

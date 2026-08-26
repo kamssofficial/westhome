@@ -3,6 +3,16 @@ import bcrypt from "bcryptjs";
 import db from "@/lib/db";
 import { notifyNewCustomer } from "@/lib/notifications";
 
+function validateAndNormalizePhone(phone: string): string | null {
+  if (!phone || typeof phone !== 'string') return null;
+  let cleaned = phone.replace(/[^\d]/g, '');
+  if (cleaned.startsWith('0')) cleaned = cleaned.slice(1);
+  if (cleaned.startsWith('91') && cleaned.length > 10) cleaned = cleaned.slice(2);
+  if (!/^\d{10}$/.test(cleaned)) return null;
+  if (!/^[6-9]/.test(cleaned)) return null;
+  return cleaned;
+}
+
 // SECURITY: In-memory rate limiter tracking email+IP combinations.
 // Each email+IP pair gets its own counter, so different emails from the same IP
 // are not blocked, but repeated attempts with the same email are limited.
@@ -52,6 +62,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Phone is mandatory for new customers
+    const normalizedPhone = validateAndNormalizePhone(phone);
+    if (!normalizedPhone) {
+      return NextResponse.json(
+        { error: "Please enter a valid 10-digit Indian mobile number (starting with 6-9)" },
+        { status: 400 }
+      );
+    }
+
     if (password.length < 6) {
       return NextResponse.json(
         { error: "Password must be at least 6 characters" },
@@ -79,7 +98,7 @@ export async function POST(request: NextRequest) {
         name,
         email: email.toLowerCase(),
         passwordHash,
-        phone: phone || null,
+        phone: normalizedPhone,
         role: "CUSTOMER",
       },
       select: {

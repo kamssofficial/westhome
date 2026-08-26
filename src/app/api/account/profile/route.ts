@@ -39,7 +39,21 @@ export async function PUT(request: NextRequest) {
 
     const updateData: any = {};
     if (body.name !== undefined) updateData.name = body.name;
-    if (body.phone !== undefined) updateData.phone = body.phone || null;
+    if (body.phone !== undefined) {
+      // Validate phone if provided
+      const phone = body.phone;
+      if (phone && typeof phone === 'string') {
+        let cleaned = phone.replace(/[^\d]/g, '');
+        if (cleaned.startsWith('0')) cleaned = cleaned.slice(1);
+        if (cleaned.startsWith('91') && cleaned.length > 10) cleaned = cleaned.slice(2);
+        if (!/^\d{10}$/.test(cleaned) || !/^[6-9]/.test(cleaned)) {
+          return NextResponse.json({ error: 'Please enter a valid 10-digit Indian mobile number' }, { status: 400 });
+        }
+        updateData.phone = cleaned;
+      } else {
+        updateData.phone = null;
+      }
+    }
     if (body.email !== undefined && body.email !== (session.user as any).email) {
       // Check email uniqueness
       const existing = await db.user.findUnique({ where: { email: body.email } });

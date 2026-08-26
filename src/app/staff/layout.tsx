@@ -43,7 +43,7 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login");
     else if (status === "authenticated" && userRole === "ADMIN") router.push("/admin/dashboard");
-    else if (status === "authenticated" && !(["MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER"].includes(userRole))) router.push("/");
+    else if (status === "authenticated" && !(["MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER", "STAFF"].includes(userRole))) router.push("/");
   }, [status, router, userRole]);
 
   useEffect(() => { setSidebarOpen(false); }, [pathname]);

@@ -85,9 +85,21 @@ export default function CheckoutPage() {
   
   const handlePlaceOrder = async () => {
     if (placingOrder) return; // Prevent double-click
+    
+    const addr = addresses.find((a) => a.id === selectedAddress);
+    
+    // Validate phone before placing order
+    const phone = addr?.phone || "";
+    const cleaned = phone.replace(/\D/g, "");
+    const digits = cleaned.startsWith("0") ? cleaned.slice(1) : cleaned;
+    const num = digits.startsWith("91") && digits.length > 10 ? digits.slice(2) : digits;
+    if (!/^\d{10}$/.test(num) || !/^[6-9]/.test(num)) {
+      toast.error("A valid 10-digit mobile number is required to place your order. Please update your delivery address.");
+      return;
+    }
+    
     setPlacingOrder(true);
     try {
-      const addr = addresses.find((a) => a.id === selectedAddress);
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

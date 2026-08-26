@@ -4,7 +4,7 @@ import { requireAuthRole } from "@/lib/apiAuth";
 
 // GET - List all products for admin
 export async function GET(request: NextRequest) {
-  const authResult = await requireAuthRole(["ADMIN", "MANAGER", "PRODUCT_MANAGER"]);
+  const authResult = await requireAuthRole(["ADMIN", "MANAGER", "PRODUCT_MANAGER", "STAFF"]);
   if (authResult.error) return authResult.error;
 
   const { searchParams } = new URL(request.url);

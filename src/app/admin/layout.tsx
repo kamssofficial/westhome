@@ -70,9 +70,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/login");
-    } else if (status === "authenticated" && userRole === "MANAGER") {
-      router.push("/staff/dashboard");
     }
+    // Note: MANAGER and PRODUCT_MANAGER now have access to the admin panel
+    // for full product management. Only STAFF role redirects to /staff.
   }, [status, router, userRole]);
   const initials = userName.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2);
 

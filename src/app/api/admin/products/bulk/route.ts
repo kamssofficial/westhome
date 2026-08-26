@@ -3,7 +3,7 @@ import db from "@/lib/db";
 import { requireAuthRole } from "@/lib/apiAuth";
 
 export async function POST(request: NextRequest) {
-  const authResult = await requireAuthRole(["ADMIN", "MANAGER", "PRODUCT_MANAGER"]);
+  const authResult = await requireAuthRole(["ADMIN", "MANAGER", "PRODUCT_MANAGER", "STAFF"]);
   if (authResult.error) return authResult.error;
 
   const body = await request.json();

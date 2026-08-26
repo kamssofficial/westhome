@@ -153,3 +153,21 @@ export function isMobileDevice(): boolean {
   if (typeof navigator === 'undefined') return false;
   return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 }
+
+/**
+ * Validate and normalize an Indian mobile number.
+ * Accepts: 10-digit (6-9 start), +91XXXXXXXXXX, 91XXXXXXXXXX, 0XXXXXXXXXX
+ * Returns normalized 10-digit number, or null if invalid.
+ */
+export function validateAndNormalizePhone(phone: string): string | null {
+  if (!phone || typeof phone !== 'string') return null;
+  // Strip all non-digit chars except leading +
+  let cleaned = phone.replace(/[^\d]/g, '');
+  // Remove leading 0 or 91 prefix
+  if (cleaned.startsWith('0')) cleaned = cleaned.slice(1);
+  if (cleaned.startsWith('91') && cleaned.length > 10) cleaned = cleaned.slice(2);
+  // Must be exactly 10 digits starting with 6-9
+  if (!/^\d{10}$/.test(cleaned)) return null;
+  if (!/^[6-9]/.test(cleaned)) return null;
+  return cleaned;
+}

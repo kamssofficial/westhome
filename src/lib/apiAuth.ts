@@ -83,5 +83,5 @@ export async function requirePermission(permission: string): Promise<
 
 /** Check if the user is staff (any non-customer role) */
 export async function requireStaff() {
-  return requireAuthRole(["ADMIN", "MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER"]);
+  return requireAuthRole(["ADMIN", "MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER", "STAFF"]);
 }
