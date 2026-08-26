@@ -76,14 +76,14 @@ export async function GET(request: NextRequest) {
     if (minDiameter) where.diameter = { ...where.diameter, gte: parseFloat(minDiameter) };
     if (maxDiameter) where.diameter = { ...where.diameter, lte: parseFloat(maxDiameter) };
 
-    let orderBy: any = { createdAt: "desc" };
+    let orderBy: any = [{ createdAt: "desc" }, { id: "asc" }];
     switch (sort) {
-      case "price_asc": orderBy = { regularPrice: "asc" }; break;
-      case "name_asc": orderBy = { name: "asc" }; break;
-      case "name_desc": orderBy = { name: "desc" }; break;
-      case "price_desc": orderBy = { regularPrice: "desc" }; break;
+      case "price_asc": orderBy = [{ regularPrice: "asc" }, { id: "asc" }]; break;
+      case "name_asc": orderBy = [{ name: "asc" }, { id: "asc" }]; break;
+      case "name_desc": orderBy = [{ name: "desc" }, { id: "asc" }]; break;
+      case "price_desc": orderBy = [{ regularPrice: "desc" }, { id: "asc" }]; break;
       case "bestselling": orderBy = { orderItems: { _count: "desc" } }; break;
-      default: orderBy = [{ isFeatured: "desc" }, { createdAt: "desc" }]; break;
+      default: orderBy = [{ isFeatured: "desc" }, { createdAt: "desc" }, { id: "asc" }]; break;
     }
 
     // Rating filter - applied after fetch since it's computed
