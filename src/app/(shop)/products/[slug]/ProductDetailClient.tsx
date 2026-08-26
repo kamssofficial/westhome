@@ -1,4 +1,5 @@
 "use client";
+import { useTrackPageView, trackEvent } from "@/hooks/useAnalytics";
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
@@ -23,7 +24,9 @@ interface ProductDetailProps {
   reviewCount: number;
   relatedProducts: any[];
 }
-export default function ProductDetailClient({ product, reviews: initialReviews, reviewAvg: initialReviewAvg, reviewCount: initialReviewCount, relatedProducts: initialRelated }: ProductDetailProps) {
+export default function ProductDetailClient(
+  // Analytics tracking
+{ product, reviews: initialReviews, reviewAvg: initialReviewAvg, reviewCount: initialReviewCount, relatedProducts: initialRelated }: ProductDetailProps) {
   const { whatsappNumber } = useSettings();
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(product?.variants?.length ? product.variants[0] : null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -60,6 +63,7 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
   const totalReviews = realReviewCount;
 
   const handleAddToCart = () => {
+    trackEvent("ADD_TO_CART", { productId: product?.id, categoryId: product?.categoryId });
     if (!inStock) return;
     addToCart({
       id: selectedVariant?.id || product.id,
@@ -286,7 +290,7 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
 
         {/* Buy Now - UPI Payment */}
         <button
-          onClick={handleBuyNow}
+          onClick={() => { trackEvent("BUY_NOW", { productId: product?.id, categoryId: product?.categoryId }); handleBuyNow(); }}
           disabled={!inStock}
           className={cn(
             "w-full py-3.5 rounded-2xl text-sm font-semibold transition-all duration-200 mt-5",

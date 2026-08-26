@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
   LayoutDashboard, Package, FolderTree, ShoppingCart, Users,
-  Home, Tag, Percent, Settings, FileText, Menu, 
+  Home, Tag, Percent, Settings, FileText, Menu, BarChart3, ImageIcon, 
   ChevronRight,  Store,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -37,7 +37,9 @@ const NAV_GROUPS: NavGroup[] = [
   {
     title: "Storefront",
     items: [
+      { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
       { label: "Homepage", href: "/admin/homepage", icon: Home },
+      { label: "Hero Image", href: "/admin/settings#hero-image", icon: ImageIcon },
       { label: "Content", href: "/admin/content", icon: FileText },
     ],
   },

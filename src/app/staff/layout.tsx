@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
   LayoutDashboard, Package, ShoppingCart, Users, FolderTree,
-  Menu, Store,
+  Menu, Store, BarChart3, ImageIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import WestHomeLogo from "@/components/ui/WestHomeLogo";
@@ -21,6 +21,8 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Products", href: "/staff/products", icon: Package },
   { label: "Categories", href: "/staff/categories", icon: FolderTree },
   { label: "Customers", href: "/staff/customers", icon: Users },
+  { label: "Hero Image", href: "/staff/hero-image", icon: ImageIcon },
+  { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
 ];
 
 const PAGE_TITLES: Record<string, string> = {

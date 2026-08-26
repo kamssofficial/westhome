@@ -27,9 +27,12 @@ export default function HomePage() {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [newArrivals, setNewArrivals] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [heroImage, setHeroImage] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
+      // Fetch hero image from database
+      fetch("/api/hero-image").then(r => r.json()).then(d => { if (d.url) setHeroImage(d.url); }).catch(() => {});
       try {
         const [catRes, featRes, newRes] = await Promise.allSettled([
           fetch("/api/categories"),
@@ -75,7 +78,7 @@ export default function HomePage() {
     <div className="">
       {/* HERO */}
       <section className="container-shop relative mt-5 overflow-hidden rounded-[2rem] bg-[#1f2521] text-white shadow-[0_20px_70px_rgba(31,33,31,.18)] md:mt-7">
-        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url(/images/banners/hero.png)" }} />
+        <div className="absolute inset-0 bg-cover bg-center transition-opacity duration-700" style={{ backgroundImage: "url(" + (heroImage || "/images/banners/hero.png") + ")" }} />
         
         <div className="absolute -right-4 top-10 h-44 w-44 rounded-full bg-[#d5966e]/20 blur-3xl" />
         
