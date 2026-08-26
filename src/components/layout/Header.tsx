@@ -3,17 +3,16 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import WestHomeLogo from "@/components/ui/WestHomeLogo";
-import { Search, ShoppingBag, Menu, X, User, ArrowUpRight } from "lucide-react";
+import { Search, ShoppingBag, Menu, X, User, ArrowUpRight, ChevronDown } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useCartStore } from "@/store/cart";
 import { cn } from "@/lib/utils";
 
 const BASE_NAV = [
   { label: "Home", href: "/" },
-  { label: "About Us", href: "/about" },
 ];
 
-interface NavCat { label: string; href: string; }
+interface NavCat { label: string; href: string; slug: string; }
 
 export default function Header() {
   const pathname = usePathname();
@@ -24,12 +23,13 @@ export default function Header() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [navCategories, setNavCategories] = useState<NavCat[]>([]);
+  const [collectionsOpen, setCollectionsOpen] = useState(false);
 
   useEffect(() => {
     fetch("/api/categories")
       .then(r => r.json())
       .then(d => {
-        if (d.categories) setNavCategories(d.categories.map((c: any) => ({ label: c.name, href: "/collections/" + c.slug })));
+        if (d.categories) setNavCategories(d.categories.map((c: any) => ({ label: c.name, href: "/collections/" + c.slug, slug: c.slug })));
       })
       .catch(() => {});
   }, []);
@@ -40,6 +40,15 @@ export default function Header() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [mobileMenuOpen]);
 
   const handleSearch = (event: React.FormEvent) => {
     event.preventDefault();
@@ -101,6 +110,20 @@ export default function Header() {
                   )}
                 </Link>
               ))}
+              <Link
+                href="/about"
+                className={cn(
+                  "relative rounded-full px-3 py-2 text-[12px] font-semibold tracking-[-.01em] transition-colors hover:text-foreground",
+                  isActive("/about")
+                    ? "text-foreground"
+                    : "text-text-secondary"
+                )}
+              >
+                About Us
+                {isActive("/about") && (
+                  <span className="absolute inset-x-3 -bottom-0.5 h-px bg-accent" />
+                )}
+              </Link>
             </nav>
             <div className="flex items-center gap-1">
               <button
@@ -181,6 +204,7 @@ export default function Header() {
         </div>
       </header>
 
+      {/* Mobile Menu Overlay */}
       <div
         className={cn(
           "fixed inset-0 z-[60] lg:hidden",
@@ -205,70 +229,115 @@ export default function Header() {
           aria-modal="true"
           aria-label="Mobile navigation"
           className={cn(
-            "material absolute bottom-3 left-3 top-3 flex w-[min(86vw,22rem)] flex-col overscroll-contain rounded-[1.6rem] p-5 transition-transform duration-500 ease-[cubic-bezier(.23,.88,.26,.92)]",
+            "material absolute bottom-0 left-0 top-0 flex w-[min(85vw,20rem)] flex-col rounded-r-[1.6rem] transition-transform duration-500 ease-[cubic-bezier(.23,.88,.26,.92)]",
             mobileMenuOpen ? "translate-x-0" : "-translate-x-[110%]"
           )}
         >
-          <div className="flex items-center justify-between">
+          {/* Header */}
+          <div className="flex items-center justify-between px-5 pt-5 pb-3">
             <WestHomeLogo
-                variant="default"
-                size="md"
-                plain
-                className="h-8 w-auto"
-              />
+              variant="default"
+              size="md"
+              plain
+              className="h-7 w-auto"
+            />
             <button
               type="button"
               onClick={() => setMobileMenuOpen(false)}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-foreground/[.06] active:scale-95"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-foreground/[.06] active:scale-95"
               aria-label="Close menu"
             >
-              <X size={19} />
+              <X size={18} />
             </button>
           </div>
-          <div className="mt-10 flex-1">
-            <p className="font-label mb-4 text-[9px] text-accent">
+
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-5 pb-6 overscroll-contain">
+            <p className="font-label mb-3 mt-4 text-[9px] text-accent">
               Explore WESTHOME
             </p>
-            <nav className="space-y-1" aria-label="Mobile navigation">
-              {[...BASE_NAV, ...navCategories].map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setMobileMenuOpen(false)}
+            <nav className="space-y-0.5" aria-label="Mobile navigation">
+              {/* Home */}
+              <Link
+                href="/"
+                onClick={() => setMobileMenuOpen(false)}
+                className={cn(
+                  "flex items-center rounded-xl px-3 py-3 text-[15px] font-semibold transition-colors",
+                  isActive("/")
+                    ? "bg-foreground text-white"
+                    : "text-foreground hover:bg-foreground/[.06]"
+                )}
+              >
+                Home
+              </Link>
+
+              {/* Collections - Collapsible */}
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setCollectionsOpen(!collectionsOpen)}
+                  className="flex w-full items-center justify-between rounded-xl px-3 py-3 text-[15px] font-semibold text-foreground transition-colors hover:bg-foreground/[.06]"
+                >
+                  <span>Collections</span>
+                  <ChevronDown
+                    size={16}
+                    className={cn(
+                      "transition-transform duration-200",
+                      collectionsOpen && "rotate-180"
+                    )}
+                  />
+                </button>
+                <div
                   className={cn(
-                    "flex items-center justify-between rounded-2xl px-4 py-3.5 text-[15px] font-semibold transition-colors",
-                    isActive(link.href)
-                      ? "bg-foreground text-white"
-                      : "text-foreground hover:bg-foreground/[.06]"
+                    "overflow-hidden transition-all duration-300",
+                    collectionsOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
                   )}
                 >
-                  {link.label}
-                  {isActive(link.href) && <ArrowUpRight size={15} />}
-                </Link>
-              ))}
+                  <div className="ml-3 border-l border-foreground/[.08] pl-3 space-y-0.5 pb-1">
+                    {navCategories.map((cat) => (
+                      <Link
+                        key={cat.href}
+                        href={cat.href}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={cn(
+                          "flex items-center rounded-lg px-3 py-2.5 text-sm transition-colors",
+                          isActive(cat.href)
+                            ? "bg-foreground text-white font-semibold"
+                            : "text-text-secondary hover:bg-foreground/[.06] hover:text-foreground"
+                        )}
+                      >
+                        {cat.label}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* About Us */}
+              <Link
+                href="/about"
+                onClick={() => setMobileMenuOpen(false)}
+                className={cn(
+                  "flex items-center rounded-xl px-3 py-3 text-[15px] font-semibold transition-colors",
+                  isActive("/about")
+                    ? "bg-foreground text-white"
+                    : "text-foreground hover:bg-foreground/[.06]"
+                )}
+              >
+                About Us
+              </Link>
             </nav>
           </div>
-          <div className="space-y-1 border-t border-foreground/[.08] pt-4">
+
+          {/* Footer - My Account */}
+          <div className="border-t border-foreground/[.08] px-5 py-4">
             <Link
               href="/account"
               onClick={() => setMobileMenuOpen(false)}
-              className="block rounded-2xl px-4 py-3 text-sm font-semibold text-text-secondary hover:bg-foreground/[.06] hover:text-foreground"
+              className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-text-secondary transition-colors hover:bg-foreground/[.06] hover:text-foreground"
             >
+              <User size={18} />
               My Account
-            </Link>
-            <Link
-              href="/about"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block rounded-2xl px-4 py-3 text-sm font-semibold text-text-secondary hover:bg-foreground/[.06] hover:text-foreground"
-            >
-              About WESTHOME
-            </Link>
-            <Link
-              href="/contact"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block rounded-2xl px-4 py-3 text-sm font-semibold text-text-secondary hover:bg-foreground/[.06] hover:text-foreground"
-            >
-              Contact us
             </Link>
           </div>
         </aside>
