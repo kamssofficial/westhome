@@ -109,11 +109,11 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
             <span className="text-sm font-semibold text-primary">
               {formatPrice(product.salePrice || product.regularPrice)}
             </span>
-            {product.salePrice && (
+            {product.salePrice && Number(product.salePrice) > 0 && product.regularPrice && Number(product.regularPrice) > Number(product.salePrice) ? (
               <span className="text-[11px] text-text-muted line-through">
                 {formatPrice(product.regularPrice)}
               </span>
-            )}
+            ) : null}
           </div>
         </div>
       </div>
