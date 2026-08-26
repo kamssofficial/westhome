@@ -52,7 +52,17 @@ export async function POST(request: NextRequest) {
         });
         return NextResponse.json({ url: blob.url, pathname: blobPath }, { status: 201 });
       } catch (blobError: any) {
-        console.error("Vercel Blob upload failed, falling back to local:", blobError.message);
+        console.error("Vercel Blob upload FAILED:", blobError.message, blobError.stack);
+        // On production, local filesystem is ephemeral — do NOT silently fall back
+        // Return a clear error so the admin knows the upload didn't persist
+        if (!process.env.VERCEL && !process.env.NODE_ENV?.includes('production')) {
+          // Only fall back in local dev
+        } else {
+          return NextResponse.json(
+            { error: "Image upload to cloud storage failed. Please try again. Details: " + blobError.message },
+            { status: 500 }
+          );
+        }
       }
     }
 

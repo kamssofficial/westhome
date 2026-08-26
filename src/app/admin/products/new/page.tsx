@@ -7,6 +7,7 @@ import Link from "next/link";
 import Button from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
+import ImageUploader from "@/components/admin/ImageUploader";
 
 interface Category {
   id: string;
@@ -83,6 +84,7 @@ export default function NewProductPage() {
   });
 
   const [variants, setVariants] = useState<any[]>([]);
+  const [images, setImages] = useState<any[]>([]);
 
   useEffect(() => {
     fetch("/api/categories")
@@ -142,6 +144,8 @@ export default function NewProductPage() {
           customSizeMaxHeight: form.customSizeMaxHeight ? parseFloat(form.customSizeMaxHeight) : null,
           // Packaging
           packagingWeight: form.packagingWeight ? parseFloat(form.packagingWeight) : null,
+          images: images,
+          variantAttributes: [],
           variants: variants.map((v) => ({
             ...v,
             price: parseFloat(v.price || form.salePrice),
@@ -176,6 +180,18 @@ export default function NewProductPage() {
       <h1 className="text-xl font-semibold mb-6">Create New Product</h1>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Product Images */}
+        <div className="bg-surface rounded-[1.35rem] border border-border p-5">
+          <h2 className="font-semibold mb-4">Product Images</h2>
+          <ImageUploader
+            images={images}
+            onChange={setImages}
+            folder="products"
+            maxImages={10}
+            allowLifestyle
+          />
+        </div>
+
         {/* Basic Info */}
         <div className="bg-surface rounded-[1.35rem] border border-border p-5">
           <h2 className="font-semibold mb-4">Basic Information</h2>

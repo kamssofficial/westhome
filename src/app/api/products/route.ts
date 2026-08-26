@@ -226,6 +226,78 @@ export async function POST(request: NextRequest) {
         includedItems: body.includedItems,
       },
     });
+    // Handle images if provided
+    if (body.images && Array.isArray(body.images) && body.images.length > 0) {
+      for (const img of body.images) {
+        await db.productImage.create({
+          data: {
+            productId: product.id,
+            url: img.url,
+            alt: img.alt || "",
+            isPrimary: img.isPrimary ?? false,
+            position: img.position ?? 0,
+            imageType: img.imageType || "PRODUCT",
+          },
+        });
+      }
+    }
+
+    // Handle variant attributes if provided
+    if (body.variantAttributes && Array.isArray(body.variantAttributes)) {
+      for (let i = 0; i < body.variantAttributes.length; i++) {
+        const a = body.variantAttributes[i];
+        const created = await db.variantAttribute.create({
+          data: { productId: product.id, name: a.name, type: a.name.toLowerCase() === "color" ? "COLOR" : "TEXT", position: i },
+        });
+        if (a.values && Array.isArray(a.values)) {
+          for (let j = 0; j < a.values.length; j++) {
+            await db.variantAttributeValue.create({
+              data: { variantAttributeId: created.id, variantId: "", value: a.values[j].value, colorCode: a.values[j].colorCode || null, position: j },
+            });
+          }
+        }
+      }
+    }
+
+    // Handle variants if provided
+    if (body.variants && Array.isArray(body.variants)) {
+      for (let i = 0; i < body.variants.length; i++) {
+        const v = body.variants[i];
+        const variant = await db.productVariant.create({
+          data: {
+            productId: product.id,
+            name: v.name,
+            price: v.price,
+            salePrice: v.salePrice || null,
+            stockQuantity: v.stockQuantity || 0,
+            sku: v.sku || null,
+            position: i,
+          },
+        });
+        if (v.attributes && Array.isArray(v.attributes)) {
+          for (const a of v.attributes) {
+            const attr = await db.variantAttribute.findFirst({ where: { productId: product.id, name: a.attributeName } });
+            if (attr) {
+              let attrValue = await db.variantAttributeValue.findFirst({ where: { variantAttributeId: attr.id, value: a.value } });
+              if (!attrValue) {
+                attrValue = await db.variantAttributeValue.create({
+                  data: { variantAttributeId: attr.id, variantId: variant.id, value: a.value, colorCode: a.colorCode || null, position: 0 },
+                });
+              } else {
+                await db.variantAttributeValue.update({ where: { id: attrValue.id }, data: { variantId: variant.id } });
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Re-fetch product with images for response
+    const productWithImages = await db.product.findUnique({
+      where: { id: product.id },
+      include: { images: { orderBy: [{ isPrimary: "desc" }, { position: "asc" }] } },
+    });
+
     // Log the action
     await db.auditLog.create({
       data: {
@@ -237,7 +309,7 @@ export async function POST(request: NextRequest) {
     });
     notifyProductUpdated(product.name, "added").catch(() => {});
 
-    return NextResponse.json({ product }, { status: 201 });
+    return NextResponse.json({ product: productWithImages }, { status: 201 });
   } catch (error) {
     return NextResponse.json({ error: "Failed to create product" }, { status: 500 });
   }
