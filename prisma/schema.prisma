@@ -865,6 +865,7 @@ model Notification {
   message   String
   orderId   String?
   readBy    String           @default("[]") // JSON array of user IDs who have read this
+  deletedBy String           @default("[]") // JSON array of user IDs who have deleted this
   channel   String           @default("internal") // email, whatsapp, sms, internal
   sentAt    DateTime?
   createdAt DateTime         @default(now())
