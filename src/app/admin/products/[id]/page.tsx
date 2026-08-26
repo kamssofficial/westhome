@@ -8,6 +8,7 @@ import Button from "@/components/ui/Button";
 import ImageUploader from "@/components/admin/ImageUploader";
 import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
+import ProductAnalytics from "@/components/admin/ProductAnalytics";
 
 export default function AdminProductEditPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -400,6 +401,10 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
             <div><label className="text-xs font-medium text-text-secondary mb-1 block">Meta Description</label><textarea value={form.seoDescription} onChange={(e) => setForm({ ...form, seoDescription: e.target.value })} className={cn(inputClass, "resize-y")} rows={2} maxLength={160} /></div>
           </div>
         </div>
+
+        
+        {/* Product Analytics */}
+        <ProductAnalytics productId={id} />
 
         <Button onClick={handleSave} loading={saving} size="lg"><Save size={16} /> Save Changes</Button>
       </div>

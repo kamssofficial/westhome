@@ -20,6 +20,7 @@ import Button from "@/components/ui/Button";
 import { ProductGridSkeleton } from "@/components/ui/Skeleton";
 import type { Category, Product } from "@/types";
 import Testimonials from "@/components/ui/Testimonials";
+import { trackEvent } from "@/hooks/useAnalytics";
 
 export default function HomePage() {
   const { whatsappNumber } = useSettings();

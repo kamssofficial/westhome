@@ -321,6 +321,7 @@ export default function ProductDetailClient(
           href={whatsappUrl}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={() => trackEvent("WHATSAPP_ENQUIRY", { productId: product?.id, categoryId: product?.categoryId })}
           className="w-full py-3.5 rounded-2xl text-sm font-semibold border-2 border-[#25D366] text-[#25D366] hover:bg-[#25D366] hover:text-white transition-all duration-200 text-center flex items-center justify-center gap-2 mt-3"
         >
           <MessageCircle size={18} />
