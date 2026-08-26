@@ -14,7 +14,7 @@ interface Order {
   paymentStatus: string;
   total: number;
   createdAt: string;
-  items: { productName: string; quantity: number }[];
+  items: { productName: string; quantity: number; sku?: string | null }[];
 }
 
 const STATUS_FILTERS = [
