@@ -72,7 +72,7 @@ export async function PATCH(
     }
 
     const role = (session.user as any).role;
-    if (role !== "ADMIN" && role !== "MANAGER" && role !== "ORDER_MANAGER") {
+    if (!['ADMIN', 'MANAGER', 'ORDER_MANAGER', 'PRODUCT_MANAGER', 'STAFF'].includes(role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

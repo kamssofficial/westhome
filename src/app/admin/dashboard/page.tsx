@@ -62,6 +62,7 @@ interface Notification {
   type: string;
   title: string;
   message: string;
+  orderId?: string | null;
   isRead: boolean;
   createdAt: string;
 }
@@ -332,7 +333,7 @@ export default function AdminDashboard() {
           {notifications.length > 0 ? (
             <div className="space-y-1">
               {notifications.map((notif) => (
-                <Link key={notif.id} href={notif.type === "order" ? "/admin/orders" : "/admin/dashboard"} className={cn("block p-2.5 -mx-2.5 rounded-xl transition-all", !notif.isRead ? "bg-[#d4a574]/5" : "hover:bg-[#f7f5f2]")}>
+                <Link key={notif.id} href={notif.orderId ? "/admin/orders/" + notif.orderId : notif.type.includes("PRODUCT") ? "/admin/products" : notif.type.includes("ORDER") ? "/admin/orders" : notif.type.includes("CUSTOMER") ? "/admin/customers" : "/admin/dashboard"} className={cn("block p-2.5 -mx-2.5 rounded-xl transition-all", !notif.isRead ? "bg-[#d4a574]/5" : "hover:bg-[#f7f5f2]")}>
                   <div className="flex items-start gap-2.5">
                     {!notif.isRead && <span className="w-1.5 h-1.5 rounded-full bg-[#d4a574] mt-1.5 shrink-0" />}
                     <div className="min-w-0">
