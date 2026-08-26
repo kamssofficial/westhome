@@ -199,6 +199,7 @@ export async function PATCH(
 }
 
 
+
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -231,28 +232,45 @@ export async function DELETE(
       );
     }
 
-    // Soft delete — deactivate account, anonymize email to preserve order history
-    await db.user.update({
-      where: { id },
-      data: {
-        isActive: false,
-        email: `deleted_${Date.now()}_${existing.email}`,
-        name: "Deleted Customer",
-        phone: null,
-      },
-    });
-
-    // Log the action
+    // Log the action BEFORE deletion
     await db.auditLog.create({
       data: {
         action: "DELETE",
         entity: "USER",
         entityId: id,
-        details: { email: existing.email, performedBy: (session?.user as any)?.id },
+        details: { email: existing.email, name: existing.name, performedBy: (session?.user as any)?.id },
       },
     });
 
-    return NextResponse.json({ message: "Customer deleted" });
+    // Delete all related customer data
+    await db.address.deleteMany({ where: { userId: id } });
+    await db.review.deleteMany({ where: { userId: id } });
+    await db.wishlist.deleteMany({ where: { userId: id } });
+    await db.recentlyViewed.deleteMany({ where: { userId: id } });
+    await db.couponUsage.deleteMany({ where: { userId: id } });
+    await db.liveSession.deleteMany({ where: { userId: id } });
+
+    // Anonymize analytics events (keep data, remove user link)
+    await db.analyticsEvent.updateMany({
+      where: { userId: id },
+      data: { userId: null },
+    });
+
+    // Anonymize orders (keep for business records, remove personal info)
+    await db.order.updateMany({
+      where: { userId: id },
+      data: {
+        userId: null,
+        customerName: "Deleted Customer",
+        customerEmail: null,
+        customerPhone: null,
+      },
+    });
+
+    // Delete the user account
+    await db.user.delete({ where: { id } });
+
+    return NextResponse.json({ message: "Customer and all associated data deleted" });
   } catch (error) {
     console.error("Customer delete API error:", error);
     return NextResponse.json({ error: "Failed to delete customer" }, { status: 500 });
