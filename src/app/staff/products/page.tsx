@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, ChevronDown } from "lucide-react";
+import { Search, ChevronDown, Pencil } from "lucide-react";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 interface Product {
@@ -41,7 +42,7 @@ export default function StaffProductsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold text-[#1a1917]">Products</h1>
-        <p className="text-sm text-[#6b6560] mt-1">Browse product catalogue</p>
+        <p className="text-sm text-[#6b6560] mt-1">Browse and manage products</p>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
@@ -78,12 +79,16 @@ export default function StaffProductsPage() {
                     {product.stockQuantity > 0 ? "In Stock" : "Out of Stock"}
                   </span>
                 </div>
-                <div className="p-3">
+                <div className="p-3 relative">
                   <p className="text-[10px] text-[#d4a574] font-medium uppercase tracking-wider">{product.subcategory?.name || product.category?.name || "—"}</p>
                   <h3 className="text-sm font-medium text-[#1a1917] mt-0.5 line-clamp-1">{product.name}</h3>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-sm font-semibold text-[#1a1917]">₹{Number(product.regularPrice).toLocaleString()}</span>
                     {product.salePrice && <span className="text-xs text-[#b0aba6] line-through">₹{Number(product.salePrice).toLocaleString()}</span>}
+                    </div>
+                                        </div>
+                    <Link href={"/admin/products/" + product.id} className="mt-2 inline-flex items-center gap-1 text-[11px] font-medium text-[#d4a574] hover:text-[#c08a5a] transition-colors">
+                      <Pencil size={10} /> Edit product
                   </div>
                 </div>
               </div>
