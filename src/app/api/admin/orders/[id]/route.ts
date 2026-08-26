@@ -251,3 +251,33 @@ export async function PATCH(
     return NextResponse.json({ error: "Failed to perform action" }, { status: 500 });
   }
 }
+
+// DELETE — delete an order (admin/staff only)
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const authResult = await requireOrderManager();
+  if (authResult.error) return authResult.error;
+
+  try {
+    const { id } = await params;
+
+    const order = await db.order.findUnique({ where: { id } });
+    if (!order) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
+
+    // Delete related records first
+    await db.orderStatusHistory.deleteMany({ where: { orderId: id } });
+    await db.orderItem.deleteMany({ where: { orderId: id } });
+    await db.payment.deleteMany({ where: { orderId: id } });
+    await db.notification.deleteMany({ where: { orderId: id } });
+    await db.order.delete({ where: { id } });
+
+    return NextResponse.json({ success: true, message: "Order deleted" });
+  } catch (error) {
+    console.error("Admin order delete error:", error);
+    return NextResponse.json({ error: "Failed to delete order" }, { status: 500 });
+  }
+}

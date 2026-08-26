@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
-import { ArrowLeft, Package, Truck, Save, CheckCircle, CreditCard, XCircle, Clock, User, MapPin, FileText, ChevronDown, Eye, ShoppingCart, Phone, Mail } from "lucide-react";
+import { ArrowLeft, Package, Truck, Save, CheckCircle, CreditCard, XCircle, Clock, User, MapPin, FileText, ChevronDown, Eye, ShoppingCart, Phone, Mail, Trash2 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { formatPrice, formatDate, getStatusColor, cn } from "@/lib/utils";
@@ -67,6 +67,7 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
   const [showAllStatuses, setShowAllStatuses] = useState(false);
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [paymentNote, setPaymentNote] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => { fetchOrder(); }, [id]);
 
@@ -103,6 +104,22 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
       }
     } catch { toast.error("Failed to update order"); }
     finally { setUpdating(false); }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm("Are you sure you want to delete this order? This action cannot be undone.")) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/admin/orders/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("Order deleted");
+        window.location.href = "/admin/orders";
+      } else {
+        const err = await res.json();
+        toast.error(err.error || "Failed to delete");
+      }
+    } catch { toast.error("Failed to delete order"); }
+    finally { setDeleting(false); }
   };
 
   const handleFullUpdate = async () => {
