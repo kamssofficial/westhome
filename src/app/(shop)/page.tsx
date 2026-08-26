@@ -34,7 +34,7 @@ export default function HomePage() {
   useEffect(() => {
     const fetchData = async () => {
       // Fetch hero image from database
-      fetch("/api/hero-image").then(r => r.json()).then(d => { if (d.url) setHeroImage(d.url); if (d.position) setHeroPosition(d.position); }).catch(() => {});
+      const ctrl = new AbortController(); setTimeout(() => ctrl.abort(), 3000); fetch("/api/hero-image", {signal: ctrl.signal}).then(r => r.json()).then(d => { if (d.url) setHeroImage(d.url); if (d.position) setHeroPosition(d.position); }).catch(() => setHeroImage("/images/banners/hero-living-room.png"));
       try {
         const [catRes, featRes, newRes] = await Promise.allSettled([
           fetch("/api/categories"),
