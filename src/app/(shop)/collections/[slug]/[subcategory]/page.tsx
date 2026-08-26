@@ -97,7 +97,6 @@ function SubcategoryContent() {
           <span className="text-primary font-medium">{subcategory?.name || subcategorySlug.replace(/-/g, " ")}</span>
         </div>
         <h1 className="text-2xl font-semibold text-primary">{subcategory?.name || subcategorySlug.replace(/-/g, " ")}</h1>
-        <p className="text-sm text-secondary mt-0.5">{total || 0} Items</p>
       </div>
 
       {/* Filter / Sort bar */}

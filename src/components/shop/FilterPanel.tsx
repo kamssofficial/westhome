@@ -139,7 +139,7 @@ export default function FilterPanel({ open, onClose, onApply, initialFilters, ca
                   <button key={sub.slug} onClick={() => set("subcategory", sub.slug)}
                     className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all",
                       f.subcategory === sub.slug ? "bg-[#1a1917] text-white" : "bg-white text-[#6b6560] border border-black/[.08] hover:border-black/[.15]"
-                    )}>{sub.name}{sub.count > 0 && <span className="ml-1 text-[10px] opacity-60">{sub.count}</span>}</button>
+                    )}>{sub.name}</button>
                 ))}
               </div>
             </Section>
