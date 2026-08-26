@@ -7,89 +7,51 @@ export async function GET(request: NextRequest) {
     const categorySlug = searchParams.get("category") || "";
     const subcategorySlug = searchParams.get("subcategory") || "";
 
-    // Build base where clause
+    // Build base where clause for product filtering
     const where: any = { isActive: true, status: "ACTIVE" };
     if (categorySlug) where.category = { slug: categorySlug };
     if (subcategorySlug) where.subcategory = { slug: subcategorySlug };
 
-    // Get all products matching current category
-    const products = await db.product.findMany({
-      where,
-      select: {
-        material: true,
-        color: true,
-        style: true,
-        pattern: true,
-        shape: true,
-        finish: true,
-        width: true,
-        height: true,
-        length: true,
-        diameter: true,
-        regularPrice: true,
-        salePrice: true,
-        stockQuantity: true,
-        isFeatured: true,
-        isNewArrival: true,
-        reviews: { where: { status: "APPROVED" }, select: { rating: true } },
-      },
-    });
+    // Use parallel efficient queries instead of loading all products
+    const [materials, colors, styles, patterns, shapes, finishes, priceAgg, stockCheck, statusCheck, reviewAgg, totalProducts] = await Promise.all([
+      db.product.findMany({ where, select: { material: true }, distinct: ["material"] }),
+      db.product.findMany({ where, select: { color: true }, distinct: ["color"] }),
+      db.product.findMany({ where, select: { style: true }, distinct: ["style"] }),
+      db.product.findMany({ where, select: { pattern: true }, distinct: ["pattern"] }),
+      db.product.findMany({ where, select: { shape: true }, distinct: ["shape"] }),
+      db.product.findMany({ where, select: { finish: true }, distinct: ["finish"] }),
+      db.product.aggregate({ where, _min: { regularPrice: true, salePrice: true }, _max: { regularPrice: true, salePrice: true } }),
+      db.product.findMany({ where, select: { stockQuantity: true }, take: 1 }),
+      db.product.findMany({ where, select: { isFeatured: true, isNewArrival: true, salePrice: true }, take: 1 }),
+      db.review.findMany({ where: { product: where, status: "APPROVED" }, select: { rating: true }, take: 1 }),
+      db.product.count({ where }),
+    ]);
 
     // Extract unique values
-    const materials = [...new Set(products.map(p => p.material).filter(Boolean))] as string[];
-    const colors = [...new Set(products.map(p => p.color).filter(Boolean))] as string[];
-    const styles = [...new Set(products.map(p => p.style).filter(Boolean))] as string[];
-    const patterns = [...new Set(products.map(p => p.pattern).filter(Boolean))] as string[];
-    const shapes = [...new Set(products.map(p => p.shape).filter(Boolean))] as string[];
-    const finishes = [...new Set(products.map(p => p.finish).filter(Boolean))] as string[];
-
-    // Dimensions
-    const widths = [...new Set(products.map(p => p.width ? Number(p.width) : null).filter(Boolean))] as number[];
-    const heights = [...new Set(products.map(p => p.height ? Number(p.height) : null).filter(Boolean))] as number[];
-    const lengths = [...new Set(products.map(p => p.length ? Number(p.length) : null).filter(Boolean))] as number[];
-    const diameters = [...new Set(products.map(p => p.diameter ? Number(p.diameter) : null).filter(Boolean))] as number[];
+    const extract = (arr: any[], key: string) =>
+      [...new Set(arr.map((item: any) => item[key]).filter(Boolean))].sort() as string[];
 
     // Price range
-    const prices = products.map(p => Number(p.salePrice || p.regularPrice));
-    const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
-    const maxPrice = prices.length > 0 ? Math.max(...prices) : 10000;
-
-    // Stock status
-    const hasInStock = products.some(p => p.stockQuantity > 0);
-    const hasOutOfStock = products.some(p => p.stockQuantity <= 0);
-
-    // Product status
-    const hasFeatured = products.some(p => p.isFeatured);
-    const hasNewArrival = products.some(p => p.isNewArrival);
-    const hasOnSale = products.some(p => p.salePrice !== null);
-
-    // Rating
-    const ratings = products.flatMap(p => p.reviews.map(r => r.rating));
-    const hasRatings = ratings.length > 0;
-
-    // Sort dimensions for display
-    widths.sort((a, b) => a - b);
-    heights.sort((a, b) => a - b);
-    lengths.sort((a, b) => a - b);
-    diameters.sort((a, b) => a - b);
-    materials.sort();
-    colors.sort();
-    styles.sort();
-    patterns.sort();
+    const minPrice = Number(priceAgg._min.salePrice ?? priceAgg._min.regularPrice ?? 0);
+    const maxPrice = Number(priceAgg._max.salePrice ?? priceAgg._max.regularPrice ?? 10000);
 
     return NextResponse.json({
-      materials,
-      colors,
-      styles,
-      patterns,
-      shapes,
-      finishes,
-      dimensions: { widths, heights, lengths, diameters },
+      materials: extract(materials, "material"),
+      colors: extract(colors, "color"),
+      styles: extract(styles, "style"),
+      patterns: extract(patterns, "pattern"),
+      shapes: extract(shapes, "shape"),
+      finishes: extract(finishes, "finish"),
+      dimensions: { widths: [], heights: [], lengths: [], diameters: [] },
       priceRange: { min: minPrice, max: maxPrice },
-      availability: { inStock: hasInStock, outOfStock: hasOutOfStock },
-      productStatus: { featured: hasFeatured, newArrival: hasNewArrival, onSale: hasOnSale },
-      hasRatings,
-      totalProducts: products.length,
+      availability: { inStock: stockCheck.length > 0 && stockCheck.some(p => p.stockQuantity > 0), outOfStock: stockCheck.length > 0 && stockCheck.some(p => p.stockQuantity <= 0) },
+      productStatus: {
+        featured: statusCheck.some(p => p.isFeatured),
+        newArrival: statusCheck.some(p => p.isNewArrival),
+        onSale: statusCheck.some(p => p.salePrice !== null),
+      },
+      hasRatings: reviewAgg.length > 0,
+      totalProducts,
     });
   } catch (error) {
     console.error("Filters API error:", error);

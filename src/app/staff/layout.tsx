@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
-  LayoutDashboard, Package, ShoppingCart, Users,
+  LayoutDashboard, Package, ShoppingCart, Users, FolderTree,
   Menu, Store,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -19,6 +19,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/staff/dashboard", icon: LayoutDashboard },
   { label: "Orders", href: "/staff/orders", icon: ShoppingCart },
   { label: "Products", href: "/staff/products", icon: Package },
+  { label: "Categories", href: "/staff/categories", icon: FolderTree },
   { label: "Customers", href: "/staff/customers", icon: Users },
 ];
 
@@ -27,6 +28,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/staff/orders": "Orders",
   "/staff/products": "Products",
   "/staff/customers": "Customers",
+  "/staff/categories": "Categories",
 };
 
 export default function StaffLayout({ children }: { children: React.ReactNode }) {

@@ -51,8 +51,15 @@ export default function CheckoutPage() {
       .then(r => r.json())
       .then(d => {
         if (d.settings) {
-          if (d.settings.freeDeliveryThreshold) setFreeThreshold(Number(d.settings.freeDeliveryThreshold));
-          if (d.settings.defaultDeliveryCharge) setDeliveryChargeRate(Number(d.settings.defaultDeliveryCharge));
+          // Prefer deliveryConfig (nested) over flat keys for consistency
+          const dc = d.settings.deliveryConfig;
+          if (dc) {
+            setFreeThreshold(Number(dc.freeDeliveryThreshold) || 2000);
+            setDeliveryChargeRate(Number(dc.defaultDeliveryCharge) || 149);
+          } else {
+            if (d.settings.freeDeliveryThreshold) setFreeThreshold(Number(d.settings.freeDeliveryThreshold));
+            if (d.settings.defaultDeliveryCharge) setDeliveryChargeRate(Number(d.settings.defaultDeliveryCharge));
+          }
         }
       })
       .catch(() => {});
@@ -129,7 +136,17 @@ export default function CheckoutPage() {
         const data = await res.json();
         setOrderResult({ orderNumber: data.order.orderNumber, id: data.order.id });
         clearCart();
-        setStep(2);
+        
+        // Redirect to UPI app if UPI payment selected
+        if (paymentMethod === "upi") {
+          const upiUrl = `upi://pay?pa=${encodeURIComponent(UPI_ID)}&pn=${encodeURIComponent("WESTHOME by BM Distributors")}&am=${total}&cu=INR&tn=${encodeURIComponent("Order " + data.order.orderNumber)}`;
+          // Try to open UPI app, fallback to showing confirmation
+          window.location.href = upiUrl;
+          // Show confirmation after a short delay (in case UPI app doesn't open)
+          setTimeout(() => setStep(2), 1500);
+        } else {
+          setStep(2);
+        }
       } else {
         const err = await res.json();
         toast.error(err.error || "Failed to place order. Please try again.");
@@ -279,11 +296,16 @@ export default function CheckoutPage() {
                   <p className="text-[10px] text-text-muted uppercase tracking-wider mb-1">UPI ID</p>
                   <p className="text-base font-semibold text-primary font-mono">{UPI_ID}</p>
                 </div>
-                <button onClick={handleCopyUPI} className="flex items-center gap-1.5 px-3 py-2 bg-white rounded-lg border border-border text-xs font-medium hover:bg-surface-muted transition-colors">
-                  {upiCopied ? <><CheckCircle size={14} className="text-success" /> Copied</> : <><Copy size={14} /> Copy</>}
-                </button>
+                <div className="flex items-center gap-2">
+                  <button onClick={handleCopyUPI} className="flex items-center gap-1.5 px-3 py-2 bg-white rounded-lg border border-border text-xs font-medium hover:bg-surface-muted transition-colors">
+                    {upiCopied ? <><CheckCircle size={14} className="text-success" /> Copied</> : <><Copy size={14} /> Copy</>}
+                  </button>
+                  <a href={`upi://pay?pa=${encodeURIComponent(UPI_ID)}&pn=${encodeURIComponent("WESTHOME by BM Distributors")}&am=${total}&cu=INR`} className="flex items-center gap-1.5 px-3 py-2 bg-accent text-white rounded-lg text-xs font-medium hover:bg-accent-hover transition-colors">
+                    <Smartphone size={14} /> Open UPI
+                  </a>
+                </div>
               </div>
-              <p className="text-xs text-secondary mt-3">After transferring, click <strong>Place Order</strong> below. Your order will be processed once payment is verified by our team.</p>
+              <p className="text-xs text-secondary mt-3">Click <strong>Pay via UPI</strong> below to open your UPI app with the amount pre-filled. Your order will be processed once payment is verified by our team.</p>
             </div>
           )}
 

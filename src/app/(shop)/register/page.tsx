@@ -37,20 +37,25 @@ export default function RegisterPage() {
         throw new Error(err.error);
       }
 
-      // Auto-login after successful registration
-      const result = await nextAuthSignIn("credentials", {
-        email: form.email,
-        password: form.password,
-        redirect: false,
-      });
+      // Registration succeeded — try to auto-login, but don't let it mask success
+      try {
+        const result = await nextAuthSignIn("credentials", {
+          email: form.email,
+          password: form.password,
+          redirect: false,
+        });
 
-      if (result?.error) {
-        // Registration succeeded but auto-login failed — redirect to login
+        if (result?.error) {
+          toast.success("Account created! Please sign in.");
+          window.location.href = "/login";
+        } else {
+          toast.success("Account created and signed in!");
+          window.location.href = "/account";
+        }
+      } catch {
+        // Auto-login failed (e.g. session fetch error) — account was still created
         toast.success("Account created! Please sign in.");
         window.location.href = "/login";
-      } else {
-        toast.success("Account created and signed in!");
-        window.location.href = "/account";
       }
     } catch (err: any) {
       toast.error(err.message || "Failed to create account");

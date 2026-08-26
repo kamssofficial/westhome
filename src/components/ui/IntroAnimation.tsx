@@ -18,6 +18,7 @@ export default function IntroAnimation({ children }: { children: React.ReactNode
   const [phase, setPhase] = useState<"idle" | "logo" | "line" | "tagline" | "wipe" | "done">("idle");
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const started = useRef(false);
+  const hasPlayed = typeof window !== "undefined" && sessionStorage.getItem("westhome-intro-played");
 
   const skip = useCallback(() => {
     timers.current.forEach(clearTimeout);
@@ -27,8 +28,9 @@ export default function IntroAnimation({ children }: { children: React.ReactNode
   }, []);
 
   useEffect(() => {
-    if (started.current) return;
+    if (started.current || hasPlayed) { setPhase("done"); return; }
     started.current = true;
+    sessionStorage.setItem("westhome-intro-played", "1");
 
     const at = (fn: () => void, ms: number) => {
       timers.current.push(setTimeout(fn, ms));
@@ -91,7 +93,7 @@ export default function IntroAnimation({ children }: { children: React.ReactNode
                   src="/images/logo/westhome-logo-white.png"
                   alt="WESTHOME"
                   fill
-                  className="object-contain"
+                  className="object-contain" sizes="200px"
                   style={{ filter: "drop-shadow(0 0 40px rgba(250,248,245,0.12))" }}
                   priority
                 />

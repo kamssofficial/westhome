@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
-import { ArrowLeft, Edit2, Save, X, Mail, Phone, Package, ShoppingCart, Clock, User, Shield, CheckCircle, CreditCard, ChevronDown, Eye } from "lucide-react";
+import { ArrowLeft, Edit2, Save, X, Mail, Phone, Package, ShoppingCart, Clock, User, Shield, CheckCircle, CreditCard, ChevronDown, Eye, Trash2 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { formatPrice, formatDate, getStatusColor, cn } from "@/lib/utils";
@@ -26,6 +26,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({ name: "", email: "", phone: "", isActive: true });
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
 
   useEffect(() => { fetchCustomer(); }, [id]);
@@ -35,6 +36,25 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
   const handleSave = async () => {
     setSaving(true);
     try { const res = await fetch("/api/admin/customers/" + id, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(editForm) }); if (res.ok) { toast.success("Customer updated"); setEditing(false); fetchCustomer(); } else { const err = await res.json(); toast.error(err.error || "Failed to update"); } } catch { toast.error("Failed to update customer"); } finally { setSaving(false); }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm("Delete this customer? This action cannot be undone.")) return;
+    setDeleting(true);
+    try {
+      const res = await fetch("/api/admin/customers/" + id, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("Customer deleted");
+        window.location.href = "/admin/customers";
+      } else {
+        const err = await res.json();
+        toast.error(err.error || "Failed to delete customer");
+      }
+    } catch {
+      toast.error("Failed to delete customer");
+    } finally {
+      setDeleting(false);
+    }
   };
 
   if (loading) return <div className="space-y-4"><Skeleton className="h-8 w-48" /><Skeleton className="h-32 w-full rounded-xl" /><Skeleton className="h-48 w-full rounded-xl" /></div>;
@@ -53,6 +73,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
           {!editing ? (<Button variant="outline" size="sm" onClick={() => setEditing(true)}><Edit2 size={14} /> Edit</Button>) : (
             <><Button variant="outline" size="sm" onClick={() => { setEditing(false); setEditForm({ name: customer.name || "", email: customer.email, phone: customer.phone || "", isActive: customer.isActive }); }}><X size={14} /> Cancel</Button><Button size="sm" onClick={handleSave} loading={saving}><Save size={14} /> Save</Button></>
           )}
+         <Button variant="outline" size="sm" onClick={handleDelete} loading={deleting} className="text-red-600 border-red-200 hover:bg-red-50"><Trash2 size={14} /> Delete</Button>
         </div>
       </div>
       {editing && (

@@ -77,7 +77,7 @@ function SearchContent() {
       params.set("sort", sort);
       params.set("page", String(pageNum));
       params.set("limit", String(PAGE_SIZE));
-      const res = await fetch("/api/products?" + params.toString());
+      const res = await fetch("/api/products?lite=true&" + params.toString());
       const data = await res.json();
       if (append) setProducts(prev => [...prev, ...(data.products || [])]);
       else setProducts(data.products || []);

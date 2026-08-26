@@ -1,0 +1,13 @@
+{
+  "baseUrl": "http://localhost:57583",
+  "cookie": "REPLACE_WITH_YOUR_SESSION_COOKIE",
+  "images": [
+    { "category": "Wall Decor", "image": "/collections/frames/frame-botanical-leaf-gold-frame.png" },
+    { "category": "Laundry", "image": "/collections/basket/basket-cream-woven-set-3-sizes.png" },
+    { "category": "Comforters", "image": "/images/categories/comforters-placeholder.svg" },
+    { "category": "Lamps", "image": "/images/categories/lamps-placeholder.svg" },
+    { "category": "Carpets", "image": "/images/categories/carpets-placeholder.svg" },
+    { "category": "Clocks", "image": "/images/categories/clocks-placeholder.svg" },
+    { "category": "Accessories", "image": "/collections/soap-dispensers/set/soap-dispenser-cream-white-collection.png" }
+  ]
+}

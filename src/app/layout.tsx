@@ -4,6 +4,7 @@ import { Toaster } from "react-hot-toast";
 import Providers from "@/components/layout/Providers";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || "http://localhost:3000"),
   title: {
     default: "WESTHOME by BM Distributors | Premium Home & Lifestyle",
     template: "%s | WESTHOME by BM Distributors",

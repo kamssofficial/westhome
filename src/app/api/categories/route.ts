@@ -5,35 +5,43 @@ import { requireAuthRole } from "@/lib/apiAuth";
 
 export async function GET() {
   try {
-    let categories;
-    try {
-      // Try with images relation (requires CategoryImage table)
-      categories = await db.category.findMany({
-        where: { isActive: true },
-        include: {
-          subcategories: { where: { isActive: true }, orderBy: { position: "asc" }, include: { _count: { select: { products: { where: { isActive: true, status: "ACTIVE" } } } } } },
-          images: { orderBy: { position: "asc" } },
-          _count: { select: { products: { where: { isActive: true, status: "ACTIVE" } } } },
+    const categories = await db.category.findMany({
+      where: { isActive: true },
+      include: {
+        subcategories: {
+          where: { isActive: true },
+          orderBy: { position: "asc" },
+          include: { _count: { select: { products: { where: { isActive: true, status: "ACTIVE" } } } } },
         },
-        orderBy: { position: "asc" },
-      });
-    } catch {
-      // Fallback without images if CategoryImage table doesn't exist
-      categories = await db.category.findMany({
-        where: { isActive: true },
-        include: {
-          subcategories: { where: { isActive: true }, orderBy: { position: "asc" }, include: { _count: { select: { products: { where: { isActive: true, status: "ACTIVE" } } } } } },
-          _count: { select: { products: { where: { isActive: true, status: "ACTIVE" } } } },
-        },
-        orderBy: { position: "asc" },
-      });
-    }
+        images: { orderBy: { position: "asc" } },
+        _count: { select: { products: { where: { isActive: true, status: "ACTIVE" } } } },
+      },
+      orderBy: { position: "asc" },
+    });
+
     const transformed = categories.map((cat: any) => ({
-      id: cat.id, name: cat.name, slug: cat.slug, description: cat.description, image: cat.image, position: cat.position, productCount: cat._count.products, images: cat.images || [],
-      subcategories: cat.subcategories.map((sub: any) => ({ id: sub.id, name: sub.name, slug: sub.slug, description: sub.description, image: sub.image, position: sub.position, productCount: sub._count.products })),
+      id: cat.id,
+      name: cat.name,
+      slug: cat.slug,
+      description: cat.description,
+      image: cat.image,
+      position: cat.position,
+      productCount: cat._count.products,
+      images: cat.images || [],
+      subcategories: cat.subcategories.map((sub: any) => ({
+        id: sub.id,
+        name: sub.name,
+        slug: sub.slug,
+        description: sub.description,
+        image: sub.image,
+        position: sub.position,
+        productCount: sub._count.products,
+      })),
     }));
-    return NextResponse.json({ categories: transformed });
+
+    return NextResponse.json({ categories: transformed }, { headers: { "Cache-Control": "public, s-maxage=30, stale-while-revalidate=120" } });
   } catch (error) {
+    console.error("Categories API error:", error);
     return NextResponse.json({ categories: CATEGORIES });
   }
 }
@@ -44,8 +52,10 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const slug = body.name.toLowerCase().replace(/[^\w\s-]/g, "").replace(/[\s_-]+/g, "-");
-    const category = await db.category.create({ data: { name: body.name, slug, description: body.description, image: body.image, position: body.position || 0 } });
+    const slug = body.name.toLowerCase().replace(/[^ws-]/g, "").replace(/[s_-]+/g, "-");
+    const category = await db.category.create({
+      data: { name: body.name, slug, description: body.description, image: body.image, position: body.position || 0 },
+    });
     return NextResponse.json({ category }, { status: 201 });
   } catch (error) {
     return NextResponse.json({ error: "Failed to create category" }, { status: 500 });

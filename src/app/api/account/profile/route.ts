@@ -60,3 +60,55 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: "Failed to update profile" }, { status: 500 });
   }
 }
+
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userId = (session.user as any).id;
+    const body = await request.json().catch(() => ({}));
+    
+    // Require password confirmation for self-deletion
+    if (!body.password) {
+      return NextResponse.json({ error: "Password is required to delete your account" }, { status: 400 });
+    }
+
+    const user = await db.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Verify password
+    const bcrypt = require("bcryptjs");
+    const valid = await bcrypt.compare(body.password, user.passwordHash);
+    if (!valid) {
+      return NextResponse.json({ error: "Incorrect password" }, { status: 400 });
+    }
+
+    // Check for pending orders
+    const pendingOrders = await db.order.count({
+      where: { userId, status: { in: ["NEW", "PROCESSING", "SHIPPED"] } },
+    });
+    if (pendingOrders > 0) {
+      return NextResponse.json(
+        { error: "Cannot delete account with pending orders. Please wait for them to complete." },
+        { status: 400 }
+      );
+    }
+
+    // Soft delete - deactivate account instead of hard delete (preserves order history)
+    await db.user.update({
+      where: { id: userId },
+      data: { isActive: false, email: `deleted_${Date.now()}_${user.email}` },
+    });
+
+    return NextResponse.json({ message: "Account deleted successfully" });
+  } catch (error) {
+    console.error("Account delete error:", error);
+    return NextResponse.json({ error: "Failed to delete account" }, { status: 500 });
+  }
+}

@@ -15,6 +15,8 @@ export async function GET(request: NextRequest) {
     const featured = searchParams.get("featured") === "true";
     const newArrivals = searchParams.get("newArrivals") === "true";
     const bestsellers = searchParams.get("bestsellers") === "true";
+    const lite = searchParams.get("lite") === "true";
+    const idsParam = searchParams.get("ids");
 
     // Admin/staff can see all statuses; storefront only ACTIVE
     const statusFilter = searchParams.get("status");
@@ -27,6 +29,7 @@ export async function GET(request: NextRequest) {
     if (featured) where.isFeatured = true;
     if (newArrivals) where.isNewArrival = true;
     if (bestsellers) where.isBestseller = true;
+    if (idsParam) { where.id = { in: idsParam.split(",") }; }
     // Physical attribute filters
     const minPrice = searchParams.get("minPrice");
     const maxPrice = searchParams.get("maxPrice");
@@ -88,7 +91,23 @@ export async function GET(request: NextRequest) {
     
     const [products, total] = await Promise.all([
       db.product.findMany({
-        where, include: { category: { select: { id: true, name: true, slug: true } }, subcategory: { select: { id: true, name: true, slug: true } }, images: { orderBy: [{ isPrimary: "desc" }, { position: "asc" }] }, variants: { where: { isActive: true }, orderBy: { position: "asc" }, include: { images: { orderBy: { position: "asc" } }, attributes: { include: { variantAttribute: true } } } }, reviews: { where: { status: "APPROVED" }, select: { rating: true } }, tags: true },
+        where,
+        include: lite
+          ? {
+              category: { select: { id: true, name: true, slug: true } },
+              subcategory: { select: { id: true, name: true, slug: true } },
+              images: { orderBy: [{ isPrimary: "desc" }, { position: "asc" }], take: 1 },
+              variants: { where: { isActive: true }, orderBy: { position: "asc" }, take: 1, include: { images: { orderBy: { position: "asc" }, take: 1 } } },
+              reviews: { where: { status: "APPROVED" }, select: { rating: true } },
+            }
+          : {
+              category: { select: { id: true, name: true, slug: true } },
+              subcategory: { select: { id: true, name: true, slug: true } },
+              images: { orderBy: [{ isPrimary: "desc" }, { position: "asc" }] },
+              variants: { where: { isActive: true }, orderBy: { position: "asc" }, include: { images: { orderBy: { position: "asc" } }, attributes: { include: { variantAttribute: true } } } },
+              reviews: { where: { status: "APPROVED" }, select: { rating: true } },
+              tags: true,
+            },
         orderBy, skip: (page - 1) * limit, take: limit,
       }),
       db.product.count({ where }),
@@ -99,8 +118,8 @@ export async function GET(request: NextRequest) {
       salePrice: product.salePrice ? Number(product.salePrice) : null,
       rating: product.reviews.length > 0 ? product.reviews.reduce((s, r) => s + r.rating, 0) / product.reviews.length : null,
       reviewCount: product.reviews.length,
-      tags: product.tags?.map((t: any) => t.tag) || [],
-      variants: product.variants.map((v) => ({ ...v, price: Number(v.price), salePrice: v.salePrice ? Number(v.salePrice) : null, attributes: v.attributes.map((a) => ({ attributeId: a.variantAttributeId, attributeName: a.variantAttribute.name, value: a.value, colorCode: a.colorCode })) })),
+      tags: (product as any).tags?.map((t: any) => t.tag) || [],
+      variants: product.variants.map((v) => ({ ...v, price: Number(v.price), salePrice: v.salePrice ? Number(v.salePrice) : null, attributes: (v as any).attributes?.map((a: any) => ({ attributeId: a.variantAttributeId, attributeName: a.variantAttribute?.name, value: a.value, colorCode: a.colorCode })) || [] })),
       // Physical attributes
       height: product.height ? Number(product.height) : null,
       width: product.width ? Number(product.width) : null,

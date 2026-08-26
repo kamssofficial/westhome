@@ -33,8 +33,8 @@ export default function HomePage() {
       try {
         const [catRes, featRes, newRes] = await Promise.allSettled([
           fetch("/api/categories"),
-          fetch("/api/products?featured=true&limit=4"),
-          fetch("/api/products?newArrivals=true&limit=4"),
+          fetch("/api/products?lite=true&featured=true&limit=4"),
+          fetch("/api/products?lite=true&newArrivals=true&limit=4"),
         ]);
         if (catRes.status === "fulfilled" && catRes.value.ok) {
           const data = await catRes.value.json();
@@ -49,7 +49,7 @@ export default function HomePage() {
         }
         if (featured.length === 0) {
           try {
-            const fbRes = await fetch("/api/products?limit=4&sort=newest");
+            const fbRes = await fetch("/api/products?lite=true&limit=4&sort=newest");
             if (fbRes.ok) {
               const fbData = await fbRes.json();
               if (fbData.products?.length) featured = fbData.products;

@@ -197,3 +197,64 @@ export async function PATCH(
     );
   }
 }
+
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const authResult = await requireAdminOrManager();
+  if (authResult.error) return authResult.error;
+
+  try {
+    const { id } = await params;
+
+    const existing = await db.user.findUnique({ where: { id } });
+    if (!existing) {
+      return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+    }
+
+    // Prevent deleting admin/staff accounts through customer endpoint
+    if (existing.role !== "CUSTOMER") {
+      return NextResponse.json(
+        { error: "Use staff management to manage non-customer accounts" },
+        { status: 400 }
+      );
+    }
+
+    // Prevent deleting yourself
+    const session = await (await import("@/lib/auth")).auth();
+    if (session?.user && (session.user as any).id === id) {
+      return NextResponse.json(
+        { error: "Cannot delete your own account from here" },
+        { status: 400 }
+      );
+    }
+
+    // Soft delete — deactivate account, anonymize email to preserve order history
+    await db.user.update({
+      where: { id },
+      data: {
+        isActive: false,
+        email: `deleted_${Date.now()}_${existing.email}`,
+        name: "Deleted Customer",
+        phone: null,
+      },
+    });
+
+    // Log the action
+    await db.auditLog.create({
+      data: {
+        action: "DELETE",
+        entity: "USER",
+        entityId: id,
+        details: { email: existing.email, performedBy: (session?.user as any)?.id },
+      },
+    });
+
+    return NextResponse.json({ message: "Customer deleted" });
+  } catch (error) {
+    console.error("Customer delete API error:", error);
+    return NextResponse.json({ error: "Failed to delete customer" }, { status: 500 });
+  }
+}

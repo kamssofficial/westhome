@@ -108,8 +108,10 @@ export async function POST(request: NextRequest) {
     const settings = await db.siteSetting.findMany();
     const settingsObj: Record<string, any> = {};
     settings.forEach((s) => { settingsObj[s.key] = s.value; });
-    const freeThreshold = Number(settingsObj.freeDeliveryThreshold) || 2000;
-    const defaultDeliveryCharge = Number(settingsObj.defaultDeliveryCharge) || 149;
+    // Prefer deliveryConfig (nested) over flat keys for consistency
+    const dc = settingsObj.deliveryConfig;
+    const freeThreshold = dc ? Number(dc.freeDeliveryThreshold) || 2000 : Number(settingsObj.freeDeliveryThreshold) || 2000;
+    const defaultDeliveryCharge = dc ? Number(dc.defaultDeliveryCharge) || 149 : Number(settingsObj.defaultDeliveryCharge) || 149;
     
     let serverDeliveryCharge: number;
     if (deliveryMethod === "express") {

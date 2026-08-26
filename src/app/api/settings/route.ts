@@ -16,7 +16,7 @@ export async function GET() {
         settingsObj[s.key] = s.value;
       }
     });
-    return NextResponse.json({ settings: settingsObj });
+    return NextResponse.json({ settings: settingsObj }, { headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" } });
   } catch (error) {
     return NextResponse.json({ error: "Failed to fetch settings" }, { status: 500 });
   }
@@ -31,6 +31,8 @@ export async function PUT(request: NextRequest) {
 
     // Upsert each setting
     for (const [key, value] of Object.entries(body)) {
+      // Skip the nested deliveryConfig object — it's derived from flat keys
+      if (key === "deliveryConfig") continue;
       const jsonValue = value as Prisma.InputJsonValue;
       await db.siteSetting.upsert({
         where: { key },
@@ -38,6 +40,19 @@ export async function PUT(request: NextRequest) {
         create: { key, value: jsonValue, group: "general" },
       });
     }
+
+    // Keep deliveryConfig in sync with flat delivery keys
+    const deliveryConfig = {
+      freeDeliveryThreshold: Number(body.freeDeliveryThreshold) || 2000,
+      defaultDeliveryCharge: Number(body.defaultDeliveryCharge) || 149,
+      estimatedDeliveryDays: Number(body.estimatedDeliveryDays) || 5,
+      storePickup: body.storePickup === true || body.storePickup === "true",
+    };
+    await db.siteSetting.upsert({
+      where: { key: "deliveryConfig" },
+      update: { value: deliveryConfig as unknown as Prisma.InputJsonValue },
+      create: { key: "deliveryConfig", value: deliveryConfig as unknown as Prisma.InputJsonValue, group: "delivery" },
+    });
 
     return NextResponse.json({ message: "Settings updated" });
   } catch (error) {

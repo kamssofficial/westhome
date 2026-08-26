@@ -1,15 +1,12 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { useParams } from "next/navigation";
-import { SlidersHorizontal, ChevronDown, ArrowLeft, Grid3X3, List } from "lucide-react";
+import { SlidersHorizontal, ChevronDown, ArrowRight, ArrowLeft, Grid3X3, List } from "lucide-react";
 import ProductCard from "@/components/ui/ProductCard";
 import { ProductGridSkeleton } from "@/components/ui/Skeleton";
 import EmptyState from "@/components/ui/EmptyState";
 import { cn } from "@/lib/utils";
-import type { Product, Category, Subcategory } from "@/types";
 
 const SORT_OPTIONS = [
   { value: "recommended", label: "Recommended" },
@@ -18,19 +15,25 @@ const SORT_OPTIONS = [
   { value: "price_desc", label: "Price: High to Low" },
 ];
 
-function SubcategoryContent() {
-  const params = useParams();
-  const slug = params.slug as string;
-  const subcategorySlug = params.subcategory as string;
 
-  const [products, setProducts] = useState<Product[]>([]);
-  const [category, setCategory] = useState<Category | null>(null);
-  const [subcategory, setSubcategory] = useState<Subcategory | null>(null);
+
+
+interface CollectionContentProps {
+  category: any;
+  initialProducts: any[];
+  initialTotal: number;
+}
+function CategoryContent({ category: initialCategory, initialProducts, initialTotal: initialTotalCount }: CollectionContentProps) {
+  const slug = initialCategory?.slug || "";
+
+  const [products, setProducts] = useState<any[]>(initialProducts || []);
+  const [category, setCategory] = useState<any>(initialCategory || null);
   const [loading, setLoading] = useState(true);
-  const [total, setTotal] = useState(0);
+  const [total, setTotal] = useState(initialTotalCount || 0);
   const [sort, setSort] = useState("recommended");
   const [page, setPage] = useState(1);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [showSubcategories, setShowSubcategories] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
@@ -42,20 +45,8 @@ function SubcategoryContent() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const catRes = await fetch("/api/categories");
-        if (catRes.ok) {
-          const catData = await catRes.json();
-          const found = catData.categories.find((c: Category) => c.slug === slug);
-          setCategory(found || null);
-          if (found?.subcategories) {
-            const sub = found.subcategories.find((s: Subcategory) => s.slug === subcategorySlug);
-            setSubcategory(sub || null);
-          }
-        }
-
         const fetchParams = new URLSearchParams();
         fetchParams.set("category", slug);
-        fetchParams.set("subcategory", subcategorySlug);
         fetchParams.set("sort", sort);
         fetchParams.set("page", String(page));
         fetchParams.set("limit", "24");
@@ -64,50 +55,46 @@ function SubcategoryContent() {
         if (material) fetchParams.set("material", material);
         if (inStockOnly) fetchParams.set("inStock", "true");
         if (onSaleOnly) fetchParams.set("onSale", "true");
-
-        const prodRes = await fetch(`/api/products?lite=true&${fetchParams.toString()}`);
+        const prodRes = await fetch("/api/products?lite=true&" + fetchParams.toString());
         if (prodRes.ok) {
           const prodData = await prodRes.json();
           setProducts(prodData.products || []);
           setTotal(prodData.total || 0);
         }
       } catch (err) {
-        console.error("Subcategory fetch error:", err);
+        console.error("Collection fetch error:", err);
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  }, [slug, subcategorySlug, sort, page, minPrice, maxPrice, material, inStockOnly, onSaleOnly]);
+  }, [slug, sort, page, minPrice, maxPrice, material, inStockOnly, onSaleOnly]);
+
+  const hasSubcategories = category?.subcategories && category.subcategories.length > 0;
 
   return (
     <div className="animate-fade-in">
       {/* Back button */}
-      <div className="px-4 pt-3 pb-2">
-        <Link href={`/collections/${slug}`} className="p-1 hover:bg-surface-muted rounded-lg transition-colors inline-flex">
+      <div className="container-shop pt-10 pb-6 md:pt-16 md:pb-10">
+        <Link href="/shop" className="p-1 hover:bg-surface-muted rounded-lg transition-colors inline-flex">
           <ArrowLeft size={20} />
         </Link>
       </div>
 
       {/* Title + count */}
-      <div className="px-4 pb-3">
-        <div className="flex items-center gap-2 text-xs text-text-muted mb-1">
-          <Link href={`/collections/${slug}`} className="hover:text-primary transition-colors">{category?.name || slug.replace(/-/g, " ")}</Link>
-          <span>/</span>
-          <span className="text-primary font-medium">{subcategory?.name || subcategorySlug.replace(/-/g, " ")}</span>
-        </div>
-        <h1 className="text-2xl font-semibold text-primary">{subcategory?.name || subcategorySlug.replace(/-/g, " ")}</h1>
-        <p className="text-sm text-secondary mt-0.5">{total || 0} Items</p>
+      <div className="container-shop pb-3">
+        <h1 className="text-2xl font-semibold text-primary">{category?.name || slug.replace(/-/g, " ")}</h1>
+        
       </div>
 
-      {/* Filter / Sort bar */}
-      <div className="px-4 pb-3">
+      {/* Filter / Sort bar — always visible */}
+      <div className="container-shop pb-3">
         <div className="flex items-center justify-between">
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={cn(
-              "flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-medium transition-colors",
-              showFilters ? "bg-primary text-white border-primary" : "bg-white border-border"
+              "flex items-center gap-1.5 px-3 py-2 rounded-[1.35rem] border text-sm font-medium transition-colors",
+              showFilters ? "bg-primary text-white border-primary" : "bg-surface border-border"
             )}
           >
             <SlidersHorizontal size={14} /> Filter
@@ -117,7 +104,7 @@ function SubcategoryContent() {
               <select
                 value={sort}
                 onChange={(e) => { setSort(e.target.value); setPage(1); }}
-                className="px-3 py-2 pr-8 rounded-xl border border-border bg-white text-sm focus:outline-none appearance-none"
+                className="px-3 py-2 pr-8 rounded-[1.35rem] border border-border bg-white text-sm focus:outline-none appearance-none"
               >
                 {SORT_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -127,13 +114,13 @@ function SubcategoryContent() {
             </div>
             <button
               onClick={() => setViewMode("grid")}
-              className={cn("p-2 rounded-lg", viewMode === "grid" ? "bg-primary text-white" : "bg-white border border-border")}
+              className={cn("p-2 rounded-lg", viewMode === "grid" ? "bg-primary text-white" : "bg-surface border border-border")}
             >
               <Grid3X3 size={16} />
             </button>
             <button
               onClick={() => setViewMode("list")}
-              className={cn("p-2 rounded-lg", viewMode === "list" ? "bg-primary text-white" : "bg-white border border-border")}
+              className={cn("p-2 rounded-lg", viewMode === "list" ? "bg-primary text-white" : "bg-surface border border-border")}
             >
               <List size={16} />
             </button>
@@ -142,7 +129,7 @@ function SubcategoryContent() {
 
         {/* Filter Panel */}
         {showFilters && (
-          <div className="bg-white rounded-xl p-4 shadow-sm mt-3">
+          <div className="bg-surface rounded-[1.35rem] border border-foreground/[.08] p-4 shadow-sm mt-3">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
                 <label className="text-xs font-medium text-text-secondary mb-1 block">Min Price (₹)</label>
@@ -154,7 +141,7 @@ function SubcategoryContent() {
               </div>
               <div>
                 <label className="text-xs font-medium text-text-secondary mb-1 block">Material</label>
-                <input type="text" value={material} onChange={(e) => setMaterial(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" placeholder="e.g. Ceramic" />
+                <input type="text" value={material} onChange={(e) => setMaterial(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" placeholder="e.g. Wool, Ceramic" />
               </div>
               <div className="flex items-end gap-4">
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
@@ -179,8 +166,36 @@ function SubcategoryContent() {
         )}
       </div>
 
+      {/* Subcategory grid (when applicable) */}
+      {hasSubcategories && showSubcategories && (
+        <div className="container-shop pb-4">
+          <div className="grid grid-cols-2 gap-3">
+            {category!.subcategories.map((sub) => {
+              return (
+                <Link
+                  key={sub.id}
+                  href={`/collections/${slug}/${sub.slug}`}
+                  className="group block bg-surface rounded-[1.35rem] border border-foreground/[.08] overflow-hidden shadow-sm hover:shadow-card transition-all"
+                >
+                  <div className="relative aspect-[4/3] bg-surface-muted overflow-hidden flex items-center justify-center">
+                    <span className="text-sm font-medium text-text-muted">{sub.name}</span>
+                  </div>
+                  <div className="p-3 flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-semibold text-primary">{sub.name}</h3>
+                      
+                    </div>
+                    <ArrowRight size={16} className="text-text-muted group-hover:text-primary transition-colors" />
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Product grid */}
-      <div className="px-4 pb-8">
+      <div className="container-shop pb-8">
         {loading ? (
           <ProductGridSkeleton count={8} />
         ) : products.length > 0 ? (
@@ -196,7 +211,7 @@ function SubcategoryContent() {
           <EmptyState
             icon="product"
             title="No products yet"
-            description="This subcategory doesn't have any products yet. Check back soon!"
+            description="This collection doesn't have any products yet. Check back soon!"
             action={{ label: "Browse All Products", href: "/shop" }}
           />
         )}
@@ -205,10 +220,4 @@ function SubcategoryContent() {
   );
 }
 
-export default function SubcategoryPage() {
-  return (
-    <Suspense fallback={<div className="container-shop py-8"><ProductGridSkeleton count={8} /></div>}>
-      <SubcategoryContent />
-    </Suspense>
-  );
-}
+export { CategoryContent as CollectionContentClient };
