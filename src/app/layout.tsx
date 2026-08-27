@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import Providers from "@/components/layout/Providers";
+import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
   icons: {
@@ -93,6 +94,7 @@ export default function RootLayout({
         <Providers>
           {children}
         </Providers>
+        <Analytics />
       </body>
     </html>
   );
