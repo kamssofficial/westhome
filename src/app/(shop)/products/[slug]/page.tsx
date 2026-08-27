@@ -16,6 +16,7 @@ import { useWishlistStore } from "@/store/wishlist";
 import toast from "react-hot-toast";
 import type { Product, ProductVariant } from "@/types";
 import { MetalButton } from "@/components/ui/liquid-glass-button";
+import { useTrackPageView, trackEvent } from "@/hooks/useAnalytics";
 
 export default function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
   const { whatsappNumber } = useSettings();
@@ -37,6 +38,9 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewMessage, setReviewMessage] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Track product page view
+  useTrackPageView(product?.id, product?.category?.id, product?.subcategory?.id);
 
   const addToCart = useCartStore((s) => s.addItem);
   const toggleWishlist = useWishlistStore((s) => s.toggleItem);

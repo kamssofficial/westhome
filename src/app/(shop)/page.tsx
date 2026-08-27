@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSettings } from "@/components/ui/SettingsContext";
 import Image from "next/image";
+import { trackEvent } from "@/hooks/useAnalytics";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -21,6 +22,17 @@ import { MetalButton } from "@/components/ui/liquid-glass-button";
 import { ProductGridSkeleton } from "@/components/ui/Skeleton";
 import type { Category, Product } from "@/types";
 import Testimonials from "@/components/ui/Testimonials";
+
+function TrackHomeView() {
+  const tracked = useState(false);
+  useEffect(() => {
+    if (!tracked[0]) {
+      tracked[1](true);
+      trackEvent("VIEW", { metadata: { page: "home" } });
+    }
+  }, []);
+  return null;
+}
 
 export default function HomePage() {
   const { whatsappNumber } = useSettings();

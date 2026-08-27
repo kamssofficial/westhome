@@ -48,6 +48,9 @@ export default function ProductDetailClient(
   const toggleWishlist = useWishlistStore((s) => s.toggleItem);
   const isInWishlist = useWishlistStore((s) => s.isInWishlist);
 
+  // Track product page view
+  useTrackPageView(product?.id, product?.categoryId, product?.subcategory?.id);
+
 
 
 

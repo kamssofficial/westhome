@@ -27,6 +27,15 @@ interface CollectionContentProps {
 function CategoryContent({ category: initialCategory, initialProducts, initialTotal: initialTotalCount }: CollectionContentProps) {
   const slug = initialCategory?.slug || "";
 
+  // Track collection view
+  const trackedRef = useState(false);
+  useEffect(() => {
+    if (!trackedRef[0] && initialCategory?.id) {
+      trackedRef[1](true);
+      trackEvent("COLLECTION_VIEW", { categoryId: initialCategory.id });
+    }
+  }, [initialCategory?.id]);
+
   const [products, setProducts] = useState<any[]>(initialProducts || []);
   const [category, setCategory] = useState<any>(initialCategory || null);
   const [loading, setLoading] = useState(false);
