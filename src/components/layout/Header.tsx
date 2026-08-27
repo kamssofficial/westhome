@@ -21,6 +21,7 @@ export default function Header() {
   const itemCount = useCartStore((state) => state.getItemCount());
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [collectionsOpen, setCollectionsOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [mounted, setMounted] = useState(false);
@@ -233,22 +234,66 @@ export default function Header() {
               Explore WESTHOME
             </p>
             <nav className="space-y-1" aria-label="Mobile navigation">
-              {[...BASE_NAV, ...navCategories].map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setMobileMenuOpen(false)}
+              {/* Home */}
+              <Link
+                href="/"
+                onClick={() => setMobileMenuOpen(false)}
+                className={cn(
+                  "flex items-center justify-between rounded-2xl px-4 py-3.5 text-[15px] font-semibold transition-colors",
+                  isActive("/") ? "bg-foreground text-white" : "text-foreground hover:bg-foreground/[.06]"
+                )}
+              >
+                Home
+                {isActive("/") && <ArrowUpRight size={15} />}
+              </Link>
+
+              {/* Collections — expandable */}
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setCollectionsOpen(!collectionsOpen)}
                   className={cn(
-                    "flex items-center justify-between rounded-2xl px-4 py-3.5 text-[15px] font-semibold transition-colors",
-                    isActive(link.href)
-                      ? "bg-foreground text-white"
-                      : "text-foreground hover:bg-foreground/[.06]"
+                    "flex w-full items-center justify-between rounded-2xl px-4 py-3.5 text-[15px] font-semibold transition-colors",
+                    "text-foreground hover:bg-foreground/[.06]"
                   )}
                 >
-                  {link.label}
-                  {isActive(link.href) && <ArrowUpRight size={15} />}
-                </Link>
-              ))}
+                  Collections
+                  <svg className={cn("h-4 w-4 transition-transform duration-200", collectionsOpen && "rotate-180")} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                </button>
+                {collectionsOpen && navCategories.length > 0 && (
+                  <div className="ml-4 space-y-0.5 border-l-2 border-foreground/[.08] pl-2">
+                    {navCategories.map((cat) => (
+                      <Link
+                        key={cat.href}
+                        href={cat.href}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={cn(
+                          "flex items-center justify-between rounded-xl px-3 py-2.5 text-[14px] font-medium transition-colors",
+                          isActive(cat.href)
+                            ? "bg-foreground text-white"
+                            : "text-foreground/70 hover:bg-foreground/[.06] hover:text-foreground"
+                        )}
+                      >
+                        {cat.label}
+                        {isActive(cat.href) && <ArrowUpRight size={13} />}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* About Us */}
+              <Link
+                href="/about"
+                onClick={() => setMobileMenuOpen(false)}
+                className={cn(
+                  "flex items-center justify-between rounded-2xl px-4 py-3.5 text-[15px] font-semibold transition-colors",
+                  isActive("/about") ? "bg-foreground text-white" : "text-foreground hover:bg-foreground/[.06]"
+                )}
+              >
+                About Us
+                {isActive("/about") && <ArrowUpRight size={15} />}
+              </Link>
             </nav>
           </div>
           <div className="space-y-1 border-t border-foreground/[.08] pt-4">
