@@ -290,18 +290,13 @@ export default function ProductDetailClient(
         </div>
 
         {/* Buy Now - UPI Payment */}
-        <button
-          onClick={() => { trackEvent("BUY_NOW", { productId: product?.id, categoryId: product?.categoryId }); handleBuyNow(); }}
-          disabled={!inStock}
-          className={cn(
-            "w-full py-3.5 rounded-2xl text-sm font-semibold transition-all duration-200 mt-5",
-            inStock
-              ? "bg-[#5F259F] text-white hover:bg-[#4A1D7F] active:scale-[0.98]"
-              : "bg-surface-muted text-text-muted cursor-not-allowed"
-          )}
-        >
-          {inStock ? "Buy Now — Pay with UPI" : "Out of Stock"}
-        </button>
+          <LiquidButton
+            onClick={() => { trackEvent("BUY_NOW", { productId: product?.id, categoryId: product?.categoryId }); handleBuyNow(); }}
+            disabled={!inStock}
+            className={cn("w-full py-3.5 rounded-2xl text-sm font-semibold mt-5", !inStock && "opacity-50 cursor-not-allowed")}
+          >
+            {inStock ? "Buy Now — Pay with UPI" : "Out of Stock"}
+          </LiquidButton>
 
         {/* Add to Cart */}
           <MetalButton
