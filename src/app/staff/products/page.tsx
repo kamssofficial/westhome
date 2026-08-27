@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, ChevronDown } from "lucide-react";
+import Link from "next/link";
+import { Search, ChevronDown, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Product {
@@ -41,7 +42,7 @@ export default function StaffProductsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold text-[#1a1917]">Products</h1>
-        <p className="text-sm text-[#6b6560] mt-1">Browse product catalogue</p>
+        <p className="text-sm text-[#6b6560] mt-1">Manage your product catalogue</p>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
@@ -85,6 +86,9 @@ export default function StaffProductsPage() {
                     <span className="text-sm font-semibold text-[#1a1917]">₹{Number(product.salePrice || product.regularPrice).toLocaleString()}</span>
                     {product.salePrice ? <span className="text-xs text-[#b0aba6] line-through">₹{Number(product.regularPrice).toLocaleString()}</span> : null}
                   </div>
+                  <Link href={"/admin/products/" + product.id} className="mt-2 w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-[#6b6560] bg-[#f7f5f2] hover:bg-[#ece8e1] rounded-xl transition-colors">
+                    <Pencil size={13} /> Edit Product
+                  </Link>
                 </div>
               </div>
             );
