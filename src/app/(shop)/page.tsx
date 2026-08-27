@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import ProductCard from "@/components/ui/ProductCard";
 import Button from "@/components/ui/Button";
-import { MetalButton } from "@/components/ui/liquid-glass-button";
 import { ProductGridSkeleton } from "@/components/ui/Skeleton";
 import type { Category, Product } from "@/types";
 import Testimonials from "@/components/ui/Testimonials";

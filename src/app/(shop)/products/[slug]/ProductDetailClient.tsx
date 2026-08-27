@@ -10,8 +10,7 @@ import {
   MessageCircle, Share2, ChevronDown, ShieldCheck, Truck, Headphones,
 } from "lucide-react";
 import ProductCard from "@/components/ui/ProductCard";
-import { cn, formatPrice, getWhatsAppUrl, generateProductWhatsAppMessage } from "@/lib/utils"
-import { LiquidButton, MetalButton } from "@/components/ui/liquid-glass-button";
+import { cn, formatPrice, getWhatsAppUrl, generateProductWhatsAppMessage, UPI_ID, UPI_PAYEE_NAME, generateUpiIntent, isMobileDevice } from "@/lib/utils";
 import { useCartStore } from "@/store/cart";
 import { useWishlistStore } from "@/store/wishlist";
 import toast from "react-hot-toast";
@@ -304,13 +303,18 @@ export default function ProductDetailClient(
         </button>
 
         {/* Add to Cart */}
-          <MetalButton
-            onClick={handleAddToCart}
-            disabled={!inStock}
-            className={cn("w-full py-3.5 text-sm font-semibold mt-3", !inStock && "opacity-50 cursor-not-allowed")}
-          >
-            {inStock ? "Add to Cart" : "Out of Stock"}
-          </MetalButton>
+        <button
+          onClick={handleAddToCart}
+          disabled={!inStock}
+          className={cn(
+            "w-full py-3.5 rounded-2xl text-sm font-semibold transition-all duration-200 mt-3 border-2 border-primary",
+            inStock
+              ? "text-primary hover:bg-primary hover:text-white active:scale-[0.98]"
+              : "bg-surface-muted text-text-muted cursor-not-allowed border-border"
+          )}
+        >
+          {inStock ? "Add to Cart" : "Out of Stock"}
+        </button>
 
         {/* Enquire on WhatsApp */}
         <a
