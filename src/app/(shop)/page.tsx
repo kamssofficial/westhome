@@ -22,6 +22,7 @@ import { MetalButton } from "@/components/ui/liquid-glass-button";
 import { ProductGridSkeleton } from "@/components/ui/Skeleton";
 import type { Category, Product } from "@/types";
 import Testimonials from "@/components/ui/Testimonials";
+import HomepageRenderer from "@/components/ui/HomepageRenderer";
 
 function TrackHomeView() {
   const tracked = useState(false);
@@ -40,11 +41,13 @@ export default function HomePage() {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [newArrivals, setNewArrivals] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dbSections, setDbSections] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [catRes, featRes, newRes] = await Promise.allSettled([
+        const [sectionRes, catRes, featRes, newRes] = await Promise.allSettled([
+          fetch("/api/homepage"),
           fetch("/api/categories"),
           fetch("/api/products?featured=true&limit=4"),
           fetch("/api/products?newArrivals=true&limit=4"),
@@ -54,6 +57,10 @@ export default function HomePage() {
           if (data.categories?.length) setCategories(data.categories);
         }
 
+        if (sectionRes.status === "fulfilled" && sectionRes.value.ok) {
+          const sd = await sectionRes.value.json();
+          if (sd.sections?.length) setDbSections(sd.sections.filter((s: any) => s.isActive));
+        }
         // Featured products — fallback to newest if none marked featured
         let featured: Product[] = [];
         if (featRes.status === "fulfilled" && featRes.value.ok) {
@@ -86,6 +93,7 @@ export default function HomePage() {
 
   return (
     <div className="">
+      <HomepageRenderer dbSections={dbSections} categories={categories} featuredProducts={featuredProducts} newArrivals={newArrivals} loading={loading} />
       {/* HERO */}
       <section className="container-shop relative mt-5 overflow-hidden rounded-[2rem] bg-[#1f2521] text-white shadow-[0_20px_70px_rgba(31,33,31,.18)] md:mt-7">
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url(/images/banners/hero-living-room.png)" }} />

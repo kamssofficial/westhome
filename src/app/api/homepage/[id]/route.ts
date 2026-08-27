@@ -24,6 +24,31 @@ export async function PUT(
   }
 }
 
+
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const authResult = await requireAuthRole(["ADMIN", "MANAGER", "CONTENT_MANAGER"]);
+  if (authResult.error) return authResult.error;
+
+  try {
+    const { id } = await params;
+    const body = await request.json();
+
+    const section = await db.homepageSection.update({
+      where: { id },
+      data: body,
+    });
+
+    return NextResponse.json({ section });
+  } catch (error) {
+    return NextResponse.json({ error: "Failed to update section" }, { status: 500 });
+  }
+}
+
+
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
