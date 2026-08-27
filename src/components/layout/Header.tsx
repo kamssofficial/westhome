@@ -13,7 +13,8 @@ const BASE_NAV = [
   { label: "About Us", href: "/about" },
 ];
 
-interface NavCat { label: string; href: string; }
+interface NavSub { label: string; href: string; }
+interface NavCat { label: string; href: string; children: NavSub[]; }
 
 export default function Header() {
   const pathname = usePathname();
@@ -33,7 +34,7 @@ export default function Header() {
     fetch("/api/categories")
       .then(r => r.json())
       .then(d => {
-        if (d.categories) setNavCategories(d.categories.filter((c: any) => (c.productCount || 0) > 0).map((c: any) => ({ label: c.name, href: "/collections/" + c.slug })));
+        if (d.categories) setNavCategories(d.categories.map((c: any) => ({ label: c.name, href: "/collections/" + c.slug, children: (c.subcategories || []).map((sub: any) => ({ label: sub.name, href: "/collections/" + c.slug + "?sub=" + sub.slug })) })));
       })
       .catch(() => {});
   }, []);
@@ -261,22 +262,42 @@ export default function Header() {
                   <svg className={cn("h-4 w-4 transition-transform duration-200", collectionsOpen && "rotate-180")} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
                 </button>
                 {collectionsOpen && navCategories.length > 0 && (
-                  <div className="ml-4 space-y-0.5 border-l-2 border-foreground/[.08] pl-2">
+                  <div className="ml-4 space-y-0.5 border-l-2 border-foreground/[.08] pl-2 max-h-[60vh] overflow-y-auto">
                     {navCategories.map((cat) => (
-                      <Link
-                        key={cat.href}
-                        href={cat.href}
-                        onClick={() => setMobileMenuOpen(false)}
-                        className={cn(
-                          "flex items-center justify-between rounded-xl px-3 py-2.5 text-[14px] font-medium transition-colors",
-                          isActive(cat.href)
-                            ? "bg-foreground text-white"
-                            : "text-foreground/70 hover:bg-foreground/[.06] hover:text-foreground"
+                      <div key={cat.href}>
+                        <Link
+                          href={cat.href}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className={cn(
+                            "flex items-center justify-between rounded-xl px-3 py-2.5 text-[14px] font-medium transition-colors",
+                            isActive(cat.href)
+                              ? "bg-foreground text-white"
+                              : "text-foreground/70 hover:bg-foreground/[.06] hover:text-foreground"
+                          )}
+                        >
+                          {cat.label}
+                          {isActive(cat.href) && <ArrowUpRight size={13} />}
+                        </Link>
+                        {cat.children && cat.children.length > 0 && (
+                          <div className="ml-4 space-y-0.5 border-l-2 border-foreground/[.06] pl-2">
+                            {cat.children.map((sub) => (
+                              <Link
+                                key={sub.href}
+                                href={sub.href}
+                                onClick={() => setMobileMenuOpen(false)}
+                                className={cn(
+                                  "flex items-center justify-between rounded-lg px-3 py-2 text-[13px] font-medium transition-colors",
+                                  isActive(sub.href)
+                                    ? "bg-foreground text-white"
+                                    : "text-foreground/50 hover:bg-foreground/[.06] hover:text-foreground"
+                                )}
+                              >
+                                {sub.label}
+                              </Link>
+                            ))}
+                          </div>
                         )}
-                      >
-                        {cat.label}
-                        {isActive(cat.href) && <ArrowUpRight size={13} />}
-                      </Link>
+                      </div>
                     ))}
                   </div>
                 )}
