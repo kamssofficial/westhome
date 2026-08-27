@@ -15,6 +15,7 @@ import { useCartStore } from "@/store/cart";
 import { useWishlistStore } from "@/store/wishlist";
 import toast from "react-hot-toast";
 import type { Product, ProductVariant } from "@/types";
+import { MetalButton } from "@/components/ui/liquid-glass-button";
 
 export default function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
   const { whatsappNumber } = useSettings();
@@ -277,18 +278,13 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
         </div>
 
         {/* Add to Cart */}
-        <button
+        <MetalButton
           onClick={handleAddToCart}
           disabled={!inStock}
-          className={cn(
-            "w-full py-3.5 rounded-2xl text-sm font-semibold transition-all duration-200 mt-5",
-            inStock
-              ? "bg-primary text-white hover:bg-primary-hover active:scale-[0.98]"
-              : "bg-surface-muted text-text-muted cursor-not-allowed"
-          )}
+          className={cn("w-full py-3.5 text-sm font-semibold mt-5", !inStock && "opacity-50 cursor-not-allowed")}
         >
           {inStock ? "Add to Cart" : "Out of Stock"}
-        </button>
+        </MetalButton>
 
         {/* Buy on WhatsApp */}
         <a
