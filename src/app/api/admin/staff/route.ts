@@ -37,10 +37,17 @@ export async function GET(request: NextRequest) {
       where.OR = [
         { name: { contains: query, mode: "insensitive" } },
         { email: { contains: query, mode: "insensitive" } },
+        { phone: { contains: query, mode: "insensitive" } },
       ];
     }
     if (role) {
       where.role = role;
+    }
+    const status = searchParams.get("status") || "";
+    if (status === "active") {
+      where.isActive = true;
+    } else if (status === "inactive") {
+      where.isActive = false;
     }
 
     const staff = await db.user.findMany({

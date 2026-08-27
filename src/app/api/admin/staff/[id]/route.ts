@@ -118,7 +118,7 @@ export async function PUT(
   }
 }
 
-// DELETE /api/admin/staff/[id] — Deactivate staff member (soft delete)
+// DELETE /api/admin/staff/[id] — Deactivate (soft) or permanently delete staff member
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -128,6 +128,8 @@ export async function DELETE(
 
   try {
     const { id } = await params;
+    const { searchParams } = new URL(request.url);
+    const permanent = searchParams.get("permanent") === "true";
 
     const existing = await db.user.findUnique({ where: { id } });
     if (!existing) {
@@ -139,31 +141,52 @@ export async function DELETE(
       const adminCount = await db.user.count({ where: { role: "ADMIN", isActive: true } });
       if (adminCount <= 1) {
         return NextResponse.json(
-          { error: "Cannot deactivate the last admin account" },
+          { error: "Cannot delete the last admin account" },
           { status: 400 }
         );
       }
     }
 
-    // Soft delete - set isActive to false
-    await db.user.update({
-      where: { id },
-      data: { isActive: false },
-    });
+    // Prevent self-deletion
+    if (authResult.session.user.id === id) {
+      return NextResponse.json({ error: "Cannot delete your own account" }, { status: 400 });
+    }
 
-    // Log the action
-    await db.auditLog.create({
-      data: {
-        action: "DEACTIVATE",
-        entity: "USER",
-        entityId: id,
-        details: { email: existing.email },
-      },
-    });
+    if (permanent) {
+      // Permanent deletion: preserve historical records, remove PII, delete user
+      await db.order.updateMany({ where: { userId: id }, data: { userId: null } });
+      await db.wishlist.deleteMany({ where: { userId: id } });
+      await db.address.deleteMany({ where: { userId: id } });
+      await db.review.deleteMany({ where: { userId: id } });
+      await db.user.delete({ where: { id } });
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
+      await db.auditLog.create({
+        data: {
+          action: "DELETE",
+          entity: "USER",
+          entityId: id,
+          details: { email: existing.email, name: existing.name, role: existing.role, permanent: true },
+        },
+      });
+
+      return NextResponse.json({ success: true, permanent: true });
+    } else {
+      // Soft delete — deactivate
+      await db.user.update({ where: { id }, data: { isActive: false } });
+
+      await db.auditLog.create({
+        data: {
+          action: "DEACTIVATE",
+          entity: "USER",
+          entityId: id,
+          details: { email: existing.email },
+        },
+      });
+
+      return NextResponse.json({ success: true });
+    }
+  } catch (error: any) {
     console.error("Staff delete error:", error);
-    return NextResponse.json({ error: "Failed to deactivate staff member" }, { status: 500 });
+    return NextResponse.json({ error: "Failed: " + (error.message || "Unknown error") }, { status: 500 });
   }
 }
