@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Search, Eye, ChevronDown } from "lucide-react";
+import { Search, Eye, ChevronDown, Trash2 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { formatPrice, formatDate, getStatusColor, cn } from "@/lib/utils";
@@ -61,6 +61,22 @@ function AdminOrdersPageContent() {
     };
     fetchOrders();
   }, [statusFilter, page]);
+
+  const handleDelete = async (id: string, orderNumber: string) => {
+    if (!confirm(`Delete order ${orderNumber}? This cannot be undone.`)) return;
+    try {
+      const res = await fetch(`/api/admin/orders/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setOrders((prev) => prev.filter((o) => o.id !== id));
+        setTotal((prev) => prev - 1);
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to delete order");
+      }
+    } catch (err) {
+      alert("Failed to delete order");
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -140,6 +156,9 @@ function AdminOrdersPageContent() {
                       <Link href={`/admin/orders/${order.id}`} className="p-1.5 hover:bg-surface-muted rounded-lg inline-flex">
                         <Eye size={14} className="text-text-muted" />
                       </Link>
+                      <button onClick={() => handleDelete(order.id, order.orderNumber)} className="p-1.5 hover:bg-red-50 rounded-lg inline-flex text-red-500 hover:text-red-700" title="Delete order">
+                        <Trash2 size={14} />
+                      </button>
                     </td>
                   </tr>
                 ))
