@@ -306,7 +306,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           <div className="bg-white rounded-xl border border-border p-4 md:p-5">
             <h2 className="text-sm font-semibold mb-3">Payment</h2>
             <div className="space-y-1 text-sm text-text-secondary">
-              <p>Method: {order.paymentMethod || "Razorpay"}</p>
+              <p>Method: {order.paymentMethod || "UPI"}</p>
               <p>Status: <span className={cn(order.paymentStatus === "COMPLETED" ? "text-success" : "text-warning")}>{order.paymentStatus}</span></p>
             </div>
           </div>

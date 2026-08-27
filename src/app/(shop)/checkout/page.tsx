@@ -3,19 +3,24 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeft, ChevronRight, CreditCard, Smartphone, Building2, Wallet, Banknote, Shield, MapPin, Copy, CheckCircle } from "lucide-react";
+import { ArrowLeft, ChevronRight, CreditCard, Smartphone, Building2, Wallet, Shield, MapPin, Copy, CheckCircle } from "lucide-react";
 import { useCartStore } from "@/store/cart";
 import { formatPrice, cn } from "@/lib/utils";
 import toast from "react-hot-toast";
 
-const STEPS = ["Address", "Review", "Payment", "Confirm"];
+const STEPS = ["Address", "Review", "Payment"];
 
 const PAYMENT_METHODS = [
   { id: "upi", label: "UPI Payment", icon: <Smartphone size={18} />, badge: "UPI" },
-  { id: "cod", label: "Cash on Delivery", icon: <Banknote size={18} /> },
 ];
 
-const UPI_ID = "sanoojbm1144@okaxis";
+const UPI_ID = "bmdistributorsindia-1@okicici";
+const UPI_NAME = "BM DISTRIBUTORS";
+
+const buildUpiLink = (amount: number, orderNumber: string) => {
+  const params = new URLSearchParams({ pa: UPI_ID, pn: UPI_NAME, am: amount.toFixed(2), cu: "INR", tn: orderNumber });
+  return "upi://pay?" + params.toString();
+};
 
 interface Address {
   id: string; name: string; phone: string;
@@ -385,12 +390,7 @@ export default function CheckoutPage() {
               <p className="text-xs text-secondary">We will verify your UPI payment and confirm your order shortly.</p>
             </div>
           )}
-          {paymentMethod === "cod" && (
-            <div className="bg-surface-muted rounded-[1.35rem] p-4 mb-4 max-w-sm mx-auto">
-              <p className="text-xs font-semibold text-primary mb-1">Payment: Cash on Delivery</p>
-              <p className="text-xs text-secondary">Pay when your order is delivered.</p>
-            </div>
-          )}
+          {/* UPI only — no COD display */}
           <p className="text-xs text-secondary mb-8">You can track your order status in My Orders.</p>
           <Link href="/shop" className="block w-full py-3.5 bg-primary text-white rounded-full text-sm font-semibold text-center hover:bg-primary-hover transition-colors">Continue Shopping</Link>
           <Link href="/account/orders" className="block w-full py-3 text-sm font-medium text-secondary text-center mt-2 hover:text-primary transition-colors">View My Orders</Link>

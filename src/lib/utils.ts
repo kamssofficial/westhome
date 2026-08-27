@@ -142,7 +142,7 @@ export function validatePinCode(pin: string): boolean {
 
 
 export const UPI_ID = "bmdistributorsindia-1@okicici";
-export const UPI_PAYEE_NAME = "WESTHOME by BM Distributors";
+export const UPI_PAYEE_NAME = "BM DISTRIBUTORS";
 
 export function generateUpiIntent(upiId: string, amount: number, orderRef: string, payeeName: string): string {
   const params = new URLSearchParams({ pa: upiId, pn: payeeName, am: amount.toFixed(2), cu: 'INR', tn: orderRef });

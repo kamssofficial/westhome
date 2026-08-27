@@ -242,7 +242,7 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
           <div className="bg-surface rounded-[1.35rem] border border-border p-5">
             <h2 className="font-semibold text-sm mb-3">Payment</h2>
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between"><span className="text-text-secondary">Method</span><span>{order.paymentMethod || "Razorpay"}</span></div>
+              <div className="flex justify-between"><span className="text-text-secondary">Method</span><span>{order.paymentMethod || "UPI"}</span></div>
               <div className="flex justify-between">
                 <span className="text-text-secondary">Status</span>
                 <span className={cn(order.paymentStatus === "COMPLETED" ? "text-success font-medium" : "text-warning font-medium")}>
