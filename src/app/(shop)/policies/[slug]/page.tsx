@@ -98,9 +98,10 @@ Cancellation Process:
 2. Provide your order number
 3. We will process the cancellation
 
-Refund for Cancellations:
-- Full refund for orders cancelled before shipping
-- Refund processed within 5-7 business days
+Refund Policy:
+- All sales are final. We do not offer refunds once an order has been shipped.
+- For cancellations before shipping, a store credit may be issued at our discretion.
+- Damaged or defective items will be replaced, not refunded.
 
 Contact:
 For cancellation requests, please contact info@westhome.in`,

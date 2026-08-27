@@ -36,7 +36,7 @@ export default function ShippingPolicyPage() {
 
         <section>
           <h2 className="text-base font-semibold text-primary mb-2">6. Damaged Shipments</h2>
-          <p>If your order arrives damaged, please contact us within 48 hours with photos of the damage. We will arrange a replacement or full refund.</p>
+          <p>If your order arrives damaged, please contact us within 48 hours with photos of the damage. We will arrange a replacement for the damaged item.</p>
         </section>
 
         <section>
