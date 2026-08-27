@@ -31,7 +31,7 @@ export async function GET() {
       db.order.count({ where: { status: { in: ["NEW", "CONFIRMED"] } } }),
       db.product.findMany({
         where: { isActive: true, trackInventory: true, stockQuantity: { lte: 5 } },
-        select: { id: true, name: true, slug: true, stockQuantity: true, regularPrice: true, lowStockThreshold: true },
+        select: { id: true, name: true, slug: true, stockQuantity: true, regularPrice: true, salePrice: true, lowStockThreshold: true },
         orderBy: { stockQuantity: "asc" },
         take: 10,
       }),

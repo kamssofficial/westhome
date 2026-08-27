@@ -14,10 +14,7 @@ interface Notification {
   createdAt: string;
 }
 
-interface NotificationBellProps {
-  className?: string;
-  accentRing?: string;
-}
+interface NotificationBellProps {  className?: string;  accentRing?: string;  basePath?: string;}
 
 function timeAgo(dateStr: string): string {
   const now = new Date();
