@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useParams } from "next/navigation";
-import { SlidersHorizontal, ChevronDown, ArrowLeft, Grid3X3, List } from "lucide-react";
+import { SlidersHorizontal, ChevronDown, ArrowLeft, Grid3X3, List, Loader2 } from "lucide-react";
 import ProductCard from "@/components/ui/ProductCard";
 import { ProductGridSkeleton } from "@/components/ui/Skeleton";
 import EmptyState from "@/components/ui/EmptyState";
@@ -18,6 +17,8 @@ const SORT_OPTIONS = [
   { value: "price_desc", label: "Price: High to Low" },
 ];
 
+const PAGE_SIZE = 24;
+
 function SubcategoryContent() {
   const params = useParams();
   const slug = params.slug as string;
@@ -27,9 +28,11 @@ function SubcategoryContent() {
   const [category, setCategory] = useState<Category | null>(null);
   const [subcategory, setSubcategory] = useState<Subcategory | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [total, setTotal] = useState(0);
   const [sort, setSort] = useState("recommended");
   const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [showFilters, setShowFilters] = useState(false);
   const [minPrice, setMinPrice] = useState("");
@@ -37,48 +40,102 @@ function SubcategoryContent() {
   const [material, setMaterial] = useState("");
   const [inStockOnly, setInStockOnly] = useState(false);
   const [onSaleOnly, setOnSaleOnly] = useState(false);
+  const [error, setError] = useState(false);
 
-  useEffect(() => {
-    const fetchData = async () => {
+  const observerRef = useRef<HTMLDivElement>(null);
+  const loadingRef = useRef(false);
+
+  const fetchProducts = useCallback(async (pageNum: number, append: boolean = false) => {
+    if (loadingRef.current) return;
+    loadingRef.current = true;
+
+    if (append) {
+      setLoadingMore(true);
+    } else {
       setLoading(true);
-      try {
-        const catRes = await fetch("/api/categories");
-        if (catRes.ok) {
-          const catData = await catRes.json();
-          const found = catData.categories.find((c: Category) => c.slug === slug);
-          setCategory(found || null);
-          if (found?.subcategories) {
-            const sub = found.subcategories.find((s: Subcategory) => s.slug === subcategorySlug);
-            setSubcategory(sub || null);
-          }
-        }
+    }
+    setError(false);
 
-        const fetchParams = new URLSearchParams();
-        fetchParams.set("category", slug);
-        fetchParams.set("subcategory", subcategorySlug);
-        fetchParams.set("sort", sort);
-        fetchParams.set("page", String(page));
-        fetchParams.set("limit", "24");
-        if (minPrice) fetchParams.set("minPrice", minPrice);
-        if (maxPrice) fetchParams.set("maxPrice", maxPrice);
-        if (material) fetchParams.set("material", material);
-        if (inStockOnly) fetchParams.set("inStock", "true");
-        if (onSaleOnly) fetchParams.set("onSale", "true");
+    try {
+      const fetchParams = new URLSearchParams();
+      fetchParams.set("category", slug);
+      fetchParams.set("subcategory", subcategorySlug);
+      fetchParams.set("sort", sort);
+      fetchParams.set("page", String(pageNum));
+      fetchParams.set("limit", String(PAGE_SIZE));
+      if (minPrice) fetchParams.set("minPrice", minPrice);
+      if (maxPrice) fetchParams.set("maxPrice", maxPrice);
+      if (material) fetchParams.set("material", material);
+      if (inStockOnly) fetchParams.set("inStock", "true");
+      if (onSaleOnly) fetchParams.set("onSale", "true");
 
-        const prodRes = await fetch(`/api/products?${fetchParams.toString()}`);
-        if (prodRes.ok) {
-          const prodData = await prodRes.json();
-          setProducts(prodData.products || []);
-          setTotal(prodData.total || 0);
+      const prodRes = await fetch(`/api/products?lite=true&${fetchParams.toString()}`);
+      if (prodRes.ok) {
+        const prodData = await prodRes.json();
+        const newProducts = prodData.products || [];
+        const newTotal = prodData.total || 0;
+
+        if (append) {
+          setProducts(prev => {
+            const existingIds = new Set(prev.map((p: any) => p.id));
+            const unique = newProducts.filter((p: any) => !existingIds.has(p.id));
+            return [...prev, ...unique];
+          });
+        } else {
+          setProducts(newProducts);
         }
-      } catch (err) {
-        console.error("Subcategory fetch error:", err);
-      } finally {
-        setLoading(false);
+        setTotal(newTotal);
+        setHasMore(pageNum * PAGE_SIZE < newTotal);
       }
-    };
-    fetchData();
-  }, [slug, subcategorySlug, sort, page, minPrice, maxPrice, material, inStockOnly, onSaleOnly]);
+    } catch (err) {
+      console.error("Subcategory fetch error:", err);
+      setError(true);
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+      loadingRef.current = false;
+    }
+  }, [slug, subcategorySlug, sort, minPrice, maxPrice, material, inStockOnly, onSaleOnly]);
+
+  // Fetch category/subcategory info once
+  useEffect(() => {
+    fetch("/api/categories")
+      .then(r => r.json())
+      .then(data => {
+        const found = data.categories?.find((c: Category) => c.slug === slug);
+        setCategory(found || null);
+        if (found?.subcategories) {
+          const sub = found.subcategories.find((s: Subcategory) => s.slug === subcategorySlug);
+          setSubcategory(sub || null);
+        }
+      })
+      .catch(() => {});
+  }, [slug, subcategorySlug]);
+
+  // Reset and fetch page 1 when filters change
+  useEffect(() => {
+    setPage(1);
+    setHasMore(true);
+    fetchProducts(1, false);
+  }, [fetchProducts]);
+
+  // Intersection observer for infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingRef.current && !loading) {
+          const nextPage = page + 1;
+          setPage(nextPage);
+          fetchProducts(nextPage, true);
+        }
+      },
+      { rootMargin: "200px" }
+    );
+
+    const el = observerRef.current;
+    if (el) observer.observe(el);
+    return () => { if (el) observer.unobserve(el); };
+  }, [hasMore, loading, page, fetchProducts]);
 
   return (
     <div className="animate-fade-in">
@@ -89,7 +146,7 @@ function SubcategoryContent() {
         </Link>
       </div>
 
-      {/* Title + count */}
+      {/* Title */}
       <div className="px-4 pb-3">
         <div className="flex items-center gap-2 text-xs text-text-muted mb-1">
           <Link href={`/collections/${slug}`} className="hover:text-primary transition-colors">{category?.name || slug.replace(/-/g, " ")}</Link>
@@ -97,7 +154,6 @@ function SubcategoryContent() {
           <span className="text-primary font-medium">{subcategory?.name || subcategorySlug.replace(/-/g, " ")}</span>
         </div>
         <h1 className="text-2xl font-semibold text-primary">{subcategory?.name || subcategorySlug.replace(/-/g, " ")}</h1>
-        <p className="text-sm text-secondary mt-0.5">{total || 0} Items</p>
       </div>
 
       {/* Filter / Sort bar */}
@@ -116,7 +172,7 @@ function SubcategoryContent() {
             <div className="relative">
               <select
                 value={sort}
-                onChange={(e) => { setSort(e.target.value); setPage(1); }}
+                onChange={(e) => { setSort(e.target.value); }}
                 className="px-3 py-2 pr-8 rounded-xl border border-border bg-white text-sm focus:outline-none appearance-none"
               >
                 {SORT_OPTIONS.map((opt) => (
@@ -181,17 +237,47 @@ function SubcategoryContent() {
 
       {/* Product grid */}
       <div className="px-4 pb-8">
-        {loading ? (
+        {loading && products.length === 0 ? (
           <ProductGridSkeleton count={8} />
         ) : products.length > 0 ? (
-          <div className={cn(
-            "gap-3",
-            viewMode === "grid" ? "grid grid-cols-2" : "flex flex-col"
-          )}>
-            {products.map((product, i) => (
-              <ProductCard key={product.id} product={product} priority={i < 4} />
-            ))}
-          </div>
+          <>
+            <div className={cn(
+              "gap-3",
+              viewMode === "grid" ? "grid grid-cols-2" : "flex flex-col"
+            )}>
+              {products.map((product, i) => (
+                <ProductCard key={product.id} product={product} priority={i < 4} />
+              ))}
+            </div>
+
+            {/* Infinite scroll trigger */}
+            <div ref={observerRef} className="py-4" />
+
+            {/* Loading more */}
+            {loadingMore && (
+              <div className="flex items-center justify-center gap-2 py-4">
+                <Loader2 size={16} className="animate-spin text-text-muted" />
+                <span className="text-sm text-text-muted">Loading more...</span>
+              </div>
+            )}
+
+            {/* Error state */}
+            {error && !loading && (
+              <div className="text-center py-4">
+                <button
+                  onClick={() => fetchProducts(page, true)}
+                  className="text-sm text-accent hover:underline"
+                >
+                  Couldn&apos;t load more products. Tap to retry.
+                </button>
+              </div>
+            )}
+
+            {/* End of catalog */}
+            {!hasMore && !loading && !loadingMore && (
+              <p className="text-center text-xs text-text-muted py-4">You&apos;re all caught up.</p>
+            )}
+          </>
         ) : (
           <EmptyState
             icon="product"

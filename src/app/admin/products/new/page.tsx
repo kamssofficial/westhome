@@ -7,6 +7,7 @@ import Link from "next/link";
 import Button from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
+import ImageUploader from "@/components/admin/ImageUploader";
 
 interface Category {
   id: string;
@@ -83,6 +84,7 @@ export default function NewProductPage() {
   });
 
   const [variants, setVariants] = useState<any[]>([]);
+  const [images, setImages] = useState<any[]>([]);
 
   useEffect(() => {
     fetch("/api/categories")
@@ -109,7 +111,7 @@ export default function NewProductPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || !form.regularPrice || !form.categoryId) {
+    if (!form.name || !form.salePrice || !form.categoryId) {
       toast.error("Name, price, and category are required");
       return;
     }
@@ -142,9 +144,11 @@ export default function NewProductPage() {
           customSizeMaxHeight: form.customSizeMaxHeight ? parseFloat(form.customSizeMaxHeight) : null,
           // Packaging
           packagingWeight: form.packagingWeight ? parseFloat(form.packagingWeight) : null,
+          images: images,
+          variantAttributes: [],
           variants: variants.map((v) => ({
             ...v,
-            price: parseFloat(v.price || form.regularPrice),
+            price: parseFloat(v.price || form.salePrice),
             salePrice: v.salePrice ? parseFloat(v.salePrice) : null,
             stockQuantity: parseInt(v.stockQuantity || "0"),
           })),
@@ -176,6 +180,18 @@ export default function NewProductPage() {
       <h1 className="text-xl font-semibold mb-6">Create New Product</h1>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Product Images */}
+        <div className="bg-surface rounded-[1.35rem] border border-border p-5">
+          <h2 className="font-semibold mb-4">Product Images</h2>
+          <ImageUploader
+            images={images}
+            onChange={setImages}
+            folder="products"
+            maxImages={10}
+            allowLifestyle
+          />
+        </div>
+
         {/* Basic Info */}
         <div className="bg-surface rounded-[1.35rem] border border-border p-5">
           <h2 className="font-semibold mb-4">Basic Information</h2>
@@ -202,14 +218,10 @@ export default function NewProductPage() {
         {/* Pricing & Stock */}
         <div className="bg-surface rounded-[1.35rem] border border-border p-5">
           <h2 className="font-semibold mb-4">Pricing & Stock</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-medium text-text-secondary mb-1 block">Regular Price (₹) *</label>
-              <input type="number" step="0.01" value={form.regularPrice} onChange={(e) => setForm({ ...form, regularPrice: e.target.value })} className={inputClass} required />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-text-secondary mb-1 block">Sale Price (₹)</label>
-              <input type="number" step="0.01" value={form.salePrice} onChange={(e) => setForm({ ...form, salePrice: e.target.value })} className={inputClass} />
+              <label className="text-xs font-medium text-text-secondary mb-1 block">Sale Price (₹) *</label>
+              <input type="number" step="0.01" value={form.salePrice} onChange={(e) => setForm({ ...form, salePrice: e.target.value })} className={inputClass} required />
             </div>
             <div>
               <label className="text-xs font-medium text-text-secondary mb-1 block">Stock Quantity</label>
@@ -271,7 +283,7 @@ export default function NewProductPage() {
               <label className="text-xs font-medium text-text-secondary mb-1 block">Purchase Method</label>
               <select value={form.purchaseMethod} onChange={(e) => setForm({ ...form, purchaseMethod: e.target.value })} className={inputClass}>
                 <option value="BUY_ONLINE">Buy Online</option>
-                <option value="WHATSAPP">WhatsApp Only</option>
+                <option value="ENQUIRY">Enquiry Only</option>
                 <option value="BOTH">Both</option>
               </select>
             </div>

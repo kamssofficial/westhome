@@ -3,7 +3,7 @@ import db from '@/lib/db';
 import { requireAuthRole } from '@/lib/apiAuth';
 
 export async function PATCH(request: NextRequest) {
-  const authResult = await requireAuthRole(['ADMIN', 'MANAGER']);
+  const authResult = await requireAuthRole(['ADMIN', 'MANAGER', "STAFF"]);
   if (authResult.error) return authResult.error;
 
   try {

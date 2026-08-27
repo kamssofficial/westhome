@@ -15,6 +15,8 @@ export async function GET(request: NextRequest) {
     const featured = searchParams.get("featured") === "true";
     const newArrivals = searchParams.get("newArrivals") === "true";
     const bestsellers = searchParams.get("bestsellers") === "true";
+    const lite = searchParams.get("lite") === "true";
+    const idsParam = searchParams.get("ids");
 
     // Admin/staff can see all statuses; storefront only ACTIVE
     const statusFilter = searchParams.get("status");
@@ -27,6 +29,7 @@ export async function GET(request: NextRequest) {
     if (featured) where.isFeatured = true;
     if (newArrivals) where.isNewArrival = true;
     if (bestsellers) where.isBestseller = true;
+    if (idsParam) { where.id = { in: idsParam.split(",") }; }
     // Physical attribute filters
     const minPrice = searchParams.get("minPrice");
     const maxPrice = searchParams.get("maxPrice");
@@ -73,14 +76,14 @@ export async function GET(request: NextRequest) {
     if (minDiameter) where.diameter = { ...where.diameter, gte: parseFloat(minDiameter) };
     if (maxDiameter) where.diameter = { ...where.diameter, lte: parseFloat(maxDiameter) };
 
-    let orderBy: any = { createdAt: "desc" };
+    let orderBy: any = [{ createdAt: "desc" }, { id: "asc" }];
     switch (sort) {
-      case "price_asc": orderBy = { regularPrice: "asc" }; break;
-      case "name_asc": orderBy = { name: "asc" }; break;
-      case "name_desc": orderBy = { name: "desc" }; break;
-      case "price_desc": orderBy = { regularPrice: "desc" }; break;
+      case "price_asc": orderBy = [{ regularPrice: "asc" }, { id: "asc" }]; break;
+      case "name_asc": orderBy = [{ name: "asc" }, { id: "asc" }]; break;
+      case "name_desc": orderBy = [{ name: "desc" }, { id: "asc" }]; break;
+      case "price_desc": orderBy = [{ regularPrice: "desc" }, { id: "asc" }]; break;
       case "bestselling": orderBy = { orderItems: { _count: "desc" } }; break;
-      default: orderBy = [{ isFeatured: "desc" }, { createdAt: "desc" }]; break;
+      default: orderBy = [{ isFeatured: "desc" }, { createdAt: "desc" }, { id: "asc" }]; break;
     }
 
     // Rating filter - applied after fetch since it's computed
@@ -88,7 +91,23 @@ export async function GET(request: NextRequest) {
     
     const [products, total] = await Promise.all([
       db.product.findMany({
-        where, include: { category: { select: { id: true, name: true, slug: true } }, subcategory: { select: { id: true, name: true, slug: true } }, images: { orderBy: [{ isPrimary: "desc" }, { position: "asc" }] }, variants: { where: { isActive: true }, orderBy: { position: "asc" }, include: { images: { orderBy: { position: "asc" } }, attributes: { include: { variantAttribute: true } } } }, reviews: { where: { status: "APPROVED" }, select: { rating: true } }, tags: true },
+        where,
+        include: lite
+          ? {
+              category: { select: { id: true, name: true, slug: true } },
+              subcategory: { select: { id: true, name: true, slug: true } },
+              images: { orderBy: [{ isPrimary: "desc" }, { position: "asc" }], take: 1 },
+              variants: { where: { isActive: true }, orderBy: { position: "asc" }, take: 1, include: { images: { orderBy: { position: "asc" }, take: 1 } } },
+              reviews: { where: { status: "APPROVED" }, select: { rating: true } },
+            }
+          : {
+              category: { select: { id: true, name: true, slug: true } },
+              subcategory: { select: { id: true, name: true, slug: true } },
+              images: { orderBy: [{ isPrimary: "desc" }, { position: "asc" }] },
+              variants: { where: { isActive: true }, orderBy: { position: "asc" }, include: { images: { orderBy: { position: "asc" } }, attributes: { include: { variantAttribute: true } } } },
+              reviews: { where: { status: "APPROVED" }, select: { rating: true } },
+              tags: true,
+            },
         orderBy, skip: (page - 1) * limit, take: limit,
       }),
       db.product.count({ where }),
@@ -99,8 +118,8 @@ export async function GET(request: NextRequest) {
       salePrice: product.salePrice ? Number(product.salePrice) : null,
       rating: product.reviews.length > 0 ? product.reviews.reduce((s, r) => s + r.rating, 0) / product.reviews.length : null,
       reviewCount: product.reviews.length,
-      tags: product.tags?.map((t: any) => t.tag) || [],
-      variants: product.variants.map((v) => ({ ...v, price: Number(v.price), salePrice: v.salePrice ? Number(v.salePrice) : null, attributes: v.attributes.map((a) => ({ attributeId: a.variantAttributeId, attributeName: a.variantAttribute.name, value: a.value, colorCode: a.colorCode })) })),
+      tags: (product as any).tags?.map((t: any) => t.tag) || [],
+      variants: product.variants.map((v) => ({ ...v, price: Number(v.price), salePrice: v.salePrice ? Number(v.salePrice) : null, attributes: (v as any).attributes?.map((a: any) => ({ attributeId: a.variantAttributeId, attributeName: a.variantAttribute?.name, value: a.value, colorCode: a.colorCode })) || [] })),
       // Physical attributes
       height: product.height ? Number(product.height) : null,
       width: product.width ? Number(product.width) : null,
@@ -144,7 +163,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const authResult = await requireAuthRole(["ADMIN", "MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER"]);
+  const authResult = await requireAuthRole(["ADMIN", "MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER", "STAFF"]);
   if (authResult.error) return authResult.error;
 
   try {
@@ -216,6 +235,78 @@ export async function POST(request: NextRequest) {
         includedItems: body.includedItems,
       },
     });
+    // Handle images if provided
+    if (body.images && Array.isArray(body.images) && body.images.length > 0) {
+      for (const img of body.images) {
+        await db.productImage.create({
+          data: {
+            productId: product.id,
+            url: img.url,
+            alt: img.alt || "",
+            isPrimary: img.isPrimary ?? false,
+            position: img.position ?? 0,
+            imageType: img.imageType || "PRODUCT",
+          },
+        });
+      }
+    }
+
+    // Handle variant attributes if provided
+    if (body.variantAttributes && Array.isArray(body.variantAttributes)) {
+      for (let i = 0; i < body.variantAttributes.length; i++) {
+        const a = body.variantAttributes[i];
+        const created = await db.variantAttribute.create({
+          data: { productId: product.id, name: a.name, type: a.name.toLowerCase() === "color" ? "COLOR" : "TEXT", position: i },
+        });
+        if (a.values && Array.isArray(a.values)) {
+          for (let j = 0; j < a.values.length; j++) {
+            await db.variantAttributeValue.create({
+              data: { variantAttributeId: created.id, variantId: "", value: a.values[j].value, colorCode: a.values[j].colorCode || null, position: j },
+            });
+          }
+        }
+      }
+    }
+
+    // Handle variants if provided
+    if (body.variants && Array.isArray(body.variants)) {
+      for (let i = 0; i < body.variants.length; i++) {
+        const v = body.variants[i];
+        const variant = await db.productVariant.create({
+          data: {
+            productId: product.id,
+            name: v.name,
+            price: v.price,
+            salePrice: v.salePrice || null,
+            stockQuantity: v.stockQuantity || 0,
+            sku: v.sku || null,
+            position: i,
+          },
+        });
+        if (v.attributes && Array.isArray(v.attributes)) {
+          for (const a of v.attributes) {
+            const attr = await db.variantAttribute.findFirst({ where: { productId: product.id, name: a.attributeName } });
+            if (attr) {
+              let attrValue = await db.variantAttributeValue.findFirst({ where: { variantAttributeId: attr.id, value: a.value } });
+              if (!attrValue) {
+                attrValue = await db.variantAttributeValue.create({
+                  data: { variantAttributeId: attr.id, variantId: variant.id, value: a.value, colorCode: a.colorCode || null, position: 0 },
+                });
+              } else {
+                await db.variantAttributeValue.update({ where: { id: attrValue.id }, data: { variantId: variant.id } });
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Re-fetch product with images for response
+    const productWithImages = await db.product.findUnique({
+      where: { id: product.id },
+      include: { images: { orderBy: [{ isPrimary: "desc" }, { position: "asc" }] } },
+    });
+
     // Log the action
     await db.auditLog.create({
       data: {
@@ -227,7 +318,7 @@ export async function POST(request: NextRequest) {
     });
     notifyProductUpdated(product.name, "added").catch(() => {});
 
-    return NextResponse.json({ product }, { status: 201 });
+    return NextResponse.json({ product: productWithImages }, { status: 201 });
   } catch (error) {
     return NextResponse.json({ error: "Failed to create product" }, { status: 500 });
   }

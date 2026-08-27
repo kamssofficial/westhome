@@ -79,7 +79,7 @@ export function generateProductWhatsAppMessage(
   if (variant) message += `🎨 Variant: ${variant}\n`;
   if (size) message += `📏 Size: ${size}\n`;
   if (customSize) message += `📐 Custom Size: ${customSize}\n`;
-  message += `\nPlease share the details. Thank you!`;
+  message += `\nCould you please provide more information? Thank you!`;
   return message;
 }
 
@@ -138,4 +138,36 @@ export function validatePhone(phone: string): boolean {
 export function validatePinCode(pin: string): boolean {
   const re = /^[1-9][0-9]{5}$/;
   return re.test(pin);
+}
+
+
+export const UPI_ID = "bmdistributorsindia-1@okicici";
+export const UPI_PAYEE_NAME = "WESTHOME by BM Distributors";
+
+export function generateUpiIntent(upiId: string, amount: number, orderRef: string, payeeName: string): string {
+  const params = new URLSearchParams({ pa: upiId, pn: payeeName, am: amount.toFixed(2), cu: 'INR', tn: orderRef });
+  return `upi://pay?${params.toString()}`;
+}
+
+export function isMobileDevice(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
+/**
+ * Validate and normalize an Indian mobile number.
+ * Accepts: 10-digit (6-9 start), +91XXXXXXXXXX, 91XXXXXXXXXX, 0XXXXXXXXXX
+ * Returns normalized 10-digit number, or null if invalid.
+ */
+export function validateAndNormalizePhone(phone: string): string | null {
+  if (!phone || typeof phone !== 'string') return null;
+  // Strip all non-digit chars except leading +
+  let cleaned = phone.replace(/[^\d]/g, '');
+  // Remove leading 0 or 91 prefix
+  if (cleaned.startsWith('0')) cleaned = cleaned.slice(1);
+  if (cleaned.startsWith('91') && cleaned.length > 10) cleaned = cleaned.slice(2);
+  // Must be exactly 10 digits starting with 6-9
+  if (!/^\d{10}$/.test(cleaned)) return null;
+  if (!/^[6-9]/.test(cleaned)) return null;
+  return cleaned;
 }

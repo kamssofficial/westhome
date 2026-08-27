@@ -10,79 +10,45 @@ export async function GET(request: NextRequest) {
 
   const userId = (session.user as any).id as string;
   const { searchParams } = new URL(request.url);
-  const limit = parseInt(searchParams.get("limit") || "20", 10);
+  const limit = parseInt(searchParams.get("limit") || "30", 10);
   const unreadOnly = searchParams.get("unread") === "true";
 
   try {
     const notifications = await db.notification.findMany({
       orderBy: { createdAt: "desc" },
-      take: Math.min(limit, 50),
-      select: {
-        id: true,
-        type: true,
-        title: true,
-        message: true,
-        orderId: true,
-        readBy: true,
-        createdAt: true,
-      },
+      take: Math.min(limit, 100),
     });
 
-    const filtered = notifications.map((n) => {
-      let isRead = false;
-      try {
-        const readByArray: string[] = JSON.parse(n.readBy || "[]");
-        isRead = readByArray.includes(userId);
-      } catch {
-        // readBy column may not exist yet — treat all as unread
-        isRead = false;
-      }
-      return {
-        id: n.id,
-        type: n.type,
-        title: n.title,
-        message: n.message,
-        orderId: n.orderId,
-        isRead,
-        createdAt: n.createdAt.toISOString(),
-      };
-    });
-
-    const result = unreadOnly ? filtered.filter((n) => !n.isRead) : filtered;
-    const unreadCount = filtered.filter((n) => !n.isRead).length;
-
-    return NextResponse.json({ notifications: result, unreadCount });
-  } catch (error: any) {
-    // If readBy column doesn't exist, fall back to legacy behavior
-    if (error?.code === "P2022" || error?.message?.includes("readBy")) {
-      try {
-        const notifications = await db.notification.findMany({
-          orderBy: { createdAt: "desc" },
-          take: Math.min(limit, 50),
-          select: {
-            id: true,
-            type: true,
-            title: true,
-            message: true,
-            orderId: true,
-            createdAt: true,
-          },
-        });
-
-        const result = notifications.map((n) => ({
+    const result = notifications
+      .map((n) => {
+        let isRead = false;
+        let isDeleted = false;
+        try {
+          const readByArr: string[] = JSON.parse(n.readBy || "[]");
+          isRead = readByArr.includes(userId);
+        } catch {}
+        try {
+          const deletedByArr: string[] = JSON.parse((n as any).deletedBy || "[]");
+          isDeleted = deletedByArr.includes(userId);
+        } catch {}
+        return {
           id: n.id,
           type: n.type,
           title: n.title,
           message: n.message,
           orderId: n.orderId,
-          isRead: false,
+          isRead,
+          isDeleted,
           createdAt: n.createdAt.toISOString(),
-        }));
+        };
+      })
+      .filter((n) => !n.isDeleted);
 
-        return NextResponse.json({ notifications: result, unreadCount: result.length });
-      } catch {}
-    }
+    const filtered = unreadOnly ? result.filter((n) => !n.isRead) : result;
+    const unreadCount = result.filter((n) => !n.isRead).length;
 
+    return NextResponse.json({ notifications: filtered, unreadCount });
+  } catch (error) {
     console.error("Notifications fetch error:", error);
     return NextResponse.json({ notifications: [], unreadCount: 0 });
   }

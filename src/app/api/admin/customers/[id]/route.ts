@@ -197,3 +197,82 @@ export async function PATCH(
     );
   }
 }
+
+
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const authResult = await requireAdminOrManager();
+  if (authResult.error) return authResult.error;
+
+  try {
+    const { id } = await params;
+
+    const existing = await db.user.findUnique({ where: { id } });
+    if (!existing) {
+      return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+    }
+
+    // Prevent deleting admin/staff accounts through customer endpoint
+    if (existing.role !== "CUSTOMER") {
+      return NextResponse.json(
+        { error: "Use staff management to manage non-customer accounts" },
+        { status: 400 }
+      );
+    }
+
+    // Prevent deleting yourself
+    const session = await (await import("@/lib/auth")).auth();
+    if (session?.user && (session.user as any).id === id) {
+      return NextResponse.json(
+        { error: "Cannot delete your own account from here" },
+        { status: 400 }
+      );
+    }
+
+    // Log the action BEFORE deletion
+    await db.auditLog.create({
+      data: {
+        action: "DELETE",
+        entity: "USER",
+        entityId: id,
+        details: { email: existing.email, name: existing.name, performedBy: (session?.user as any)?.id },
+      },
+    });
+
+    // Delete all related customer data
+    await db.address.deleteMany({ where: { userId: id } });
+    await db.review.deleteMany({ where: { userId: id } });
+    await db.wishlist.deleteMany({ where: { userId: id } });
+    await db.recentlyViewed.deleteMany({ where: { userId: id } });
+    await db.couponUsage.deleteMany({ where: { userId: id } });
+    await db.liveSession.deleteMany({ where: { userId: id } });
+
+    // Anonymize analytics events (keep data, remove user link)
+    await db.analyticsEvent.updateMany({
+      where: { userId: id },
+      data: { userId: null },
+    });
+
+    // Anonymize orders (keep for business records, remove personal info)
+    await db.order.updateMany({
+      where: { userId: id },
+      data: {
+        userId: null,
+        customerName: "Deleted Customer",
+        customerEmail: null,
+        customerPhone: null,
+      },
+    });
+
+    // Delete the user account
+    await db.user.delete({ where: { id } });
+
+    return NextResponse.json({ message: "Customer and all associated data deleted" });
+  } catch (error) {
+    console.error("Customer delete API error:", error);
+    return NextResponse.json({ error: "Failed to delete customer" }, { status: 500 });
+  }
+}

@@ -1,4 +1,5 @@
 "use client";
+import { trackEvent } from "@/hooks/useAnalytics";
 
 import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import Link from "next/link";
@@ -77,10 +78,11 @@ function SearchContent() {
       params.set("sort", sort);
       params.set("page", String(pageNum));
       params.set("limit", String(PAGE_SIZE));
-      const res = await fetch("/api/products?" + params.toString());
+      const res = await fetch("/api/products?lite=true&" + params.toString());
       const data = await res.json();
       if (append) setProducts(prev => [...prev, ...(data.products || [])]);
       else setProducts(data.products || []);
+          if (query) trackEvent("SEARCH", { metadata: { query } });
       setTotal(data.total || 0);
       setHasMore(pageNum * PAGE_SIZE < (data.total || 0));
     } catch { if (!append) setProducts([]); }

@@ -21,6 +21,7 @@ enum UserRole {
   ORDER_MANAGER
   PRODUCT_MANAGER
   CONTENT_MANAGER
+  STAFF
 }
 
 model User {
@@ -43,6 +44,7 @@ model User {
   reviews        Review[]
   wishlist       Wishlist[]
   recentlyViewed RecentlyViewed[]
+  analyticsEvents AnalyticsEvent[]
   couponsUsed    CouponUsage[]
 
   @@index([email])
@@ -155,6 +157,7 @@ model Product {
   orderItems      OrderItem[]
   wishlist        Wishlist[]
   recentlyViewed  RecentlyViewed[]
+  analyticsEvents AnalyticsEvent[]
   couponProducts  CouponProduct[]
   promotionProducts PromotionProduct[]
 
@@ -862,10 +865,54 @@ model Notification {
   message   String
   orderId   String?
   readBy    String           @default("[]") // JSON array of user IDs who have read this
+  deletedBy String           @default("[]") // JSON array of user IDs who have deleted this
   channel   String           @default("internal") // email, whatsapp, sms, internal
   sentAt    DateTime?
   createdAt DateTime         @default(now())
 
   @@index([type])
   @@index([createdAt])
+}
+
+// ============================================================
+// ANALYTICS & TRACKING
+// ============================================================
+
+model AnalyticsEvent {
+  id                String   @id @default(cuid())
+  eventType         String   // VIEW, CLICK, ADD_TO_CART, BUY_NOW, WHATSAPP_ENQUIRY, PURCHASE, SEARCH, WISHLIST
+  userId            String?  // null for guests
+  sessionId         String?  // anonymous session identifier
+  productId         String?
+  categoryId        String?
+  subcategoryId     String?
+  metadata          Json?    // additional context (search query, etc.)
+  userAgent         String?
+  deviceType        String?  // mobile, desktop, tablet
+  createdAt         DateTime @default(now())
+
+  // Relations
+  user    User?    @relation(fields: [userId], references: [id])
+  product Product? @relation(fields: [productId], references: [id])
+
+  @@index([eventType])
+  @@index([createdAt])
+  @@index([userId])
+  @@index([productId])
+  @@index([sessionId])
+  @@index([eventType, createdAt])
+}
+
+model LiveSession {
+  id          String   @id @default(cuid())
+  sessionId   String   @unique
+  userId      String?
+  lastActive  DateTime @default(now())
+  userAgent   String?
+  deviceType  String?  // mobile, desktop, tablet
+  isStaff     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([lastActive])
+  @@index([isStaff])
 }

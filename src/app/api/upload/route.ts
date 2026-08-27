@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuthRole } from "@/lib/apiAuth";
+import { put } from "@vercel/blob";
 import { writeFile, mkdir } from "fs/promises";
 import { existsSync } from "fs";
 import path from "path";
 
+export const runtime = "nodejs";
+
 export async function POST(request: NextRequest) {
-  const authResult = await requireAuthRole(["ADMIN", "MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER"]);
+  const authResult = await requireAuthRole(["ADMIN", "MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER", "STAFF"]);
   if (authResult.error) return authResult.error;
 
   try {
@@ -38,8 +41,32 @@ export async function POST(request: NextRequest) {
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(2, 8);
     const filename = timestamp + "-" + random + "." + ext;
+    const blobPath = folder + "/" + filename;
 
-    // Save to public/images/{folder}/
+    // Try Vercel Blob first (production), fall back to local filesystem (dev)
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      try {
+        const blob = await put(blobPath, file, {
+          access: "public",
+          contentType: file.type,
+        });
+        return NextResponse.json({ url: blob.url, pathname: blobPath }, { status: 201 });
+      } catch (blobError: any) {
+        console.error("Vercel Blob upload FAILED:", blobError.message, blobError.stack);
+        // On production, local filesystem is ephemeral — do NOT silently fall back
+        // Return a clear error so the admin knows the upload didn't persist
+        if (!process.env.VERCEL && !process.env.NODE_ENV?.includes('production')) {
+          // Only fall back in local dev
+        } else {
+          return NextResponse.json(
+            { error: "Image upload to cloud storage failed. Please try again. Details: " + blobError.message },
+            { status: 500 }
+          );
+        }
+      }
+    }
+
+    // Local filesystem fallback (development only)
     const publicDir = path.join(process.cwd(), "public", "images", folder);
     if (!existsSync(publicDir)) {
       await mkdir(publicDir, { recursive: true });

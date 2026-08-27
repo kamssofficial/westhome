@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import db from "@/lib/db";
-import { requireAdminOrManager } from "@/lib/apiAuth";
+import { requireAuthRole } from "@/lib/apiAuth";
 
 export async function GET() {
-  const authResult = await requireAdminOrManager();
+  const authResult = await requireAuthRole(["ADMIN", "MANAGER", "PRODUCT_MANAGER", "ORDER_MANAGER", "CONTENT_MANAGER", "STAFF"]);
   if (authResult.error) return authResult.error;
 
   try {

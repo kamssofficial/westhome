@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
   LayoutDashboard, Package, FolderTree, ShoppingCart, Users,
-  Home, Tag, Percent, Settings, FileText, Menu, 
+  Home, Tag, Percent, Settings, FileText, Menu, BarChart3, ImageIcon, 
   ChevronRight,  Store,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -37,7 +37,9 @@ const NAV_GROUPS: NavGroup[] = [
   {
     title: "Storefront",
     items: [
+      { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
       { label: "Homepage", href: "/admin/homepage", icon: Home },
+      { label: "Hero Image", href: "/admin/settings#hero-image", icon: ImageIcon },
       { label: "Content", href: "/admin/content", icon: FileText },
     ],
   },
@@ -70,9 +72,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/login");
-    } else if (status === "authenticated" && userRole === "MANAGER") {
-      router.push("/staff/dashboard");
     }
+    // Note: MANAGER and PRODUCT_MANAGER now have access to the admin panel
+    // for full product management. Only STAFF role redirects to /staff.
   }, [status, router, userRole]);
   const initials = userName.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2);
 

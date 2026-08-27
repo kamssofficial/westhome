@@ -2,6 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { auth } from "@/lib/auth";
 
+function validateAndNormalizePhone(phone: string): string | null {
+  if (!phone || typeof phone !== 'string') return null;
+  let cleaned = phone.replace(/[^\d]/g, '');
+  if (cleaned.startsWith('0')) cleaned = cleaned.slice(1);
+  if (cleaned.startsWith('91') && cleaned.length > 10) cleaned = cleaned.slice(2);
+  if (!/^\d{10}$/.test(cleaned)) return null;
+  if (!/^[6-9]/.test(cleaned)) return null;
+  return cleaned;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const session = await auth();
@@ -14,11 +24,9 @@ export async function GET(request: NextRequest) {
 
     if (session?.user) {
       const role = (session.user as any).role;
-      // Admin/Manager/OrderManager can see all orders when ?all=true
       if (showAll && (role === "ADMIN" || role === "MANAGER" || role === "ORDER_MANAGER")) {
         // No userId filter — show all orders
       } else {
-        // Regular customers only see their own orders
         where.userId = (session.user as any).id;
       }
     } else {
@@ -76,8 +84,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing required address information" }, { status: 400 });
     }
 
+    // SECURITY: Validate mobile phone server-side
+    const normalizedPhone = validateAndNormalizePhone(customerPhone);
+    if (!normalizedPhone) {
+      return NextResponse.json(
+        { error: "A valid 10-digit mobile number is required to place an order" },
+        { status: 400 }
+      );
+    }
+
     // SECURITY: Server-side price validation — recalculate from database
-    // Fetch all products in the order to validate prices
     const productIds = items.map((item: any) => item.productId);
     const products = await db.product.findMany({
       where: { id: { in: productIds } },
@@ -108,8 +124,9 @@ export async function POST(request: NextRequest) {
     const settings = await db.siteSetting.findMany();
     const settingsObj: Record<string, any> = {};
     settings.forEach((s) => { settingsObj[s.key] = s.value; });
-    const freeThreshold = Number(settingsObj.freeDeliveryThreshold) || 2000;
-    const defaultDeliveryCharge = Number(settingsObj.defaultDeliveryCharge) || 149;
+    const dc = settingsObj.deliveryConfig;
+    const freeThreshold = dc ? Number(dc.freeDeliveryThreshold) || 2000 : Number(settingsObj.freeDeliveryThreshold) || 2000;
+    const defaultDeliveryCharge = dc ? Number(dc.defaultDeliveryCharge) || 149 : Number(settingsObj.defaultDeliveryCharge) || 149;
     
     let serverDeliveryCharge: number;
     if (deliveryMethod === "express") {
@@ -120,7 +137,7 @@ export async function POST(request: NextRequest) {
     
     const finalDeliveryCharge = serverDeliveryCharge;
     const finalSubtotal = serverSubtotal;
-    const finalDiscount = Math.min(Number(discount) || 0, finalSubtotal); // Prevent negative discount
+    const finalDiscount = Math.min(Number(discount) || 0, finalSubtotal);
     const finalTax = Number(tax) || 0;
     const finalTotal = finalSubtotal - finalDiscount + finalDeliveryCharge + finalTax;
 
@@ -139,7 +156,7 @@ export async function POST(request: NextRequest) {
         status: "NEW",
         customerName,
         customerEmail,
-        customerPhone,
+        customerPhone: normalizedPhone,
         addressLine1,
         addressLine2: addressLine2 || null,
         city,
@@ -152,7 +169,7 @@ export async function POST(request: NextRequest) {
         tax: finalTax,
         total: finalTotal,
         paymentMethod: paymentMethod || null,
-        paymentStatus: paymentMethod === "cod" ? "PENDING" : "PENDING",
+        paymentStatus: "PENDING",
         deliveryMethod: deliveryMethod || "delivery",
         customerNotes: customerNotes || null,
         items: {
@@ -178,6 +195,14 @@ export async function POST(request: NextRequest) {
         },
       },
     });
+
+    // Also save phone to user profile if logged in and missing
+    if (userId && normalizedPhone) {
+      await db.user.updateMany({
+        where: { id: userId, phone: null },
+        data: { phone: normalizedPhone },
+      });
+    }
 
     // Create notification
     await db.notification.create({

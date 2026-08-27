@@ -28,6 +28,7 @@ const ROLE_OPTIONS = [
   { value: "PRODUCT_MANAGER", label: "Product Manager", desc: "Manage products and inventory" },
   { value: "ORDER_MANAGER", label: "Order Manager", desc: "Manage orders and deliveries" },
   { value: "CONTENT_MANAGER", label: "Content Manager", desc: "Manage homepage, content, and promotions" },
+  { value: "STAFF", label: "Staff", desc: "Full product and catalog management" },
 ];
 
 const ROLE_COLORS: Record<string, string> = {
@@ -35,6 +36,7 @@ const ROLE_COLORS: Record<string, string> = {
   PRODUCT_MANAGER: "bg-amber-50 text-amber-700 border border-amber-200",
   ORDER_MANAGER: "bg-cyan-50 text-cyan-700 border border-cyan-200",
   CONTENT_MANAGER: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+  STAFF: "bg-orange-50 text-orange-700 border border-orange-200",
 };
 
 interface FormErrors {

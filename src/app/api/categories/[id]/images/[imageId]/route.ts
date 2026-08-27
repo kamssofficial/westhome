@@ -6,7 +6,7 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; imageId: string }> }
 ) {
-  const authResult = await requireAuthRole(["ADMIN", "MANAGER", "CONTENT_MANAGER"]);
+  const authResult = await requireAuthRole(["ADMIN", "MANAGER", "CONTENT_MANAGER", "STAFF"]);
   if (authResult.error) return authResult.error;
 
   try {
@@ -27,16 +27,20 @@ export async function PATCH(
         where: { categoryId: id },
         data: { isPrimary: false },
       });
-      // Update legacy image field
+    }
+    // Update legacy image field when this is primary or URL changed
+    const newUrl = body.url ?? image.url;
+    if (body.isPrimary || (image.isPrimary && body.url !== undefined)) {
       await db.category.update({
         where: { id },
-        data: { image: body.url || image.url },
+        data: { image: newUrl },
       });
     }
 
     const updated = await db.categoryImage.update({
       where: { id: imageId },
       data: {
+        ...(body.url !== undefined && { url: body.url }),
         ...(body.alt !== undefined && { alt: body.alt }),
         ...(body.position !== undefined && { position: body.position }),
         ...(body.isPrimary !== undefined && { isPrimary: body.isPrimary }),
@@ -53,7 +57,7 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; imageId: string }> }
 ) {
-  const authResult = await requireAuthRole(["ADMIN", "MANAGER", "CONTENT_MANAGER"]);
+  const authResult = await requireAuthRole(["ADMIN", "MANAGER", "CONTENT_MANAGER", "STAFF"]);
   if (authResult.error) return authResult.error;
 
   try {

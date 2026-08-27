@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useEffect } from "react";
-import { User, Mail, Phone, Lock } from "lucide-react";
+import { User, Mail, Phone, Lock, AlertTriangle } from "lucide-react";
 import Button from "@/components/ui/Button";
 import toast from "react-hot-toast";
 
@@ -12,6 +12,8 @@ export default function AccountSettingsPage() {
   const [changingPassword, setChangingPassword] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", phone: "" });
   const [passwordForm, setPasswordForm] = useState({ current: "", newPass: "", confirm: "" });
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetch("/api/account/profile")
@@ -29,17 +31,35 @@ export default function AccountSettingsPage() {
   }, []);
 
   const handleSave = async () => {
+    // Validate phone before saving
+    const phone = form.phone.trim();
+    if (!phone) {
+      toast.error("Mobile number is required");
+      return;
+    }
+    const cleaned = phone.replace(/\D/g, "");
+    const digits = cleaned.startsWith("0") ? cleaned.slice(1) : cleaned;
+    const num = digits.startsWith("91") && digits.length > 10 ? digits.slice(2) : digits;
+    if (!/^\d{10}$/.test(num) || !/^[6-9]/.test(num)) {
+      toast.error("Enter a valid 10-digit Indian mobile number");
+      return;
+    }
+    // Normalize phone before saving
+    const normalizedPhone = num;
+    
     setSaving(true);
     try {
       const res = await fetch("/api/account/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, phone: normalizedPhone }),
       });
       if (res.ok) {
         toast.success("Profile updated");
+        setForm({ ...form, phone: normalizedPhone });
       } else {
-        toast.error("Failed to update profile");
+        const err = await res.json();
+        toast.error(err.error || "Failed to update profile");
       }
     } catch {
       toast.error("Failed to update");
@@ -70,7 +90,7 @@ export default function AccountSettingsPage() {
           </div>
         </div>
         <div>
-          <label className="text-xs font-medium text-text-secondary mb-1 block">Phone</label>
+          <label className="text-xs font-medium text-text-secondary mb-1 block">Mobile Number *</label>
           <div className="relative">
             <Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
             <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={`${inputClass} pl-10`} placeholder="+91 XXXXX XXXXX" />
@@ -130,6 +150,60 @@ export default function AccountSettingsPage() {
           >
             Update Password
           </Button>
+        </div>
+      </div>
+    
+      {/* Danger Zone — Delete Account */}
+      <div className="mt-6 bg-white rounded-xl border border-red-200 p-4 md:p-5">
+        <h2 className="text-sm font-semibold text-red-600 mb-2 flex items-center gap-2">
+          <AlertTriangle size={14} /> Danger Zone
+        </h2>
+        <p className="text-xs text-text-muted mb-3">
+          Permanently delete your account. This action cannot be undone. Your order history will be preserved but anonymized.
+        </p>
+        <div className="flex items-end gap-3">
+          <div className="flex-1">
+            <label className="text-xs font-medium text-text-secondary mb-1 block">Confirm password</label>
+            <input
+              type="password"
+              value={deletePassword}
+              onChange={(e) => setDeletePassword(e.target.value)}
+              className="w-full px-3 py-2.5 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
+              placeholder="Enter your password"
+            />
+          </div>
+          <button
+            onClick={async () => {
+              if (!deletePassword) {
+                toast.error("Enter your password to confirm");
+                return;
+              }
+              if (!confirm("Are you absolutely sure? This cannot be undone.")) return;
+              setDeleting(true);
+              try {
+                const res = await fetch("/api/account/profile", {
+                  method: "DELETE",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ password: deletePassword }),
+                });
+                if (res.ok) {
+                  toast.success("Account deleted. Signing out...");
+                  setTimeout(() => { window.location.href = "/"; }, 1500);
+                } else {
+                  const err = await res.json();
+                  toast.error(err.error || "Failed to delete account");
+                }
+              } catch {
+                toast.error("Failed to delete account");
+              } finally {
+                setDeleting(false);
+              }
+            }}
+            disabled={deleting}
+            className="px-4 py-2.5 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 whitespace-nowrap"
+          >
+            {deleting ? "Deleting..." : "Delete Account"}
+          </button>
         </div>
       </div>
     </div>

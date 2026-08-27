@@ -26,6 +26,7 @@ const ROLES = [
   { value: "PRODUCT_MANAGER", label: "Product Manager", description: "Manage products and inventory" },
   { value: "ORDER_MANAGER", label: "Order Manager", description: "Manage orders and deliveries" },
   { value: "CONTENT_MANAGER", label: "Content Manager", description: "Manage homepage, content, and promotions" },
+  { value: "STAFF", label: "Staff", description: "Full product and catalog management access" },
 ];
 
 const ROLE_COLORS: Record<string, string> = {
@@ -34,6 +35,7 @@ const ROLE_COLORS: Record<string, string> = {
   PRODUCT_MANAGER: "bg-amber-100 text-amber-700",
   ORDER_MANAGER: "bg-cyan-100 text-cyan-700",
   CONTENT_MANAGER: "bg-emerald-100 text-emerald-700",
+  STAFF: "bg-orange-100 text-orange-700",
 };
 
 export default function AdminStaffPage() {
@@ -170,6 +172,21 @@ export default function AdminStaffPage() {
     } catch {
       toast.error("Failed to reactivate");
     }
+  const handlePermanentDelete = async (member: StaffMember) => {
+    if (!confirm(`Permanently delete ${member.name}? This cannot be undone.`)) return;
+    try {
+      const res = await fetch(`/api/admin/staff/${member.id}?permanent=true`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("Staff member permanently deleted");
+        fetchStaff();
+      } else {
+        const err = await res.json();
+        toast.error(err.error || "Failed to delete");
+      }
+    } catch {
+      toast.error("Failed to delete staff member");
+    }
+  };
   };
 
   const inputClass = "w-full px-3 py-2.5 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30";
