@@ -2,7 +2,7 @@
 
 Premium mobile-first ecommerce platform for home décor and lifestyle products.
 
-**Live domain:** [westhomebybmd.com](https://westhomebybmd.com)
+**Live domain:** [westhome.in](https://westhome.in)
 
 ---
 
@@ -233,7 +233,7 @@ Visit:
 
 ### GoDaddy DNS
 
-When ready to connect `westhomebybmd.com`:
+When ready to connect `westhome.in`:
 
 1. Deploy to Vercel (or your hosting platform)
 2. In GoDaddy DNS settings, add:

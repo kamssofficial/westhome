@@ -102,7 +102,7 @@ async function main() {
     { key: "storeName", value: "WESTHOME", group: "general" },
     { key: "contactPhone", value: "+919999999999", group: "contact" },
     { key: "whatsappNumber", value: "+919999999999", group: "contact" },
-    { key: "contactEmail", value: "info@westhomebybmd.com", group: "contact" },
+    { key: "contactEmail", value: "info@westhome.in", group: "contact" },
     { key: "currency", value: "INR", group: "general" },
     {
       key: "deliveryConfig",
