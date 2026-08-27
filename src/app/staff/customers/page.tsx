@@ -3,6 +3,21 @@
 import { useState, useEffect } from "react";
 import { Search, Mail, Phone, User } from "lucide-react";
 
+// Mask sensitive data for staff view
+function maskEmail(email: string): string {
+  if (!email) return "";
+  const [local, domain] = email.split("@");
+  if (!domain) return email;
+  const masked = local.length > 2 ? local[0] + "*".repeat(local.length - 2) + local[local.length - 1] : local[0] + "*";
+  return masked + "@" + domain;
+}
+
+function maskPhone(phone: string | null): string {
+  if (!phone) return "";
+  if (phone.length <= 4) return phone;
+  return "*".repeat(phone.length - 4) + phone.slice(-4);
+}
+
 interface Customer {
   id: string; name: string; email: string; phone: string | null; createdAt: string;
   _count?: { orders: number };
@@ -21,7 +36,7 @@ export default function StaffCustomersPage() {
       params.set("limit", "50");
       const res = await fetch(`/api/customers?${params.toString()}`);
       const data = await res.json();
-      setCustomers(data.customers || []);
+      setCustomers((data.customers || []).filter((c: Customer) => !c.email.includes("deleted") && !c.email.includes("test") && !c.email.includes("debug")));
     } catch {} finally { setLoading(false); }
   };
 
@@ -56,11 +71,11 @@ export default function StaffCustomersPage() {
                   <p className="text-sm font-medium text-[#1a1917] truncate">{customer.name}</p>
                   <div className="flex items-center gap-3 mt-0.5">
                     <span className="flex items-center gap-1 text-xs text-[#b0aba6]">
-                      <Mail size={10} /> {customer.email}
+                      <Mail size={10} /> {maskEmail(customer.email)}
                     </span>
                     {customer.phone && (
                       <span className="flex items-center gap-1 text-xs text-[#b0aba6]">
-                        <Phone size={10} /> {customer.phone}
+                        <Phone size={10} /> {maskPhone(customer.phone)}
                       </span>
                     )}
                   </div>

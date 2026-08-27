@@ -82,8 +82,8 @@ export default function StaffProductsPage() {
                   <p className="text-[10px] text-[#d4a574] font-medium uppercase tracking-wider">{product.subcategory?.name || product.category?.name || "—"}</p>
                   <h3 className="text-sm font-medium text-[#1a1917] mt-0.5 line-clamp-1">{product.name}</h3>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-sm font-semibold text-[#1a1917]">₹{Number(product.regularPrice).toLocaleString()}</span>
-                    {product.salePrice && <span className="text-xs text-[#b0aba6] line-through">₹{Number(product.salePrice).toLocaleString()}</span>}
+                    <span className="text-sm font-semibold text-[#1a1917]">₹{Number(product.salePrice || product.regularPrice).toLocaleString()}</span>
+                    {product.salePrice ? <span className="text-xs text-[#b0aba6] line-through">₹{Number(product.regularPrice).toLocaleString()}</span> : null}
                   </div>
                 </div>
               </div>

@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowLeft, ChevronRight, CreditCard, Smartphone, Building2, Wallet, Banknote, Shield, MapPin, Copy, CheckCircle } from "lucide-react";
 import { useCartStore } from "@/store/cart";
 import { formatPrice, cn } from "@/lib/utils";
 import toast from "react-hot-toast";
 
-const STEPS = ["Address", "Payment", "Confirm"];
+const STEPS = ["Address", "Review", "Payment", "Confirm"];
 
 const PAYMENT_METHODS = [
   { id: "upi", label: "UPI Payment", icon: <Smartphone size={18} />, badge: "UPI" },
@@ -219,7 +220,7 @@ export default function CheckoutPage() {
                 </div>
               ) : (
                 <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-700">
-                  Add {formatPrice(amountNeeded)} more to get FREE delivery.
+                  Add {formatPrice(amountNeeded)} more to get FREE delivery. <Link href="/policies/shipping" className="underline text-xs">Details</Link>
                 </div>
               )
             )}
@@ -237,18 +238,18 @@ export default function CheckoutPage() {
           <div className="bg-surface rounded-[1.35rem] border border-foreground/[.08] p-4 shadow-sm mb-6">
             <h3 className="text-sm font-semibold text-primary mb-3">Order Summary</h3>
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between"><span className="text-secondary">Subtotal ({items.length} items)</span><span className="font-medium">{formatPrice(subtotal)}</span></div>
+              <div className="flex justify-between"><span className="text-secondary">Subtotal ({items.reduce((s, i) => s + i.quantity, 0)} items)</span><span className="font-medium">{formatPrice(subtotal)}</span></div>
               <div className="flex justify-between"><span className="text-secondary">Delivery</span><span className="font-medium">{deliveryCharge === 0 ? "Free" : formatPrice(deliveryCharge)}</span></div>
               <div className="border-t border-border pt-2 flex justify-between"><span className="font-semibold text-primary">Total</span><span className="font-bold text-primary">{formatPrice(total)}</span></div>
             </div>
           </div>
           <div className="sticky bottom-[120px] lg:static lg:mt-0 bg-white/95 backdrop-blur-sm py-3 -mx-4 px-4 border-t border-border z-[60]">
-            <button onClick={() => setStep(1)} disabled={!selectedAddress} className="w-full py-3.5 bg-primary text-white rounded-full text-sm font-semibold hover:bg-primary-hover transition-colors flex items-center justify-center gap-2 disabled:opacity-40">Continue to Payment <ChevronRight size={16} /></button>
+            <button onClick={() => setStep(1)} disabled={!selectedAddress} className="w-full py-3.5 bg-primary text-white rounded-full text-sm font-semibold hover:bg-primary-hover transition-colors flex items-center justify-center gap-2 disabled:opacity-40">Review Order <ChevronRight size={16} /></button>
           </div>
         </div>
       )}
 
-      {step === 1 && (
+      {step === 3 && (
         <div className="container-shop">
           <h2 className="text-sm font-semibold text-primary mb-3">Payment Method</h2>
           <div className="space-y-2 mb-6">
@@ -297,6 +298,74 @@ export default function CheckoutPage() {
             >
               {placingOrder ? "Placing Order..." : paymentMethod === "upi" ? `Pay ₹${total.toLocaleString()} via UPI & Place Order` : `Place Order — ${formatPrice(total)}`}
             </button>
+          </div>
+        </div>
+      )}
+
+      {step === 1 && (
+        <div className="container-shop">
+          <h2 className="text-sm font-semibold text-primary mb-4">Review Your Order</h2>
+          
+          {/* Items */}
+          <div className="bg-surface rounded-[1.35rem] border border-foreground/[.08] p-4 shadow-sm mb-4">
+            <h3 className="text-xs font-semibold text-secondary uppercase tracking-wider mb-3">Items ({items.reduce((s, i) => s + i.quantity, 0)})</h3>
+            <div className="space-y-3">
+              {items.map((item) => (
+                <div key={item.id} className="flex gap-3">
+                  <div className="relative w-14 h-14 flex-shrink-0 rounded-lg overflow-hidden bg-surface-muted">
+                    {item.image && <Image src={item.image} alt={item.name} fill className="object-cover" sizes="56px" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-primary truncate">{item.name}</p>
+                    {item.variantName && <p className="text-[11px] text-secondary">{item.variantName}</p>}
+                    <div className="flex justify-between mt-1">
+                      <span className="text-xs text-secondary">Qty: {item.quantity}</span>
+                      <span className="text-sm font-semibold text-primary">{formatPrice((item.salePrice || item.price) * item.quantity)}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Address */}
+          <div className="bg-surface rounded-[1.35rem] border border-foreground/[.08] p-4 shadow-sm mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-xs font-semibold text-secondary uppercase tracking-wider">Delivery Address</h3>
+              <button onClick={() => setStep(0)} className="text-xs text-accent font-medium">Change</button>
+            </div>
+            {(() => {
+              const addr = addresses.find(a => a.id === selectedAddress);
+              return addr ? (
+                <div>
+                  <p className="text-sm font-medium text-primary">{addr.name}</p>
+                  <p className="text-xs text-secondary mt-0.5">{addr.addressLine1}{addr.addressLine2 ? ", " + addr.addressLine2 : ""}</p>
+                  <p className="text-xs text-secondary">{addr.city}, {addr.state} - {addr.pinCode}</p>
+                  <p className="text-xs text-secondary mt-0.5">{addr.phone}</p>
+                </div>
+              ) : <p className="text-sm text-secondary">No address selected</p>;
+            })()}
+          </div>
+
+          {/* Delivery */}
+          <div className="bg-surface rounded-[1.35rem] border border-foreground/[.08] p-4 shadow-sm mb-4">
+            <h3 className="text-xs font-semibold text-secondary uppercase tracking-wider mb-2">Delivery</h3>
+            <p className="text-sm text-primary">{deliveryOption === "express" ? "Express Delivery (1-2 days)" : "Standard Delivery (3-5 days)"}</p>
+            <p className="text-xs text-secondary mt-0.5">{deliveryCharge === 0 ? "Free" : formatPrice(deliveryCharge)}</p>
+          </div>
+
+          {/* Total */}
+          <div className="bg-surface rounded-[1.35rem] border border-foreground/[.08] p-4 shadow-sm mb-6">
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between"><span className="text-secondary">Subtotal</span><span className="font-medium">{formatPrice(subtotal)}</span></div>
+              <div className="flex justify-between"><span className="text-secondary">Delivery</span><span className="font-medium">{deliveryCharge === 0 ? "Free" : formatPrice(deliveryCharge)}</span></div>
+              <div className="border-t border-border pt-2 flex justify-between"><span className="font-semibold text-primary">Total</span><span className="font-bold text-primary">{formatPrice(total)}</span></div>
+            </div>
+            <p className="text-[10px] text-text-muted mt-1">By placing this order, you agree to our <Link href="/policies/terms" className="underline">Terms</Link> and <Link href="/policies/shipping" className="underline">Shipping Policy</Link>.</p>
+          </div>
+
+          <div className="sticky bottom-[120px] lg:static lg:mt-0 bg-white/95 backdrop-blur-sm py-3 -mx-4 px-4 border-t border-border z-[60]">
+            <button onClick={() => setStep(2)} className="w-full py-3.5 bg-primary text-white rounded-full text-sm font-semibold hover:bg-primary-hover transition-colors flex items-center justify-center gap-2">Proceed to Payment <ChevronRight size={16} /></button>
           </div>
         </div>
       )}

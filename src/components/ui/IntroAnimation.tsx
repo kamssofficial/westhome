@@ -15,13 +15,17 @@ import Image from "next/image";
  * Total duration ~3 s. Tap anywhere to skip instantly.
  */
 export default function IntroAnimation({ children }: { children: React.ReactNode }) {
-  const [phase, setPhase] = useState<"idle" | "logo" | "line" | "tagline" | "wipe" | "done">("idle");
+  const [phase, setPhase] = useState<"idle" | "logo" | "line" | "tagline" | "wipe" | "done">(() => {
+    if (typeof window !== "undefined" && sessionStorage.getItem("westhome-intro-seen")) return "done";
+    return "idle";
+  });
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const started = useRef(false);
 
   const skip = useCallback(() => {
     timers.current.forEach(clearTimeout);
     timers.current = [];
+    sessionStorage.setItem("westhome-intro-seen", "1");
     setPhase("wipe");
     setTimeout(() => setPhase("done"), 500);
   }, []);
@@ -38,7 +42,7 @@ export default function IntroAnimation({ children }: { children: React.ReactNode
     at(() => setPhase("line"), 1200);
     at(() => setPhase("tagline"), 1800);
     at(() => setPhase("wipe"), 3000);
-    at(() => setPhase("done"), 3600);
+    at(() => { setPhase("done"); sessionStorage.setItem("westhome-intro-seen", "1"); }, 3600);
 
     return () => timers.current.forEach(clearTimeout);
   }, []);

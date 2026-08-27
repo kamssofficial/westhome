@@ -149,6 +149,15 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
+    
+    // F-01: Validate pricing
+    if (body.regularPrice !== undefined && Number(body.regularPrice) <= 0) {
+      return NextResponse.json({ error: "Regular price must be greater than zero" }, { status: 400 });
+    }
+    if (body.salePrice !== undefined && body.salePrice !== null && Number(body.salePrice) >= Number(body.regularPrice)) {
+      return NextResponse.json({ error: "Sale price must be less than regular price" }, { status: 400 });
+    }
+    
     const slug = body.name.toLowerCase().replace(/[^\w\s-]/g, "").replace(/[\s_-]+/g, "-").replace(/^-+|-+$/g, "");
     const product = await db.product.create({
       data: {

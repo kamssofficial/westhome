@@ -146,13 +146,14 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
           </button>
           <button
             onClick={() => {
+              const wasInWishlist = isInWishlist(product.id);
               toggleWishlist({
                 id: product.id, productId: product.id, name: product.name,
                 slug: product.slug, price: Number(originalPrice),
                 salePrice: product.salePrice ? Number(product.salePrice) : undefined,
                 image: images[0]?.url,
               });
-              toast.success(isInWishlist(product.id) ? "Removed from wishlist" : "Added to wishlist");
+              toast.success(wasInWishlist ? "Removed from wishlist" : "Added to wishlist");
             }}
             className={cn(
               "p-1 rounded-lg transition-colors",
@@ -524,6 +525,40 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
           ) : null}
 
           {/* Custom Size */}
+          
+          {/* Fallback: Specifications placeholder when no spec data exists */}
+          {!((product as any).height || (product as any).width || (product as any).length || (product as any).depth || (product as any).material || (product as any).color || (product as any).finish || (product as any).style || (product as any).careInstructions || (product as any).warranty || (product as any).includedItems) && (
+            <div className="border-b border-border">
+              <button
+                onClick={() => setOpenAccordion(openAccordion === "specs" ? null : "specs")}
+                className="w-full flex items-center justify-between py-4 text-sm font-medium text-primary"
+              >
+                Specifications
+                <ChevronDown
+                  size={16}
+                  className={cn("transition-transform", openAccordion === "specs" && "rotate-180")}
+                />
+              </button>
+              <div
+                className={cn(
+                  "overflow-hidden transition-all duration-300",
+                  openAccordion === "specs" ? "max-h-96 pb-4" : "max-h-0"
+                )}
+              >
+                <div className="text-center py-3">
+                  <p className="text-sm text-secondary mb-2">Detailed specifications for this product are being finalized.</p>
+                  <p className="text-xs text-text-muted mb-1">Need specific details? </p>
+                  <a
+                    href="https://wa.me/919895071144?text=Hi%2C%20I'd%20like%20to%20know%20the%20specifications%20for%20this%20product"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-accent font-medium hover:underline"
+                  >Ask us on WhatsApp</a>
+                </div>
+              </div>
+            </div>
+          )}
+
           {product.allowCustomSize ? (
             <div className="border-b border-border">
               <button

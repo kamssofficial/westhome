@@ -20,7 +20,8 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
   const isInWishlist = useWishlistStore((s) => s.isInWishlist(product.id));
 
   const primaryImage = product.images.find((i) => i.isPrimary) || product.images[0];
-  const discount = calculateDiscount(product.regularPrice, product.salePrice || 0);
+  const hasRealDiscount = product.salePrice && product.regularPrice > 0 && product.salePrice < product.regularPrice;
+  const discount = hasRealDiscount ? calculateDiscount(product.regularPrice, product.salePrice) : 0;
   const inStock = product.trackInventory ? product.stockQuantity > 0 : true;
 
   const handleWishlist = (e: React.MouseEvent) => {
@@ -84,7 +85,7 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
                 New
               </span>
             )}
-            {discount > 0 && (
+            {discount > 0 && discount < 100 && (
               <span className="px-2 py-0.5 bg-error text-white text-[10px] font-semibold rounded-full">
                 -{discount}%
               </span>
@@ -109,7 +110,7 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
             <span className="text-sm font-semibold text-primary">
               {formatPrice(product.salePrice || product.regularPrice)}
             </span>
-            {product.salePrice && (
+            {hasRealDiscount && (
               <span className="text-[11px] text-text-muted line-through">
                 {formatPrice(product.regularPrice)}
               </span>

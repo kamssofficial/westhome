@@ -60,3 +60,51 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: "Failed to update profile" }, { status: 500 });
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userId = (session.user as any).id;
+    const body = await request.json().catch(() => ({}));
+    
+    // Verify password if provided
+    if (body.password) {
+      const bcrypt = require("bcryptjs");
+      const user = await db.user.findUnique({ where: { id: userId } });
+      if (!user) {
+        return NextResponse.json({ error: "User not found" }, { status: 404 });
+      }
+      const isValid = await bcrypt.compare(body.password, user.passwordHash);
+      if (!isValid) {
+        return NextResponse.json({ error: "Incorrect password" }, { status: 400 });
+      }
+    }
+
+    // Anonymize user data instead of hard delete to preserve order history
+    const timestamp = Date.now();
+    await db.user.update({
+      where: { id: userId },
+      data: {
+        name: "Deleted Customer",
+        email: "deleted_" + timestamp + "@deleted.local",
+        phone: null,
+        passwordHash: "DELETED",
+        isActive: false,
+      },
+    });
+
+    // Delete related data
+    await db.wishlist.deleteMany({ where: { userId } });
+    await db.recentlyViewed.deleteMany({ where: { userId } });
+    await db.address.deleteMany({ where: { userId } });
+
+    return NextResponse.json({ message: "Account deleted" });
+  } catch (error) {
+    console.error("Account deletion error:", error);
+    return NextResponse.json({ error: "Failed to delete account" }, { status: 500 });
+  }
+}

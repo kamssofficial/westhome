@@ -23,13 +23,16 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [mounted, setMounted] = useState(false);
   const [navCategories, setNavCategories] = useState<NavCat[]>([]);
+
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     fetch("/api/categories")
       .then(r => r.json())
       .then(d => {
-        if (d.categories) setNavCategories(d.categories.map((c: any) => ({ label: c.name, href: "/collections/" + c.slug })));
+        if (d.categories) setNavCategories(d.categories.filter((c: any) => (c.productCount || 0) > 0).map((c: any) => ({ label: c.name, href: "/collections/" + c.slug })));
       })
       .catch(() => {});
   }, []);
@@ -124,12 +127,12 @@ export default function Header() {
               <Link
                 href="/cart"
                 className="relative flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-foreground/[.06] active:scale-95"
-                aria-label={`Cart with ${itemCount} items`}
+                aria-label={`Cart with ${mounted ? itemCount : 0} items`}
               >
                 <ShoppingBag size={19} strokeWidth={1.8} />
-                {itemCount > 0 && (
+                {mounted && itemCount > 0 && (
                   <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[9px] font-bold text-white">
-                    {itemCount > 9 ? "9+" : itemCount}
+                    {mounted ? (itemCount > 9 ? "9+" : itemCount) : ""}
                   </span>
                 )}
               </Link>

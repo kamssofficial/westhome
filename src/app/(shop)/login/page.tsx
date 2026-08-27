@@ -97,6 +97,9 @@ function LoginForm() {
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
+            <div className="text-right">
+              <Link href="/forgot-password" className="text-xs text-[#6b6560] hover:text-[#1a1917]">Forgot password?</Link>
+            </div>
           </div>
           <button type="submit" disabled={loading}
             className="w-full py-2.5 bg-stone-900 text-white text-sm font-medium rounded-xl hover:bg-stone-800 disabled:opacity-60 transition-colors">

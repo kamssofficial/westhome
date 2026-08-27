@@ -65,7 +65,7 @@ export default function ContactPage() {
               <div>
                 <p className="text-sm font-medium text-primary">Email</p>
                 <a href={`mailto:${contactEmail}`} className="text-sm text-accent hover:underline">
-                  info@westhomebybmd.com
+                  info@westhome.in
                 </a>
               </div>
             </div>

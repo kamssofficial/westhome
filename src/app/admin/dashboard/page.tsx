@@ -35,6 +35,7 @@ interface LowStockProduct {
   slug: string;
   stockQuantity: number;
   regularPrice: number;
+  salePrice: number | null;
   lowStockThreshold: number;
 }
 
@@ -296,7 +297,7 @@ export default function AdminDashboard() {
                 <Link key={product.id} href={`/admin/products/${product.id}`} className="flex items-center justify-between p-2.5 -mx-2.5 rounded-xl hover:bg-[#f7f5f2] transition-all group">
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium truncate text-[#1a1917] group-hover:text-[#d4a574] transition-colors">{product.name}</p>
-                    <p className="text-[11px] text-[#b0aba6]">{formatPrice(product.regularPrice)}</p>
+                    <p className="text-[11px] text-[#b0aba6]">{formatPrice(product.salePrice && product.salePrice > 0 ? product.salePrice : product.regularPrice)}</p>
                   </div>
                   <span className={cn("text-[11px] font-semibold px-2.5 py-1 rounded-full shrink-0 ml-3", product.stockQuantity === 0 ? "bg-rose-50 text-rose-700" : product.stockQuantity <= 2 ? "bg-rose-50 text-rose-700" : "bg-amber-50 text-amber-700")}>
                     {product.stockQuantity === 0 ? "Out of stock" : `${product.stockQuantity} left`}

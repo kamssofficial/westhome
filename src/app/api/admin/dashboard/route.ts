@@ -134,6 +134,7 @@ export async function GET() {
       lowStockProducts: lowStockProducts.map((p) => ({
         ...p,
         regularPrice: Number(p.regularPrice),
+        salePrice: p.salePrice ? Number(p.salePrice) : null,
       })),
       salesTrend: dailyRevenue,
       statusBreakdown,

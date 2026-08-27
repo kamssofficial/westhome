@@ -87,6 +87,14 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const { slug } = await params;
     const body = await request.json();
 
+    // F-01: Validate pricing
+    if (body.regularPrice !== undefined && Number(body.regularPrice) <= 0) {
+      return NextResponse.json({ error: "Regular price must be greater than zero" }, { status: 400 });
+    }
+    if (body.salePrice !== undefined && body.salePrice !== null && Number(body.salePrice) >= Number(body.regularPrice)) {
+      return NextResponse.json({ error: "Sale price must be less than regular price" }, { status: 400 });
+    }
+
     // Find product by slug or ID
     let product = await db.product.findUnique({ where: { slug } });
     if (!product) product = await db.product.findUnique({ where: { id: slug } });

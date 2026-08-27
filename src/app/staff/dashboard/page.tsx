@@ -9,6 +9,7 @@ import { useSession } from "next-auth/react";
 interface Stats { totalProducts: number; totalOrders: number; totalCustomers: number; pendingOrders: number; lowStock: number; ordersToday: number; recentOrders: any[]; lowStockProducts: any[]; }
 
 const STATUS_STYLES: Record<string, string> = {
+  NEW: "bg-cyan-50 text-cyan-700 border border-cyan-200",
   PENDING: "bg-amber-50 text-amber-700 border border-amber-200",
   CONFIRMED: "bg-blue-50 text-blue-700 border border-blue-200",
   PROCESSING: "bg-indigo-50 text-indigo-700 border border-indigo-200",
@@ -30,11 +31,11 @@ export default function StaffDashboard() {
   useEffect(() => {
     Promise.all([
       fetch("/api/products?limit=1").then(r => r.json()),
-      fetch("/api/orders?limit=10").then(r => r.json()).catch(() => ({ orders:[], total:0 })),
-      fetch("/api/customers?limit=1").then(r => r.json()).catch(() => ({ total:0 })),
+      fetch("/api/orders?limit=10&all=true").then(r => r.json()).catch(() => ({ orders:[], total:0 })),
+      fetch("/api/customers?limit=1&all=true").then(r => r.json()).catch(() => ({ total:0 })),
     ]).then(([products, ordersData, customers]) => {
       const orders = ordersData.orders || [];
-      const pending = orders.filter((o:any) => o.status === "PENDING").length;
+      const pending = orders.filter((o:any) => o.status === "NEW" || o.status === "PENDING" || o.status === "CONFIRMED").length;
       const today = new Date().toDateString();
       const todayOrders = orders.filter((o:any) => new Date(o.createdAt).toDateString() === today).length;
       setStats({ totalProducts: products.total||0, totalOrders: ordersData.total||orders.length, totalCustomers: customers.total||0, pendingOrders: pending, lowStock:0, ordersToday: todayOrders, recentOrders: orders.slice(0,5), lowStockProducts: [] });

@@ -75,7 +75,7 @@ export default function HomePage() {
     <div className="">
       {/* HERO */}
       <section className="container-shop relative mt-5 overflow-hidden rounded-[2rem] bg-[#1f2521] text-white shadow-[0_20px_70px_rgba(31,33,31,.18)] md:mt-7">
-        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url(/images/banners/hero.png)" }} />
+        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url(/images/banners/hero-living-room.png)" }} />
         
         <div className="absolute -right-4 top-10 h-44 w-44 rounded-full bg-[#d5966e]/20 blur-3xl" />
         
@@ -115,9 +115,14 @@ export default function HomePage() {
             </div>
           </div>
           <div className="order-1 relative hidden min-h-[250px] overflow-hidden sm:block lg:order-2 lg:min-h-full">
-
+            <Image
+              src="/images/banners/hero-living-room.png"
+              alt="Premium living room with sofa and coffee table"
+              fill
+              className="object-cover"
+              priority
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-[#1f2521]/50 via-[#1f2521]/10 to-transparent lg:bg-gradient-to-r lg:from-[#1f2521]/40 lg:via-[#1f2521]/10 lg:to-transparent" />
-            
           </div>
         </div>
       </section>
@@ -162,7 +167,7 @@ export default function HomePage() {
           </Link>
         </div>
         <div className="scrollbar-hide -mx-1 flex snap-x gap-4 overflow-x-auto px-1 pb-2 md:grid md:grid-cols-7 md:gap-4 md:overflow-visible">
-          {categories.map((category, index) => (
+          {categories.filter((c: any) => (c.productCount || 0) > 0).map((category, index) => (
             <Link
               href={`/collections/${category.slug}`}
               key={category.id}
@@ -238,7 +243,7 @@ export default function HomePage() {
         </div>
       </section>
 
-            {/* THE COMFORT EDIT */}
+            {/* THE COMFORT EDIT — hidden if Comforters category is empty */}
       <section className="container-shop py-20 md:py-28">
         <div className="grid overflow-hidden rounded-[2rem] bg-[#c9b8a6] md:grid-cols-[1fr_1.1fr] md:items-center">
           <div className="relative min-h-[280px] overflow-hidden md:min-h-[480px] order-2 md:order-1">
@@ -334,14 +339,14 @@ export default function HomePage() {
                 <Truck size={21} className="mb-5 text-[#e0a681]" />
                 <h3 className="text-sm font-semibold">Fast delivery</h3>
                 <p className="mt-2 text-xs leading-5 text-white/60">
-                  Reliable delivery across India.
+                  Pan-India delivery, 3–7 business days.
                 </p>
               </div>
               <div>
                 <ShieldCheck size={21} className="mb-5 text-[#e0a681]" />
                 <h3 className="text-sm font-semibold">Quality assured</h3>
                 <p className="mt-2 text-xs leading-5 text-white/60">
-                  Pieces chosen to last.
+                  Hand-picked materials, quality checked before dispatch.
                 </p>
               </div>
               <div>

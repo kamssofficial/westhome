@@ -62,7 +62,7 @@ export default function CartPage() {
 
       {/* Items count */}
       <div className="container-shop pb-3">
-        <p className="text-sm text-secondary">{items.length} Items</p>
+        <p className="text-sm text-secondary">{items.reduce((sum, item) => sum + item.quantity, 0)} Items</p>
       </div>
 
       {/* Cart items */}
@@ -129,14 +129,14 @@ export default function CartPage() {
             </div>
           ) : (
             <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-700">
-              Add {formatPrice(amountNeeded)} more to get FREE delivery.
+              Add {formatPrice(amountNeeded)} more to get FREE delivery. <Link href="/policies/shipping" className="underline text-xs">Shipping policy</Link>
             </div>
           )}
 
           <h3 className="text-sm font-semibold text-primary mb-3">Order Summary</h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-secondary">Subtotal ({items.length} items)</span>
+              <span className="text-secondary">Subtotal ({items.reduce((s, i) => s + i.quantity, 0)} items)</span>
               <span className="font-medium">{formatPrice(subtotal)}</span>
             </div>
             <div className="flex justify-between">
@@ -148,7 +148,7 @@ export default function CartPage() {
               <span className="font-bold text-primary">{formatPrice(total)}</span>
             </div>
           </div>
-          <p className="text-[10px] text-text-muted mt-1">(Inclusive of all taxes)</p>
+          <p className="text-[10px] text-text-muted mt-1">(Inclusive of all taxes) · <Link href="/policies/shipping" className="underline text-accent">Shipping & Returns</Link></p>
         </div>
       </div>
 

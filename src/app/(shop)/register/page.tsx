@@ -93,6 +93,12 @@ export default function RegisterPage() {
             <label className="text-xs font-medium text-text-secondary mb-1 block">Confirm Password *</label>
             <input type="password" value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} required className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" placeholder="Confirm your password" autoComplete="new-password" />
           </div>
+          <div className="flex items-start gap-2">
+            <input type="checkbox" id="consent" required className="mt-0.5 accent-[#d4a574]" />
+            <label htmlFor="consent" className="text-xs text-secondary leading-relaxed">
+              I agree to the <a href="/policies/terms" className="text-accent hover:underline" target="_blank">Terms of Service</a> and <a href="/policies/shipping" className="text-accent hover:underline" target="_blank">Privacy Policy</a>
+            </label>
+          </div>
           <Button type="submit" fullWidth size="lg" loading={loading}>Create Account</Button>
         </form>
 
