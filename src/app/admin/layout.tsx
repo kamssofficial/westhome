@@ -6,8 +6,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
   LayoutDashboard, Package, FolderTree, ShoppingCart, Users,
-  Home, Tag, Percent, Settings, FileText, Menu, BarChart3, ImageIcon, 
-  ChevronRight,  Store,
+  Tag, Percent, Settings, Menu, BarChart3, 
+  ChevronRight, Store,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import WestHomeLogo from "@/components/ui/WestHomeLogo";
@@ -38,9 +38,6 @@ const NAV_GROUPS: NavGroup[] = [
     title: "Storefront",
     items: [
       { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
-      { label: "Homepage", href: "/admin/homepage", icon: Home },
-      { label: "Hero Image", href: "/admin/settings#hero-image", icon: ImageIcon },
-      { label: "Content", href: "/admin/content", icon: FileText },
     ],
   },
   {

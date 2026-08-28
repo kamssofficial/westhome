@@ -1,29 +1,148 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { X, SlidersHorizontal, ChevronDown, ChevronRight } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import {
+  X,
+  SlidersHorizontal,
+  ChevronDown,
+  Check,
+  RotateCcw,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Category } from "@/types";
 
 export interface FilterState {
-  category: string;
+  collection: string;
   subcategory: string;
+  style: string;
+  material: string;
+  color: string;
+  size: string;
   minPrice: string;
   maxPrice: string;
   inStock: string;
   sort: string;
-  length: string;
 }
 
 export const EMPTY_FILTERS: FilterState = {
-  category: "", subcategory: "", minPrice: "", maxPrice: "", inStock: "", sort: "recommended", length: "",
+  collection: "",
+  subcategory: "",
+  style: "",
+  material: "",
+  color: "",
+  size: "",
+  minPrice: "",
+  maxPrice: "",
+  inStock: "",
+  sort: "recommended",
 };
 
-// Accessories subcategories
-const ACCESSORIES_SUBS = [
-  "Soap Dispensers", "Cushion Covers", "Vases", "Tissue Boxes",
-  "Dustbins", "Flower Pots", "Trays & Holders", "Decor Accents",
+interface FilterOptions {
+  subcategories: { name: string; slug: string; count: number }[];
+  materials: string[];
+  colors: string[];
+  styles: string[];
+  patterns: string[];
+  shapes: string[];
+  finishes: string[];
+  dimensions: { lengths: number[] };
+  priceRange: { min: number; max: number };
+  totalProducts: number;
+}
+
+const EMPTY_OPTIONS: FilterOptions = {
+  subcategories: [], materials: [], colors: [], styles: [],
+  patterns: [], shapes: [], finishes: [],
+  dimensions: { lengths: [] }, priceRange: { min: 0, max: 10000 }, totalProducts: 0,
+};
+
+function FilterSection({ title, defaultOpen = false, children }: { title: string; defaultOpen?: boolean; children: React.ReactNode }) {
+  const [open, setOpen] = useState(defaultOpen);
+  const sectionId = "fs-" + title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  return (
+    <div className="border-b border-black/[.04] last:border-0">
+      <button type="button" aria-expanded={open} aria-controls={sectionId} onClick={() => setOpen(!open)} className="w-full flex items-center justify-between py-4 text-left">
+        <span className="text-sm font-semibold text-[#1a1917]">{title}</span>
+        <ChevronDown size={16} className={cn("text-[#b0aba6] transition-transform duration-200", open && "rotate-180")} />
+      </button>
+      <div id={sectionId} className={cn("overflow-hidden transition-all duration-200", open ? "max-h-[500px] opacity-100 pb-4" : "max-h-0 opacity-0")}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function PillButton({ label, active, onClick, count }: { label: string; active: boolean; onClick: () => void; count?: number }) {
+  return (
+    <button type="button" onClick={onClick} className={cn("inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-150", active ? "bg-[#1a1917] text-white" : "bg-white text-[#6b6560] border border-black/[.08] hover:border-black/[.15]")}>
+      {label}
+      {count !== undefined && count > 0 && <span className={cn("text-[9px] font-bold", active ? "text-white/70" : "text-[#b0aba6]")}>{count}</span>}
+    </button>
+  );
+}
+
+const SORT_OPTIONS = [
+  { value: "recommended", label: "Recommended" },
+  { value: "newest", label: "Newest" },
+  { value: "bestselling", label: "Most Popular" },
+  { value: "price_asc", label: "Price: Low to High" },
+  { value: "price_desc", label: "Price: High to Low" },
 ];
+
+export function SortDropdown({ value, onChange, hasPrices = true }: { value: string; onChange: (v: string) => void; hasPrices?: boolean }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const selected = SORT_OPTIONS.find((o) => o.value === value);
+  useEffect(() => {
+    const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+  const visibleOptions = hasPrices ? SORT_OPTIONS : SORT_OPTIONS.filter((o) => o.value !== "price_asc" && o.value !== "price_desc");
+  return (
+    <div ref={ref} className="relative">
+      <button type="button" aria-label="Sort products" aria-expanded={open} aria-haspopup="menu" onClick={() => setOpen(!open)} className="flex items-center gap-1.5 px-3 py-2 rounded-[1.35rem] border border-black/[.08] bg-white text-sm font-medium text-[#1a1917] hover:bg-[#f7f5f2] transition-colors">
+        <span className="hidden sm:inline">{selected?.label || "Sort"}</span>
+        <span className="sm:hidden">Sort</span>
+        <ChevronDown size={14} className={cn("text-[#b0aba6] transition-transform", open && "rotate-180")} />
+      </button>
+      {open && (
+        <div className="absolute top-full right-0 mt-2 w-52 bg-white rounded-xl border border-black/[.08] shadow-lg z-[100] py-1.5">
+          {visibleOptions.map((opt) => (
+            <button key={opt.value} type="button" onClick={() => { onChange(opt.value); setOpen(false); }} className={cn("w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors", value === opt.value ? "text-[#1a1917] font-medium bg-[#f7f5f2]" : "text-[#6b6560] hover:bg-[#f7f5f2]")}>
+              {value === opt.value && <Check size={14} className="text-[#d4a574] shrink-0" />}
+              <span className={value === opt.value ? "" : "ml-[22px]"}>{opt.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function ActiveFilterChips({ filters, categories, onRemove, onClearAll }: { filters: FilterState; categories: Category[]; onRemove: (key: keyof FilterState) => void; onClearAll: () => void }) {
+  const chips: { key: keyof FilterState; label: string }[] = [];
+  if (filters.collection) { const cat = categories.find((c) => c.slug === filters.collection); chips.push({ key: "collection", label: cat?.name || filters.collection.replace(/-/g, " ") }); }
+  if (filters.subcategory) chips.push({ key: "subcategory", label: filters.subcategory.replace(/-/g, " ") });
+  if (filters.style) chips.push({ key: "style", label: filters.style });
+  if (filters.material) chips.push({ key: "material", label: filters.material });
+  if (filters.color) chips.push({ key: "color", label: filters.color });
+  if (filters.size) chips.push({ key: "size", label: "Size: " + filters.size });
+  if (filters.minPrice || filters.maxPrice) chips.push({ key: "minPrice", label: "\u20B9" + (filters.minPrice || "0") + " \u2013 \u20B9" + (filters.maxPrice || "\u221E") });
+  if (filters.inStock) chips.push({ key: "inStock", label: "In Stock" });
+  if (chips.length === 0) return null;
+  return (
+    <div className="flex flex-wrap gap-2 items-center">
+      {chips.map((chip) => (
+        <span key={chip.key} className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#1a1917] text-white rounded-full text-xs font-medium">
+          {chip.label}
+          <button type="button" aria-label={"Remove " + chip.label + " filter"} onClick={() => onRemove(chip.key)} className="ml-0.5 hover:opacity-60"><X size={12} /></button>
+        </span>
+      ))}
+      <button type="button" onClick={onClearAll} className="text-xs text-[#d4a574] font-medium hover:underline ml-1">Clear all</button>
+    </div>
+  );
+}
 
 interface FilterPanelProps {
   open: boolean;
@@ -32,27 +151,15 @@ interface FilterPanelProps {
   initialFilters: FilterState;
   categories: Category[];
   resultCount: number;
-  lengths?: number[];
+  fixedCollection?: string;
+  initialCollection?: string;
+  hasPrices?: boolean;
 }
 
-function Section({ title, defaultOpen = false, children }: { title: string; defaultOpen?: boolean; children: React.ReactNode }) {
-  const [open, setOpen] = useState(defaultOpen);
-  const sectionId = `filter-section-${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
-  return (
-    <div className="border-b border-black/[.04] last:border-0">
-      <button type="button" aria-expanded={open} aria-controls={sectionId} onClick={() => setOpen(!open)} className="w-full flex items-center justify-between py-4 text-left">
-        <span className="text-sm font-semibold text-[#1a1917]">{title}</span>
-        <ChevronDown size={16} className={cn("text-[#b0aba6] transition-transform duration-200", open && "rotate-180")} />
-      </button>
-      {open && <div id={sectionId} className="pb-4">{children}</div>}
-    </div>
-  );
-}
-
-export default function FilterPanel({ open, onClose, onApply, initialFilters, categories, resultCount, lengths = [] }: FilterPanelProps) {
+export default function FilterPanel({ open, onClose, onApply, initialFilters, categories, resultCount, fixedCollection, initialCollection = "", hasPrices = true }: FilterPanelProps) {
   const [f, setF] = useState<FilterState>(initialFilters);
-  const [dynamicSubs, setDynamicSubs] = useState<{name:string;slug:string;count:number}[]>([]);
-  const [loadingSubs, setLoadingSubs] = useState(false);
+  const [options, setOptions] = useState<FilterOptions>(EMPTY_OPTIONS);
+  const [loadingOptions, setLoadingOptions] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
@@ -61,182 +168,135 @@ export default function FilterPanel({ open, onClose, onApply, initialFilters, ca
 
   useEffect(() => {
     if (!open) return;
+    const slug = f.collection || initialCollection || "";
+    const url = slug ? "/api/filters?category=" + slug : "/api/filters";
+    setLoadingOptions(true);
+    fetch(url).then((r) => r.json()).then((data) => {
+      setOptions({ subcategories: data.subcategories || [], materials: data.materials || [], colors: data.colors || [], styles: data.styles || [], patterns: data.patterns || [], shapes: data.shapes || [], finishes: data.finishes || [], dimensions: data.dimensions || { lengths: [] }, priceRange: data.priceRange || { min: 0, max: 10000 }, totalProducts: data.totalProducts || 0 });
+    }).catch(() => setOptions(EMPTY_OPTIONS)).finally(() => setLoadingOptions(false));
+  }, [open, f.collection, initialCollection]);
+
+  useEffect(() => {
+    if (!open) return;
     previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const focusTimer = window.setTimeout(() => closeButtonRef.current?.focus(), 0);
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onClose();
-        return;
-      }
+      if (event.key === "Escape") { event.preventDefault(); onClose(); return; }
       if (event.key !== "Tab" || !panelRef.current) return;
-      const focusable = Array.from(panelRef.current.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
-      ));
+      const focusable = Array.from(panelRef.current.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'));
       if (focusable.length === 0) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
+      const first = focusable[0]; const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
     };
     document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.clearTimeout(focusTimer);
-      document.removeEventListener("keydown", handleKeyDown);
-      previousFocusRef.current?.focus();
-      previousFocusRef.current = null;
-    };
+    return () => { window.clearTimeout(focusTimer); document.removeEventListener("keydown", handleKeyDown); previousFocusRef.current?.focus(); previousFocusRef.current = null; };
   }, [open, onClose]);
 
-  // Fetch subcategories when Accessories is selected
-  useEffect(() => {
-    if (!open || !f.category) { setDynamicSubs([]); return; }
-    const cat = categories.find(c => c.slug === f.category);
-    if (cat?.subcategories?.length) {
-      setDynamicSubs(cat.subcategories.map((s:any) => ({ name: s.name, slug: s.slug, count: s.productCount || 0 })));
-    } else {
-      setDynamicSubs([]);
-      if (f.subcategory) setF(p => ({ ...p, subcategory: "" }));
-    }
-  }, [open, f.category, categories]);
+  const set = useCallback(<K extends keyof FilterState>(key: K, val: FilterState[K]) => {
+    setF((prev) => { const next = { ...prev, [key]: val }; if (key === "collection") next.subcategory = ""; return next; });
+  }, []);
 
-  const set = <K extends keyof FilterState>(key: K, val: FilterState[K]) => {
-    setF(prev => {
-      const next = { ...prev, [key]: val };
-      // Clear subcategory when category changes to non-Accessories
-      if (key === "category") {
-        const cat = categories.find(c => c.slug === val);
-        if (!cat?.subcategories?.length) next.subcategory = "";
-      }
-      return next;
-    });
-  };
+  const clearAll = () => { fixedCollection ? setF({ ...EMPTY_FILTERS, collection: fixedCollection }) : setF({ ...EMPTY_FILTERS }); };
 
-  const clearAll = () => setF(EMPTY_FILTERS);
-
-  const activeCount = [
-    f.category !== "",
-    f.subcategory !== "",
-    f.minPrice !== "" || f.maxPrice !== "",
-    f.inStock !== "",
-  ].filter(Boolean).length;
+  const individualFilterCount = [f.collection !== "" && !fixedCollection, f.subcategory !== "", f.style !== "", f.material !== "", f.color !== "", f.size !== "", f.minPrice !== "" || f.maxPrice !== "", f.inStock !== ""].filter(Boolean).length;
+  const showCollectionSection = !fixedCollection && categories.length > 0;
 
   if (!open) return null;
 
   return (
     <>
       <div className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm" aria-hidden="true" onClick={onClose} />
-      <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby="filter-panel-title" className={cn(
-        "fixed z-[70] bg-[#faf8f5] overflow-hidden flex flex-col transition-transform duration-300",
-        "inset-x-0 bottom-0 top-[8vh] rounded-t-[1.5rem]",
-        "md:inset-y-0 md:right-0 md:left-auto md:w-[380px] md:top-0 md:rounded-t-none md:rounded-l-[1.5rem]"
-      )}>
-        {/* Header */}
+      <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby="filter-panel-title" className={cn("fixed z-[70] bg-[#faf8f5] overflow-hidden flex flex-col transition-transform duration-300 ease-out", "inset-x-0 bottom-0 top-[8vh] rounded-t-[1.5rem]", "md:inset-y-0 md:right-0 md:left-auto md:w-[380px] md:top-0 md:rounded-t-none md:rounded-l-[1.5rem]")}>
         <div className="flex items-center justify-between px-5 py-4 border-b border-black/[.06] shrink-0">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <SlidersHorizontal size={17} className="text-[#1a1917]" />
             <span id="filter-panel-title" className="text-base font-semibold text-[#1a1917]">Filters</span>
-            {activeCount > 0 && <span className="w-5 h-5 rounded-full bg-[#d4a574] text-white text-[10px] font-bold flex items-center justify-center">{activeCount}</span>}
+            {individualFilterCount > 0 && <span className="w-5 h-5 rounded-full bg-[#d4a574] text-white text-[10px] font-bold flex items-center justify-center">{individualFilterCount}</span>}
           </div>
           <div className="flex items-center gap-3">
-            {activeCount > 0 && <button type="button" onClick={clearAll} className="text-xs font-medium text-[#d4a574] hover:text-[#c49564]">Clear All</button>}
-            <button ref={closeButtonRef} type="button" aria-label="Close filters" onClick={onClose} className="w-8 h-8 flex items-center justify-center hover:bg-black/[.04] rounded-full"><X size={18} className="text-[#6b6560]" /></button>
+            {individualFilterCount > 0 && <button type="button" onClick={clearAll} className="flex items-center gap-1 text-xs font-medium text-[#d4a574] hover:text-[#c49564] transition-colors"><RotateCcw size={12} />Clear All</button>}
+            <button ref={closeButtonRef} type="button" aria-label="Close filters" onClick={onClose} className="w-8 h-8 flex items-center justify-center hover:bg-black/[.04] rounded-full transition-colors"><X size={18} className="text-[#6b6560]" /></button>
           </div>
         </div>
-
-        {/* Scrollable body */}
-        <div className="flex-1 overflow-y-auto px-5">
-          {/* CATEGORY */}
-          <Section title="Category" defaultOpen={true}>
-            <div className="flex flex-wrap gap-1.5">
-              <button type="button" onClick={() => set("category", "")}
-                className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all",
-                  !f.category ? "bg-[#1a1917] text-white" : "bg-white text-[#6b6560] border border-black/[.08] hover:border-black/[.15]"
-                )}>All</button>
-              {categories.map(cat => (
-                <button type="button" key={cat.slug} onClick={() => set("category", cat.slug)}
-                  className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all",
-                    f.category === cat.slug ? "bg-[#1a1917] text-white" : "bg-white text-[#6b6560] border border-black/[.08] hover:border-black/[.15]"
-                  )}>{cat.name}</button>
-              ))}
-            </div>
-          </Section>
-
-          {/* SUBCATEGORY — only when category has subcategories */}
-          {dynamicSubs.length > 0 && (
-            <Section title="Subcategory" defaultOpen={true}>
+        <div className="flex-1 overflow-y-auto overscroll-contain px-5">
+          {showCollectionSection && (
+            <FilterSection title="Collection" defaultOpen={true}>
               <div className="flex flex-wrap gap-1.5">
-                <button type="button" onClick={() => set("subcategory", "")}
-                  className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all",
-                    !f.subcategory ? "bg-[#1a1917] text-white" : "bg-white text-[#6b6560] border border-black/[.08] hover:border-black/[.15]"
-                  )}>All</button>
-                {dynamicSubs.map(sub => (
-                  <button type="button" key={sub.slug} onClick={() => set("subcategory", sub.slug)}
-                    className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all",
-                      f.subcategory === sub.slug ? "bg-[#1a1917] text-white" : "bg-white text-[#6b6560] border border-black/[.08] hover:border-black/[.15]"
-                    )}>{sub.name}</button>
-                ))}
+                <PillButton label="All" active={f.collection === ""} onClick={() => set("collection", "")} />
+                {categories.map((cat) => <PillButton key={cat.slug} label={cat.name} active={f.collection === cat.slug} onClick={() => set("collection", cat.slug)} count={cat.productCount} />)}
               </div>
-            </Section>
+            </FilterSection>
           )}
-
-          {/* PRICE */}
-          <Section title="Price" defaultOpen={true}>
-            <div className="flex items-center gap-2">
-              <div className="flex-1">
-                <label htmlFor="filter-min-price" className="text-[10px] font-medium text-[#b0aba6] uppercase tracking-wider mb-1 block">Min</label>
-                <input id="filter-min-price" type="number" min="0" value={f.minPrice} onChange={e => set("minPrice", e.target.value)}
-                  placeholder="₹0" className="w-full px-3 py-2 bg-white border border-black/[.08] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#d4a574]/30" />
-              </div>
-              <span className="text-[#b0aba6] mt-4">—</span>
-              <div className="flex-1">
-                <label htmlFor="filter-max-price" className="text-[10px] font-medium text-[#b0aba6] uppercase tracking-wider mb-1 block">Max</label>
-                <input id="filter-max-price" type="number" min="0" value={f.maxPrice} onChange={e => set("maxPrice", e.target.value)}
-                  placeholder="Any" className="w-full px-3 py-2 bg-white border border-black/[.08] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#d4a574]/30" />
-              </div>
-            </div>
-          </Section>
-
-          {/* LENGTH — only for carpets */}
-          {lengths.length > 0 && (
-            <Section title="Length" defaultOpen={true}>
+          {options.subcategories.length > 0 && (
+            <FilterSection title="Type" defaultOpen={true}>
               <div className="flex flex-wrap gap-1.5">
-                <button type="button" onClick={() => set("length", "")}
-                  className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all",
-                    !f.length ? "bg-[#1a1917] text-white" : "bg-white text-[#6b6560] border border-black/[.08] hover:border-black/[.15]"
-                  )}>All</button>
-                {lengths.map(len => (
-                  <button type="button" key={len} onClick={() => set("length", String(len))}
-                    className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all",
-                      f.length === String(len) ? "bg-[#1a1917] text-white" : "bg-white text-[#6b6560] border border-black/[.08] hover:border-black/[.15]"
-                    )}>{len} cm</button>
-                ))}
+                <PillButton label="All" active={f.subcategory === ""} onClick={() => set("subcategory", "")} />
+                {options.subcategories.map((sub) => <PillButton key={sub.slug} label={sub.name} active={f.subcategory === sub.slug} onClick={() => set("subcategory", sub.slug)} count={sub.count} />)}
               </div>
-            </Section>
+            </FilterSection>
           )}
-
-          {/* AVAILABILITY */}
-          <Section title="Availability">
+          {options.styles.length > 0 && (
+            <FilterSection title="Style" defaultOpen={false}>
+              <div className="flex flex-wrap gap-1.5">
+                <PillButton label="All" active={f.style === ""} onClick={() => set("style", "")} />
+                {options.styles.map((s) => <PillButton key={s} label={s} active={f.style === s} onClick={() => set("style", f.style === s ? "" : s)} />)}
+              </div>
+            </FilterSection>
+          )}
+          {options.materials.length > 0 && (
+            <FilterSection title="Material" defaultOpen={false}>
+              <div className="flex flex-wrap gap-1.5">
+                <PillButton label="All" active={f.material === ""} onClick={() => set("material", "")} />
+                {options.materials.map((m) => <PillButton key={m} label={m} active={f.material === m} onClick={() => set("material", f.material === m ? "" : m)} />)}
+              </div>
+            </FilterSection>
+          )}
+          {options.colors.length > 0 && (
+            <FilterSection title="Color" defaultOpen={false}>
+              <div className="flex flex-wrap gap-1.5">
+                <PillButton label="All" active={f.color === ""} onClick={() => set("color", "")} />
+                {options.colors.map((c) => <PillButton key={c} label={c} active={f.color === c} onClick={() => set("color", f.color === c ? "" : c)} />)}
+              </div>
+            </FilterSection>
+          )}
+          {options.dimensions.lengths.length > 0 && (
+            <FilterSection title="Size" defaultOpen={false}>
+              <div className="flex flex-wrap gap-1.5">
+                <PillButton label="All" active={f.size === ""} onClick={() => set("size", "")} />
+                {options.dimensions.lengths.map((len) => <PillButton key={len} label={len + " cm"} active={f.size === String(len)} onClick={() => set("size", f.size === String(len) ? "" : String(len))} />)}
+              </div>
+            </FilterSection>
+          )}
+          {hasPrices && (
+            <FilterSection title="Price Range" defaultOpen={true}>
+              <div className="flex items-center gap-2">
+                <div className="flex-1">
+                  <label htmlFor="filter-min-price" className="text-[10px] font-medium text-[#b0aba6] uppercase tracking-wider mb-1 block">Min</label>
+                  <input id="filter-min-price" type="number" min="0" value={f.minPrice} onChange={(e) => set("minPrice", e.target.value)} placeholder="0" className="w-full px-3 py-2 bg-white border border-black/[.08] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#d4a574]/30 transition-shadow" />
+                </div>
+                <span className="text-[#b0aba6] mt-4">&mdash;</span>
+                <div className="flex-1">
+                  <label htmlFor="filter-max-price" className="text-[10px] font-medium text-[#b0aba6] uppercase tracking-wider mb-1 block">Max</label>
+                  <input id="filter-max-price" type="number" min="0" value={f.maxPrice} onChange={(e) => set("maxPrice", e.target.value)} placeholder="Any" className="w-full px-3 py-2 bg-white border border-black/[.08] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#d4a574]/30 transition-shadow" />
+                </div>
+              </div>
+            </FilterSection>
+          )}
+          <FilterSection title="Availability" defaultOpen={false}>
             <div className="flex gap-1.5">
-              {[{ label: "All", value: "" }, { label: "In Stock", value: "true" }].map(opt => (
-                <button type="button" key={opt.value} onClick={() => set("inStock", opt.value)}
-                  className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all",
-                    f.inStock === opt.value ? "bg-[#1a1917] text-white" : "bg-white text-[#6b6560] border border-black/[.08] hover:border-black/[.15]"
-                  )}>{opt.label}</button>
-              ))}
+              {[{ label: "All", value: "" }, { label: "In Stock", value: "true" }].map((opt) => <PillButton key={opt.value} label={opt.label} active={f.inStock === opt.value} onClick={() => set("inStock", opt.value)} />)}
             </div>
-          </Section>
+          </FilterSection>
+          {loadingOptions && (
+            <div className="py-4 flex items-center justify-center gap-2 text-[#b0aba6]">
+              <div className="w-4 h-4 border-2 border-[#b0aba6] border-t-transparent rounded-full animate-spin" />
+              <span className="text-xs">Loading filters...</span>
+            </div>
+          )}
         </div>
-
-        {/* Sticky footer */}
         <div className="px-5 py-4 border-t border-black/[.06] shrink-0 bg-[#faf8f5]">
-          <button type="button" onClick={() => { onApply(f); onClose(); }}
-            className="w-full py-3.5 bg-[#1a1917] text-white rounded-2xl text-sm font-semibold hover:bg-[#2d2926] transition-colors min-h-[48px]">
+          <button type="button" onClick={() => { onApply(f); onClose(); }} className="w-full py-3.5 bg-[#1a1917] text-white rounded-2xl text-sm font-semibold hover:bg-[#2d2926] active:scale-[.98] transition-all min-h-[48px]">
             Show {resultCount} Result{resultCount !== 1 ? "s" : ""}
           </button>
         </div>

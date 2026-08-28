@@ -10,6 +10,7 @@ export async function GET(request: NextRequest) {
     const query = searchParams.get("q") || searchParams.get("query") || "";
     const category = searchParams.get("category") || "";
     const subcategory = searchParams.get("subcategory") || "";
+    const type = searchParams.get("type") || "";
     const sort = searchParams.get("sort") || "recommended";
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "24");
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
 
     // Generate cache key
     const cacheKey = MemoryCache.generateKey("products", {
-      query, category, subcategory, sort, page, limit,
+      query, category, subcategory, type, sort, page, limit,
       featured, newArrivals, bestsellers, lite, idsParam,
       status: searchParams.get("status"),
       all: searchParams.get("all"),
@@ -54,6 +55,7 @@ export async function GET(request: NextRequest) {
     if (query) { where.OR = [{ name: { contains: query, mode: "insensitive" } }, { description: { contains: query, mode: "insensitive" } }, { shortDescription: { contains: query, mode: "insensitive" } }, { material: { contains: query, mode: "insensitive" } }]; }
     if (category) { where.category = { slug: category }; }
     if (subcategory) { where.subcategory = { slug: subcategory }; }
+    if (type) { where.subcategory = { slug: type }; }
     if (featured) where.isFeatured = true;
     if (newArrivals) where.isNewArrival = true;
     if (bestsellers) where.isBestseller = true;
@@ -113,7 +115,7 @@ export async function GET(request: NextRequest) {
       case "name_asc": orderBy = [{ name: "asc" }, { id: "asc" }]; break;
       case "name_desc": orderBy = [{ name: "desc" }, { id: "asc" }]; break;
       case "price_desc": orderBy = [{ regularPrice: "desc" }, { id: "asc" }]; break;
-      case "bestselling": orderBy = { orderItems: { _count: "desc" } }; break;
+      case "bestselling": orderBy = { isBestseller: "desc", orderItems: { _count: "desc" }, id: "asc" }; break;
       default: orderBy = [{ isFeatured: "desc" }, { createdAt: "desc" }, { id: "asc" }]; break;
     }
 

@@ -12,52 +12,151 @@ export async function GET(request: NextRequest) {
     if (categorySlug) where.category = { slug: categorySlug };
     if (subcategorySlug) where.subcategory = { slug: subcategorySlug };
 
-    // Use parallel efficient queries instead of loading all products
-    const [materials, colors, styles, patterns, shapes, finishes, lengthValues, widthValues, priceAgg, stockCheck, statusCheck, reviewAgg, totalProducts] = await Promise.all([
-      db.product.findMany({ where, select: { material: true }, distinct: ["material"] }),
-      db.product.findMany({ where, select: { color: true }, distinct: ["color"] }),
-      db.product.findMany({ where, select: { style: true }, distinct: ["style"] }),
-      db.product.findMany({ where, select: { pattern: true }, distinct: ["pattern"] }),
-      db.product.findMany({ where, select: { shape: true }, distinct: ["shape"] }),
-      db.product.findMany({ where, select: { finish: true }, distinct: ["finish"] }),
-      // Query actual dimension values
-      db.product.findMany({ where: { ...where, length: { not: null } }, select: { length: true }, distinct: ["length"], orderBy: { length: "asc" } }),
-      db.product.findMany({ where: { ...where, width: { not: null } }, select: { width: true }, distinct: ["width"], orderBy: { width: "asc" } }),
-      db.product.aggregate({ where, _min: { regularPrice: true, salePrice: true }, _max: { regularPrice: true, salePrice: true } }),
-      db.product.findMany({ where, select: { stockQuantity: true }, take: 1 }),
-      db.product.findMany({ where, select: { isFeatured: true, isNewArrival: true, salePrice: true }, take: 1 }),
-      db.review.findMany({ where: { product: where, status: "APPROVED" }, select: { rating: true }, take: 1 }),
+    // Fetch subcategory counts for the Type filter (only if category is provided)
+    let subcategoryCounts: { name: string; slug: string; count: number }[] = [];
+    if (categorySlug) {
+      const cat = await db.category.findUnique({
+        where: { slug: categorySlug },
+        include: {
+          subcategories: {
+            where: { isActive: true },
+            orderBy: { position: "asc" },
+            include: {
+              _count: {
+                select: { products: { where: { isActive: true, status: "ACTIVE" } } },
+              },
+            },
+          },
+        },
+      });
+      if (cat) {
+        subcategoryCounts = cat.subcategories
+          .map((sub: any) => ({
+            name: sub.name,
+            slug: sub.slug,
+            count: sub._count.products,
+          }))
+          .filter((s: any) => s.count > 0);
+      }
+    }
+
+    // Use parallel efficient queries to get available filter values
+    const [
+      materials,
+      colors,
+      styles,
+      patterns,
+      shapes,
+      finishes,
+      lengthValues,
+      priceAgg,
+      stockCheck,
+      statusCheck,
+      totalProducts,
+    ] = await Promise.all([
+      db.product.findMany({
+        where,
+        select: { material: true },
+        distinct: ["material"],
+      }),
+      db.product.findMany({
+        where,
+        select: { color: true },
+        distinct: ["color"],
+      }),
+      db.product.findMany({
+        where,
+        select: { style: true },
+        distinct: ["style"],
+      }),
+      db.product.findMany({
+        where,
+        select: { pattern: true },
+        distinct: ["pattern"],
+      }),
+      db.product.findMany({
+        where,
+        select: { shape: true },
+        distinct: ["shape"],
+      }),
+      db.product.findMany({
+        where,
+        select: { finish: true },
+        distinct: ["finish"],
+      }),
+      db.product.findMany({
+        where: { ...where, length: { not: null } },
+        select: { length: true },
+        distinct: ["length"],
+        orderBy: { length: "asc" },
+      }),
+      db.product.aggregate({
+        where,
+        _min: { regularPrice: true, salePrice: true },
+        _max: { regularPrice: true, salePrice: true },
+      }),
+      db.product.findMany({
+        where,
+        select: { stockQuantity: true },
+        take: 1,
+      }),
+      db.product.findMany({
+        where,
+        select: {
+          isFeatured: true,
+          isNewArrival: true,
+          salePrice: true,
+          isBestseller: true,
+        },
+        take: 1,
+      }),
       db.product.count({ where }),
     ]);
 
-    // Extract unique values
+    // Extract unique non-null values
     const extract = (arr: any[], key: string) =>
       [...new Set(arr.map((item: any) => item[key]).filter(Boolean))].sort() as string[];
 
     // Price range
-    const minPrice = Number(priceAgg._min.salePrice ?? priceAgg._min.regularPrice ?? 0);
-    const maxPrice = Number(priceAgg._max.salePrice ?? priceAgg._max.regularPrice ?? 10000);
+    const minPrice = Number(
+      priceAgg._min.salePrice ?? priceAgg._min.regularPrice ?? 0
+    );
+    const maxPrice = Number(
+      priceAgg._max.salePrice ?? priceAgg._max.regularPrice ?? 10000
+    );
 
     return NextResponse.json({
+      subcategories: subcategoryCounts,
       materials: extract(materials, "material"),
       colors: extract(colors, "color"),
       styles: extract(styles, "style"),
       patterns: extract(patterns, "pattern"),
       shapes: extract(shapes, "shape"),
       finishes: extract(finishes, "finish"),
-      dimensions: { lengths: lengthValues.map((l: any) => Number(l.length)), widths: widthValues.map((w: any) => Number(w.width)) },
-      priceRange: { min: minPrice, max: maxPrice },
-      availability: { inStock: stockCheck.length > 0 && stockCheck.some(p => p.stockQuantity > 0), outOfStock: stockCheck.length > 0 && stockCheck.some(p => p.stockQuantity <= 0) },
-      productStatus: {
-        featured: statusCheck.some(p => p.isFeatured),
-        newArrival: statusCheck.some(p => p.isNewArrival),
-        onSale: statusCheck.some(p => p.salePrice !== null),
+      dimensions: {
+        lengths: lengthValues.map((l: any) => Number(l.length)),
       },
-      hasRatings: reviewAgg.length > 0,
+      priceRange: { min: minPrice, max: maxPrice },
+      availability: {
+        inStock:
+          stockCheck.length > 0 && stockCheck.some((p) => p.stockQuantity > 0),
+        outOfStock:
+          stockCheck.length > 0 &&
+          stockCheck.some((p) => p.stockQuantity <= 0),
+      },
+      productStatus: {
+        featured: statusCheck.some((p) => p.isFeatured),
+        newArrival: statusCheck.some((p) => p.isNewArrival),
+        onSale: statusCheck.some((p) => p.salePrice !== null),
+        bestseller: statusCheck.some((p) => p.isBestseller),
+      },
       totalProducts,
     });
   } catch (error) {
     console.error("Filters API error:", error);
-    return NextResponse.json({ error: "Failed to fetch filters" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch filters" },
+      { status: 500 }
+    );
   }
 }
