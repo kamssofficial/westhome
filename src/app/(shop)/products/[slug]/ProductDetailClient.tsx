@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import ProductCard from "@/components/ui/ProductCard";
 import { cn, formatPrice, getWhatsAppUrl, generateProductWhatsAppMessage } from "@/lib/utils"
-import { LiquidButton, MetalButton } from "@/components/ui/liquid-glass-button";
+
 import { useCartStore } from "@/store/cart";
 import { useWishlistStore } from "@/store/wishlist";
 import toast from "react-hot-toast";
@@ -292,28 +292,33 @@ export default function ProductDetailClient(
           </div>
         </div>
 
-        {/* Buy Now - UPI Payment */}
+        {/* Buy Now */}
         <button
           onClick={() => { trackEvent("BUY_NOW", { productId: product?.id, categoryId: product?.categoryId }); handleBuyNow(); }}
           disabled={!inStock}
           className={cn(
-            "w-full py-3.5 rounded-2xl text-sm font-semibold transition-all duration-200 mt-5",
+            "w-full h-12 rounded-2xl text-sm font-semibold transition-all duration-100 mt-5",
             inStock
-              ? "bg-[#5F259F] text-white hover:bg-[#4A1D7F] active:scale-[0.98]"
+              ? "bg-accent text-white hover:bg-accent-hover active:scale-[0.97] shadow-[0_8px_22px_rgba(181,108,69,0.25)]"
               : "bg-surface-muted text-text-muted cursor-not-allowed"
           )}
         >
-          {inStock ? "Buy Now — Pay with UPI" : "Out of Stock"}
+          {inStock ? "Buy Now" : "Out of Stock"}
         </button>
 
         {/* Add to Cart */}
-          <MetalButton
-            onClick={handleAddToCart}
-            disabled={!inStock}
-            className={cn("w-full py-3.5 text-sm font-semibold mt-3", !inStock && "opacity-50 cursor-not-allowed")}
-          >
-            {inStock ? "Add to Cart" : "Out of Stock"}
-          </MetalButton>
+        <button
+          onClick={handleAddToCart}
+          disabled={!inStock}
+          className={cn(
+            "w-full h-12 rounded-2xl text-sm font-semibold transition-all duration-100 mt-2.5",
+            inStock
+              ? "bg-primary text-white hover:bg-primary-hover active:scale-[0.97] shadow-[0_8px_22px_rgba(31,33,31,0.16)]"
+              : "bg-surface-muted text-text-muted cursor-not-allowed"
+          )}
+        >
+          {inStock ? "Add to Cart" : "Out of Stock"}
+        </button>
 
         {/* Enquire on WhatsApp */}
         <a
@@ -321,9 +326,9 @@ export default function ProductDetailClient(
           target="_blank"
           rel="noopener noreferrer"
           onClick={() => trackEvent("WHATSAPP_ENQUIRY", { productId: product?.id, categoryId: product?.categoryId })}
-          className="w-full py-3.5 rounded-2xl text-sm font-semibold border-2 border-[#25D366] text-[#25D366] hover:bg-[#25D366] hover:text-white transition-all duration-200 text-center flex items-center justify-center gap-2 mt-3"
+          className="w-full h-12 rounded-2xl text-sm font-semibold border border-[#25D366]/30 bg-[#25D366]/5 text-[#25D366] hover:bg-[#25D366]/10 active:scale-[0.97] transition-all duration-100 text-center flex items-center justify-center gap-2 mt-2.5"
         >
-          <MessageCircle size={18} />
+          <MessageCircle size={16} />
           Enquire on WhatsApp
         </a>
 
