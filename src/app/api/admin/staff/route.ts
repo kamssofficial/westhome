@@ -7,6 +7,8 @@ import { requireAdmin } from "@/lib/apiAuth";
 const staffCreationAttempts = new Map<string, { count: number; resetAt: number }>();
 const MAX_STAFF_CREATION = 10;
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const STAFF_ROLES = ["ADMIN", "MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER", "STAFF"] as const;
+const STAFF_ROLE_SET = new Set<string>(STAFF_ROLES);
 
 function checkStaffRateLimit(adminId: string): boolean {
   const now = Date.now();
@@ -32,7 +34,7 @@ export async function GET(request: NextRequest) {
     const query = searchParams.get("q") || "";
     const role = searchParams.get("role") || "";
 
-    const where: any = {};
+    const where: any = { role: { in: [...STAFF_ROLES] } };
     if (query) {
       where.OR = [
         { name: { contains: query, mode: "insensitive" } },
@@ -41,6 +43,7 @@ export async function GET(request: NextRequest) {
       ];
     }
     if (role) {
+      if (!STAFF_ROLE_SET.has(role)) return NextResponse.json({ staff: [] });
       where.role = role;
     }
     const status = searchParams.get("status") || "";
@@ -94,8 +97,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate role — never allow CUSTOMER or ADMIN creation through this endpoint
-    const validRoles = ["MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER"];
+    // Validate role — customer accounts cannot be created through staff management.
+    const validRoles = ["MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER", "STAFF"];
     if (role && !validRoles.includes(role)) {
       return NextResponse.json(
         { error: "Invalid role" },

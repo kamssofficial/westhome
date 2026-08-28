@@ -8,22 +8,28 @@ async function main() {
   console.log("🌱 Seeding WESTHOME database...\n");
 
   // ============================================================
-  // ADMIN USER
+  // LOCAL DEFAULT ACCOUNTS ONLY
   // ============================================================
-  console.log("👤 Creating admin user...");
-  const adminPasswordHash = await bcrypt.hash("Westhome1144", 12);
-  const admin = await db.user.upsert({
-    where: { email: "sanoojbm1144@gmail.com" },
-    update: { name: "sanooj" },
-    create: {
-      name: "sanooj",
-      email: "sanoojbm1144@gmail.com",
-      passwordHash: adminPasswordHash,
-      role: "ADMIN",
-      emailVerified: new Date(),
-    },
-  });
-  console.log(`   ✅ Admin: ${admin.email} / Westhome1144`);
+  // Never recreate the seeded administrator in production. Production accounts must be managed explicitly.
+  const allowDefaultAccounts = process.env.NODE_ENV !== "production" || process.env.ALLOW_DEFAULT_ACCOUNTS === "true";
+  if (allowDefaultAccounts) {
+    console.log("👤 Creating local default admin...");
+    const adminPasswordHash = await bcrypt.hash("Westhome1144", 12);
+    const admin = await db.user.upsert({
+      where: { email: "sanoojbm1144@gmail.com" },
+      update: { name: "sanooj" },
+      create: {
+        name: "sanooj",
+        email: "sanoojbm1144@gmail.com",
+        passwordHash: adminPasswordHash,
+        role: "ADMIN",
+        emailVerified: new Date(),
+      },
+    });
+    console.log(`   ✅ Local admin created or retained: ${admin.email}`);
+  } else {
+    console.log("   ⏭️ Production default admin seeding disabled");
+  }
 
   // ============================================================
   // STAFF USER
@@ -196,8 +202,10 @@ async function main() {
   console.log(`   Homepage Sections: ${counts[7]}`);
 
   console.log("\n🎉 Seed complete!");
-  console.log("   Admin login: sanoojbm1144@gmail.com / Westhome1144");
-  console.log("   Staff login: salmansahil2005@gmail.com / SALLUshai@2005");
+  if (allowDefaultAccounts) {
+    console.log("   Local admin: sanoojbm1144@gmail.com");
+    console.log("   Local staff: salmansahil2005@gmail.com");
+  }
 }
 
 main()

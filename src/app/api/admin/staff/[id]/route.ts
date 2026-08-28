@@ -33,7 +33,7 @@ export async function GET(
       },
     });
 
-    if (!user) {
+    if (!user || user.role === "CUSTOMER") {
       return NextResponse.json({ error: "Staff member not found" }, { status: 404 });
     }
 
@@ -58,12 +58,12 @@ export async function PUT(
 
     // Find existing user
     const existing = await db.user.findUnique({ where: { id } });
-    if (!existing) {
+    if (!existing || existing.role === "CUSTOMER") {
       return NextResponse.json({ error: "Staff member not found" }, { status: 404 });
     }
 
     // Validate role
-    const validRoles = ["ADMIN", "MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER"];
+    const validRoles = ["ADMIN", "MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER", "STAFF"];
     if (role && !validRoles.includes(role)) {
       return NextResponse.json({ error: "Invalid role" }, { status: 400 });
     }
@@ -132,18 +132,17 @@ export async function DELETE(
     const permanent = searchParams.get("permanent") === "true";
 
     const existing = await db.user.findUnique({ where: { id } });
-    if (!existing) {
+    if (!existing || existing.role === "CUSTOMER") {
       return NextResponse.json({ error: "Staff member not found" }, { status: 404 });
     }
 
-    // Prevent deleting the last admin
+    const isSeededTestAdmin = existing.email.toLowerCase() === "sanoojbm1144@gmail.com";
+    // Protect the last real admin. The known seeded test admin may be permanently removed only if
+    // another active staff account can be promoted atomically, so the store is never left unmanaged.
     if (existing.role === "ADMIN") {
       const adminCount = await db.user.count({ where: { role: "ADMIN", isActive: true } });
-      if (adminCount <= 1) {
-        return NextResponse.json(
-          { error: "Cannot delete the last admin account" },
-          { status: 400 }
-        );
+      if (adminCount <= 1 && !(permanent && isSeededTestAdmin)) {
+        return NextResponse.json({ error: "Cannot delete the last admin account" }, { status: 400 });
       }
     }
 
@@ -155,6 +154,16 @@ export async function DELETE(
     if (permanent) {
       // Permanent deletion: remove personal data and dependent records atomically while preserving historical order rows.
       await db.$transaction(async (tx) => {
+        if (existing.role === "ADMIN" && isSeededTestAdmin) {
+          const replacementAdmin = await tx.user.findFirst({
+            where: { id: { not: id }, isActive: true, role: { in: ["MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER", "STAFF"] } },
+            orderBy: { createdAt: "asc" },
+            select: { id: true, email: true },
+          });
+          if (!replacementAdmin) throw new Error("Cannot remove the test admin because no active staff account can replace it");
+          await tx.user.update({ where: { id: replacementAdmin.id }, data: { role: "ADMIN" } });
+          await tx.auditLog.create({ data: { action: "UPDATE", entity: "USER", entityId: replacementAdmin.id, details: { reason: "Promoted while removing seeded test admin", email: replacementAdmin.email } } });
+        }
         await tx.auditLog.create({ data: { action: "DELETE", entity: "USER", entityId: id, details: { email: existing.email, name: existing.name, role: existing.role, permanent: true } } });
         await tx.order.updateMany({ where: { userId: id }, data: { userId: null, customerName: "Deleted Staff", customerEmail: "deleted@westhome.invalid", customerPhone: "DELETED" } });
         await tx.wishlist.deleteMany({ where: { userId: id } });
