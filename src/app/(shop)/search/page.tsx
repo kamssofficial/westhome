@@ -40,6 +40,7 @@ function SearchContent() {
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [filterLengths, setFilterLengths] = useState<number[]>([]);
   const [showFilters, setShowFilters] = useState(false);
   const [showSort, setShowSort] = useState(false);
   const [filters, setFilters] = useState<FilterState>({ ...EMPTY_FILTERS });
@@ -55,6 +56,7 @@ function SearchContent() {
 
   useEffect(() => {
     fetch("/api/categories").then(r => r.json()).then(d => setCategories(d.categories || [])).catch(() => {});
+    fetch("/api/filters" + (filters.category ? "?category=" + filters.category : "")).then(r => r.json()).then(d => setFilterLengths(d.dimensions?.lengths || [])).catch(() => {});
   }, []);
 
   const saveRecentSearch = (q: string) => {
@@ -75,6 +77,7 @@ function SearchContent() {
       if (filters.minPrice) params.set("minPrice", filters.minPrice);
       if (filters.maxPrice) params.set("maxPrice", filters.maxPrice);
       if (filters.inStock) params.set("inStock", filters.inStock);
+      if (filters.length) params.set("length", filters.length);
       params.set("sort", sort);
       params.set("page", String(pageNum));
       params.set("limit", String(PAGE_SIZE));
@@ -232,7 +235,7 @@ function SearchContent() {
           </div>
         </div>}
         {showCatalogControls && <FilterPanel open={showFilters} onClose={() => setShowFilters(false)} onApply={applyFilters}
-          initialFilters={filters} categories={categories} resultCount={total} />}
+          initialFilters={filters} categories={categories} resultCount={total} lengths={filterLengths} />}
       </div>
 
       {/* Active Filter Chips */}
@@ -255,6 +258,12 @@ function SearchContent() {
               <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#1a1917] text-white rounded-full text-xs font-medium">
                 {"₹"}{filters.minPrice || "0"} - {"₹"}{filters.maxPrice || "∞"}
                 <button type="button" aria-label="Remove price filter" onClick={() => setFilters(p => ({...p, minPrice: "", maxPrice: ""}))} className="ml-0.5 hover:opacity-60"><X size={12} /></button>
+              </span>
+            )}
+            {filters.length && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#1a1917] text-white rounded-full text-xs font-medium">
+                Length: {filters.length} cm
+                <button type="button" aria-label="Remove length filter" onClick={() => setFilters(p => ({...p, length: ""}))} className="ml-0.5 hover:opacity-60"><X size={12} /></button>
               </span>
             )}
             {filters.inStock && (

@@ -52,6 +52,7 @@ function CategoryContent({ category: initialCategory, initialProducts, initialTo
   const [material, setMaterial] = useState("");
   const [inStockOnly, setInStockOnly] = useState(false);
   const [onSaleOnly, setOnSaleOnly] = useState(false);
+  const [carpetLength, setCarpetLength] = useState("");
   const [error, setError] = useState(false);
 
   const observerRef = useRef<HTMLDivElement>(null);
@@ -79,6 +80,7 @@ function CategoryContent({ category: initialCategory, initialProducts, initialTo
       if (material) fetchParams.set("material", material);
       if (inStockOnly) fetchParams.set("inStock", "true");
       if (onSaleOnly) fetchParams.set("onSale", "true");
+      if (carpetLength) fetchParams.set("length", carpetLength);
 
       const prodRes = await fetch("/api/products?lite=true&" + fetchParams.toString());
       if (prodRes.ok) {
@@ -216,6 +218,10 @@ function CategoryContent({ category: initialCategory, initialProducts, initialTo
                 <label htmlFor="collection-material" className="text-xs font-medium text-text-secondary mb-1 block">Material</label>
                 <input id="collection-material" type="text" value={material} onChange={(e) => setMaterial(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" placeholder="e.g. Wool, Ceramic" />
               </div>
+              <div>
+                <label htmlFor="collection-length" className="text-xs font-medium text-text-secondary mb-1 block">Length (cm)</label>
+                <input id="collection-length" type="number" value={carpetLength} onChange={(e) => setCarpetLength(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" placeholder="e.g. 100" />
+              </div>
               <div className="flex items-end gap-4">
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
                   <input id="collection-in-stock" type="checkbox" checked={inStockOnly} onChange={(e) => setInStockOnly(e.target.checked)} className="accent-accent" />
@@ -227,10 +233,10 @@ function CategoryContent({ category: initialCategory, initialProducts, initialTo
                 </label>
               </div>
             </div>
-            {(minPrice || maxPrice || material || inStockOnly || onSaleOnly) && (
+            {(minPrice || maxPrice || material || inStockOnly || onSaleOnly || carpetLength) && (
               <button
                 type="button"
-                onClick={() => { setMinPrice(""); setMaxPrice(""); setMaterial(""); setInStockOnly(false); setOnSaleOnly(false); }}
+                onClick={() => { setMinPrice(""); setMaxPrice(""); setMaterial(""); setInStockOnly(false); setOnSaleOnly(false); setCarpetLength(""); }}
                 className="mt-3 text-xs text-accent hover:underline"
               >
                 Clear all filters

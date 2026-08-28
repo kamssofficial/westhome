@@ -13,13 +13,16 @@ export async function GET(request: NextRequest) {
     if (subcategorySlug) where.subcategory = { slug: subcategorySlug };
 
     // Use parallel efficient queries instead of loading all products
-    const [materials, colors, styles, patterns, shapes, finishes, priceAgg, stockCheck, statusCheck, reviewAgg, totalProducts] = await Promise.all([
+    const [materials, colors, styles, patterns, shapes, finishes, lengthValues, widthValues, priceAgg, stockCheck, statusCheck, reviewAgg, totalProducts] = await Promise.all([
       db.product.findMany({ where, select: { material: true }, distinct: ["material"] }),
       db.product.findMany({ where, select: { color: true }, distinct: ["color"] }),
       db.product.findMany({ where, select: { style: true }, distinct: ["style"] }),
       db.product.findMany({ where, select: { pattern: true }, distinct: ["pattern"] }),
       db.product.findMany({ where, select: { shape: true }, distinct: ["shape"] }),
       db.product.findMany({ where, select: { finish: true }, distinct: ["finish"] }),
+      // Query actual dimension values
+      db.product.findMany({ where: { ...where, length: { not: null } }, select: { length: true }, distinct: ["length"], orderBy: { length: "asc" } }),
+      db.product.findMany({ where: { ...where, width: { not: null } }, select: { width: true }, distinct: ["width"], orderBy: { width: "asc" } }),
       db.product.aggregate({ where, _min: { regularPrice: true, salePrice: true }, _max: { regularPrice: true, salePrice: true } }),
       db.product.findMany({ where, select: { stockQuantity: true }, take: 1 }),
       db.product.findMany({ where, select: { isFeatured: true, isNewArrival: true, salePrice: true }, take: 1 }),
@@ -42,7 +45,7 @@ export async function GET(request: NextRequest) {
       patterns: extract(patterns, "pattern"),
       shapes: extract(shapes, "shape"),
       finishes: extract(finishes, "finish"),
-      dimensions: { widths: [], heights: [], lengths: [], diameters: [] },
+      dimensions: { lengths: lengthValues.map((l: any) => Number(l.length)), widths: widthValues.map((w: any) => Number(w.width)) },
       priceRange: { min: minPrice, max: maxPrice },
       availability: { inStock: stockCheck.length > 0 && stockCheck.some(p => p.stockQuantity > 0), outOfStock: stockCheck.length > 0 && stockCheck.some(p => p.stockQuantity <= 0) },
       productStatus: {

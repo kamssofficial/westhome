@@ -12,10 +12,11 @@ export interface FilterState {
   maxPrice: string;
   inStock: string;
   sort: string;
+  length: string;
 }
 
 export const EMPTY_FILTERS: FilterState = {
-  category: "", subcategory: "", minPrice: "", maxPrice: "", inStock: "", sort: "recommended",
+  category: "", subcategory: "", minPrice: "", maxPrice: "", inStock: "", sort: "recommended", length: "",
 };
 
 // Accessories subcategories
@@ -31,6 +32,7 @@ interface FilterPanelProps {
   initialFilters: FilterState;
   categories: Category[];
   resultCount: number;
+  lengths?: number[];
 }
 
 function Section({ title, defaultOpen = false, children }: { title: string; defaultOpen?: boolean; children: React.ReactNode }) {
@@ -47,7 +49,7 @@ function Section({ title, defaultOpen = false, children }: { title: string; defa
   );
 }
 
-export default function FilterPanel({ open, onClose, onApply, initialFilters, categories, resultCount }: FilterPanelProps) {
+export default function FilterPanel({ open, onClose, onApply, initialFilters, categories, resultCount, lengths = [] }: FilterPanelProps) {
   const [f, setF] = useState<FilterState>(initialFilters);
   const [dynamicSubs, setDynamicSubs] = useState<{name:string;slug:string;count:number}[]>([]);
   const [loadingSubs, setLoadingSubs] = useState(false);
@@ -199,6 +201,24 @@ export default function FilterPanel({ open, onClose, onApply, initialFilters, ca
               </div>
             </div>
           </Section>
+
+          {/* LENGTH — only for carpets */}
+          {lengths.length > 0 && (
+            <Section title="Length" defaultOpen={true}>
+              <div className="flex flex-wrap gap-1.5">
+                <button type="button" onClick={() => set("length", "")}
+                  className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all",
+                    !f.length ? "bg-[#1a1917] text-white" : "bg-white text-[#6b6560] border border-black/[.08] hover:border-black/[.15]"
+                  )}>All</button>
+                {lengths.map(len => (
+                  <button type="button" key={len} onClick={() => set("length", String(len))}
+                    className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all",
+                      f.length === String(len) ? "bg-[#1a1917] text-white" : "bg-white text-[#6b6560] border border-black/[.08] hover:border-black/[.15]"
+                    )}>{len} cm</button>
+                ))}
+              </div>
+            </Section>
+          )}
 
           {/* AVAILABILITY */}
           <Section title="Availability">

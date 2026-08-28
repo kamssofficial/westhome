@@ -99,6 +99,9 @@ export async function GET(request: NextRequest) {
     if (maxWidth) where.width = { ...where.width, lte: parseFloat(maxWidth) };
     if (minHeight) where.height = { ...where.height, gte: parseFloat(minHeight) };
     if (maxHeight) where.height = { ...where.height, lte: parseFloat(maxHeight) };
+    // Exact length match (for carpet filter)
+    const exactLength = searchParams.get("length");
+    if (exactLength) where.length = parseFloat(exactLength);
     if (minLength) where.length = { ...where.length, gte: parseFloat(minLength) };
     if (maxLength) where.length = { ...where.length, lte: parseFloat(maxLength) };
     if (minDiameter) where.diameter = { ...where.diameter, gte: parseFloat(minDiameter) };
