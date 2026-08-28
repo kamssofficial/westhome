@@ -70,6 +70,10 @@ requireText(collection, "End of collection.", "Collection end text is not a noti
 requireText(collection, 'aria-label="Grid view"', "Collection grid view is named");
 requireText(collection, 'aria-label="List view"', "Collection list view is named");
 
+const homepage = await source("src/app/(shop)/page.tsx");
+assert.ok(!homepage.includes("HomepageRenderer"), "Customer homepage does not render the incomplete CMS text-card fallback");
+requireText(homepage, "hero-living-room.png", "Customer homepage renders the real hero asset on first load");
+
 const checkout = await source("src/app/(shop)/checkout/page.tsx");
 const paymentIndex = checkout.indexOf('{step === 2 && (');
 const successIndex = checkout.indexOf('{step === 3 && (');
@@ -99,4 +103,4 @@ const productApi = await source("src/app/api/products/[slug]/route.ts");
 assert.ok(!productApi.includes('"CONTENT_MANAGER"'), "Content managers do not receive broad product write access");
 
 console.log("QA audit regression checks passed.");
-console.log("Validated: route targets, contact source consistency, form/button semantics, dialog keyboard behavior, collection empty states, checkout acknowledgement/order gating, dashboard count source, product-write authorization, and sale-only customer pricing.");
+console.log("Validated: route targets, contact source consistency, form/button semantics, dialog keyboard behavior, collection empty states, homepage first-load fallback removal, checkout acknowledgement/order gating, dashboard count source, product-write authorization, and sale-only customer pricing.");
