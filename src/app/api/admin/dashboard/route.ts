@@ -10,6 +10,10 @@ export async function GET() {
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const startOfToday = new Date(now);
+    startOfToday.setHours(0, 0, 0, 0);
+    const startOfTomorrow = new Date(startOfToday);
+    startOfTomorrow.setDate(startOfTomorrow.getDate() + 1);
 
     // Fetch stats in parallel
     const [
@@ -17,6 +21,7 @@ export async function GET() {
       totalProducts,
       totalCustomers,
       pendingOrders,
+      ordersToday,
       lowStockProducts,
       recentOrders,
       revenueResult,
@@ -26,14 +31,14 @@ export async function GET() {
       ,
     ] = await Promise.all([
       db.order.count(),
-      db.product.count({ where: { isActive: true } }),
-      db.user.count({ where: { role: "CUSTOMER" } }),
-      db.order.count({ where: { status: { in: ["NEW", "CONFIRMED"] } } }),
+      db.product.count({ where: { isActive: true, status: "ACTIVE" } }),
+      db.user.count({ where: { role: "CUSTOMER", isActive: true } }),
+      db.order.count({ where: { status: { in: ["NEW", "CONFIRMED", "ON_HOLD"] } } }),
+      db.order.count({ where: { createdAt: { gte: startOfToday, lt: startOfTomorrow } } }),
       db.product.findMany({
-        where: { isActive: true, trackInventory: true, stockQuantity: { lte: 5 } },
+        where: { isActive: true, status: "ACTIVE", trackInventory: true },
         select: { id: true, name: true, slug: true, stockQuantity: true, regularPrice: true, salePrice: true, lowStockThreshold: true },
         orderBy: { stockQuantity: "asc" },
-        take: 10,
       }),
       db.order.findMany({
         orderBy: { createdAt: "desc" },
@@ -77,6 +82,11 @@ export async function GET() {
       }),
       null, // notifications loaded via /api/notifications
     ]);
+
+    const lowStockProductsAtRisk = lowStockProducts.filter(
+      (product) => product.stockQuantity <= product.lowStockThreshold
+    );
+    const lowStockProductsNeedingAttention = lowStockProductsAtRisk.slice(0, 10);
 
     // Build 7-day revenue chart data
     const dailyRevenue: { date: string; revenue: number; orders: number }[] = [];
@@ -124,14 +134,16 @@ export async function GET() {
         products: totalProducts,
         customers: totalCustomers,
         pendingOrders,
-        lowStockProducts: lowStockProducts.length,
+        lowStockProducts: lowStockProductsAtRisk.length,
+        ordersToday,
+        asOf: now.toISOString(),
       },
       recentOrders: recentOrders.map((o) => ({
         ...o,
         total: Number(o.total),
         createdAt: o.createdAt.toISOString(),
       })),
-      lowStockProducts: lowStockProducts.map((p) => ({
+      lowStockProducts: lowStockProductsNeedingAttention.map((p) => ({
         ...p,
         regularPrice: Number(p.regularPrice),
         salePrice: p.salePrice ? Number(p.salePrice) : null,
@@ -140,6 +152,14 @@ export async function GET() {
       statusBreakdown,
       topProducts: enrichedTopProducts,
       notifications: [],
+      semantics: {
+        products: "active products with status ACTIVE",
+        customers: "active users with role CUSTOMER",
+        orders: "all orders, including cancelled and returned",
+        pendingOrders: "orders with status NEW, CONFIRMED, or ON_HOLD",
+        lowStock: "active tracked products where stockQuantity <= lowStockThreshold",
+        ordersToday: "orders created between local server midnight boundaries",
+      },
     });
   } catch (error) {
     console.error("Dashboard API error:", error);

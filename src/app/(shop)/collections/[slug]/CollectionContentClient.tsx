@@ -134,12 +134,13 @@ function CategoryContent({ category: initialCategory, initialProducts, initialTo
   }, [hasMore, loading, page, fetchProducts]);
 
   const hasSubcategories = category?.subcategories && category.subcategories.length > 0;
+  const showCatalogControls = loading || products.length > 0 || total > 0;
 
   return (
     <div className="animate-fade-in">
       {/* Back button */}
       <div className="container-shop pt-10 pb-6 md:pt-16 md:pb-10">
-        <Link href="/shop" className="p-1 hover:bg-surface-muted rounded-lg transition-colors inline-flex">
+        <Link href="/shop" aria-label="Back to shop" className="p-1 hover:bg-surface-muted rounded-lg transition-colors inline-flex">
           <ArrowLeft size={20} />
         </Link>
       </div>
@@ -150,9 +151,12 @@ function CategoryContent({ category: initialCategory, initialProducts, initialTo
       </div>
 
       {/* Filter / Sort bar */}
-      <div className="container-shop pb-3">
+      {showCatalogControls && <div className="container-shop pb-3">
         <div className="flex items-center justify-between">
           <button
+            type="button"
+            aria-expanded={showFilters}
+            aria-controls="collection-filter-panel"
             onClick={() => setShowFilters(!showFilters)}
             className={cn(
               "flex items-center gap-1.5 px-3 py-2 rounded-[1.35rem] border text-sm font-medium transition-colors",
@@ -164,6 +168,7 @@ function CategoryContent({ category: initialCategory, initialProducts, initialTo
           <div className="flex items-center gap-2">
             <div className="relative">
               <select
+                aria-label="Sort products"
                 value={sort}
                 onChange={(e) => { setSort(e.target.value); }}
                 className="px-3 py-2 pr-8 rounded-[1.35rem] border border-border bg-white text-sm focus:outline-none appearance-none"
@@ -175,12 +180,18 @@ function CategoryContent({ category: initialCategory, initialProducts, initialTo
               <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
             </div>
             <button
+              type="button"
+              aria-label="Grid view"
+              aria-pressed={viewMode === "grid"}
               onClick={() => setViewMode("grid")}
               className={cn("p-2 rounded-lg", viewMode === "grid" ? "bg-primary text-white" : "bg-surface border border-border")}
             >
               <Grid3X3 size={16} />
             </button>
             <button
+              type="button"
+              aria-label="List view"
+              aria-pressed={viewMode === "list"}
               onClick={() => setViewMode("list")}
               className={cn("p-2 rounded-lg", viewMode === "list" ? "bg-primary text-white" : "bg-surface border border-border")}
             >
@@ -191,33 +202,34 @@ function CategoryContent({ category: initialCategory, initialProducts, initialTo
 
         {/* Filter Panel */}
         {showFilters && (
-          <div className="bg-surface rounded-[1.35rem] border border-foreground/[.08] p-4 shadow-sm mt-3">
+          <div id="collection-filter-panel" className="bg-surface rounded-[1.35rem] border border-foreground/[.08] p-4 shadow-sm mt-3">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
-                <label className="text-xs font-medium text-text-secondary mb-1 block">Min Price (₹)</label>
-                <input type="number" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" placeholder="0" />
+                <label htmlFor="collection-min-price" className="text-xs font-medium text-text-secondary mb-1 block">Min Price (₹)</label>
+                <input id="collection-min-price" type="number" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" placeholder="0" />
               </div>
               <div>
-                <label className="text-xs font-medium text-text-secondary mb-1 block">Max Price (₹)</label>
-                <input type="number" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" placeholder="Any" />
+                <label htmlFor="collection-max-price" className="text-xs font-medium text-text-secondary mb-1 block">Max Price (₹)</label>
+                <input id="collection-max-price" type="number" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" placeholder="Any" />
               </div>
               <div>
-                <label className="text-xs font-medium text-text-secondary mb-1 block">Material</label>
-                <input type="text" value={material} onChange={(e) => setMaterial(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" placeholder="e.g. Wool, Ceramic" />
+                <label htmlFor="collection-material" className="text-xs font-medium text-text-secondary mb-1 block">Material</label>
+                <input id="collection-material" type="text" value={material} onChange={(e) => setMaterial(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" placeholder="e.g. Wool, Ceramic" />
               </div>
               <div className="flex items-end gap-4">
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <input type="checkbox" checked={inStockOnly} onChange={(e) => setInStockOnly(e.target.checked)} className="accent-accent" />
+                  <input id="collection-in-stock" type="checkbox" checked={inStockOnly} onChange={(e) => setInStockOnly(e.target.checked)} className="accent-accent" />
                   In Stock
                 </label>
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <input type="checkbox" checked={onSaleOnly} onChange={(e) => setOnSaleOnly(e.target.checked)} className="accent-accent" />
+                  <input id="collection-on-sale" type="checkbox" checked={onSaleOnly} onChange={(e) => setOnSaleOnly(e.target.checked)} className="accent-accent" />
                   On Sale
                 </label>
               </div>
             </div>
             {(minPrice || maxPrice || material || inStockOnly || onSaleOnly) && (
               <button
+                type="button"
                 onClick={() => { setMinPrice(""); setMaxPrice(""); setMaterial(""); setInStockOnly(false); setOnSaleOnly(false); }}
                 className="mt-3 text-xs text-accent hover:underline"
               >
@@ -226,7 +238,7 @@ function CategoryContent({ category: initialCategory, initialProducts, initialTo
             )}
           </div>
         )}
-      </div>
+      </div>}
 
       {/* Subcategory grid (when applicable) */}
       {hasSubcategories && showSubcategories && (
@@ -280,8 +292,9 @@ function CategoryContent({ category: initialCategory, initialProducts, initialTo
             {/* Error state */}
             {error && !loading && (
               <div className="text-center py-4">
-                <button
-                  onClick={() => fetchProducts(page, true)}
+<button
+                type="button"
+                onClick={() => fetchProducts(page, true)}
                   className="text-sm text-accent hover:underline"
                 >
                   Couldn&apos;t load more products. Tap to retry.
@@ -291,7 +304,7 @@ function CategoryContent({ category: initialCategory, initialProducts, initialTo
 
             {/* End of catalog */}
             {!hasMore && !loading && !loadingMore && (
-              <p className="text-center text-xs text-text-muted py-4">You&apos;re all caught up.</p>
+              <p className="text-center text-xs text-text-muted py-4">End of collection.</p>
             )}
           </>
         ) : (

@@ -29,21 +29,26 @@ export default function StaffDashboard() {
   const greeting = greetingHour < 12 ? "Good morning" : greetingHour < 17 ? "Good afternoon" : "Good evening";
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/products?limit=1").then(r => r.json()),
-      fetch("/api/orders?limit=10&all=true").then(r => r.json()).catch(() => ({ orders:[], total:0 })),
-      fetch("/api/customers?limit=1&all=true").then(r => r.json()).catch(() => ({ total:0 })),
-    ]).then(([products, ordersData, customers]) => {
-      const orders = ordersData.orders || [];
-      const pending = orders.filter((o:any) => o.status === "NEW" || o.status === "PENDING" || o.status === "CONFIRMED").length;
-      const today = new Date().toDateString();
-      const todayOrders = orders.filter((o:any) => new Date(o.createdAt).toDateString() === today).length;
-      setStats({ totalProducts: products.total||0, totalOrders: ordersData.total||orders.length, totalCustomers: customers.total||0, pendingOrders: pending, lowStock:0, ordersToday: todayOrders, recentOrders: orders.slice(0,5), lowStockProducts: [] });
-      fetch("/api/products?limit=100&all=true").then(r => r.json()).then(d => {
-        const ls = (d.products||[]).filter((p:any) => p.stockQuantity <= (p.lowStockThreshold||5));
-        setStats(prev => ({ ...prev, lowStock: ls.length, lowStockProducts: ls.slice(0,5) }));
-      }).catch(()=>{});
-    }).finally(() => setLoading(false));
+    fetch("/api/admin/dashboard")
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Failed to load dashboard statistics");
+        return response.json();
+      })
+      .then((data) => {
+        const dashboardStats = data.stats || {};
+        setStats({
+          totalProducts: dashboardStats.products || 0,
+          totalOrders: dashboardStats.orders || 0,
+          totalCustomers: dashboardStats.customers || 0,
+          pendingOrders: dashboardStats.pendingOrders || 0,
+          lowStock: dashboardStats.lowStockProducts || 0,
+          ordersToday: dashboardStats.ordersToday || 0,
+          recentOrders: (data.recentOrders || []).slice(0, 5),
+          lowStockProducts: (data.lowStockProducts || []).slice(0, 5),
+        });
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   const kpis = [

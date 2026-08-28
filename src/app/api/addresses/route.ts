@@ -27,6 +27,16 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const userId = (session.user as any).id;
+    const requiredFields = ["name", "phone", "addressLine1", "city", "state", "pinCode"];
+    if (requiredFields.some((field) => typeof body[field] !== "string" || !body[field].trim())) {
+      return NextResponse.json({ error: "Name, phone, address, city, state, and PIN code are required" }, { status: 400 });
+    }
+    let normalizedPhone = body.phone.replace(/[^\d]/g, "");
+    if (normalizedPhone.startsWith("0")) normalizedPhone = normalizedPhone.slice(1);
+    if (normalizedPhone.startsWith("91") && normalizedPhone.length > 10) normalizedPhone = normalizedPhone.slice(2);
+    if (!/^\d{10}$/.test(normalizedPhone) || !/^[6-9]/.test(normalizedPhone)) {
+      return NextResponse.json({ error: "A valid 10-digit mobile number is required" }, { status: 400 });
+    }
 
     // If first address, make it default
     const existingCount = await db.address.count({ where: { userId } });
@@ -35,7 +45,7 @@ export async function POST(request: NextRequest) {
       data: {
         userId,
         name: body.name,
-        phone: body.phone,
+        phone: normalizedPhone,
         addressLine1: body.addressLine1,
         addressLine2: body.addressLine2 || null,
         city: body.city,

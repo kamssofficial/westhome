@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import WestHomeLogo from "@/components/ui/WestHomeLogo";
 import { Search, ShoppingBag, Menu, X, User, ArrowUpRight } from "lucide-react";
@@ -27,6 +27,9 @@ export default function Header() {
   const [searchQuery, setSearchQuery] = useState("");
   const [mounted, setMounted] = useState(false);
   const [navCategories, setNavCategories] = useState<NavCat[]>([]);
+  const mobileMenuCloseRef = useRef<HTMLButtonElement>(null);
+  const mobileMenuPreviousFocusRef = useRef<HTMLElement | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -45,6 +48,56 @@ export default function Header() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    mobileMenuPreviousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const focusTimer = window.setTimeout(() => mobileMenuCloseRef.current?.focus(), 0);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setMobileMenuOpen(false);
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const dialog = document.getElementById("mobile-navigation");
+      if (!dialog) return;
+      const focusable = Array.from(dialog.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], input:not([disabled]), [tabindex]:not([tabindex="-1"])'));
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.clearTimeout(focusTimer);
+      document.removeEventListener("keydown", handleKeyDown);
+      mobileMenuPreviousFocusRef.current?.focus();
+      mobileMenuPreviousFocusRef.current = null;
+    };
+  }, [mobileMenuOpen]);
+
+  useEffect(() => {
+    if (!searchOpen) return;
+    const focusTimer = window.setTimeout(() => searchInputRef.current?.focus(), 0);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setSearchOpen(false);
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.clearTimeout(focusTimer);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [searchOpen]);
 
   const handleSearch = (event: React.FormEvent) => {
     event.preventDefault();
@@ -115,7 +168,9 @@ export default function Header() {
                   "flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-foreground/[.06] active:scale-95 touch-target",
                   searchOpen && "bg-foreground/[.06]"
                 )}
-                aria-label="Search"
+                aria-label={searchOpen ? "Close search" : "Search"}
+                aria-expanded={searchOpen}
+                aria-controls="site-search-panel"
               >
                 <Search size={19} strokeWidth={1.8} />
               </button>
@@ -141,6 +196,7 @@ export default function Header() {
             </div>
           </div>
           <div
+            id="site-search-panel"
             className={cn(
               "grid transition-[grid-template-rows,opacity] duration-[400ms]",
               searchOpen
@@ -163,6 +219,7 @@ export default function Header() {
                     Search the collection
                   </label>
                   <input
+                    ref={searchInputRef}
                     id="site-search"
                     name="search"
                     type="search"
@@ -208,6 +265,7 @@ export default function Header() {
         <aside
           role="dialog"
           aria-modal="true"
+          id="mobile-navigation"
           aria-label="Mobile navigation"
           className={cn(
             "material absolute bottom-3 left-3 top-3 flex w-[min(86vw,22rem)] flex-col overscroll-contain rounded-[1.6rem] p-5 transition-transform duration-500 ease-[cubic-bezier(.23,.88,.26,.92)]",
@@ -223,6 +281,7 @@ export default function Header() {
               />
             <button
               type="button"
+              ref={mobileMenuCloseRef}
               onClick={() => setMobileMenuOpen(false)}
               className="flex h-10 w-10 items-center justify-center rounded-full bg-foreground/[.06] active:scale-95"
               aria-label="Close menu"
@@ -252,6 +311,8 @@ export default function Header() {
               <div>
                 <button
                   type="button"
+                  aria-expanded={collectionsOpen}
+                  aria-controls="mobile-collections-list"
                   onClick={() => setCollectionsOpen(!collectionsOpen)}
                   className={cn(
                     "flex w-full items-center justify-between rounded-2xl px-4 py-3.5 text-[15px] font-semibold transition-colors",
@@ -262,7 +323,7 @@ export default function Header() {
                   <svg className={cn("h-4 w-4 transition-transform duration-200", collectionsOpen && "rotate-180")} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
                 </button>
                 {collectionsOpen && navCategories.length > 0 && (
-                  <div className="ml-4 space-y-0.5 border-l-2 border-foreground/[.08] pl-2 max-h-[60vh] overflow-y-auto">
+                  <div id="mobile-collections-list" className="ml-4 space-y-0.5 border-l-2 border-foreground/[.08] pl-2 max-h-[60vh] overflow-y-auto">
                     {navCategories.map((cat) => (
                       <div key={cat.href}>
                         <Link

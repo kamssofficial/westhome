@@ -10,9 +10,9 @@ interface StoreSettings {
 }
 
 const SettingsContext = createContext<StoreSettings>({
-  contactPhone: "+91 98950 71144",
-  whatsappNumber: "+91 98950 71144",
-  contactEmail: "info@westhome.in",
+  contactPhone: "+91 9895071144",
+  whatsappNumber: "+91 9895071144",
+  contactEmail: "info@westhomebybmd.com",
   storeName: "WESTHOME",
 });
 
@@ -20,9 +20,9 @@ export const useSettings = () => useContext(SettingsContext);
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<StoreSettings>({
-    contactPhone: "+91 98950 71144",
-    whatsappNumber: "+91 98950 71144",
-    contactEmail: "info@westhome.in",
+    contactPhone: "+91 9895071144",
+    whatsappNumber: "+91 9895071144",
+    contactEmail: "info@westhomebybmd.com",
     storeName: "WESTHOME",
   });
 

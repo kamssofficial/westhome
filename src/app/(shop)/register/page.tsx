@@ -93,39 +93,39 @@ export default function RegisterPage() {
 
         <form onSubmit={handleSubmit} className="bg-surface border border-border rounded-[1.35rem] p-5 md:p-6 space-y-4">
           <div>
-            <label className="text-xs font-medium text-text-secondary mb-1 block">Full Name *</label>
-            <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={`${inputClass} ${errors.name ? "border-red-400" : ""}`} placeholder="Your name" autoComplete="name" />
-            {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
+            <label htmlFor="register-name" className="text-xs font-medium text-text-secondary mb-1 block">Full Name *</label>
+            <input id="register-name" type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={`${inputClass} ${errors.name ? "border-red-400" : ""}`} placeholder="Your name" autoComplete="name" required aria-invalid={Boolean(errors.name)} aria-describedby={errors.name ? "register-name-error" : undefined} />
+            {errors.name && <p id="register-name-error" className="text-xs text-red-500 mt-1">{errors.name}</p>}
           </div>
           <div>
-            <label className="text-xs font-medium text-text-secondary mb-1 block">Email *</label>
-            <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={`${inputClass} ${errors.email ? "border-red-400" : ""}`} placeholder="your@email.com" autoComplete="email" spellCheck={false} />
-            {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email}</p>}
+            <label htmlFor="register-email" className="text-xs font-medium text-text-secondary mb-1 block">Email *</label>
+            <input id="register-email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={`${inputClass} ${errors.email ? "border-red-400" : ""}`} placeholder="your@email.com" autoComplete="email" spellCheck={false} required aria-invalid={Boolean(errors.email)} aria-describedby={errors.email ? "register-email-error" : undefined} />
+            {errors.email && <p id="register-email-error" className="text-xs text-red-500 mt-1">{errors.email}</p>}
           </div>
           <div>
-            <label className="text-xs font-medium text-text-secondary mb-1 block">Mobile Number *</label>
-            <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={`${inputClass} ${errors.phone ? "border-red-400" : ""}`} placeholder="98765 43210" autoComplete="tel" inputMode="tel" />
-            {errors.phone && <p className="text-xs text-red-500 mt-1">{errors.phone}</p>}
+            <label htmlFor="register-phone" className="text-xs font-medium text-text-secondary mb-1 block">Mobile Number *</label>
+            <input id="register-phone" type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={`${inputClass} ${errors.phone ? "border-red-400" : ""}`} placeholder="98765 43210" autoComplete="tel" inputMode="tel" required aria-invalid={Boolean(errors.phone)} aria-describedby={errors.phone ? "register-phone-error" : undefined} />
+            {errors.phone && <p id="register-phone-error" className="text-xs text-red-500 mt-1">{errors.phone}</p>}
           </div>
           <div>
-            <label className="text-xs font-medium text-text-secondary mb-1 block">Password *</label>
+            <label htmlFor="register-password" className="text-xs font-medium text-text-secondary mb-1 block">Password *</label>
             <div className="relative">
-              <input type={showPassword ? "text" : "password"} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className={`${inputClass} pr-10 ${errors.password ? "border-red-400" : ""}`} placeholder="Min. 6 characters" autoComplete="new-password" />
-              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-foreground">
+              <input id="register-password" type={showPassword ? "text" : "password"} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className={`${inputClass} pr-10 ${errors.password ? "border-red-400" : ""}`} placeholder="Min. 6 characters" autoComplete="new-password" required minLength={6} aria-invalid={Boolean(errors.password)} aria-describedby={errors.password ? "register-password-error" : undefined} />
+              <button type="button" aria-label={showPassword ? "Hide password" : "Show password"} aria-pressed={showPassword} onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-foreground">
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
-            {errors.password && <p className="text-xs text-red-500 mt-1">{errors.password}</p>}
+            {errors.password && <p id="register-password-error" className="text-xs text-red-500 mt-1">{errors.password}</p>}
           </div>
           <div>
-            <label className="text-xs font-medium text-text-secondary mb-1 block">Confirm Password *</label>
-            <input type="password" value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} className={`${inputClass} ${errors.confirmPassword ? "border-red-400" : ""}`} placeholder="Confirm your password" autoComplete="new-password" />
-            {errors.confirmPassword && <p className="text-xs text-red-500 mt-1">{errors.confirmPassword}</p>}
+            <label htmlFor="register-confirm-password" className="text-xs font-medium text-text-secondary mb-1 block">Confirm Password *</label>
+            <input id="register-confirm-password" type="password" value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} className={`${inputClass} ${errors.confirmPassword ? "border-red-400" : ""}`} placeholder="Confirm your password" autoComplete="new-password" required minLength={6} aria-invalid={Boolean(errors.confirmPassword)} aria-describedby={errors.confirmPassword ? "register-confirm-password-error" : undefined} />
+            {errors.confirmPassword && <p id="register-confirm-password-error" className="text-xs text-red-500 mt-1">{errors.confirmPassword}</p>}
           </div>
           <div className="flex items-start gap-2">
-            <input type="checkbox" id="consent" required className="mt-0.5 accent-[#d4a574]" />
+            <input type="checkbox" id="consent" name="consent" required className="mt-0.5 accent-[#d4a574]" />
             <label htmlFor="consent" className="text-xs text-secondary leading-relaxed">
-              I agree to the <a href="/policies/terms" className="text-accent hover:underline" target="_blank">Terms of Service</a> and <a href="/policies/shipping" className="text-accent hover:underline" target="_blank">Privacy Policy</a>
+              I agree to the <a href="/policies/terms" className="text-accent hover:underline" target="_blank">Terms of Service</a> and <a href="/policies/privacy" className="text-accent hover:underline" target="_blank" rel="noreferrer">Privacy Policy</a>
             </label>
           </div>
           <Button type="submit" fullWidth size="lg" loading={loading}>Create Account</Button>

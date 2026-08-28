@@ -137,6 +137,7 @@ function SearchContent() {
   ].filter(Boolean).length;
 
   const selectedSortLabel = SORT_OPTIONS.find(o => o.value === sort)?.label || "Recommended";
+  const showCatalogControls = loading || total > 0 || filterCount > 0;
 
   return (
     <div className="animate-fade-in">
@@ -144,10 +145,10 @@ function SearchContent() {
         <div ref={suggestionsRef} className="relative">
           <form onSubmit={handleSearch} className="relative">
             <SearchIcon size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#b0aba6]" />
-            <input ref={inputRef} type="text" value={query} onChange={e => { setQuery(e.target.value); setShowSuggestions(true); }}
+            <input ref={inputRef} id="search-products" aria-label="Search products" type="text" value={query} onChange={e => { setQuery(e.target.value); setShowSuggestions(true); }}
               onFocus={() => setShowSuggestions(true)} placeholder="Search products..."
               className="w-full pl-10 pr-10 py-2.5 bg-white rounded-xl border border-black/[.08] text-sm focus:outline-none focus:ring-2 focus:ring-[#d4a574]/30 text-[#1a1917]" />
-            {query && <button type="button" onClick={clearSearch} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#b0aba6] hover:text-[#1a1917]"><X size={16} /></button>}
+            {query && <button type="button" aria-label="Clear search" onClick={clearSearch} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#b0aba6] hover:text-[#1a1917]"><X size={16} /></button>}
             {showSuggestions && !initialQuery && (
               <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl border border-black/[.08] shadow-lg z-50 overflow-hidden">
                 {recentSearches.length > 0 && (
@@ -182,9 +183,9 @@ function SearchContent() {
 
       {/* Filter & Sort toolbar */}
       <div className="container-shop pb-3">
-        <div className="flex items-center justify-between gap-2">
+        {showCatalogControls && <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <button onClick={() => setShowFilters(true)}
+            <button type="button" aria-label="Open filters" aria-expanded={showFilters} aria-haspopup="dialog" onClick={() => setShowFilters(true)}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-black/[.08] bg-white text-sm font-medium text-[#1a1917] hover:bg-[#f7f5f2] transition-colors">
               <SlidersHorizontal size={14} /> Filter
               {filterCount > 0 && (
@@ -192,14 +193,14 @@ function SearchContent() {
               )}
             </button>
             {initialQuery && (
-              <button onClick={clearSearch} className="flex items-center gap-1 px-2.5 py-1.5 bg-[#d4a574]/10 text-[#d4a574] rounded-full text-xs font-medium hover:bg-[#d4a574]/20 transition-colors">
+              <button type="button" aria-label="Clear search query" onClick={clearSearch} className="flex items-center gap-1 px-2.5 py-1.5 bg-[#d4a574]/10 text-[#d4a574] rounded-full text-xs font-medium hover:bg-[#d4a574]/20 transition-colors">
                 &quot;{initialQuery}&quot; <X size={12} />
               </button>
             )}
           </div>
           <div className="flex items-center gap-2">
             <div ref={sortRef} className="relative">
-              <button onClick={() => setShowSort(!showSort)}
+              <button type="button" aria-label="Sort products" aria-expanded={showSort} aria-haspopup="menu" onClick={() => setShowSort(!showSort)}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-black/[.08] bg-white text-sm font-medium text-[#1a1917] hover:bg-[#f7f5f2] transition-colors">
                 <ArrowUpDown size={14} className="text-[#6b6560]" />
                 <span className="hidden sm:inline">{selectedSortLabel}</span>
@@ -209,7 +210,7 @@ function SearchContent() {
               {showSort && (
                 <div className="absolute top-full right-0 mt-2 w-52 bg-white rounded-xl border border-black/[.08] shadow-lg z-50 py-1.5">
                   {SORT_OPTIONS.map(opt => (
-                    <button key={opt.value} onClick={() => { setSort(opt.value); setShowSort(false); }}
+                    <button type="button" key={opt.value} onClick={() => { setSort(opt.value); setShowSort(false); }}
                       className={cn("w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors",
                         sort === opt.value ? "text-[#1a1917] font-medium bg-[#f7f5f2]" : "text-[#6b6560] hover:bg-[#f7f5f2]"
                       )}>
@@ -220,18 +221,18 @@ function SearchContent() {
                 </div>
               )}
             </div>
-            <button onClick={() => setViewMode("grid")}
+            <button type="button" aria-label="Grid view" aria-pressed={viewMode === "grid"} onClick={() => setViewMode("grid")}
               className={cn("p-2 rounded-lg", viewMode === "grid" ? "bg-[#1a1917] text-white" : "bg-white border border-black/[.08]")}>
               <Grid3X3 size={16} />
             </button>
-            <button onClick={() => setViewMode("list")}
+            <button type="button" aria-label="List view" aria-pressed={viewMode === "list"} onClick={() => setViewMode("list")}
               className={cn("p-2 rounded-lg", viewMode === "list" ? "bg-[#1a1917] text-white" : "bg-white border border-black/[.08]")}>
               <List size={16} />
             </button>
           </div>
-        </div>
-        <FilterPanel open={showFilters} onClose={() => setShowFilters(false)} onApply={applyFilters}
-          initialFilters={filters} categories={categories} resultCount={total} />
+        </div>}
+        {showCatalogControls && <FilterPanel open={showFilters} onClose={() => setShowFilters(false)} onApply={applyFilters}
+          initialFilters={filters} categories={categories} resultCount={total} />}
       </div>
 
       {/* Active Filter Chips */}
@@ -241,28 +242,28 @@ function SearchContent() {
             {filters.category && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#1a1917] text-white rounded-full text-xs font-medium">
                 {categories.find(c => c.slug === filters.category)?.name || filters.category}
-                <button onClick={() => setFilters(p => ({...p, category: ""}))} className="ml-0.5 hover:opacity-60"><X size={12} /></button>
+                <button type="button" aria-label="Remove category filter" onClick={() => setFilters(p => ({...p, category: ""}))} className="ml-0.5 hover:opacity-60"><X size={12} /></button>
               </span>
             )}
             {filters.subcategory && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#1a1917] text-white rounded-full text-xs font-medium">
                 {filters.subcategory.replace(/-/g, " ")}
-                <button onClick={() => setFilters(p => ({...p, subcategory: ""}))} className="ml-0.5 hover:opacity-60"><X size={12} /></button>
+                <button type="button" aria-label="Remove subcategory filter" onClick={() => setFilters(p => ({...p, subcategory: ""}))} className="ml-0.5 hover:opacity-60"><X size={12} /></button>
               </span>
             )}
             {(filters.minPrice || filters.maxPrice) && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#1a1917] text-white rounded-full text-xs font-medium">
                 {"₹"}{filters.minPrice || "0"} - {"₹"}{filters.maxPrice || "∞"}
-                <button onClick={() => setFilters(p => ({...p, minPrice: "", maxPrice: ""}))} className="ml-0.5 hover:opacity-60"><X size={12} /></button>
+                <button type="button" aria-label="Remove price filter" onClick={() => setFilters(p => ({...p, minPrice: "", maxPrice: ""}))} className="ml-0.5 hover:opacity-60"><X size={12} /></button>
               </span>
             )}
             {filters.inStock && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#1a1917] text-white rounded-full text-xs font-medium">
                 In Stock
-                <button onClick={() => setFilters(p => ({...p, inStock: ""}))} className="ml-0.5 hover:opacity-60"><X size={12} /></button>
+                <button type="button" aria-label="Remove stock filter" onClick={() => setFilters(p => ({...p, inStock: ""}))} className="ml-0.5 hover:opacity-60"><X size={12} /></button>
               </span>
             )}
-            <button onClick={() => setFilters({ ...EMPTY_FILTERS })} className="text-xs text-[#d4a574] font-medium hover:underline ml-1">Clear all</button>
+            <button type="button" onClick={() => setFilters({ ...EMPTY_FILTERS })} className="text-xs text-[#d4a574] font-medium hover:underline ml-1">Clear all</button>
           </div>
         </div>
       )}

@@ -39,6 +39,7 @@ export default function CheckoutPage() {
   const [placingOrder, setPlacingOrder] = useState(false);
   const [orderResult, setOrderResult] = useState<{ orderNumber: string; id: string } | null>(null);
   const [upiCopied, setUpiCopied] = useState(false);
+  const [paymentAcknowledged, setPaymentAcknowledged] = useState(false);
   const [userEmail, setUserEmail] = useState("");
   const [freeThreshold, setFreeThreshold] = useState(2000);
   const [deliveryChargeRate, setDeliveryChargeRate] = useState(149);
@@ -94,10 +95,18 @@ export default function CheckoutPage() {
   };
 
   const handlePlaceOrder = async () => {
-    if (placingOrder) return; // Prevent double-click
+    if (placingOrder || !selectedAddress || items.length === 0) return;
+    if (paymentMethod === "upi" && !paymentAcknowledged) {
+      toast.error("Confirm that you have transferred the UPI amount before placing the order.");
+      return;
+    }
     setPlacingOrder(true);
     try {
       const addr = addresses.find((a) => a.id === selectedAddress);
+      if (!addr) {
+        toast.error("Select a delivery address before placing the order.");
+        return;
+      }
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -133,9 +142,12 @@ export default function CheckoutPage() {
       });
       if (res.ok) {
         const data = await res.json();
+        if (!data?.order?.orderNumber || !data?.order?.id) {
+          throw new Error("The order was not acknowledged by the server.");
+        }
         setOrderResult({ orderNumber: data.order.orderNumber, id: data.order.id });
         clearCart();
-        setStep(2);
+        setStep(3);
       } else {
         const err = await res.json();
         toast.error(err.error || "Failed to place order. Please try again.");
@@ -151,7 +163,7 @@ export default function CheckoutPage() {
     return (
       <div className="animate-fade-in">
         <div className="container-shop pt-3 pb-2 flex items-center gap-3">
-          <Link href="/cart" className="p-1 hover:bg-surface-muted rounded-lg transition-colors"><ArrowLeft size={20} /></Link>
+          <Link href="/cart" aria-label="Back to cart" className="p-1 hover:bg-surface-muted rounded-lg transition-colors"><ArrowLeft size={20} /></Link>
           <div className="flex-1 text-center"><p className="text-sm font-semibold text-primary">Checkout</p></div>
           <div className="w-7" />
         </div>
@@ -168,7 +180,7 @@ export default function CheckoutPage() {
   return (
     <div className="animate-fade-in">
       <div className="container-shop pt-3 pb-2 flex items-center gap-3">
-        <Link href="/cart" className="p-1 hover:bg-surface-muted rounded-lg transition-colors"><ArrowLeft size={20} /></Link>
+        <Link href="/cart" aria-label="Back to cart" className="p-1 hover:bg-surface-muted rounded-lg transition-colors"><ArrowLeft size={20} /></Link>
         <h1 className="text-xl font-semibold text-primary">Checkout</h1>
       </div>
       <div className="container-shop pb-32 lg:pb-4">
@@ -193,7 +205,7 @@ export default function CheckoutPage() {
           ) : addresses.length > 0 ? (
             <div className="space-y-3 mb-4">
               {addresses.map((addr) => (
-                <button key={addr.id} onClick={() => setSelectedAddress(addr.id)} className={cn("w-full bg-surface rounded-[1.35rem] border border-foreground/[.08] p-4 shadow-sm text-left border-2 transition-colors", selectedAddress === addr.id ? "border-primary" : "border-transparent")}>
+                <button type="button" key={addr.id} onClick={() => setSelectedAddress(addr.id)} className={cn("w-full bg-surface rounded-[1.35rem] border border-foreground/[.08] p-4 shadow-sm text-left border-2 transition-colors", selectedAddress === addr.id ? "border-primary" : "border-transparent")}>
                   <div className="flex items-start gap-3">
                     <div className={cn("w-4 h-4 rounded-full border-2 flex items-center justify-center mt-0.5 flex-shrink-0", selectedAddress === addr.id ? "border-primary" : "border-border")}>
                       {selectedAddress === addr.id && <div className="w-2 h-2 rounded-full bg-primary" />}
@@ -231,7 +243,7 @@ export default function CheckoutPage() {
             )}
 
             {[{ id: "standard", label: "Standard Delivery", desc: "3-5 Business Days", free: true }, { id: "express", label: "Express Delivery", desc: "1-2 Business Days", free: false }].map((opt) => (
-              <button key={opt.id} onClick={() => setDeliveryOption(opt.id)} className={cn("w-full flex items-center justify-between p-3 rounded-[1.35rem] border transition-colors", deliveryOption === opt.id ? "border-primary bg-surface-muted" : "border-border bg-white")}>
+              <button type="button" key={opt.id} onClick={() => setDeliveryOption(opt.id)} className={cn("w-full flex items-center justify-between p-3 rounded-[1.35rem] border transition-colors", deliveryOption === opt.id ? "border-primary bg-surface-muted" : "border-border bg-white")}>
                 <div className="flex items-center gap-3">
                   <div className={cn("w-4 h-4 rounded-full border-2 flex items-center justify-center", deliveryOption === opt.id ? "border-primary" : "border-border")}>{deliveryOption === opt.id && <div className="w-2 h-2 rounded-full bg-primary" />}</div>
                   <div className="text-left"><p className="text-sm font-medium text-primary">{opt.label}</p><p className="text-xs text-secondary">{opt.desc}</p></div>
@@ -249,17 +261,17 @@ export default function CheckoutPage() {
             </div>
           </div>
           <div className="sticky bottom-[120px] lg:static lg:mt-0 bg-white/95 backdrop-blur-sm py-3 -mx-4 px-4 border-t border-border z-[60]">
-            <button onClick={() => setStep(1)} disabled={!selectedAddress} className="w-full py-3.5 bg-primary text-white rounded-full text-sm font-semibold hover:bg-primary-hover transition-colors flex items-center justify-center gap-2 disabled:opacity-40">Review Order <ChevronRight size={16} /></button>
+            <button type="button" onClick={() => setStep(1)} disabled={!selectedAddress} className="w-full py-3.5 bg-primary text-white rounded-full text-sm font-semibold hover:bg-primary-hover transition-colors flex items-center justify-center gap-2 disabled:opacity-40">Review Order <ChevronRight size={16} /></button>
           </div>
         </div>
       )}
 
-      {step === 3 && (
+      {step === 2 && (
         <div className="container-shop">
           <h2 className="text-sm font-semibold text-primary mb-3">Payment Method</h2>
           <div className="space-y-2 mb-6">
             {PAYMENT_METHODS.map((m) => (
-              <button key={m.id} onClick={() => setPaymentMethod(m.id)} className={cn("w-full flex items-center justify-between p-3 rounded-[1.35rem] border transition-colors", paymentMethod === m.id ? "border-primary bg-surface-muted" : "border-border bg-white")}>
+              <button type="button" key={m.id} onClick={() => setPaymentMethod(m.id)} className={cn("w-full flex items-center justify-between p-3 rounded-[1.35rem] border transition-colors", paymentMethod === m.id ? "border-primary bg-surface-muted" : "border-border bg-white")}>
                 <div className="flex items-center gap-3">
                   <div className={cn("w-4 h-4 rounded-full border-2 flex items-center justify-center", paymentMethod === m.id ? "border-primary" : "border-border")}>{paymentMethod === m.id && <div className="w-2 h-2 rounded-full bg-primary" />}</div>
                   <span className="text-sm font-medium text-primary">{m.label}</span>
@@ -285,7 +297,7 @@ export default function CheckoutPage() {
                   <p className="text-[10px] text-text-muted uppercase tracking-wider mb-1">UPI ID</p>
                   <p className="text-base font-semibold text-primary font-mono">{UPI_ID}</p>
                 </div>
-                <button onClick={handleCopyUPI} className="flex items-center gap-1.5 px-3 py-2 bg-white rounded-lg border border-border text-xs font-medium hover:bg-surface-muted transition-colors">
+                <button type="button" aria-label="Copy UPI ID" onClick={handleCopyUPI} className="flex items-center gap-1.5 px-3 py-2 bg-white rounded-lg border border-border text-xs font-medium hover:bg-surface-muted transition-colors">
                   {upiCopied ? <><CheckCircle size={14} className="text-success" /> Copied</> : <><Copy size={14} /> Copy</>}
                 </button>
               </div>
@@ -293,15 +305,19 @@ export default function CheckoutPage() {
             </div>
           )}
 
+          <label className="flex items-start gap-2 text-xs text-secondary mb-6">
+            <input type="checkbox" checked={paymentAcknowledged} onChange={(event) => setPaymentAcknowledged(event.target.checked)} className="mt-0.5 accent-accent" />
+            <span>I have transferred the exact amount to the UPI ID above. Payment remains pending until verified by our team.</span>
+          </label>
           <div className="flex items-center gap-2 text-xs text-secondary mb-6"><Shield size={14} /><span>Your payment is safe and secure.</span></div>
           <div className="bg-surface rounded-[1.35rem] border border-foreground/[.08] p-4 shadow-sm mb-6"><div className="flex justify-between text-sm"><span className="font-semibold text-primary">Total</span><span className="font-bold text-primary">{formatPrice(total)}</span></div></div>
           <div className="sticky bottom-[120px] lg:static lg:mt-0 bg-white/95 backdrop-blur-sm py-3 -mx-4 px-4 border-t border-border z-[60]">
             <button
               onClick={handlePlaceOrder}
-              disabled={placingOrder}
+              disabled={placingOrder || (paymentMethod === "upi" && !paymentAcknowledged)}
               className="w-full py-3.5 bg-primary text-white rounded-full text-sm font-semibold hover:bg-primary-hover transition-colors disabled:opacity-50"
             >
-              {placingOrder ? "Placing Order..." : paymentMethod === "upi" ? `Pay ₹${total.toLocaleString()} via UPI & Place Order` : `Place Order — ${formatPrice(total)}`}
+              {placingOrder ? "Placing Order..." : paymentMethod === "upi" ? `Place Order — ${formatPrice(total)} (Payment Pending)` : `Place Order — ${formatPrice(total)}`}
             </button>
           </div>
         </div>
@@ -337,7 +353,7 @@ export default function CheckoutPage() {
           <div className="bg-surface rounded-[1.35rem] border border-foreground/[.08] p-4 shadow-sm mb-4">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-xs font-semibold text-secondary uppercase tracking-wider">Delivery Address</h3>
-              <button onClick={() => setStep(0)} className="text-xs text-accent font-medium">Change</button>
+              <button type="button" onClick={() => setStep(0)} className="text-xs text-accent font-medium">Change</button>
             </div>
             {(() => {
               const addr = addresses.find(a => a.id === selectedAddress);
@@ -370,12 +386,12 @@ export default function CheckoutPage() {
           </div>
 
           <div className="sticky bottom-[120px] lg:static lg:mt-0 bg-white/95 backdrop-blur-sm py-3 -mx-4 px-4 border-t border-border z-[60]">
-            <button onClick={() => setStep(2)} className="w-full py-3.5 bg-primary text-white rounded-full text-sm font-semibold hover:bg-primary-hover transition-colors flex items-center justify-center gap-2">Proceed to Payment <ChevronRight size={16} /></button>
+            <button type="button" onClick={() => setStep(2)} className="w-full py-3.5 bg-primary text-white rounded-full text-sm font-semibold hover:bg-primary-hover transition-colors flex items-center justify-center gap-2">Proceed to Payment <ChevronRight size={16} /></button>
           </div>
         </div>
       )}
 
-      {step === 2 && (
+      {step === 3 && (
         <div className="container-shop py-12 text-center">
           <div className="w-16 h-16 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-4"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#4A7C59" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg></div>
           <h2 className="text-xl font-semibold text-primary mb-2">Thank You!</h2>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { X, SlidersHorizontal, ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Category } from "@/types";
@@ -35,13 +35,14 @@ interface FilterPanelProps {
 
 function Section({ title, defaultOpen = false, children }: { title: string; defaultOpen?: boolean; children: React.ReactNode }) {
   const [open, setOpen] = useState(defaultOpen);
+  const sectionId = `filter-section-${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
   return (
     <div className="border-b border-black/[.04] last:border-0">
-      <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between py-4 text-left">
+      <button type="button" aria-expanded={open} aria-controls={sectionId} onClick={() => setOpen(!open)} className="w-full flex items-center justify-between py-4 text-left">
         <span className="text-sm font-semibold text-[#1a1917]">{title}</span>
         <ChevronDown size={16} className={cn("text-[#b0aba6] transition-transform duration-200", open && "rotate-180")} />
       </button>
-      {open && <div className="pb-4">{children}</div>}
+      {open && <div id={sectionId} className="pb-4">{children}</div>}
     </div>
   );
 }
@@ -50,8 +51,45 @@ export default function FilterPanel({ open, onClose, onApply, initialFilters, ca
   const [f, setF] = useState<FilterState>(initialFilters);
   const [dynamicSubs, setDynamicSubs] = useState<{name:string;slug:string;count:number}[]>([]);
   const [loadingSubs, setLoadingSubs] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => { if (open) setF(initialFilters); }, [open, initialFilters]);
+
+  useEffect(() => {
+    if (!open) return;
+    previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const focusTimer = window.setTimeout(() => closeButtonRef.current?.focus(), 0);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+      if (event.key !== "Tab" || !panelRef.current) return;
+      const focusable = Array.from(panelRef.current.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
+      ));
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.clearTimeout(focusTimer);
+      document.removeEventListener("keydown", handleKeyDown);
+      previousFocusRef.current?.focus();
+      previousFocusRef.current = null;
+    };
+  }, [open, onClose]);
 
   // Fetch subcategories when Accessories is selected
   useEffect(() => {
@@ -90,8 +128,8 @@ export default function FilterPanel({ open, onClose, onApply, initialFilters, ca
 
   return (
     <>
-      <div className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className={cn(
+      <div className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm" aria-hidden="true" onClick={onClose} />
+      <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby="filter-panel-title" className={cn(
         "fixed z-[70] bg-[#faf8f5] overflow-hidden flex flex-col transition-transform duration-300",
         "inset-x-0 bottom-0 top-[8vh] rounded-t-[1.5rem]",
         "md:inset-y-0 md:right-0 md:left-auto md:w-[380px] md:top-0 md:rounded-t-none md:rounded-l-[1.5rem]"
@@ -100,12 +138,12 @@ export default function FilterPanel({ open, onClose, onApply, initialFilters, ca
         <div className="flex items-center justify-between px-5 py-4 border-b border-black/[.06] shrink-0">
           <div className="flex items-center gap-2">
             <SlidersHorizontal size={17} className="text-[#1a1917]" />
-            <span className="text-base font-semibold text-[#1a1917]">Filters</span>
+            <span id="filter-panel-title" className="text-base font-semibold text-[#1a1917]">Filters</span>
             {activeCount > 0 && <span className="w-5 h-5 rounded-full bg-[#d4a574] text-white text-[10px] font-bold flex items-center justify-center">{activeCount}</span>}
           </div>
           <div className="flex items-center gap-3">
-            {activeCount > 0 && <button onClick={clearAll} className="text-xs font-medium text-[#d4a574] hover:text-[#c49564]">Clear All</button>}
-            <button onClick={onClose} className="w-8 h-8 flex items-center justify-center hover:bg-black/[.04] rounded-full"><X size={18} className="text-[#6b6560]" /></button>
+            {activeCount > 0 && <button type="button" onClick={clearAll} className="text-xs font-medium text-[#d4a574] hover:text-[#c49564]">Clear All</button>}
+            <button ref={closeButtonRef} type="button" aria-label="Close filters" onClick={onClose} className="w-8 h-8 flex items-center justify-center hover:bg-black/[.04] rounded-full"><X size={18} className="text-[#6b6560]" /></button>
           </div>
         </div>
 
@@ -114,12 +152,12 @@ export default function FilterPanel({ open, onClose, onApply, initialFilters, ca
           {/* CATEGORY */}
           <Section title="Category" defaultOpen={true}>
             <div className="flex flex-wrap gap-1.5">
-              <button onClick={() => set("category", "")}
+              <button type="button" onClick={() => set("category", "")}
                 className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all",
                   !f.category ? "bg-[#1a1917] text-white" : "bg-white text-[#6b6560] border border-black/[.08] hover:border-black/[.15]"
                 )}>All</button>
               {categories.map(cat => (
-                <button key={cat.slug} onClick={() => set("category", cat.slug)}
+                <button type="button" key={cat.slug} onClick={() => set("category", cat.slug)}
                   className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all",
                     f.category === cat.slug ? "bg-[#1a1917] text-white" : "bg-white text-[#6b6560] border border-black/[.08] hover:border-black/[.15]"
                   )}>{cat.name}</button>
@@ -131,12 +169,12 @@ export default function FilterPanel({ open, onClose, onApply, initialFilters, ca
           {dynamicSubs.length > 0 && (
             <Section title="Subcategory" defaultOpen={true}>
               <div className="flex flex-wrap gap-1.5">
-                <button onClick={() => set("subcategory", "")}
+                <button type="button" onClick={() => set("subcategory", "")}
                   className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all",
                     !f.subcategory ? "bg-[#1a1917] text-white" : "bg-white text-[#6b6560] border border-black/[.08] hover:border-black/[.15]"
                   )}>All</button>
                 {dynamicSubs.map(sub => (
-                  <button key={sub.slug} onClick={() => set("subcategory", sub.slug)}
+                  <button type="button" key={sub.slug} onClick={() => set("subcategory", sub.slug)}
                     className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all",
                       f.subcategory === sub.slug ? "bg-[#1a1917] text-white" : "bg-white text-[#6b6560] border border-black/[.08] hover:border-black/[.15]"
                     )}>{sub.name}</button>
@@ -149,14 +187,14 @@ export default function FilterPanel({ open, onClose, onApply, initialFilters, ca
           <Section title="Price" defaultOpen={true}>
             <div className="flex items-center gap-2">
               <div className="flex-1">
-                <label className="text-[10px] font-medium text-[#b0aba6] uppercase tracking-wider mb-1 block">Min</label>
-                <input type="number" min="0" value={f.minPrice} onChange={e => set("minPrice", e.target.value)}
+                <label htmlFor="filter-min-price" className="text-[10px] font-medium text-[#b0aba6] uppercase tracking-wider mb-1 block">Min</label>
+                <input id="filter-min-price" type="number" min="0" value={f.minPrice} onChange={e => set("minPrice", e.target.value)}
                   placeholder="₹0" className="w-full px-3 py-2 bg-white border border-black/[.08] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#d4a574]/30" />
               </div>
               <span className="text-[#b0aba6] mt-4">—</span>
               <div className="flex-1">
-                <label className="text-[10px] font-medium text-[#b0aba6] uppercase tracking-wider mb-1 block">Max</label>
-                <input type="number" min="0" value={f.maxPrice} onChange={e => set("maxPrice", e.target.value)}
+                <label htmlFor="filter-max-price" className="text-[10px] font-medium text-[#b0aba6] uppercase tracking-wider mb-1 block">Max</label>
+                <input id="filter-max-price" type="number" min="0" value={f.maxPrice} onChange={e => set("maxPrice", e.target.value)}
                   placeholder="Any" className="w-full px-3 py-2 bg-white border border-black/[.08] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#d4a574]/30" />
               </div>
             </div>
@@ -166,7 +204,7 @@ export default function FilterPanel({ open, onClose, onApply, initialFilters, ca
           <Section title="Availability">
             <div className="flex gap-1.5">
               {[{ label: "All", value: "" }, { label: "In Stock", value: "true" }].map(opt => (
-                <button key={opt.value} onClick={() => set("inStock", opt.value)}
+                <button type="button" key={opt.value} onClick={() => set("inStock", opt.value)}
                   className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all",
                     f.inStock === opt.value ? "bg-[#1a1917] text-white" : "bg-white text-[#6b6560] border border-black/[.08] hover:border-black/[.15]"
                   )}>{opt.label}</button>
@@ -177,7 +215,7 @@ export default function FilterPanel({ open, onClose, onApply, initialFilters, ca
 
         {/* Sticky footer */}
         <div className="px-5 py-4 border-t border-black/[.06] shrink-0 bg-[#faf8f5]">
-          <button onClick={() => { onApply(f); onClose(); }}
+          <button type="button" onClick={() => { onApply(f); onClose(); }}
             className="w-full py-3.5 bg-[#1a1917] text-white rounded-2xl text-sm font-semibold hover:bg-[#2d2926] transition-colors min-h-[48px]">
             Show {resultCount} Result{resultCount !== 1 ? "s" : ""}
           </button>

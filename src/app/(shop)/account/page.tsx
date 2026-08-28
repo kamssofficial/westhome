@@ -16,7 +16,7 @@ const MENU_ITEMS = [
   { label: "My Orders", href: "/account/orders", icon: ShoppingBag },
   { label: "Wishlist", href: "/account/wishlist", icon: Heart },
   { label: "Addresses", href: "/account/addresses", icon: MapPin },
-  { label: "Payment Methods", href: "/account/settings", icon: CreditCard },
+  { label: "Payment Methods", href: "/account/payment-methods", icon: CreditCard },
   { label: "Account Settings", href: "/account/settings", icon: Settings },
   { label: "Help & Support", href: "/contact", icon: HelpCircle },
 ];
