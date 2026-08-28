@@ -128,8 +128,8 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
-          regularPrice: parseFloat(form.salePrice || form.regularPrice) || 0,
-          salePrice: parseFloat(form.salePrice || form.regularPrice) || null,
+          regularPrice: parseFloat(form.regularPrice) || 0,
+          salePrice: form.salePrice ? parseFloat(form.salePrice) : null,
           stockQuantity: parseInt(form.stockQuantity) || 0,
           lowStockThreshold: parseInt(form.lowStockThreshold) || 5,
           // Physical dimensions
@@ -217,7 +217,8 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
         <div className="bg-surface rounded-[1.35rem] border border-border p-5">
           <h2 className="font-semibold mb-4">Pricing & Stock</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2"><label className="text-xs font-medium text-text-secondary mb-1 block">Price (₹)</label><input type="number" step="0.01" value={form.salePrice || form.regularPrice} onChange={(e) => setForm({ ...form, salePrice: e.target.value, regularPrice: e.target.value })} className={inputClass} /></div>
+            <div><label className="text-xs font-medium text-text-secondary mb-1 block">Regular Price (₹)</label><input type="number" step="0.01" value={form.regularPrice} onChange={(e) => setForm({ ...form, regularPrice: e.target.value })} className={inputClass} /></div>
+            <div><label className="text-xs font-medium text-text-secondary mb-1 block">Sale Price (₹)</label><input type="number" step="0.01" value={form.salePrice} onChange={(e) => setForm({ ...form, salePrice: e.target.value })} className={inputClass} /></div>
             <div><label className="text-xs font-medium text-text-secondary mb-1 block">Stock</label><input type="number" value={form.stockQuantity} onChange={(e) => setForm({ ...form, stockQuantity: e.target.value })} className={inputClass} /></div>
           </div>
           <div className="flex items-center gap-6 mt-4">
