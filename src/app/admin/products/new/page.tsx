@@ -111,8 +111,8 @@ export default function NewProductPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || !form.salePrice || !form.categoryId) {
-      toast.error("Name, price, and category are required");
+    if (!form.name || (!form.regularPrice && !form.salePrice) || !form.categoryId) {
+      toast.error("Name, at least one price, and category are required");
       return;
     }
 
@@ -220,8 +220,12 @@ export default function NewProductPage() {
           <h2 className="font-semibold mb-4">Pricing & Stock</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-medium text-text-secondary mb-1 block">Sale Price (₹) *</label>
-              <input type="number" step="0.01" value={form.salePrice} onChange={(e) => setForm({ ...form, salePrice: e.target.value })} className={inputClass} required />
+              <label className="text-xs font-medium text-text-secondary mb-1 block">Regular Price (₹)</label>
+              <input type="number" step="0.01" value={form.regularPrice} onChange={(e) => setForm({ ...form, regularPrice: e.target.value })} className={inputClass} />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-text-secondary mb-1 block">Sale Price (₹)</label>
+              <input type="number" step="0.01" value={form.salePrice} onChange={(e) => setForm({ ...form, salePrice: e.target.value })} className={inputClass} />
             </div>
             <div>
               <label className="text-xs font-medium text-text-secondary mb-1 block">Stock Quantity</label>
