@@ -11,7 +11,7 @@ export async function DELETE() {
     let deleted = 0;
     for (const n of all) {
       let arr: string[] = [];
-      try { const parsed = JSON.parse((n as any).deletedBy || "[]"); if (Array.isArray(parsed)) arr = parsed.filter(v => typeof v === "string"); } catch {}
+      try { const parsed = JSON.parse(n.deletedBy || "[]"); if (Array.isArray(parsed)) arr = parsed.filter(v => typeof v === "string"); } catch {}
       if (!arr.includes(userId)) {
         arr.push(userId);
         await db.notification.update({ where: { id: n.id }, data: { deletedBy: JSON.stringify(arr) } as any });

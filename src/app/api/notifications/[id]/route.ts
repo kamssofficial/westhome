@@ -31,7 +31,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
     const notification = await db.notification.findUnique({ where: { id } });
     if (!notification) return NextResponse.json({ error: "Notification not found" }, { status: 404 });
     let deletedByArray: string[] = [];
-    try { const parsed = JSON.parse((notification as any).deletedBy || "[]"); if (Array.isArray(parsed)) deletedByArray = parsed.filter(v => typeof v === "string"); } catch {}
+    try { const parsed = JSON.parse(notification.deletedBy || "[]"); if (Array.isArray(parsed)) deletedByArray = parsed.filter(v => typeof v === "string"); } catch {}
     if (!deletedByArray.includes(userId)) {
       await db.notification.update({ where: { id }, data: { deletedBy: JSON.stringify([...deletedByArray, userId]) } as any });
     }

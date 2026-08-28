@@ -28,7 +28,7 @@ export async function GET() {
       thirtyDayRevenue,
       orderStatusCounts,
       topProducts,
-      ,
+      dashboardNotifications,
     ] = await Promise.all([
       db.order.count(),
       db.product.count({ where: { isActive: true, status: "ACTIVE" } }),
@@ -80,7 +80,7 @@ export async function GET() {
         orderBy: { _sum: { quantity: "desc" } },
         take: 5,
       }),
-      null, // notifications loaded via /api/notifications
+      db.notification.findMany({ orderBy: { createdAt: "desc" }, take: 10 }),
     ]);
 
     const lowStockProductsAtRisk = lowStockProducts.filter(
@@ -151,7 +151,14 @@ export async function GET() {
       salesTrend: dailyRevenue,
       statusBreakdown,
       topProducts: enrichedTopProducts,
-      notifications: [],
+      notifications: (dashboardNotifications || []).map((n) => ({
+        id: n.id,
+        type: n.type,
+        title: n.title,
+        message: n.message,
+        orderId: n.orderId,
+        createdAt: n.createdAt.toISOString(),
+      })),
       semantics: {
         products: "active products with status ACTIVE",
         customers: "active users with role CUSTOMER",

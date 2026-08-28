@@ -90,6 +90,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { name, email, password, phone, role, permissions, isActive } = body;
 
+    // SECURITY: Rate limit staff creation
+    if (!checkStaffRateLimit(authResult.session.user.id)) {
+      return NextResponse.json(
+        { error: "Too many staff creation attempts. Please try again later." },
+        { status: 429 }
+      );
+    }
+
     if (!name || !email || !password) {
       return NextResponse.json(
         { error: "Name, email, and password are required" },

@@ -208,7 +208,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Sale price must be less than regular price" }, { status: 400 });
     }
     
-    const slug = body.name.toLowerCase().replace(/[^\w\s-]/g, "").replace(/[\s_-]+/g, "-").replace(/^-+|-+$/g, "");
+    let slug = body.name.toLowerCase().replace(/[^\w\s-]/g, "").replace(/[\s_-]+/g, "-").replace(/^-+|-+$/g, "");
+    { const existing = await db.product.findUnique({ where: { slug } }); if (existing) slug = slug + "-" + Date.now().toString(36); }
     const product = await db.product.create({
       data: {
         name: body.name,
@@ -289,13 +290,7 @@ export async function POST(request: NextRequest) {
         const created = await db.variantAttribute.create({
           data: { productId: product.id, name: a.name, type: a.name.toLowerCase() === "color" ? "COLOR" : "TEXT", position: i },
         });
-        if (a.values && Array.isArray(a.values)) {
-          for (let j = 0; j < a.values.length; j++) {
-            await db.variantAttributeValue.create({
-              data: { variantAttributeId: created.id, variantId: "", value: a.values[j].value, colorCode: a.values[j].colorCode || null, position: j },
-            });
-          }
-        }
+        // Attribute values will be created when variants are added
       }
     }
 
