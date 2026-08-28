@@ -104,7 +104,6 @@ function SearchContent() {
     if (!sentinelRef.current) return;
     const obs = new IntersectionObserver(entries => {
       if (entries[0].isIntersecting && !loadingRef.current) {
-        loadingRef.current = true;
         const next = searchPageRef.current + 1;
         searchPageRef.current = next;
         setPage(next);

@@ -137,9 +137,12 @@ export async function GET(request: NextRequest) {
       const normalized = frameSize.replace(/\s*[x×X]\s*/g, 'x');
       const parts = normalized.split('x').map(Number);
       if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-        where.OR = [
-          { frameSizeWidth: parts[0], frameSizeHeight: parts[1] },
-          { frameSizeWidth: parts[1], frameSizeHeight: parts[0] },
+        where.AND = [
+          ...(where.AND || []),
+          { OR: [
+            { frameSizeWidth: parts[0], frameSizeHeight: parts[1] },
+            { frameSizeWidth: parts[1], frameSizeHeight: parts[0] },
+          ]},
         ];
       }
     }
