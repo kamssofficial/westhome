@@ -30,6 +30,7 @@ export default function ShopAllPage() {
 
   const sentinelRef = useRef<HTMLDivElement>(null);
   const loadingRef = useRef(false);
+  const pageRef = useRef(1);
 
   // Fetch categories on mount
   useEffect(() => {
@@ -40,6 +41,8 @@ export default function ShopAllPage() {
   }, []);
 
   // Fetch products
+  const fetchRef = useRef<(pageNum: number, append?: boolean) => Promise<void>>(null);
+
   const fetchProducts = useCallback(
     async (pageNum: number, append = false) => {
       if (loadingRef.current) return;
@@ -55,9 +58,9 @@ export default function ShopAllPage() {
         if (filters.subcategory) params.set("subcategory", filters.subcategory);
         if (filters.style) params.set("style", filters.style);
         if (filters.material) params.set("material", filters.material);
-      if (filters.color) params.set("color", filters.color);
-      if (filters.size) params.set("length", filters.size);
-      if (filters.minPrice) params.set("minPrice", filters.minPrice);
+        if (filters.color) params.set("color", filters.color);
+        if (filters.size) params.set("length", filters.size);
+        if (filters.minPrice) params.set("minPrice", filters.minPrice);
         if (filters.maxPrice) params.set("maxPrice", filters.maxPrice);
         if (filters.inStock) params.set("inStock", filters.inStock);
         if (filters.sort) params.set("sort", filters.sort);
@@ -91,29 +94,33 @@ export default function ShopAllPage() {
     [filters]
   );
 
+  fetchRef.current = fetchProducts;
+
   // Reset and fetch page 1 when filters change
   useEffect(() => {
+    pageRef.current = 1;
     setPage(1);
     setHasMore(true);
     fetchProducts(1, false);
   }, [fetchProducts]);
 
-  // Infinite scroll
+  // Infinite scroll — stable observer, no page/fetchProducts in deps
   useEffect(() => {
     if (!sentinelRef.current) return;
     const obs = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasMore && !loadingRef.current && !loading) {
-          const next = page + 1;
+          const next = pageRef.current + 1;
+          pageRef.current = next;
           setPage(next);
-          fetchProducts(next, true);
+          fetchRef.current?.(next, true);
         }
       },
       { rootMargin: "300px" }
     );
     obs.observe(sentinelRef.current);
     return () => obs.disconnect();
-  }, [hasMore, loading, loadingMore, page, fetchProducts]);
+  }, [hasMore, loading]);
 
   const handleFilterRemove = (key: keyof FilterState) => {
     setFilters((prev) => ({ ...prev, [key]: "" }));

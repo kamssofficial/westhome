@@ -42,10 +42,13 @@ function CategoryContent({ category: initialCategory, initialProducts, initialTo
 
   const observerRef = useRef<HTMLDivElement>(null);
   const loadingRef = useRef(false);
+  const pageRef = useRef(1);
 
   useEffect(() => {
     fetch("/api/categories").then(r => r.json()).then(d => setCategories(d.categories || [])).catch(() => {});
   }, []);
+
+  const fetchRef = useRef<(pageNum: number, append?: boolean) => Promise<void>>(null);
 
   const fetchProducts = useCallback(async (pageNum: number, append: boolean = false) => {
     if (loadingRef.current) return;
@@ -78,19 +81,24 @@ function CategoryContent({ category: initialCategory, initialProducts, initialTo
     finally { setLoading(false); setLoadingMore(false); loadingRef.current = false; }
   }, [slug, filters]);
 
-  useEffect(() => { setPage(1); setHasMore(true); fetchProducts(1, false); }, [fetchProducts]);
+  fetchRef.current = fetchProducts;
+
+  useEffect(() => { pageRef.current = 1; setPage(1); setHasMore(true); fetchProducts(1, false); }, [fetchProducts]);
 
   useEffect(() => {
     const el = observerRef.current;
     if (!el) return;
     const obs = new IntersectionObserver(entries => {
       if (entries[0].isIntersecting && hasMore && !loadingRef.current && !loading) {
-        const next = page + 1; setPage(next); fetchProducts(next, true);
+        const next = pageRef.current + 1;
+        pageRef.current = next;
+        setPage(next);
+        fetchRef.current?.(next, true);
       }
     }, { rootMargin: "200px" });
     obs.observe(el);
     return () => obs.unobserve(el);
-  }, [hasMore, loading, page, fetchProducts]);
+  }, [hasMore, loading]);
 
   const hasSubcategories = initialCategory?.subcategories && initialCategory.subcategories.length > 0;
   const showCatalogControls = loading || products.length > 0 || total > 0;

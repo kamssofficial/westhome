@@ -33,6 +33,7 @@ function SubcategoryContent() {
 
   const observerRef = useRef<HTMLDivElement>(null);
   const loadingRef = useRef(false);
+  const pageRef = useRef(1);
 
   // Fetch category/subcategory info and categories
   useEffect(() => {
@@ -47,6 +48,8 @@ function SubcategoryContent() {
       }
     }).catch(() => {});
   }, [slug, subcategorySlug]);
+
+  const fetchRef = useRef<(pageNum: number, append?: boolean) => Promise<void>>(null);
 
   const fetchProducts = useCallback(async (pageNum: number, append = false) => {
     if (loadingRef.current) return;
@@ -79,19 +82,24 @@ function SubcategoryContent() {
     finally { setLoading(false); setLoadingMore(false); loadingRef.current = false; }
   }, [slug, subcategorySlug, filters]);
 
-  useEffect(() => { setPage(1); setHasMore(true); fetchProducts(1, false); }, [fetchProducts]);
+  fetchRef.current = fetchProducts;
+
+  useEffect(() => { pageRef.current = 1; setPage(1); setHasMore(true); fetchProducts(1, false); }, [fetchProducts]);
 
   useEffect(() => {
     const el = observerRef.current;
     if (!el) return;
     const obs = new IntersectionObserver(entries => {
       if (entries[0].isIntersecting && hasMore && !loadingRef.current && !loading) {
-        const next = page + 1; setPage(next); fetchProducts(next, true);
+        const next = pageRef.current + 1;
+        pageRef.current = next;
+        setPage(next);
+        fetchRef.current?.(next, true);
       }
     }, { rootMargin: "200px" });
     obs.observe(el);
     return () => obs.unobserve(el);
-  }, [hasMore, loading, loadingMore, page, fetchProducts]);
+  }, [hasMore, loading]);
 
   const activeChips: { key: string; label: string }[] = [];
   if (filters.style) activeChips.push({ key: "style", label: filters.style });
