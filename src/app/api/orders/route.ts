@@ -112,12 +112,14 @@ export async function POST(request: NextRequest) {
       if (product.trackInventory && product.stockQuantity < item.quantity) {
         throw new Error(`Insufficient stock for ${item.productName}`);
       }
-      const unitPrice = Number(product.regularPrice);
-      const salePrice = product.salePrice ? Number(product.salePrice) : null;
-      const effectivePrice = salePrice || unitPrice;
+      const regularPrice = Number(product.regularPrice);
+      const salePrice = product.salePrice !== null ? Number(product.salePrice) : null;
+      // The configured sale price is the single customer-facing and order price.
+      // Fall back only when a product has no valid sale price configured yet.
+      const effectivePrice = salePrice !== null && salePrice > 0 ? salePrice : regularPrice;
       const totalPrice = effectivePrice * item.quantity;
       serverSubtotal += totalPrice;
-      return { ...item, unitPrice, salePrice, totalPrice };
+      return { ...item, unitPrice: effectivePrice, salePrice, totalPrice };
     });
     
     // Server-side delivery charge validation

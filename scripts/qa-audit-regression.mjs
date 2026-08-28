@@ -57,6 +57,11 @@ requireText(search, 'aria-label="List view"', "Search list view is named");
 const productCard = await source("src/components/ui/ProductCard.tsx");
 requireText(productCard, 'aria-label={isInWishlist ? "Remove from wishlist" : "Add to wishlist"}', "Wishlist name reflects state");
 requireText(productCard, "aria-pressed={isInWishlist}", "Wishlist exposes pressed state");
+assert.ok(!productCard.includes("line-through"), "Customer product cards do not render a regular-price compare-at value");
+
+const ordersApi = await source("src/app/api/orders/route.ts");
+requireText(ordersApi, "const effectivePrice = salePrice !== null && salePrice > 0 ? salePrice : regularPrice;", "Orders use sale price as the effective customer price");
+requireText(ordersApi, "unitPrice: effectivePrice", "Orders persist the effective sale price as unit price");
 
 const collection = await source("src/app/(shop)/collections/[slug]/CollectionContentClient.tsx");
 requireText(collection, "const showCatalogControls = loading || products.length > 0 || total > 0;", "Empty collections can suppress catalog controls");
@@ -94,4 +99,4 @@ const productApi = await source("src/app/api/products/[slug]/route.ts");
 assert.ok(!productApi.includes('"CONTENT_MANAGER"'), "Content managers do not receive broad product write access");
 
 console.log("QA audit regression checks passed.");
-console.log("Validated: route targets, contact source consistency, form/button semantics, dialog keyboard behavior, collection empty states, checkout acknowledgement/order gating, dashboard count source, and product-write authorization.");
+console.log("Validated: route targets, contact source consistency, form/button semantics, dialog keyboard behavior, collection empty states, checkout acknowledgement/order gating, dashboard count source, product-write authorization, and sale-only customer pricing.");
