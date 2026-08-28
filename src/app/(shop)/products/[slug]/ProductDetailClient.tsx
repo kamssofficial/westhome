@@ -114,18 +114,30 @@ export default function ProductDetailClient(
           <ChevronLeft size={22} />
         </Link>
         <div className="flex items-center gap-2">
-          <button className="p-1 hover:bg-surface-muted rounded-lg transition-colors">
+          <button
+            onClick={async () => {
+              const url = typeof window !== "undefined" ? window.location.href : "";
+              const text = product.name;
+              if (navigator.share) {
+                try { await navigator.share({ title: text, url }); } catch {}
+              } else {
+                try { await navigator.clipboard.writeText(url); toast.success("Link copied!"); } catch { toast.error("Failed to copy"); }
+              }
+            }}
+            className="p-1 hover:bg-surface-muted rounded-lg transition-colors"
+          >
             <Share2 size={20} />
           </button>
           <button
             onClick={() => {
+              const wasInWishlist = isInWishlist(product.id);
               toggleWishlist({
                 id: product.id, productId: product.id, name: product.name,
                 slug: product.slug, price: Number(originalPrice),
                 salePrice: product.salePrice ? Number(product.salePrice) : undefined,
                 image: images[0]?.url,
               });
-              toast.success(isInWishlist(product.id) ? "Removed from wishlist" : "Added to wishlist");
+              toast.success(wasInWishlist ? "Removed from wishlist" : "Added to wishlist");
             }}
             className={cn(
               "p-1 rounded-lg transition-colors",
