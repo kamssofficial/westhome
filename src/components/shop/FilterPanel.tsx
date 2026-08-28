@@ -50,6 +50,41 @@ interface FilterOptions {
   totalProducts: number;
 }
 
+
+// Category-to-filter mapping: which filter fields are relevant for each collection
+const CATEGORY_FILTERS: Record<string, string[]> = {
+  "lamps":           ["type", "style", "material", "color", "size", "price"],
+  "carpets":         ["type", "pattern", "material", "color", "size", "shape", "price"],
+  "clocks":          ["type", "style", "material", "color", "size", "price"],
+  "comforters":      ["type", "pattern", "material", "color", "size", "season", "price"],
+  "wall-decor":      ["type", "style", "material", "color", "size", "price"],
+  "accessories":     ["type", "style", "material", "color", "size", "price"],
+  "laundry":         ["type", "material", "color", "size", "price"],
+};
+
+// Default filters when no collection is selected (Shop All)
+const DEFAULT_FILTERS = ["type", "style", "material", "color", "size", "price"];
+
+// Subcategory-to-filter mapping for Accessories subcategories
+const SUBCATEGORY_FILTERS: Record<string, string[]> = {
+  "soap-dispensers": ["material", "color", "size", "price"],
+  "cushion-covers":  ["pattern", "material", "color", "size", "price"],
+  "vases":           ["style", "material", "color", "size", "shape", "price"],
+  "flower-pots":     ["style", "material", "color", "size", "shape", "price"],
+  "tissue-boxes":    ["material", "color", "size", "price"],
+  "dustbin":         ["material", "color", "size", "price"],
+};
+
+function getActiveFilters(collectionSlug: string, subcategorySlug: string): string[] {
+  if (subcategorySlug && SUBCATEGORY_FILTERS[subcategorySlug]) {
+    return SUBCATEGORY_FILTERS[subcategorySlug];
+  }
+  if (collectionSlug && CATEGORY_FILTERS[collectionSlug]) {
+    return CATEGORY_FILTERS[collectionSlug];
+  }
+  return DEFAULT_FILTERS;
+}
+
 const EMPTY_OPTIONS: FilterOptions = {
   subcategories: [], materials: [], colors: [], styles: [],
   patterns: [], shapes: [], finishes: [],
@@ -200,6 +235,17 @@ export default function FilterPanel({ open, onClose, onApply, initialFilters, ca
   const clearAll = () => { fixedCollection ? setF({ ...EMPTY_FILTERS, collection: fixedCollection }) : setF({ ...EMPTY_FILTERS }); };
 
   const individualFilterCount = [f.collection !== "" && !fixedCollection, f.subcategory !== "", f.style !== "", f.material !== "", f.color !== "", f.size !== "", f.minPrice !== "" || f.maxPrice !== "", f.inStock !== ""].filter(Boolean).length;
+  // Determine which filter sections to show based on collection/subcategory
+  const activeFilterSet = getActiveFilters(f.collection || initialCollection, f.subcategory);
+  const showType = activeFilterSet.includes("type") && options.subcategories.length > 0;
+  const showStyle = activeFilterSet.includes("style") && options.styles.length > 0;
+  const showMaterial = activeFilterSet.includes("material") && options.materials.length > 0;
+  const showColor = activeFilterSet.includes("color") && options.colors.length > 0;
+  const showSize = activeFilterSet.includes("size") && options.dimensions.lengths.length > 0;
+  const showShape = activeFilterSet.includes("shape") && options.shapes.length > 0;
+  const showPattern = activeFilterSet.includes("pattern") && options.patterns.length > 0;
+  const showPrice = activeFilterSet.includes("price") && hasPrices;
+
   const showCollectionSection = !fixedCollection && categories.length > 0;
 
   if (!open) return null;
@@ -228,7 +274,7 @@ export default function FilterPanel({ open, onClose, onApply, initialFilters, ca
               </div>
             </FilterSection>
           )}
-          {options.subcategories.length > 0 && (
+          {showType && (
             <FilterSection title="Type" defaultOpen={true}>
               <div className="flex flex-wrap gap-1.5">
                 <PillButton label="All" active={f.subcategory === ""} onClick={() => set("subcategory", "")} />
@@ -236,7 +282,7 @@ export default function FilterPanel({ open, onClose, onApply, initialFilters, ca
               </div>
             </FilterSection>
           )}
-          {options.styles.length > 0 && (
+          {showStyle && (
             <FilterSection title="Style" defaultOpen={false}>
               <div className="flex flex-wrap gap-1.5">
                 <PillButton label="All" active={f.style === ""} onClick={() => set("style", "")} />
@@ -244,7 +290,7 @@ export default function FilterPanel({ open, onClose, onApply, initialFilters, ca
               </div>
             </FilterSection>
           )}
-          {options.materials.length > 0 && (
+          {showMaterial && (
             <FilterSection title="Material" defaultOpen={false}>
               <div className="flex flex-wrap gap-1.5">
                 <PillButton label="All" active={f.material === ""} onClick={() => set("material", "")} />
@@ -252,7 +298,7 @@ export default function FilterPanel({ open, onClose, onApply, initialFilters, ca
               </div>
             </FilterSection>
           )}
-          {options.colors.length > 0 && (
+          {showColor && (
             <FilterSection title="Color" defaultOpen={false}>
               <div className="flex flex-wrap gap-1.5">
                 <PillButton label="All" active={f.color === ""} onClick={() => set("color", "")} />
@@ -260,7 +306,7 @@ export default function FilterPanel({ open, onClose, onApply, initialFilters, ca
               </div>
             </FilterSection>
           )}
-          {options.dimensions.lengths.length > 0 && (
+          {showSize && (
             <FilterSection title="Size" defaultOpen={false}>
               <div className="flex flex-wrap gap-1.5">
                 <PillButton label="All" active={f.size === ""} onClick={() => set("size", "")} />
@@ -268,7 +314,27 @@ export default function FilterPanel({ open, onClose, onApply, initialFilters, ca
               </div>
             </FilterSection>
           )}
-          {hasPrices && (
+          {/* SHAPE */}
+          {showShape && (
+            <FilterSection title="Shape" defaultOpen={false}>
+              <div className="flex flex-wrap gap-1.5">
+                <PillButton label="All" active={f.size === ""} onClick={() => set("size", "")} />
+                {options.shapes.map((s) => <PillButton key={s} label={s} active={f.size === s} onClick={() => set("size", f.size === s ? "" : s)} />)}
+              </div>
+            </FilterSection>
+          )}
+
+          {/* PATTERN */}
+          {showPattern && (
+            <FilterSection title="Pattern" defaultOpen={false}>
+              <div className="flex flex-wrap gap-1.5">
+                <PillButton label="All" active={f.style === ""} onClick={() => set("style", "")} />
+                {options.patterns.map((p) => <PillButton key={p} label={p} active={f.style === p} onClick={() => set("style", f.style === p ? "" : p)} />)}
+              </div>
+            </FilterSection>
+          )}
+
+          {showPrice && (
             <FilterSection title="Price Range" defaultOpen={true}>
               <div className="flex items-center gap-2">
                 <div className="flex-1">
