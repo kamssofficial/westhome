@@ -116,7 +116,24 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
   const rating = reviewAvg !== null ? reviewAvg : (product.rating || 0);
   const totalReviews = realReviewCount;
 
-  const handleAddToCart = () => {
+  const handleBuyNow = () => {
+    if (!inStock) return;
+    addToCart({
+      id: selectedVariant?.id || product.id,
+      productId: product.id,
+      variantId: selectedVariant?.id,
+      name: product.name,
+      variantName: selectedVariant?.name,
+      price: Number(currentPrice),
+      salePrice: selectedVariant?.salePrice ? Number(selectedVariant.salePrice) : product.salePrice ? Number(product.salePrice) : undefined,
+      quantity,
+      image: product.images?.[0]?.url,
+      maxStock: selectedVariant?.stockQuantity ?? product.stockQuantity,
+    });
+    window.location.href = '/checkout';
+  };
+
+    const handleAddToCart = () => {
     if (!inStock) return;
     addToCart({
       id: selectedVariant?.id || product.id,
@@ -281,6 +298,19 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
           </div>
         </div>
 
+        <button
+          onClick={handleBuyNow}
+          disabled={!inStock}
+          className={cn(
+            "w-full py-3.5 rounded-2xl text-sm font-semibold transition-all duration-200 mt-5",
+            inStock
+              ? "bg-[#5F259F] text-white hover:bg-[#4A1D7F] active:scale-[0.98]"
+              : "bg-surface-muted text-text-muted cursor-not-allowed"
+          )}
+        >
+          {inStock ? "Buy Now" : "Out of Stock"}
+        </button>
+
         {/* Add to Cart */}
         <MetalButton
           onClick={handleAddToCart}
@@ -290,15 +320,15 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
           {inStock ? "Add to Cart" : "Out of Stock"}
         </MetalButton>
 
-        {/* Buy on WhatsApp */}
+        {/* Enquire on WhatsApp */}
         <a
           href={whatsappUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="w-full py-3.5 rounded-2xl text-sm font-semibold border-2 border-primary text-primary hover:bg-primary hover:text-white transition-all duration-200 text-center flex items-center justify-center gap-2 mt-3"
+          className="w-full py-3.5 rounded-2xl text-sm font-semibold border-2 border-[#25D366] text-[#25D366] hover:bg-[#25D366] hover:text-white transition-all duration-200 text-center flex items-center justify-center gap-2 mt-3"
         >
           <MessageCircle size={18} />
-          Buy on WhatsApp
+          Enquire on WhatsApp
         </a>
 
         {/* Accordion sections */}
