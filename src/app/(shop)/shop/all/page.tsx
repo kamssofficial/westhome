@@ -60,6 +60,7 @@ export default function ShopAllPage() {
         if (filters.material) params.set("material", filters.material);
         if (filters.color) params.set("color", filters.color);
         if (filters.size) params.set("length", filters.size);
+        if (filters.frameSize) params.set("frameSize", filters.frameSize);
         if (filters.minPrice) params.set("minPrice", filters.minPrice);
         if (filters.maxPrice) params.set("maxPrice", filters.maxPrice);
         if (filters.inStock) params.set("inStock", filters.inStock);
@@ -175,6 +176,7 @@ export default function ShopAllPage() {
                   filters.size !== "",
                   filters.pattern !== "",
                   filters.shape !== "",
+                  filters.frameSize !== "",
                   filters.minPrice !== "" || filters.maxPrice !== "",
                   filters.inStock !== "",
                 ].filter(Boolean).length;

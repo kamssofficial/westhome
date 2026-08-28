@@ -23,6 +23,8 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
     trackInventory: true, allowBackorder: false, categoryId: "", subcategoryId: "",
     isFeatured: false, isBestseller: false, isNewArrival: false, isComingSoon: false,
     status: "DRAFT", purchaseMethod: "BOTH",
+    // Frame size
+    frameSizeWidth: "", frameSizeHeight: "",
     // Physical dimensions
     height: "", width: "", length: "", depth: "", diameter: "",
     dimensionUnit: "cm", weight: "", weightUnit: "kg",
@@ -64,6 +66,8 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
           isFeatured: p.isFeatured ?? false, isBestseller: p.isBestseller ?? false,
           isNewArrival: p.isNewArrival ?? false, isComingSoon: p.isComingSoon ?? false,
           status: p.status || "DRAFT", purchaseMethod: p.purchaseMethod || "BOTH",
+          // Frame size
+          frameSizeWidth: p.frameSizeWidth ? String(p.frameSizeWidth) : "", frameSizeHeight: p.frameSizeHeight ? String(p.frameSizeHeight) : "",
           // Physical dimensions
           height: p.height ? String(p.height) : "", width: p.width ? String(p.width) : "",
           length: p.length ? String(p.length) : "", depth: p.depth ? String(p.depth) : "",
@@ -132,6 +136,9 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
           salePrice: form.salePrice ? parseFloat(form.salePrice) : null,
           stockQuantity: parseInt(form.stockQuantity) || 0,
           lowStockThreshold: parseInt(form.lowStockThreshold) || 5,
+          // Frame size
+          frameSizeWidth: form.frameSizeWidth ? parseFloat(form.frameSizeWidth) : null,
+          frameSizeHeight: form.frameSizeHeight ? parseFloat(form.frameSizeHeight) : null,
           // Physical dimensions
           height: form.height ? parseFloat(form.height) : null,
           width: form.width ? parseFloat(form.width) : null,
@@ -252,6 +259,22 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
                 {label}
               </label>
             ))}
+          </div>
+        </div>
+
+        {/* Frame Size */}
+        <div className="bg-surface rounded-[1.35rem] border border-border p-5">
+          <h2 className="font-semibold mb-4">Frame Size</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div><label className="text-xs font-medium text-text-secondary mb-1 block">Width (cm)</label><input type="number" step="1" value={form.frameSizeWidth} onChange={(e) => setForm({ ...form, frameSizeWidth: e.target.value })} className={inputClass} placeholder="e.g. 80" /></div>
+            <div><label className="text-xs font-medium text-text-secondary mb-1 block">Height (cm)</label><input type="number" step="1" value={form.frameSizeHeight} onChange={(e) => setForm({ ...form, frameSizeHeight: e.target.value })} className={inputClass} placeholder="e.g. 120" /></div>
+            <div className="flex items-end">
+              {form.frameSizeWidth && form.frameSizeHeight && (
+                <div className="px-3 py-2 bg-white rounded-xl border border-border text-sm font-medium">
+                  Preview: {form.frameSizeWidth} × {form.frameSizeHeight} cm
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

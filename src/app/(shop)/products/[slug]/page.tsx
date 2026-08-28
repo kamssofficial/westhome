@@ -262,6 +262,11 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
         {selectedVariant?.name && (
           <p className="text-xs font-medium text-text-secondary mt-1">{selectedVariant.name}</p>
         )}
+        {(product as any).frameSizeWidth && (product as any).frameSizeHeight && (
+          <p className="text-xs font-medium text-text-secondary mt-1">
+            Frame Size: {(product as any).frameSizeWidth} × {(product as any).frameSizeHeight} cm
+          </p>
+        )}
         <div className="flex items-baseline gap-2 mt-1">
           <p className="text-xl font-bold text-primary">{formatPrice(currentPrice)}</p>
           {selectedVariant?.salePrice && Number(selectedVariant.salePrice) < Number(product.regularPrice) && (
@@ -933,6 +938,12 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
 
               {/* Dimension list */}
               <div className="space-y-0">
+                {(product as any).frameSizeWidth && (product as any).frameSizeHeight && (
+                  <div className="flex items-center justify-between py-3 border-b border-black/[.04]">
+                    <span className="text-sm text-secondary">Frame Size</span>
+                    <span className="text-sm font-semibold text-primary">{(product as any).frameSizeWidth} × {(product as any).frameSizeHeight} cm</span>
+                  </div>
+                )}
                 {(product as any).height && (
                   <div className="flex items-center justify-between py-3 border-b border-black/[.04]">
                     <span className="text-sm text-secondary">Height</span>

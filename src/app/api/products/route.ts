@@ -39,6 +39,7 @@ export async function GET(request: NextRequest) {
       isNewArrival: searchParams.get("isNewArrival"),
       isFeatured: searchParams.get("isFeatured"),
       minRating: searchParams.get("minRating"),
+      frameSize: searchParams.get("frameSize"),
     });
 
     // Check cache first
@@ -52,7 +53,29 @@ export async function GET(request: NextRequest) {
     const isAdminView = !!(statusFilter || searchParams.get("all"));
     const where: any = isAdminView ? {} : { isActive: true, status: "ACTIVE" };
     if (statusFilter) where.status = statusFilter;
-    if (query) { where.OR = [{ name: { contains: query, mode: "insensitive" } }, { description: { contains: query, mode: "insensitive" } }, { shortDescription: { contains: query, mode: "insensitive" } }, { material: { contains: query, mode: "insensitive" } }]; }
+    if (query) {
+      // Normalize frame size queries: "80x120", "80 x 120", "80×120" all match
+      const normalizedQuery = query.replace(/\s*[x×X]\s*/g, 'x');
+      const isFrameSizeQuery = /^\d+x\d+$/i.test(normalizedQuery);
+      if (isFrameSizeQuery) {
+        const [w, h] = normalizedQuery.toLowerCase().split('x').map(Number);
+        where.OR = [
+          { name: { contains: query, mode: "insensitive" } },
+          { description: { contains: query, mode: "insensitive" } },
+          { shortDescription: { contains: query, mode: "insensitive" } },
+          { material: { contains: query, mode: "insensitive" } },
+          { frameSizeWidth: w, frameSizeHeight: h },
+          { frameSizeWidth: h, frameSizeHeight: w },
+        ];
+      } else {
+        where.OR = [
+          { name: { contains: query, mode: "insensitive" } },
+          { description: { contains: query, mode: "insensitive" } },
+          { shortDescription: { contains: query, mode: "insensitive" } },
+          { material: { contains: query, mode: "insensitive" } },
+        ];
+      }
+    }
     if (category) { where.category = { slug: category }; }
     if (subcategory) { where.subcategory = { slug: subcategory }; }
     if (type) { where.subcategory = { slug: type }; }
@@ -108,6 +131,18 @@ export async function GET(request: NextRequest) {
     if (maxLength) where.length = { ...where.length, lte: parseFloat(maxLength) };
     if (minDiameter) where.diameter = { ...where.diameter, gte: parseFloat(minDiameter) };
     if (maxDiameter) where.diameter = { ...where.diameter, lte: parseFloat(maxDiameter) };
+    // Frame size filter (format: "WxH" e.g. "80x120")
+    const frameSize = searchParams.get("frameSize");
+    if (frameSize) {
+      const normalized = frameSize.replace(/\s*[x×X]\s*/g, 'x');
+      const parts = normalized.split('x').map(Number);
+      if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+        where.OR = [
+          { frameSizeWidth: parts[0], frameSizeHeight: parts[1] },
+          { frameSizeWidth: parts[1], frameSizeHeight: parts[0] },
+        ];
+      }
+    }
 
     let orderBy: any = [{ createdAt: "desc" }, { id: "asc" }];
     switch (sort) {
@@ -178,6 +213,8 @@ export async function GET(request: NextRequest) {
       packagingDimensions: product.packagingDimensions,
       packagingWeight: product.packagingWeight ? Number(product.packagingWeight) : null,
       includedItems: product.includedItems,
+      frameSizeWidth: product.frameSizeWidth ? Number(product.frameSizeWidth) : null,
+      frameSizeHeight: product.frameSizeHeight ? Number(product.frameSizeHeight) : null,
       allowCustomSize: product.allowCustomSize,
       customSizeUnit: product.customSizeUnit,
       customSizeMinWidth: product.customSizeMinWidth ? Number(product.customSizeMinWidth) : null,
@@ -230,6 +267,8 @@ export async function POST(request: NextRequest) {
         lowStockThreshold: body.lowStockThreshold || 5,
         trackInventory: body.trackInventory ?? true,
         allowBackorder: body.allowBackorder ?? false,
+        frameSizeWidth: body.frameSizeWidth ? parseFloat(body.frameSizeWidth) : null,
+        frameSizeHeight: body.frameSizeHeight ? parseFloat(body.frameSizeHeight) : null,
         allowCustomSize: body.allowCustomSize ?? false,
         customSizeUnit: body.customSizeUnit,
         customSizeMinWidth: body.customSizeMinWidth,

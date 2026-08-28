@@ -114,6 +114,10 @@ model Product {
   packagingWeight     Decimal?
   includedItems       String?
 
+  // Frame Size
+  frameSizeWidth    Decimal?
+  frameSizeHeight   Decimal?
+
   // Sizing
   allowCustomSize Boolean       @default(false)
   customSizeMinWidth  Decimal?

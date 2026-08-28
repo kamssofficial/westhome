@@ -71,6 +71,7 @@ function SearchContent() {
       if (filters.size) params.set("length", filters.size);
       if (filters.pattern) params.set("pattern", filters.pattern);
       if (filters.shape) params.set("shape", filters.shape);
+      if (filters.frameSize) params.set("frameSize", filters.frameSize);
       if (filters.minPrice) params.set("minPrice", filters.minPrice);
       if (filters.maxPrice) params.set("maxPrice", filters.maxPrice);
       if (filters.inStock) params.set("inStock", filters.inStock);
@@ -132,6 +133,7 @@ function SearchContent() {
     filters.size !== "",
     filters.pattern !== "",
     filters.shape !== "",
+    filters.frameSize !== "",
     filters.minPrice !== "" || filters.maxPrice !== "",
     filters.inStock !== "",
   ].filter(Boolean).length;

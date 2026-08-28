@@ -68,6 +68,7 @@ function CategoryContent({ category: initialCategory, initialProducts, initialTo
       if (filters.size) fp.set("length", filters.size);
       if (filters.pattern) fp.set("pattern", filters.pattern);
       if (filters.shape) fp.set("shape", filters.shape);
+      if (filters.frameSize) fp.set("frameSize", filters.frameSize);
       if (filters.minPrice) fp.set("minPrice", filters.minPrice);
       if (filters.maxPrice) fp.set("maxPrice", filters.maxPrice);
       if (filters.inStock) fp.set("inStock", filters.inStock);

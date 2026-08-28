@@ -49,6 +49,7 @@ export async function GET(request: NextRequest) {
       shapes,
       finishes,
       lengthValues,
+      frameSizeValues,
       priceAgg,
       stockCheck,
       statusCheck,
@@ -89,6 +90,12 @@ export async function GET(request: NextRequest) {
         select: { length: true },
         distinct: ["length"],
         orderBy: { length: "asc" },
+      }),
+      db.product.findMany({
+        where: { ...where, frameSizeWidth: { not: null }, frameSizeHeight: { not: null } },
+        select: { frameSizeWidth: true, frameSizeHeight: true },
+        distinct: ["frameSizeWidth", "frameSizeHeight"],
+        orderBy: [{ frameSizeWidth: "asc" }, { frameSizeHeight: "asc" }],
       }),
       db.product.aggregate({
         where,
@@ -136,6 +143,11 @@ export async function GET(request: NextRequest) {
       dimensions: {
         lengths: lengthValues.map((l: any) => Number(l.length)),
       },
+      frameSizes: frameSizeValues
+        .map((f: any) => ({ width: Number(f.frameSizeWidth), height: Number(f.frameSizeHeight) }))
+        .filter((f) => f.width > 0 && f.height > 0)
+        .sort((a, b) => a.width - b.width || a.height - b.height)
+        .map((f) => ({ w: f.width, h: f.height, label: f.width + " \u00d7 " + f.height + " cm" })),
       priceRange: { min: minPrice, max: maxPrice },
       availability: {
         inStock:

@@ -20,6 +20,7 @@ export interface FilterState {
   size: string;
   pattern: string;
   shape: string;
+  frameSize: string;
   minPrice: string;
   maxPrice: string;
   inStock: string;
@@ -35,6 +36,7 @@ export const EMPTY_FILTERS: FilterState = {
   size: "",
   pattern: "",
   shape: "",
+  frameSize: "",
   minPrice: "",
   maxPrice: "",
   inStock: "",
@@ -50,6 +52,7 @@ interface FilterOptions {
   shapes: string[];
   finishes: string[];
   dimensions: { lengths: number[] };
+  frameSizes: { w: number; h: number; label: string }[];
   priceRange: { min: number; max: number };
   totalProducts: number;
 }
@@ -92,7 +95,8 @@ function getActiveFilters(collectionSlug: string, subcategorySlug: string): stri
 const EMPTY_OPTIONS: FilterOptions = {
   subcategories: [], materials: [], colors: [], styles: [],
   patterns: [], shapes: [], finishes: [],
-  dimensions: { lengths: [] }, priceRange: { min: 0, max: 10000 }, totalProducts: 0,
+  dimensions: { lengths: [] }, frameSizes: [],
+  priceRange: { min: 0, max: 10000 }, totalProducts: 0,
 };
 
 function FilterSection({ title, defaultOpen = false, children }: { title: string; defaultOpen?: boolean; children: React.ReactNode }) {
@@ -152,11 +156,10 @@ function FilterSection({ title, defaultOpen = false, children }: { title: string
   );
 }
 
-function PillButton({ label, active, onClick, count }: { label: string; active: boolean; onClick: () => void; count?: number }) {
+function PillButton({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
     <button type="button" onClick={onClick} className={cn("inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-150", active ? "bg-[#1a1917] text-white" : "bg-white text-[#6b6560] border border-black/[.08] hover:border-black/[.15]")}>
       {label}
-      {count !== undefined && count > 0 && <span className={cn("text-[9px] font-bold", active ? "text-white/70" : "text-[#b0aba6]")}>{count}</span>}
     </button>
   );
 }
@@ -210,6 +213,7 @@ export function ActiveFilterChips({ filters, categories, onRemove, onClearAll }:
   if (filters.size) chips.push({ key: "size", label: "Size: " + filters.size });
   if (filters.pattern) chips.push({ key: "pattern", label: "Pattern: " + filters.pattern });
   if (filters.shape) chips.push({ key: "shape", label: "Shape: " + filters.shape });
+  if (filters.frameSize) { const p = filters.frameSize.split('x'); chips.push({ key: "frameSize", label: p[0] + " \u00d7 " + p[1] + " cm" }); }
   if (filters.minPrice || filters.maxPrice) chips.push({ key: "minPrice", label: "\u20B9" + (filters.minPrice || "0") + " \u2013 \u20B9" + (filters.maxPrice || "\u221E") });
   if (filters.inStock) chips.push({ key: "inStock", label: "In Stock" });
   if (chips.length === 0) return null;
@@ -254,7 +258,7 @@ export default function FilterPanel({ open, onClose, onApply, initialFilters, ca
     const url = slug ? "/api/filters?category=" + slug : "/api/filters";
     setLoadingOptions(true);
     fetch(url).then((r) => r.json()).then((data) => {
-      setOptions({ subcategories: data.subcategories || [], materials: data.materials || [], colors: data.colors || [], styles: data.styles || [], patterns: data.patterns || [], shapes: data.shapes || [], finishes: data.finishes || [], dimensions: data.dimensions || { lengths: [] }, priceRange: data.priceRange || { min: 0, max: 10000 }, totalProducts: data.totalProducts || 0 });
+      setOptions({ subcategories: data.subcategories || [], materials: data.materials || [], colors: data.colors || [], styles: data.styles || [], patterns: data.patterns || [], shapes: data.shapes || [], finishes: data.finishes || [], dimensions: data.dimensions || { lengths: [] }, frameSizes: data.frameSizes || [], priceRange: data.priceRange || { min: 0, max: 10000 }, totalProducts: data.totalProducts || 0 });
     }).catch(() => setOptions(EMPTY_OPTIONS)).finally(() => setLoadingOptions(false));
   }, [open, f.collection, initialCollection]);
 
@@ -281,7 +285,7 @@ export default function FilterPanel({ open, onClose, onApply, initialFilters, ca
 
   const clearAll = () => { fixedCollection ? setF({ ...EMPTY_FILTERS, collection: fixedCollection }) : setF({ ...EMPTY_FILTERS }); };
 
-  const individualFilterCount = [f.collection !== "" && !fixedCollection, f.subcategory !== "", f.style !== "", f.material !== "", f.color !== "", f.size !== "", f.pattern !== "", f.shape !== "", f.minPrice !== "" || f.maxPrice !== "", f.inStock !== ""].filter(Boolean).length;
+  const individualFilterCount = [f.collection !== "" && !fixedCollection, f.subcategory !== "", f.style !== "", f.material !== "", f.color !== "", f.size !== "", f.pattern !== "", f.shape !== "", f.frameSize !== "", f.minPrice !== "" || f.maxPrice !== "", f.inStock !== ""].filter(Boolean).length;
   // Determine which filter sections to show based on collection/subcategory
   const activeFilterSet = getActiveFilters(f.collection || initialCollection, f.subcategory);
   const showType = activeFilterSet.includes("type") && options.subcategories.length > 0;
@@ -291,6 +295,7 @@ export default function FilterPanel({ open, onClose, onApply, initialFilters, ca
   const showSize = activeFilterSet.includes("size") && options.dimensions.lengths.length > 0;
   const showShape = activeFilterSet.includes("shape") && options.shapes.length > 0;
   const showPattern = activeFilterSet.includes("pattern") && options.patterns.length > 0;
+  const showFrameSize = options.frameSizes.length > 0;
   const showPrice = activeFilterSet.includes("price") && hasPrices;
 
   const showCollectionSection = !fixedCollection && categories.length > 0;
@@ -310,7 +315,7 @@ export default function FilterPanel({ open, onClose, onApply, initialFilters, ca
         role="dialog"
         aria-modal="true"
         aria-labelledby="filter-panel-title"
-        className={cn("fixed z-[70] bg-[#faf8f5] flex flex-col filter-panel-animate", "inset-x-0 bottom-0 top-[8vh] rounded-t-[1.5rem]", "md:inset-y-0 md:right-0 md:left-auto md:w-[380px] md:top-0 md:rounded-t-none md:rounded-l-[1.5rem]")}
+        className={cn("fixed z-[70] bg-[#faf8f5] flex flex-col filter-panel-animate", "inset-x-0 bottom-[max(4.5rem,calc(4.5rem+env(safe-area-inset-bottom)))] top-0 rounded-t-[1.5rem]", "md:inset-y-0 md:right-0 md:left-auto md:w-[380px] md:top-0 md:rounded-t-none md:rounded-l-[1.5rem]")}
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-black/[.06] shrink-0">
           <div className="flex items-center gap-2.5">
@@ -328,7 +333,7 @@ export default function FilterPanel({ open, onClose, onApply, initialFilters, ca
             <FilterSection title="Collection" defaultOpen={true}>
               <div className="flex flex-wrap gap-1.5">
                 <PillButton label="All" active={f.collection === ""} onClick={() => set("collection", "")} />
-                {categories.map((cat) => <PillButton key={cat.slug} label={cat.name} active={f.collection === cat.slug} onClick={() => set("collection", cat.slug)} count={cat.productCount} />)}
+                {categories.map((cat) => <PillButton key={cat.slug} label={cat.name} active={f.collection === cat.slug} onClick={() => set("collection", cat.slug)} />)}
               </div>
             </FilterSection>
           )}
@@ -336,7 +341,7 @@ export default function FilterPanel({ open, onClose, onApply, initialFilters, ca
             <FilterSection title="Type" defaultOpen={true}>
               <div className="flex flex-wrap gap-1.5">
                 <PillButton label="All" active={f.subcategory === ""} onClick={() => set("subcategory", "")} />
-                {options.subcategories.map((sub) => <PillButton key={sub.slug} label={sub.name} active={f.subcategory === sub.slug} onClick={() => set("subcategory", sub.slug)} count={sub.count} />)}
+                {options.subcategories.map((sub) => <PillButton key={sub.slug} label={sub.name} active={f.subcategory === sub.slug} onClick={() => set("subcategory", sub.slug)} />)}
               </div>
             </FilterSection>
           )}
@@ -392,6 +397,19 @@ export default function FilterPanel({ open, onClose, onApply, initialFilters, ca
             </FilterSection>
           )}
 
+          {/* FRAME SIZE */}
+          {showFrameSize && (
+            <FilterSection title="Frame Size" defaultOpen={false}>
+              <div className="flex flex-wrap gap-1.5">
+                <PillButton label="All" active={f.frameSize === ""} onClick={() => set("frameSize", "")} />
+                {options.frameSizes.map((fs) => {
+                  const val = fs.w + "x" + fs.h;
+                  return <PillButton key={val} label={fs.label} active={f.frameSize === val} onClick={() => set("frameSize", f.frameSize === val ? "" : val)} />;
+                })}
+              </div>
+            </FilterSection>
+          )}
+
           {showPrice && (
             <FilterSection title="Price Range" defaultOpen={true}>
               <div className="flex items-center gap-2">
@@ -420,9 +438,16 @@ export default function FilterPanel({ open, onClose, onApply, initialFilters, ca
           )}
         </div>
         <div className="px-5 py-4 border-t border-black/[.06] shrink-0 bg-[#faf8f5]">
-          <button type="button" onClick={() => { onApply(f); onClose(); }} className="w-full py-3.5 bg-[#1a1917] text-white rounded-2xl text-sm font-semibold hover:bg-[#2d2926] active:scale-[.98] transition-all min-h-[48px]">
-            Show {resultCount} Result{resultCount !== 1 ? "s" : ""}
-          </button>
+          <div className="flex gap-2">
+            {individualFilterCount > 0 && (
+              <button type="button" onClick={clearAll} className="px-4 py-3.5 rounded-2xl text-sm font-semibold border border-black/[.08] text-[#1a1917] hover:bg-[#f0ede8] active:scale-[.98] transition-all min-h-[48px]">
+                Clear
+              </button>
+            )}
+            <button type="button" onClick={() => { onApply(f); onClose(); }} className="flex-1 py-3.5 bg-[#1a1917] text-white rounded-2xl text-sm font-semibold hover:bg-[#2d2926] active:scale-[.98] transition-all min-h-[48px]">
+              Apply Filters{resultCount > 0 ? " (" + resultCount + ")" : ""}
+            </button>
+          </div>
         </div>
       </div>
     </>
