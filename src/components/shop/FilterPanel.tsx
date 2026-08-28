@@ -18,6 +18,8 @@ export interface FilterState {
   material: string;
   color: string;
   size: string;
+  pattern: string;
+  shape: string;
   minPrice: string;
   maxPrice: string;
   inStock: string;
@@ -31,6 +33,8 @@ export const EMPTY_FILTERS: FilterState = {
   material: "",
   color: "",
   size: "",
+  pattern: "",
+  shape: "",
   minPrice: "",
   maxPrice: "",
   inStock: "",
@@ -164,6 +168,8 @@ export function ActiveFilterChips({ filters, categories, onRemove, onClearAll }:
   if (filters.material) chips.push({ key: "material", label: filters.material });
   if (filters.color) chips.push({ key: "color", label: filters.color });
   if (filters.size) chips.push({ key: "size", label: "Size: " + filters.size });
+  if (filters.pattern) chips.push({ key: "pattern", label: "Pattern: " + filters.pattern });
+  if (filters.shape) chips.push({ key: "shape", label: "Shape: " + filters.shape });
   if (filters.minPrice || filters.maxPrice) chips.push({ key: "minPrice", label: "\u20B9" + (filters.minPrice || "0") + " \u2013 \u20B9" + (filters.maxPrice || "\u221E") });
   if (filters.inStock) chips.push({ key: "inStock", label: "In Stock" });
   if (chips.length === 0) return null;
@@ -235,7 +241,7 @@ export default function FilterPanel({ open, onClose, onApply, initialFilters, ca
 
   const clearAll = () => { fixedCollection ? setF({ ...EMPTY_FILTERS, collection: fixedCollection }) : setF({ ...EMPTY_FILTERS }); };
 
-  const individualFilterCount = [f.collection !== "" && !fixedCollection, f.subcategory !== "", f.style !== "", f.material !== "", f.color !== "", f.size !== "", f.minPrice !== "" || f.maxPrice !== "", f.inStock !== ""].filter(Boolean).length;
+  const individualFilterCount = [f.collection !== "" && !fixedCollection, f.subcategory !== "", f.style !== "", f.material !== "", f.color !== "", f.size !== "", f.pattern !== "", f.shape !== "", f.minPrice !== "" || f.maxPrice !== "", f.inStock !== ""].filter(Boolean).length;
   // Determine which filter sections to show based on collection/subcategory
   const activeFilterSet = getActiveFilters(f.collection || initialCollection, f.subcategory);
   const showType = activeFilterSet.includes("type") && options.subcategories.length > 0;
@@ -319,8 +325,8 @@ export default function FilterPanel({ open, onClose, onApply, initialFilters, ca
           {showShape && (
             <FilterSection title="Shape" defaultOpen={false}>
               <div className="flex flex-wrap gap-1.5">
-                <PillButton label="All" active={f.size === ""} onClick={() => set("size", "")} />
-                {options.shapes.map((s) => <PillButton key={s} label={s} active={f.size === s} onClick={() => set("size", f.size === s ? "" : s)} />)}
+                <PillButton label="All" active={f.shape === ""} onClick={() => set("shape", "")} />
+                {options.shapes.map((s) => <PillButton key={s} label={s} active={f.shape === s} onClick={() => set("shape", f.shape === s ? "" : s)} />)}
               </div>
             </FilterSection>
           )}
@@ -329,8 +335,8 @@ export default function FilterPanel({ open, onClose, onApply, initialFilters, ca
           {showPattern && (
             <FilterSection title="Pattern" defaultOpen={false}>
               <div className="flex flex-wrap gap-1.5">
-                <PillButton label="All" active={f.style === ""} onClick={() => set("style", "")} />
-                {options.patterns.map((p) => <PillButton key={p} label={p} active={f.style === p} onClick={() => set("style", f.style === p ? "" : p)} />)}
+                <PillButton label="All" active={f.pattern === ""} onClick={() => set("pattern", "")} />
+                {options.patterns.map((p) => <PillButton key={p} label={p} active={f.pattern === p} onClick={() => set("pattern", f.pattern === p ? "" : p)} />)}
               </div>
             </FilterSection>
           )}

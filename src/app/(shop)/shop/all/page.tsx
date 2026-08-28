@@ -172,6 +172,9 @@ export default function ShopAllPage() {
                   filters.style !== "",
                   filters.material !== "",
                   filters.color !== "",
+                  filters.size !== "",
+                  filters.pattern !== "",
+                  filters.shape !== "",
                   filters.minPrice !== "" || filters.maxPrice !== "",
                   filters.inStock !== "",
                 ].filter(Boolean).length;

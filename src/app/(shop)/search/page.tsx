@@ -68,6 +68,9 @@ function SearchContent() {
       if (filters.style) params.set("style", filters.style);
       if (filters.material) params.set("material", filters.material);
       if (filters.color) params.set("color", filters.color);
+      if (filters.size) params.set("length", filters.size);
+      if (filters.pattern) params.set("pattern", filters.pattern);
+      if (filters.shape) params.set("shape", filters.shape);
       if (filters.minPrice) params.set("minPrice", filters.minPrice);
       if (filters.maxPrice) params.set("maxPrice", filters.maxPrice);
       if (filters.inStock) params.set("inStock", filters.inStock);
@@ -84,7 +87,7 @@ function SearchContent() {
       setHasMore(pageNum * PAGE_SIZE < (data.total || 0));
     } catch { if (!append) setProducts([]); }
     finally { setLoading(false); setLoadingMore(false); }
-  }, [initialQuery, filters.collection, filters.subcategory, filters.style, filters.material, filters.color, filters.minPrice, filters.maxPrice, filters.inStock, sort]);
+  }, [initialQuery, filters.collection, filters.subcategory, filters.style, filters.material, filters.color, filters.size, filters.pattern, filters.shape, filters.minPrice, filters.maxPrice, filters.inStock, sort]);
 
   useEffect(() => { setPage(1); setHasMore(true); fetchProducts(1, false); if (initialQuery) saveRecentSearch(initialQuery); }, [fetchProducts]);
 
@@ -126,6 +129,9 @@ function SearchContent() {
     filters.style !== "",
     filters.material !== "",
     filters.color !== "",
+    filters.size !== "",
+    filters.pattern !== "",
+    filters.shape !== "",
     filters.minPrice !== "" || filters.maxPrice !== "",
     filters.inStock !== "",
   ].filter(Boolean).length;

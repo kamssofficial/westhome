@@ -66,6 +66,8 @@ function CategoryContent({ category: initialCategory, initialProducts, initialTo
       if (filters.material) fp.set("material", filters.material);
       if (filters.color) fp.set("color", filters.color);
       if (filters.size) fp.set("length", filters.size);
+      if (filters.pattern) fp.set("pattern", filters.pattern);
+      if (filters.shape) fp.set("shape", filters.shape);
       if (filters.minPrice) fp.set("minPrice", filters.minPrice);
       if (filters.maxPrice) fp.set("maxPrice", filters.maxPrice);
       if (filters.inStock) fp.set("inStock", filters.inStock);
@@ -108,6 +110,8 @@ function CategoryContent({ category: initialCategory, initialProducts, initialTo
   if (filters.style) activeChips.push({ key: "style", label: filters.style });
   if (filters.material) activeChips.push({ key: "material", label: filters.material });
   if (filters.color) activeChips.push({ key: "color", label: filters.color });
+  if (filters.pattern) activeChips.push({ key: "pattern", label: "Pattern: " + filters.pattern });
+  if (filters.shape) activeChips.push({ key: "shape", label: "Shape: " + filters.shape });
   if (filters.minPrice || filters.maxPrice) activeChips.push({ key: "minPrice", label: "₹" + (filters.minPrice || "0") + " – ₹" + (filters.maxPrice || "∞") });
   if (filters.inStock) activeChips.push({ key: "inStock", label: "In Stock" });
 
