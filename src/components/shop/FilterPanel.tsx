@@ -100,7 +100,8 @@ function FilterSection({ title, defaultOpen = false, children }: { title: string
         <span className="text-sm font-semibold text-[#1a1917]">{title}</span>
         <ChevronDown size={16} className={cn("text-[#b0aba6] transition-transform duration-200", open && "rotate-180")} />
       </button>
-      <div id={sectionId} className={cn("overflow-hidden transition-all duration-200", open ? "max-h-[500px] opacity-100 pb-4" : "max-h-0 opacity-0")}>
+      <div id={sectionId} className={cn(          "overflow-hidden transition-all duration-200",
+          open ? "max-h-[800px] opacity-100 pb-4" : "max-h-0 opacity-0")}>
         {children}
       </div>
     </div>
@@ -253,7 +254,7 @@ export default function FilterPanel({ open, onClose, onApply, initialFilters, ca
   return (
     <>
       <div className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm" aria-hidden="true" onClick={onClose} />
-      <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby="filter-panel-title" className={cn("fixed z-[70] bg-[#faf8f5] overflow-hidden flex flex-col transition-transform duration-300 ease-out", "inset-x-0 bottom-0 top-[8vh] rounded-t-[1.5rem]", "md:inset-y-0 md:right-0 md:left-auto md:w-[380px] md:top-0 md:rounded-t-none md:rounded-l-[1.5rem]")}>
+      <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby="filter-panel-title" className={cn("fixed z-[70] bg-[#faf8f5] flex flex-col transition-transform duration-300 ease-out", "inset-x-0 bottom-0 top-[8vh] rounded-t-[1.5rem]", "md:inset-y-0 md:right-0 md:left-auto md:w-[380px] md:top-0 md:rounded-t-none md:rounded-l-[1.5rem]")}>
         <div className="flex items-center justify-between px-5 py-4 border-b border-black/[.06] shrink-0">
           <div className="flex items-center gap-2.5">
             <SlidersHorizontal size={17} className="text-[#1a1917]" />
@@ -265,7 +266,7 @@ export default function FilterPanel({ open, onClose, onApply, initialFilters, ca
             <button ref={closeButtonRef} type="button" aria-label="Close filters" onClick={onClose} className="w-8 h-8 flex items-center justify-center hover:bg-black/[.04] rounded-full transition-colors"><X size={18} className="text-[#6b6560]" /></button>
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto overscroll-contain px-5">
+        <div className="flex-1 overflow-y-auto overscroll-contain px-5" style={{ WebkitOverflowScrolling: "touch" }}>
           {showCollectionSection && (
             <FilterSection title="Collection" defaultOpen={true}>
               <div className="flex flex-wrap gap-1.5">
