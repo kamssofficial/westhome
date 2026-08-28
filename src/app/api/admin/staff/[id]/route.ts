@@ -153,21 +153,20 @@ export async function DELETE(
     }
 
     if (permanent) {
-      // Permanent deletion: preserve historical records, remove PII, delete user
-      await db.order.updateMany({ where: { userId: id }, data: { userId: null } });
-      await db.wishlist.deleteMany({ where: { userId: id } });
-      await db.address.deleteMany({ where: { userId: id } });
-      await db.review.deleteMany({ where: { userId: id } });
-      await db.user.delete({ where: { id } });
-
-      await db.auditLog.create({
-        data: {
-          action: "DELETE",
-          entity: "USER",
-          entityId: id,
-          details: { email: existing.email, name: existing.name, role: existing.role, permanent: true },
-        },
+      // Permanent deletion: remove personal data and dependent records atomically while preserving historical order rows.
+      await db.$transaction(async (tx) => {
+        await tx.auditLog.create({ data: { action: "DELETE", entity: "USER", entityId: id, details: { email: existing.email, name: existing.name, role: existing.role, permanent: true } } });
+        await tx.order.updateMany({ where: { userId: id }, data: { userId: null, customerName: "Deleted Staff", customerEmail: "deleted@westhome.invalid", customerPhone: "DELETED" } });
+        await tx.wishlist.deleteMany({ where: { userId: id } });
+        await tx.recentlyViewed.deleteMany({ where: { userId: id } });
+        await tx.address.deleteMany({ where: { userId: id } });
+        await tx.review.deleteMany({ where: { userId: id } });
+        await tx.couponUsage.deleteMany({ where: { userId: id } });
+        await tx.analyticsEvent.updateMany({ where: { userId: id }, data: { userId: null } });
+        await tx.liveSession.deleteMany({ where: { userId: id } });
+        await tx.user.delete({ where: { id } });
       });
+
 
       return NextResponse.json({ success: true, permanent: true });
     } else {
@@ -185,8 +184,8 @@ export async function DELETE(
 
       return NextResponse.json({ success: true });
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error("Staff delete error:", error);
-    return NextResponse.json({ error: "Failed: " + (error.message || "Unknown error") }, { status: 500 });
+    return NextResponse.json({ error: "Failed to delete staff member" }, { status: 500 });
   }
 }

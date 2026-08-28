@@ -85,7 +85,10 @@ export async function getCurrentUser() {
 
 export async function requireAuth() {
   const session = await auth();
-  if (!session?.user?.id) throw new Error("Unauthorized");
+  const userId = (session?.user as { id?: string } | undefined)?.id;
+  if (!userId) throw new Error("Unauthorized");
+  const user = await db.user.findUnique({ where: { id: userId }, select: { isActive: true } });
+  if (!user?.isActive) throw new Error("Unauthorized");
   return session;
 }
 

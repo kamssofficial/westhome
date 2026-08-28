@@ -1,119 +1,65 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireOrderManager, requireStaff } from "@/lib/apiAuth";
 import db from "@/lib/db";
 import { notifyOrderStatusChange } from "@/lib/notifications";
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+const ORDER_STATUSES = ["NEW", "CONFIRMED", "PROCESSING", "SHIPPED", "OUT_FOR_DELIVERY", "DELIVERED", "CANCELLED", "REFUNDED", "PAYMENT_FAILED", "ON_HOLD"] as const;
+
+function serializeOrder(order: any) {
+  return {
+    ...order,
+    subtotal: Number(order.subtotal), discount: Number(order.discount), deliveryCharge: Number(order.deliveryCharge), tax: Number(order.tax), total: Number(order.total),
+    items: order.items.map((item: any) => ({ ...item, unitPrice: Number(item.unitPrice), salePrice: item.salePrice === null ? null : Number(item.salePrice), totalPrice: Number(item.totalPrice) })),
+    statusHistory: order.statusHistory?.map((history: any) => ({ ...history, createdAt: history.createdAt.toISOString() })),
+    createdAt: order.createdAt.toISOString(),
+  };
+}
+
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const authResult = await requireStaff();
+  if (authResult.error) return authResult.error;
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { id } = await params;
-    const role = (session.user as any).role;
-    const userId = (session.user as any).id;
-
-    const order = await db.order.findUnique({
-      where: { id },
-      include: {
-        items: true,
-        statusHistory: { orderBy: { createdAt: "asc" } },
-      },
-    });
-
-    if (!order) {
-      return NextResponse.json({ error: "Order not found" }, { status: 404 });
-    }
-
-    // Ownership check: customers can only see their own orders
-    if (role === "CUSTOMER" && order.userId !== userId) {
-      return NextResponse.json({ error: "Order not found" }, { status: 404 });
-    }
-
-    return NextResponse.json({
-      order: {
-        ...order,
-        subtotal: Number(order.subtotal),
-        discount: Number(order.discount),
-        deliveryCharge: Number(order.deliveryCharge),
-        tax: Number(order.tax),
-        total: Number(order.total),
-        items: order.items.map((i) => ({
-          ...i,
-          unitPrice: Number(i.unitPrice),
-          salePrice: i.salePrice ? Number(i.salePrice) : null,
-          totalPrice: Number(i.totalPrice),
-        })),
-        statusHistory: order.statusHistory.map((h) => ({
-          ...h,
-          createdAt: h.createdAt.toISOString(),
-        })),
-        createdAt: order.createdAt.toISOString(),
-      },
-    });
+    const order = await db.order.findUnique({ where: { id }, include: { items: true, statusHistory: { orderBy: { createdAt: "asc" } } } });
+    if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    return NextResponse.json({ order: serializeOrder(order) });
   } catch (error) {
     console.error("Order detail API error:", error);
     return NextResponse.json({ error: "Failed to fetch order" }, { status: 500 });
   }
 }
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const authResult = await requireOrderManager();
+  if (authResult.error) return authResult.error;
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const role = (session.user as any).role;
-    if (!['ADMIN', 'MANAGER', 'ORDER_MANAGER', 'PRODUCT_MANAGER', 'STAFF'].includes(role)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
     const { id } = await params;
     const body = await request.json();
+    if (!body || typeof body !== "object" || Array.isArray(body)) return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
 
-    const updates: any = {};
-    if (body.status) {
-      updates.status = body.status;
-      // Create status history entry
-      await db.orderStatusHistory.create({
-        data: {
-          orderId: id,
-          status: body.status,
-          note: body.note || null,
-        },
-      });
+    const updates: Record<string, unknown> = {};
+    const status = body.status as string | undefined;
+    if (status !== undefined && !ORDER_STATUSES.includes(status as (typeof ORDER_STATUSES)[number])) return NextResponse.json({ error: "Invalid order status" }, { status: 400 });
+    if (status) updates.status = status;
+    if (body.trackingNumber !== undefined) updates.trackingNumber = typeof body.trackingNumber === "string" ? body.trackingNumber.trim().slice(0, 200) || null : null;
+    if (body.adminNotes !== undefined) updates.adminNotes = typeof body.adminNotes === "string" ? body.adminNotes.slice(0, 5000) || null : null;
+    if (body.deliveredAt !== undefined) {
+      const deliveredAt = new Date(body.deliveredAt);
+      if (Number.isNaN(deliveredAt.getTime())) return NextResponse.json({ error: "Invalid deliveredAt" }, { status: 400 });
+      updates.deliveredAt = deliveredAt;
     }
+    if (Object.keys(updates).length === 0) return NextResponse.json({ error: "No valid updates supplied" }, { status: 400 });
 
-    if (body.trackingNumber !== undefined) {
-      updates.trackingNumber = body.trackingNumber || null;
-    }
-    if (body.adminNotes !== undefined) {
-      updates.adminNotes = body.adminNotes || null;
-    }
-    if (body.deliveredAt) {
-      updates.deliveredAt = new Date(body.deliveredAt);
-    }
-
-    const order = await db.order.update({
-      where: { id },
-      data: updates,
+    const order = await db.$transaction(async (tx) => {
+      const existing = await tx.order.findUnique({ where: { id }, select: { id: true, orderNumber: true, status: true } });
+      if (!existing) throw new Error("ORDER_NOT_FOUND");
+      return tx.order.update({ where: { id }, data: { ...updates, ...(status ? { statusHistory: { create: { status: status as any, note: typeof body.note === "string" ? body.note.slice(0, 1000) : null } } } : {}) } });
     });
 
-    // Send notification for status changes
-    if (body.status) {
-      notifyOrderStatusChange(order.id, order.orderNumber, body.status).catch(() => {});
-    }
-
-    return NextResponse.json({ order });
+    if (status) notifyOrderStatusChange(order.id, order.orderNumber, status).catch((error) => console.error("Order notification failed", error));
+    return NextResponse.json({ order: serializeOrder(order) });
   } catch (error) {
+    if (error instanceof Error && error.message === "ORDER_NOT_FOUND") return NextResponse.json({ error: "Order not found" }, { status: 404 });
     console.error("Order PATCH error:", error);
     return NextResponse.json({ error: "Failed to update order" }, { status: 500 });
   }

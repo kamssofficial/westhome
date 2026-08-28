@@ -41,6 +41,9 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+    }
     const { name, email, password, phone } = body;
 
     // Rate limit check (needs email early)
@@ -55,7 +58,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validation
-    if (!name || !password) {
+    if (typeof name !== "string" || typeof password !== "string" || !name.trim() || !password) {
       return NextResponse.json(
         { error: "Name, email, and password are required" },
         { status: 400 }
@@ -71,6 +74,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (email.length > 254 || name.trim().length > 120 || password.length > 256) {
+      return NextResponse.json({ error: "Input exceeds the allowed length" }, { status: 400 });
+    }
+
     if (password.length < 6) {
       return NextResponse.json(
         { error: "Password must be at least 6 characters" },
@@ -79,9 +86,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already exists
-    const existingUser = await db.user.findUnique({
-      where: { email: email.toLowerCase() },
-    });
+    const normalizedEmail = email.trim().toLowerCase();
+    const [existingUser, existingPhone] = await Promise.all([
+      db.user.findUnique({ where: { email: normalizedEmail }, select: { id: true } }),
+      db.user.findUnique({ where: { phone: normalizedPhone }, select: { id: true } }),
+    ]);
 
     if (existingUser) {
       return NextResponse.json(
@@ -90,13 +99,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (existingPhone) {
+      return NextResponse.json({ error: "An account with this phone number already exists" }, { status: 409 });
+    }
+
     // Create user
     const passwordHash = await bcrypt.hash(password, 12);
 
     const user = await db.user.create({
       data: {
         name,
-        email: email.toLowerCase(),
+        email: normalizedEmail,
         passwordHash,
         phone: normalizedPhone,
         role: "CUSTOMER",
@@ -115,8 +128,12 @@ export async function POST(request: NextRequest) {
       { message: "Account created successfully", user },
       { status: 201 }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error("Registration error:", error);
+    if (error?.code === "P2002") {
+      const target = Array.isArray(error.meta?.target) ? error.meta.target.join(",") : String(error.meta?.target || "");
+      return NextResponse.json({ error: target.includes("phone") ? "An account with this phone number already exists" : "An account with this email already exists" }, { status: 409 });
+    }
     return NextResponse.json({ error: "Failed to create account" }, { status: 500 });
   }
 }

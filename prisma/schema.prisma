@@ -3,7 +3,7 @@
 
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["fullTextSearch"]
+  previewFeatures = ["fullTextSearchPostgres"]
 }
 
 datasource db {
@@ -29,7 +29,7 @@ model User {
   email         String    @unique
   name          String?
   passwordHash  String
-  phone         String?
+  phone         String?    @unique
   role          UserRole  @default(CUSTOMER)
   emailVerified DateTime?
   image         String?
