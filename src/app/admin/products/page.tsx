@@ -67,21 +67,44 @@ export default function AdminProductsPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [confirmDlg, setConfirmDlg] = useState<{title:string;message:string;confirmLabel:string;danger?:boolean;onConfirm:()=>void}|null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
-  const fetchProducts = async () => {
-    setLoading(true);
+  const fetchProducts = async (append = false) => {
+    if (append) setLoadingMore(true); else setLoading(true);
     try {
       const params = new URLSearchParams();
       if (search) params.set("q", search);
       if (statusFilter) params.set("status", statusFilter);
-      params.set("page", String(page));
+      params.set("page", String(append ? page : 1));
       params.set("limit", "50");
       const res = await fetch("/api/admin/products?" + params.toString());
-      if (res.ok) { const d = await res.json(); setProducts(d.products); setTotal(d.total); }
-    } catch (e) { console.error(e); } finally { setLoading(false); }
+      if (res.ok) {
+        const d = await res.json();
+        if (append) {
+          setProducts(prev => [...prev, ...d.products]);
+        } else {
+          setProducts(d.products);
+        }
+        setTotal(d.total);
+        setHasMore(d.products.length === 50);
+        if (append) setPage(p => p + 1);
+      }
+    } catch (e) { console.error(e); } finally { if (append) setLoadingMore(false); else setLoading(false); }
   };
 
-  useEffect(() => { fetchProducts(); setSelectedIds(new Set()); }, [search, page, statusFilter]);
+  useEffect(() => { setPage(1); setHasMore(true); fetchProducts(); setSelectedIds(new Set()); }, [search, statusFilter]);
+
+  useEffect(() => {
+    if (!sentinelRef.current || !hasMore || loading || loadingMore) return;
+    const observer = new IntersectionObserver(
+      (entries) => { if (entries[0].isIntersecting && hasMore && !loading && !loadingMore) fetchProducts(true); },
+      { rootMargin: "200px" }
+    );
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [hasMore, loading, loadingMore, page]);
 
   const toggleAll = () => { if (selectedIds.size === products.length) setSelectedIds(new Set()); else setSelectedIds(new Set(products.map(p => p.id))); };
   const toggleOne = (id: string) => { const s = new Set(selectedIds); if (s.has(id)) s.delete(id); else s.add(id); setSelectedIds(s); };
