@@ -129,6 +129,9 @@ model Product {
   // Purchase
   purchaseMethod  PurchaseMethod @default(BOTH) // BUY_ONLINE, WHATSAPP, BOTH
   whatsappMessage String?
+  // Computed fields for performance
+  averageRating   Float?      @default(0)
+  reviewCount     Int         @default(0)
 
   // Category
   categoryId      String
@@ -170,6 +173,11 @@ model Product {
   @@index([isBestseller])
   @@index([createdAt])
   @@index([regularPrice])
+  @@index([isActive, status, categoryId, createdAt])
+  @@index([isActive, status, isFeatured, createdAt])
+  @@index([isActive, status, isNewArrival, createdAt])
+  @@index([isActive, status, isBestseller, createdAt])
+  @@index([isActive, status, regularPrice])
 }
 
 enum ProductStatus {
