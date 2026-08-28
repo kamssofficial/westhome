@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useSettings } from "@/components/ui/SettingsContext";
 import {
   Heart, Minus, Plus, Star, ChevronLeft, ChevronRight,
-  MessageCircle, Share2, ChevronDown, ShieldCheck, Truck, Headphones,
+  MessageCircle, Share2, ChevronDown, ShieldCheck, Truck, Headphones, ShoppingBag,
 } from "lucide-react";
 import ProductCard from "@/components/ui/ProductCard";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -15,7 +15,6 @@ import { useCartStore } from "@/store/cart";
 import { useWishlistStore } from "@/store/wishlist";
 import toast from "react-hot-toast";
 import type { Product, ProductVariant } from "@/types";
-import { MetalButton } from "@/components/ui/liquid-glass-button";
 import { useTrackPageView, trackEvent } from "@/hooks/useAnalytics";
 
 export default function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -156,7 +155,7 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
   );
 
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in overflow-x-hidden">
       {/* Back header */}
       <div className="container-shop pt-3 pb-1 flex items-center justify-between">
         <Link href="/shop" className="p-1 hover:bg-surface-muted rounded-lg transition-colors">
@@ -280,7 +279,7 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
         )}
 
         {/* Quantity */}
-        <div className="flex items-center gap-4 mt-5">
+        <div className="flex items-center gap-4 mt-4">
           <div className="flex items-center border border-border rounded-[1.35rem] overflow-hidden">
             <button
               onClick={() => setQuantity((q) => Math.max(1, q - 1))}
@@ -298,36 +297,46 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
           </div>
         </div>
 
+        {/* Add to Cart */}
         <button
-          onClick={handleBuyNow}
+          onClick={handleAddToCart}
           disabled={!inStock}
           className={cn(
-            "w-full py-3.5 rounded-2xl text-sm font-semibold transition-all duration-200 mt-5",
+            "w-full h-12 rounded-2xl text-sm font-semibold transition-all duration-100 mt-5",
             inStock
-              ? "bg-[#5F259F] text-white hover:bg-[#4A1D7F] active:scale-[0.98]"
+              ? "bg-primary text-white hover:bg-primary-hover active:scale-[0.97] shadow-[0_4px_14px_rgba(31,33,31,0.18)]"
               : "bg-surface-muted text-text-muted cursor-not-allowed"
+          )}
+        >
+          <span className="flex items-center justify-center gap-2">
+            <ShoppingBag size={16} strokeWidth={2} />
+            {inStock ? "Add to Cart" : "Out of Stock"}
+          </span>
+        </button>
+
+        {/* Buy Now */}
+        <button
+          onClick={() => { trackEvent("BUY_NOW", { productId: product?.id, categoryId: product?.category?.id }); handleBuyNow(); }}
+          disabled={!inStock}
+          className={cn(
+            "w-full h-12 rounded-2xl text-sm font-semibold transition-all duration-100 mt-2.5",
+            inStock
+              ? "bg-white text-primary border border-black/[.12] hover:bg-surface-muted active:scale-[0.97]"
+              : "bg-surface-muted text-text-muted border border-black/[.06] cursor-not-allowed"
           )}
         >
           {inStock ? "Buy Now" : "Out of Stock"}
         </button>
-
-        {/* Add to Cart */}
-        <MetalButton
-          onClick={handleAddToCart}
-          disabled={!inStock}
-          className={cn("w-full py-3.5 text-sm font-semibold mt-5", !inStock && "opacity-50 cursor-not-allowed")}
-        >
-          {inStock ? "Add to Cart" : "Out of Stock"}
-        </MetalButton>
 
         {/* Enquire on WhatsApp */}
         <a
           href={whatsappUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="w-full py-3.5 rounded-2xl text-sm font-semibold border-2 border-[#25D366] text-[#25D366] hover:bg-[#25D366] hover:text-white transition-all duration-200 text-center flex items-center justify-center gap-2 mt-3"
+          onClick={() => trackEvent("WHATSAPP_ENQUIRY", { productId: product?.id, categoryId: product?.category?.id })}
+          className="w-full h-12 rounded-2xl text-sm font-semibold border border-[#25D366]/35 bg-white text-[#25D366] hover:bg-[#25D366]/[0.06] active:scale-[0.97] transition-all duration-100 text-center flex items-center justify-center gap-2 mt-2.5"
         >
-          <MessageCircle size={18} />
+          <MessageCircle size={16} strokeWidth={2} />
           Enquire on WhatsApp
         </a>
 

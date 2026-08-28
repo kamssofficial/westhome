@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useSettings } from "@/components/ui/SettingsContext";
 import {
   Heart, Minus, Plus, Star, ChevronLeft, ChevronRight,
-  MessageCircle, Share2, ChevronDown, ShieldCheck, Truck, Headphones,
+  MessageCircle, Share2, ChevronDown, ShieldCheck, Truck, Headphones, ShoppingBag,
 } from "lucide-react";
 import ProductCard from "@/components/ui/ProductCard";
 import { cn, formatPrice, getWhatsAppUrl, generateProductWhatsAppMessage } from "@/lib/utils"
@@ -107,7 +107,7 @@ export default function ProductDetailClient(
   );
 
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in overflow-x-hidden">
       {/* Back header */}
       <div className="container-shop pt-3 pb-1 flex items-center justify-between">
         <Link href="/shop" className="p-1 hover:bg-surface-muted rounded-lg transition-colors">
@@ -219,9 +219,9 @@ export default function ProductDetailClient(
       </div>
 
       {/* Product Info */}
-      <div className="container-shop mt-4">
-        <h1 className="text-xl font-semibold text-primary leading-tight">{product.name}</h1>
-        <p className="text-xl font-bold text-primary mt-1">{formatPrice(currentPrice)}</p>
+      <div className="container-shop mt-4 overflow-hidden">
+        <h1 className="text-xl font-semibold text-primary leading-snug break-words">{product.name}</h1>
+        <p className="text-xl font-bold text-primary mt-1.5">{formatPrice(currentPrice)}</p>
 
         {/* Rating */}
         <div className="flex items-center gap-2 mt-2">
@@ -236,7 +236,7 @@ export default function ProductDetailClient(
 
         {/* Description */}
         {product.shortDescription && (
-          <p className="text-sm text-secondary leading-relaxed mt-3">
+          <p className="text-sm text-secondary leading-relaxed mt-3.5">
             {product.shortDescription}
           </p>
         )}
@@ -255,7 +255,7 @@ export default function ProductDetailClient(
           const groups = Object.values(attrGroups);
           if (groups.length === 0) return null;
           return (
-            <div className="mt-4 space-y-4">
+            <div className="mt-5 space-y-4">
               {groups.map((group) => (
                 <div key={group.name}>
                   <p className="text-xs font-medium text-text-muted uppercase tracking-wider mb-2">{group.name}</p>
@@ -284,9 +284,8 @@ export default function ProductDetailClient(
               ))}
             </div>
           );
-        })()}
-{/* Quantity */}
-        <div className="flex items-center gap-4 mt-5">
+        })()}      {/* Quantity */}
+        <div className="flex items-center gap-4 mt-4">
           <div className="flex items-center border border-border rounded-[1.35rem] overflow-hidden">
             <button
               onClick={() => setQuantity((q) => Math.max(1, q - 1))}
@@ -304,32 +303,35 @@ export default function ProductDetailClient(
           </div>
         </div>
 
-        {/* Buy Now */}
-        <button
-          onClick={() => { trackEvent("BUY_NOW", { productId: product?.id, categoryId: product?.categoryId }); handleBuyNow(); }}
-          disabled={!inStock}
-          className={cn(
-            "w-full h-12 rounded-2xl text-sm font-semibold transition-all duration-100 mt-5",
-            inStock
-              ? "bg-accent text-white hover:bg-accent-hover active:scale-[0.97] shadow-[0_8px_22px_rgba(181,108,69,0.25)]"
-              : "bg-surface-muted text-text-muted cursor-not-allowed"
-          )}
-        >
-          {inStock ? "Buy Now" : "Out of Stock"}
-        </button>
-
         {/* Add to Cart */}
         <button
           onClick={handleAddToCart}
           disabled={!inStock}
           className={cn(
-            "w-full h-12 rounded-2xl text-sm font-semibold transition-all duration-100 mt-2.5",
+            "w-full h-12 rounded-2xl text-sm font-semibold transition-all duration-100 mt-5",
             inStock
-              ? "bg-primary text-white hover:bg-primary-hover active:scale-[0.97] shadow-[0_8px_22px_rgba(31,33,31,0.16)]"
+              ? "bg-primary text-white hover:bg-primary-hover active:scale-[0.97] shadow-[0_4px_14px_rgba(31,33,31,0.18)]"
               : "bg-surface-muted text-text-muted cursor-not-allowed"
           )}
         >
-          {inStock ? "Add to Cart" : "Out of Stock"}
+          <span className="flex items-center justify-center gap-2">
+            <ShoppingBag size={16} strokeWidth={2} />
+            {inStock ? "Add to Cart" : "Out of Stock"}
+          </span>
+        </button>
+
+        {/* Buy Now */}
+        <button
+          onClick={() => { trackEvent("BUY_NOW", { productId: product?.id, categoryId: product?.categoryId }); handleBuyNow(); }}
+          disabled={!inStock}
+          className={cn(
+            "w-full h-12 rounded-2xl text-sm font-semibold transition-all duration-100 mt-2.5",
+            inStock
+              ? "bg-white text-primary border border-black/[.12] hover:bg-surface-muted active:scale-[0.97]"
+              : "bg-surface-muted text-text-muted border border-black/[.06] cursor-not-allowed"
+          )}
+        >
+          {inStock ? "Buy Now" : "Out of Stock"}
         </button>
 
         {/* Enquire on WhatsApp */}
@@ -338,9 +340,9 @@ export default function ProductDetailClient(
           target="_blank"
           rel="noopener noreferrer"
           onClick={() => trackEvent("WHATSAPP_ENQUIRY", { productId: product?.id, categoryId: product?.categoryId })}
-          className="w-full h-12 rounded-2xl text-sm font-semibold border border-[#25D366]/30 bg-[#25D366]/5 text-[#25D366] hover:bg-[#25D366]/10 active:scale-[0.97] transition-all duration-100 text-center flex items-center justify-center gap-2 mt-2.5"
+          className="w-full h-12 rounded-2xl text-sm font-semibold border border-[#25D366]/35 bg-white text-[#25D366] hover:bg-[#25D366]/[0.06] active:scale-[0.97] transition-all duration-100 text-center flex items-center justify-center gap-2 mt-2.5"
         >
-          <MessageCircle size={16} />
+          <MessageCircle size={16} strokeWidth={2} />
           Enquire on WhatsApp
         </a>
 
