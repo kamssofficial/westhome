@@ -6,7 +6,7 @@ interface CacheEntry<T> {
   expiresAt: number;
 }
 
-class MemoryCache {
+export class MemoryCache {
   private cache = new Map<string, CacheEntry<any>>();
   private defaultTTL = 60 * 1000; // 60 seconds
 

@@ -1,8 +1,8 @@
 import { notifyProductUpdated } from "@/lib/notifications";
+import { cache, CACHE_TTL, MemoryCache } from "@/lib/cache";
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { requireAuthRole } from "@/lib/apiAuth";
-import { cache, CACHE_TTL, MemoryCache } from "@/lib/cache";
 
 export async function GET(request: NextRequest) {
   try {
@@ -58,7 +58,6 @@ export async function GET(request: NextRequest) {
     if (newArrivals) where.isNewArrival = true;
     if (bestsellers) where.isBestseller = true;
     if (idsParam) { where.id = { in: idsParam.split(",") }; }
-    
     // Physical attribute filters
     const minPrice = searchParams.get("minPrice");
     const maxPrice = searchParams.get("maxPrice");
@@ -115,6 +114,7 @@ export async function GET(request: NextRequest) {
       default: orderBy = [{ isFeatured: "desc" }, { createdAt: "desc" }, { id: "asc" }]; break;
     }
 
+    // Rating filter - applied after fetch since it's computed
     const minRatingNum = minRating ? parseFloat(minRating) : 0;
     
     const [products, total] = await Promise.all([
@@ -140,7 +140,6 @@ export async function GET(request: NextRequest) {
       }),
       db.product.count({ where }),
     ]);
-    
     const transformed = products.map((product) => ({
       ...product,
       regularPrice: Number(product.regularPrice),
@@ -148,10 +147,51 @@ export async function GET(request: NextRequest) {
       rating: product.averageRating || null,
       reviewCount: product.reviewCount || 0,
       tags: (product as any).tags?.map((t: any) => t.tag) || [],
-      variants: product.variants.map((v: any) => ({
-        ...v,
-        price: Number(v.price),
-        salePrice: v.salePrice ? Number(v.salePrice) : null,
+      variants: product.variants.map((v) => ({ ...v, price: Number(v.price), salePrice: v.salePrice ? Number(v.salePrice) : null, attributes: (v as any).attributes?.map((a: any) => ({ attributeId: a.variantAttributeId, attributeName: a.variantAttribute?.name, value: a.value, colorCode: a.colorCode })) || [] })),
+      // Physical attributes
+      height: product.height ? Number(product.height) : null,
+      width: product.width ? Number(product.width) : null,
+      length: product.length ? Number(product.length) : null,
+      depth: product.depth ? Number(product.depth) : null,
+      diameter: product.diameter ? Number(product.diameter) : null,
+      dimensionUnit: product.dimensionUnit,
+      weight: product.weight ? Number(product.weight) : null,
+      weightUnit: product.weightUnit,
+      capacity: product.capacity ? Number(product.capacity) : null,
+      capacityUnit: product.capacityUnit,
+      material: product.material,
+      color: product.color,
+      finish: product.finish,
+      shape: product.shape,
+      pattern: product.pattern,
+      style: product.style,
+      mountingType: product.mountingType,
+      usageLocation: product.usageLocation,
+      careInstructions: product.careInstructions,
+      warranty: product.warranty,
+      packagingType: product.packagingType,
+      packagingDimensions: product.packagingDimensions,
+      packagingWeight: product.packagingWeight ? Number(product.packagingWeight) : null,
+      includedItems: product.includedItems,
+      allowCustomSize: product.allowCustomSize,
+      customSizeUnit: product.customSizeUnit,
+      customSizeMinWidth: product.customSizeMinWidth ? Number(product.customSizeMinWidth) : null,
+      customSizeMinLength: product.customSizeMinLength ? Number(product.customSizeMinLength) : null,
+      customSizeMinHeight: product.customSizeMinHeight ? Number(product.customSizeMinHeight) : null,
+      customSizeMaxWidth: product.customSizeMaxWidth ? Number(product.customSizeMaxWidth) : null,
+      customSizeMaxLength: product.customSizeMaxLength ? Number(product.customSizeMaxLength) : null,
+      customSizeMaxHeight: product.customSizeMaxHeight ? Number(product.customSizeMaxHeight) : null,
+      customSizePricingMethod: product.customSizePricingMethod,
+      customSizeRequiresApproval: product.customSizeRequiresApproval,
+    }));
+    
+    // Cache the result
+    cache.set(cacheKey, { products: transformed, total, page, totalPages: Math.ceil(total / limit) }, CACHE_TTL.PRODUCTS_LIST);
+    return NextResponse.json({ products: transformed, total, page, totalPages: Math.ceil(total / limit) });
+  } catch (error) {
+    return NextResponse.json({ products: [], total: 0, page: 1, totalPages: 0 });
+  }
+}
 
 export async function POST(request: NextRequest) {
   const authResult = await requireAuthRole(["ADMIN", "MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER", "STAFF"]);
