@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useSettings } from "@/components/ui/SettingsContext";
 import {
   Heart, Minus, Plus, Star, ChevronLeft, ChevronRight,
-  MessageCircle, Share2, ChevronDown, ShieldCheck, Truck, Headphones, ShoppingBag,
+  MessageCircle, Share2, ChevronDown, ShieldCheck, Truck, Headphones, ShoppingBag, Ruler, X,
 } from "lucide-react";
 import ProductCard from "@/components/ui/ProductCard";
 import { cn, formatPrice, getWhatsAppUrl, generateProductWhatsAppMessage } from "@/lib/utils"
@@ -43,6 +43,7 @@ export default function ProductDetailClient(
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewMessage, setReviewMessage] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showSizeGuide, setShowSizeGuide] = useState(false);
 
   const addToCart = useCartStore((s) => s.addItem);
   const toggleWishlist = useWishlistStore((s) => s.toggleItem);
@@ -301,6 +302,15 @@ export default function ProductDetailClient(
               <Plus size={16} />
             </button>
           </div>
+          {((product as any).height || (product as any).width || (product as any).length || (product as any).depth || (product as any).diameter) && (
+            <button
+              onClick={() => setShowSizeGuide(true)}
+              className="flex items-center gap-1.5 text-xs font-medium text-text-secondary hover:text-primary transition-colors ml-auto"
+            >
+              <Ruler size={14} />
+              Size Guide
+            </button>
+          )}
         </div>
 
         {/* Add to Cart */}
@@ -780,6 +790,88 @@ export default function ProductDetailClient(
           </div>
         )}
       </div>
+
+      {/* Size Guide Modal */}
+      {showSizeGuide && (
+        <>
+          <div className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm" style={{ animation: "filterBackdropIn 250ms ease forwards" }} onClick={() => setShowSizeGuide(false)} />
+          <div className="fixed inset-x-0 bottom-0 top-[12vh] z-[70] bg-[#faf8f5] rounded-t-[1.5rem] flex flex-col" style={{ animation: "filterPanelSlideUp 350ms cubic-bezier(0.32, 0.72, 0, 1) forwards" }}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-black/[.06] shrink-0">
+              <div className="flex items-center gap-2.5">
+                <Ruler size={17} className="text-[#1a1917]" />
+                <span className="text-base font-semibold text-[#1a1917]">Size Guide</span>
+              </div>
+              <button onClick={() => setShowSizeGuide(false)} className="w-8 h-8 flex items-center justify-center hover:bg-black/[.04] rounded-full transition-colors">
+                <X size={18} className="text-[#6b6560]" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-5 py-5">
+              {/* Visual diagram */}
+              <div className="relative bg-white rounded-2xl border border-black/[.06] p-6 mb-5">
+                <div className="relative mx-auto" style={{ width: "160px", height: "120px" }}>
+                  <div className="absolute inset-0 border-2 border-[#d4a574] rounded-lg" />
+                  {(product as any).width && (
+                    <div className="absolute -bottom-6 left-0 right-0 flex items-center justify-center">
+                      <div className="h-[1px] bg-[#d4a574] flex-1" />
+                      <span className="px-2 text-[11px] font-semibold text-[#d4a574] whitespace-nowrap">{(product as any).width} {(product as any).dimensionUnit || "cm"}</span>
+                      <div className="h-[1px] bg-[#d4a574] flex-1" />
+                    </div>
+                  )}
+                  {(product as any).height && (
+                    <div className="absolute -right-12 top-0 bottom-0 flex flex-col items-center justify-center">
+                      <div className="w-[1px] bg-[#d4a574] flex-1" />
+                      <span className="py-1 text-[11px] font-semibold text-[#d4a574] whitespace-nowrap" style={{ writingMode: "vertical-lr" }}>{(product as any).height} {(product as any).dimensionUnit || "cm"}</span>
+                      <div className="w-[1px] bg-[#d4a574] flex-1" />
+                    </div>
+                  )}
+                </div>
+              </div>
+              {/* Dimension list */}
+              <div className="space-y-0">
+                {(product as any).height && (
+                  <div className="flex items-center justify-between py-3 border-b border-black/[.04]">
+                    <span className="text-sm text-secondary">Height</span>
+                    <span className="text-sm font-semibold text-primary">{(product as any).height} {(product as any).dimensionUnit || "cm"}</span>
+                  </div>
+                )}
+                {(product as any).width && (
+                  <div className="flex items-center justify-between py-3 border-b border-black/[.04]">
+                    <span className="text-sm text-secondary">Width</span>
+                    <span className="text-sm font-semibold text-primary">{(product as any).width} {(product as any).dimensionUnit || "cm"}</span>
+                  </div>
+                )}
+                {(product as any).length && (
+                  <div className="flex items-center justify-between py-3 border-b border-black/[.04]">
+                    <span className="text-sm text-secondary">Length</span>
+                    <span className="text-sm font-semibold text-primary">{(product as any).length} {(product as any).dimensionUnit || "cm"}</span>
+                  </div>
+                )}
+                {(product as any).depth && (
+                  <div className="flex items-center justify-between py-3 border-b border-black/[.04]">
+                    <span className="text-sm text-secondary">Depth</span>
+                    <span className="text-sm font-semibold text-primary">{(product as any).depth} {(product as any).dimensionUnit || "cm"}</span>
+                  </div>
+                )}
+                {(product as any).diameter && (
+                  <div className="flex items-center justify-between py-3 border-b border-black/[.04]">
+                    <span className="text-sm text-secondary">Diameter</span>
+                    <span className="text-sm font-semibold text-primary">{(product as any).diameter} {(product as any).dimensionUnit || "cm"}</span>
+                  </div>
+                )}
+                {(product as any).weight && (
+                  <div className="flex items-center justify-between py-3 border-b border-black/[.04]">
+                    <span className="text-sm text-secondary">Weight</span>
+                    <span className="text-sm font-semibold text-primary">{(product as any).weight} {(product as any).weightUnit || "kg"}</span>
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-text-muted mt-4 leading-relaxed">
+                All dimensions are approximate and measured in {(product as any).dimensionUnit || "cm"}. Actual size may vary slightly.
+              </p>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
