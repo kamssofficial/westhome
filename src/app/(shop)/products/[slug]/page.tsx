@@ -259,7 +259,21 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
       {/* Product Info */}
       <div className="container-shop mt-4">
         <h1 className="text-xl font-semibold text-primary leading-tight">{product.name}</h1>
-        <p className="text-xl font-bold text-primary mt-1">{formatPrice(currentPrice)}</p>
+        {selectedVariant?.name && (
+          <p className="text-xs font-medium text-text-secondary mt-1">{selectedVariant.name}</p>
+        )}
+        <div className="flex items-baseline gap-2 mt-1">
+          <p className="text-xl font-bold text-primary">{formatPrice(currentPrice)}</p>
+          {selectedVariant?.salePrice && Number(selectedVariant.salePrice) < Number(product.regularPrice) && (
+            <p className="text-sm text-text-muted line-through">{formatPrice(product.regularPrice)}</p>
+          )}
+          {!selectedVariant?.salePrice && product.salePrice && Number(product.salePrice) < Number(product.regularPrice) && (
+            <p className="text-sm text-text-muted line-through">{formatPrice(product.regularPrice)}</p>
+          )}
+          {discount > 0 && (
+            <span className="text-xs font-semibold text-success bg-success/10 px-1.5 py-0.5 rounded-md">-{discount}%</span>
+          )}
+        </div>
 
         {/* Rating */}
         <div className="flex items-center gap-2 mt-2">
@@ -278,6 +292,65 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
             {product.shortDescription}
           </p>
         )}
+
+        {/* Variant Selection */}
+        {product.variants && product.variants.length > 0 && (() => {
+          const attrGroups: Record<string, { name: string; values: { value: string; colorCode?: string; variantId: string; price: number; salePrice?: number; inStock: boolean }[] }> = {};
+          product.variants.forEach((v: any) => {
+            v.attributes?.forEach((a: any) => {
+              if (!attrGroups[a.attributeName]) attrGroups[a.attributeName] = { name: a.attributeName, values: [] };
+              const already = attrGroups[a.attributeName].values.find((x) => x.value === a.value);
+              if (!already) {
+                attrGroups[a.attributeName].values.push({
+                  value: a.value,
+                  colorCode: a.colorCode,
+                  variantId: v.id,
+                  price: Number(v.salePrice || v.price),
+                  salePrice: v.salePrice ? Number(v.salePrice) : undefined,
+                  inStock: v.stockQuantity > 0,
+                });
+              }
+            });
+          });
+          const groups = Object.values(attrGroups);
+          if (groups.length === 0) return null;
+          return (
+            <div className="mt-4 space-y-4">
+              {groups.map((group) => (
+                <div key={group.name}>
+                  <p className="text-xs font-medium text-text-muted uppercase tracking-wider mb-2">{group.name}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {group.values.map((val) => {
+                      const isSelected = selectedVariant?.id === val.variantId;
+                      const isColor = group.name.toLowerCase() === 'color';
+                      if (isColor) {
+                        return (
+                          <button key={val.value} onClick={() => { const variant = product.variants.find((v: any) => v.id === val.variantId); if (variant) setSelectedVariant(variant); }}
+                            className={cn('w-9 h-9 rounded-full border-2 transition-all flex items-center justify-center', isSelected ? 'border-primary scale-110 ring-2 ring-primary/30' : 'border-border hover:border-foreground/30')}
+                            title={val.value}>
+                            <div className='w-6 h-6 rounded-full' style={{ backgroundColor: val.colorCode || val.value }} />
+                          </button>
+                        );
+                      }
+                      return (
+                        <button key={val.value} onClick={() => { const variant = product.variants.find((v: any) => v.id === val.variantId); if (variant) setSelectedVariant(variant); }}
+                          className={cn('px-4 py-2.5 rounded-xl text-sm font-medium border transition-all text-left min-w-[80px]',
+                            isSelected ? 'border-primary bg-primary text-white' : 'border-border bg-white text-primary hover:border-foreground/30',
+                            !val.inStock && 'opacity-40 cursor-not-allowed'
+                          )}>
+                          <span className="block text-xs leading-tight">{val.value}</span>
+                          <span className={cn('block text-[11px] mt-0.5', isSelected ? 'text-white/70' : 'text-text-secondary')}>
+                            {val.salePrice ? formatPrice(val.salePrice) : formatPrice(val.price)}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
 
         {/* Quantity */}
         <div className="flex items-center gap-4 mt-4">

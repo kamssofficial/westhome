@@ -222,7 +222,18 @@ export default function ProductDetailClient(
       {/* Product Info */}
       <div className="container-shop mt-4 overflow-hidden">
         <h1 className="text-xl font-semibold text-primary leading-snug break-words">{product.name}</h1>
-        <p className="text-xl font-bold text-primary mt-1.5">{formatPrice(currentPrice)}</p>
+        {selectedVariant?.name && (
+          <p className="text-xs font-medium text-text-secondary mt-1">{selectedVariant.name}</p>
+        )}
+        <div className="flex items-baseline gap-2 mt-1.5">
+          <p className="text-xl font-bold text-primary">{formatPrice(currentPrice)}</p>
+          {selectedVariant?.salePrice && Number(selectedVariant.salePrice) < Number(product.regularPrice) && (
+            <p className="text-sm text-text-muted line-through">{formatPrice(product.regularPrice)}</p>
+          )}
+          {!selectedVariant?.salePrice && product.salePrice && Number(product.salePrice) < Number(product.regularPrice) && (
+            <p className="text-sm text-text-muted line-through">{formatPrice(product.regularPrice)}</p>
+          )}
+        </div>
 
         {/* Rating */}
         <div className="flex items-center gap-2 mt-2">
@@ -240,16 +251,22 @@ export default function ProductDetailClient(
           <p className="text-sm text-secondary leading-relaxed mt-3.5">
             {product.shortDescription}
           </p>
-        )}
-
-                {/* Variant Selection */}
+        )}                {/* Variant Selection */}
         {product.variants && product.variants.length > 0 && (() => {
-          const attrGroups: Record<string, { name: string; values: { value: string; colorCode?: string; variantId: string }[] }> = {};
+          const attrGroups: Record<string, { name: string; values: { value: string; colorCode?: string; variantId: string; price: number; salePrice?: number; inStock: boolean }[] }> = {};
           product.variants.forEach((v: any) => {
             v.attributes?.forEach((a: any) => {
               if (!attrGroups[a.attributeName]) attrGroups[a.attributeName] = { name: a.attributeName, values: [] };
-              if (!attrGroups[a.attributeName].values.find((x: any) => x.value === a.value)) {
-                attrGroups[a.attributeName].values.push({ value: a.value, colorCode: a.colorCode, variantId: v.id });
+              const already = attrGroups[a.attributeName].values.find((x) => x.value === a.value);
+              if (!already) {
+                attrGroups[a.attributeName].values.push({
+                  value: a.value,
+                  colorCode: a.colorCode,
+                  variantId: v.id,
+                  price: Number(v.salePrice || v.price),
+                  salePrice: v.salePrice ? Number(v.salePrice) : undefined,
+                  inStock: v.stockQuantity > 0,
+                });
               }
             });
           });
@@ -275,8 +292,14 @@ export default function ProductDetailClient(
                       }
                       return (
                         <button key={val.value} onClick={() => { const variant = product.variants.find((v: any) => v.id === val.variantId); if (variant) setSelectedVariant(variant); }}
-                          className={cn('px-4 py-2 rounded-xl text-sm font-medium border transition-all', isSelected ? 'border-primary bg-primary text-white' : 'border-border bg-white text-primary hover:border-foreground/30')}>
-                          {val.value}
+                          className={cn('px-4 py-2.5 rounded-xl text-sm font-medium border transition-all text-left min-w-[80px]',
+                            isSelected ? 'border-primary bg-primary text-white' : 'border-border bg-white text-primary hover:border-foreground/30',
+                            !val.inStock && 'opacity-40 cursor-not-allowed'
+                          )}>
+                          <span className="block text-xs leading-tight">{val.value}</span>
+                          <span className={cn('block text-[11px] mt-0.5', isSelected ? 'text-white/70' : 'text-text-secondary')}>
+                            {val.salePrice ? formatPrice(val.salePrice) : formatPrice(val.price)}
+                          </span>
                         </button>
                       );
                     })}
@@ -285,7 +308,9 @@ export default function ProductDetailClient(
               ))}
             </div>
           );
-        })()}      {/* Quantity */}
+        })()}
+
+        {/* Quantity */}
         <div className="flex items-center gap-4 mt-4">
           <div className="flex items-center border border-border rounded-[1.35rem] overflow-hidden">
             <button
