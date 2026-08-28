@@ -206,7 +206,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "At least one price must be greater than zero" }, { status: 400 });
     }
     // If both prices are provided, sale must be less than regular
-    if (body.regularPrice && body.salePrice && Number(body.salePrice) >= Number(body.regularPrice)) {
+    if (body.regularPrice && body.salePrice && Number(body.salePrice) > Number(body.regularPrice)) {
       return NextResponse.json({ error: "Sale price must be less than regular price" }, { status: 400 });
     }
     

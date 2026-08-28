@@ -25,7 +25,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const { slug } = await params;
     const body = await request.json();
     // Allow updating with either price - only validate relationship when both provided
-    if (body.regularPrice && body.salePrice && body.salePrice !== null && Number(body.regularPrice) > 0 && Number(body.salePrice) >= Number(body.regularPrice)) return NextResponse.json({ error: "Sale price must be less than regular price" }, { status: 400 });
+    if (body.regularPrice && body.salePrice && body.salePrice !== null && Number(body.regularPrice) > 0 && Number(body.salePrice) > Number(body.regularPrice)) return NextResponse.json({ error: "Sale price must be less than regular price" }, { status: 400 });
     let product = await db.product.findUnique({ where: { slug } });
     if (!product) product = await db.product.findUnique({ where: { id: slug } });
     if (!product) return NextResponse.json({ error: "Product not found" }, { status: 404 });
