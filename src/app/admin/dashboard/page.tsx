@@ -107,6 +107,28 @@ export default function AdminDashboard() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+  
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetch("/api/admin/dashboard")
+        .then((r) => r.json())
+        .then((data) => {
+          setStats(data.stats);
+          setRecentOrders(data.recentOrders);
+          setLowStockProducts(data.lowStockProducts);
+          setSalesTrend(data.salesTrend);
+          setStatusBreakdown(data.statusBreakdown);
+          setTopProducts(data.topProducts);
+        })
+        .catch(() => {});
+      fetch("/api/notifications?limit=8")
+        .then((r) => r.json())
+        .then((data) => setNotifications(data.notifications || []))
+        .catch(() => {});
+    }, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const maxRevenue = Math.max(...salesTrend.map((d) => d.revenue), 1);
   const totalStatusCount = statusBreakdown.reduce((sum, s) => sum + s.count, 0) || 1;
