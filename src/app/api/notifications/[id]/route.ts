@@ -1,35 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
-import { auth } from "@/lib/auth";
+import { requireStaff } from "@/lib/apiAuth";
 
-// PATCH — mark as read
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const userId = (session.user as any).id as string;
+export async function PATCH(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const authResult = await requireStaff();
+  if (authResult.error) return authResult.error;
+  const userId = (authResult.session.user as any).id as string;
   const { id } = await params;
-
   try {
     const notification = await db.notification.findUnique({ where: { id } });
-    if (!notification) {
-      return NextResponse.json({ error: "Notification not found" }, { status: 404 });
-    }
-
-    const readByArray: string[] = JSON.parse(notification.readBy || "[]");
+    if (!notification) return NextResponse.json({ error: "Notification not found" }, { status: 404 });
+    let readByArray: string[] = [];
+    try { const parsed = JSON.parse(notification.readBy || "[]"); if (Array.isArray(parsed)) readByArray = parsed.filter(v => typeof v === "string"); } catch {}
     if (!readByArray.includes(userId)) {
-      readByArray.push(userId);
-      await db.notification.update({
-        where: { id },
-        data: { readBy: JSON.stringify(readByArray) },
-      });
+      await db.notification.update({ where: { id }, data: { readBy: JSON.stringify([...readByArray, userId]) } });
     }
-
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Mark notification read error:", error);
@@ -37,40 +22,19 @@ export async function PATCH(
   }
 }
 
-// DELETE — soft delete for current user
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const userId = (session.user as any).id as string;
+export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const authResult = await requireStaff();
+  if (authResult.error) return authResult.error;
+  const userId = (authResult.session.user as any).id as string;
   const { id } = await params;
-
   try {
     const notification = await db.notification.findUnique({ where: { id } });
-    if (!notification) {
-      return NextResponse.json({ error: "Notification not found" }, { status: 404 });
+    if (!notification) return NextResponse.json({ error: "Notification not found" }, { status: 404 });
+    let deletedByArray: string[] = [];
+    try { const parsed = JSON.parse((notification as any).deletedBy || "[]"); if (Array.isArray(parsed)) deletedByArray = parsed.filter(v => typeof v === "string"); } catch {}
+    if (!deletedByArray.includes(userId)) {
+      await db.notification.update({ where: { id }, data: { deletedBy: JSON.stringify([...deletedByArray, userId]) } as any });
     }
-
-    // Try to use deletedBy field
-    try {
-      const deletedByArray: string[] = JSON.parse((notification as any).deletedBy || "[]");
-      if (!deletedByArray.includes(userId)) {
-        deletedByArray.push(userId);
-        await db.notification.update({
-          where: { id },
-          data: { deletedBy: JSON.stringify(deletedByArray) } as any,
-        });
-      }
-    } catch {
-      // deletedBy column doesn't exist yet — hard delete as fallback
-      await db.notification.delete({ where: { id } });
-    }
-
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Delete notification error:", error);
