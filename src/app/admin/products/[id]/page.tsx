@@ -156,6 +156,7 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
       });
       if (res.ok) {
         toast.success("Product updated");
+        router.push("/admin/products");
       } else {
         toast.error("Failed to update");
       }
