@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, memo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Heart, ImageOff } from "lucide-react";
@@ -14,7 +14,11 @@ interface ProductCardProps {
   priority?: boolean;
 }
 
-export default function ProductCard({ product, priority = false }: ProductCardProps) {
+// Generate a tiny blur placeholder as a data URL (warm cream tone)
+const BLUR_PLACEHOLDER = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJnIiB41PSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNlYmU3ZGYiLz48c3RvcCBvZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iI2YwZWRlOCIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgZmlsbD0idXJsKCNnKSIvPjwvc3ZnPg==";
+
+function ProductCardInner({ product, priority = false }: ProductCardProps) {
+  const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   const toggleWishlist = useWishlistStore((s) => s.toggleItem);
   const isInWishlist = useWishlistStore((s) => s.isInWishlist(product.id));
@@ -37,6 +41,10 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
     toast.success(isInWishlist ? "Removed from wishlist" : "Added to wishlist");
   };
 
+  // Precompute price to avoid recalculation
+  const displayPrice = product.salePrice || product.regularPrice;
+  const formattedPrice = formatPrice(displayPrice);
+
   return (
     <Link
       href={`/products/${product.slug}`}
@@ -46,15 +54,28 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
         {/* Image */}
         <div className="relative aspect-square bg-surface-muted overflow-hidden">
           {primaryImage && !imageError ? (
-            <Image
-              src={primaryImage.url}
-              alt={primaryImage.alt || product.name}
-              fill
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-              className="object-cover group-hover:scale-105 transition-transform duration-500"
-              priority={priority}
-              onError={() => setImageError(true)}
-            />
+            <>
+              {/* Skeleton/loading shimmer */}
+              {!imageLoaded && (
+                <div className="absolute inset-0 bg-gradient-to-br from-[#ebe7df] via-[#f5f3ef] to-[#ebe7df] animate-pulse" />
+              )}
+              <Image
+                src={primaryImage.url}
+                alt={primaryImage.alt || product.name}
+                fill
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                className={cn(
+                  "object-cover transition-all duration-500",
+                  imageLoaded ? "opacity-100 group-hover:scale-105" : "opacity-0"
+                )}
+                priority={priority}
+                placeholder="blur"
+                blurDataURL={BLUR_PLACEHOLDER}
+                onLoad={() => setImageLoaded(true)}
+                onError={() => setImageError(true)}
+                quality={priority ? 85 : 75}
+              />
+            </>
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center text-text-muted">
               <ImageOff size={24} className="mb-1 opacity-40" />
@@ -79,18 +100,20 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
           </button>
 
           {/* Badges */}
-          <div className="absolute top-3 left-3 flex flex-col gap-1">
-            {product.isNewArrival && (
-              <span className="px-2 py-0.5 bg-primary text-white text-[10px] font-semibold rounded-full">
-                New
-              </span>
-            )}
-            {!inStock && (
-              <span className="px-2 py-0.5 bg-text-muted text-white text-[10px] font-semibold rounded-full">
-                Sold Out
-              </span>
-            )}
-          </div>
+          {(product.isNewArrival || !inStock) && (
+            <div className="absolute top-3 left-3 flex flex-col gap-1">
+              {product.isNewArrival && (
+                <span className="px-2 py-0.5 bg-primary text-white text-[10px] font-semibold rounded-full">
+                  New
+                </span>
+              )}
+              {!inStock && (
+                <span className="px-2 py-0.5 bg-text-muted text-white text-[10px] font-semibold rounded-full">
+                  Sold Out
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Info */}
@@ -103,7 +126,7 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
           </h3>
           <div className="flex items-center gap-2 mt-1">
             <span className="text-sm font-semibold text-primary">
-              {formatPrice(product.salePrice || product.regularPrice)}
+              {formattedPrice}
             </span>
           </div>
         </div>
@@ -111,3 +134,6 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
     </Link>
   );
 }
+
+const ProductCard = memo(ProductCardInner);
+export default ProductCard;

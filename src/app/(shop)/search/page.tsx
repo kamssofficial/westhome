@@ -40,6 +40,7 @@ function SearchContent() {
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const loadingRef = useRef(false);
 
   useEffect(() => {
     try { const s = localStorage.getItem("westhome-recent-searches"); if (s) setRecentSearches(JSON.parse(s)); } catch {}
@@ -59,6 +60,8 @@ function SearchContent() {
 
   // Fetch products
   const fetchProducts = useCallback(async (pageNum: number, append = false) => {
+    if (loadingRef.current) return;
+    loadingRef.current = true;
     if (pageNum === 1) setLoading(true); else setLoadingMore(true);
     try {
       const params = new URLSearchParams();
@@ -87,21 +90,30 @@ function SearchContent() {
       setTotal(data.total || 0);
       setHasMore(pageNum * PAGE_SIZE < (data.total || 0));
     } catch { if (!append) setProducts([]); }
-    finally { setLoading(false); setLoadingMore(false); }
+    finally { setLoading(false); setLoadingMore(false); loadingRef.current = false; }
   }, [initialQuery, filters.collection, filters.subcategory, filters.style, filters.material, filters.color, filters.size, filters.pattern, filters.shape, filters.minPrice, filters.maxPrice, filters.inStock, sort]);
 
   useEffect(() => { setPage(1); setHasMore(true); fetchProducts(1, false); if (initialQuery) saveRecentSearch(initialQuery); }, [fetchProducts]);
 
+  // Infinite scroll — stable observer
+  const searchPageRef = useRef(1);
+  const searchFetchRef = useRef(fetchProducts);
+  searchFetchRef.current = fetchProducts;
+
   useEffect(() => {
     if (!sentinelRef.current) return;
     const obs = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && hasMore && !loading && !loadingMore) {
-        const next = page + 1; setPage(next); fetchProducts(next, true);
+      if (entries[0].isIntersecting && !loadingRef.current) {
+        loadingRef.current = true;
+        const next = searchPageRef.current + 1;
+        searchPageRef.current = next;
+        setPage(next);
+        searchFetchRef.current(next, true);
       }
-    }, { rootMargin: "300px" });
+    }, { rootMargin: "400px" });
     obs.observe(sentinelRef.current);
     return () => obs.disconnect();
-  }, [hasMore, loading, loadingMore, page, fetchProducts]);
+  }, []);
 
 
 

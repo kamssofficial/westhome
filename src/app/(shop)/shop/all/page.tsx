@@ -105,23 +105,23 @@ export default function ShopAllPage() {
     fetchProducts(1, false);
   }, [fetchProducts]);
 
-  // Infinite scroll — stable observer, no page/fetchProducts in deps
+  // Infinite scroll — stable observer with minimal re-creation
   useEffect(() => {
     if (!sentinelRef.current) return;
     const obs = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loadingRef.current && !loading) {
+        if (entries[0].isIntersecting && !loadingRef.current) {
           const next = pageRef.current + 1;
           pageRef.current = next;
           setPage(next);
           fetchRef.current?.(next, true);
         }
       },
-      { rootMargin: "300px" }
+      { rootMargin: "400px" }
     );
     obs.observe(sentinelRef.current);
     return () => obs.disconnect();
-  }, [hasMore, loading]);
+  }, []);
 
   const handleFilterRemove = (key: keyof FilterState) => {
     setFilters((prev) => ({ ...prev, [key]: "" }));

@@ -93,16 +93,16 @@ function SubcategoryContent() {
     const el = observerRef.current;
     if (!el) return;
     const obs = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && hasMore && !loadingRef.current && !loading) {
+      if (entries[0].isIntersecting && !loadingRef.current) {
         const next = pageRef.current + 1;
         pageRef.current = next;
         setPage(next);
         fetchRef.current?.(next, true);
       }
-    }, { rootMargin: "200px" });
+    }, { rootMargin: "400px" });
     obs.observe(el);
     return () => obs.unobserve(el);
-  }, [hasMore, loading]);
+  }, []);
 
   const activeChips: { key: string; label: string }[] = [];
   if (filters.style) activeChips.push({ key: "style", label: filters.style });
