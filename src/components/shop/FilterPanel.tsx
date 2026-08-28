@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useLayoutEffect } from "react";
 import {
   X,
   SlidersHorizontal,
@@ -97,16 +97,56 @@ const EMPTY_OPTIONS: FilterOptions = {
 
 function FilterSection({ title, defaultOpen = false, children }: { title: string; defaultOpen?: boolean; children: React.ReactNode }) {
   const [open, setOpen] = useState(defaultOpen);
+  const [hasMounted, setHasMounted] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [contentHeight, setContentHeight] = useState<number | null>(null);
   const sectionId = "fs-" + title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+
+  // Measure the actual content height
+  useLayoutEffect(() => {
+    if (contentRef.current) {
+      const height = contentRef.current.scrollHeight;
+      if (height > 0) setContentHeight(height);
+    }
+  }, [children, open]);
+
+  // Mark as mounted after first render so we can animate
+  useEffect(() => {
+    const timer = setTimeout(() => setHasMounted(true), 50);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <div className="border-b border-black/[.04] last:border-0">
-      <button type="button" aria-expanded={open} aria-controls={sectionId} onClick={() => setOpen(!open)} className="w-full flex items-center justify-between py-4 text-left">
-        <span className="text-sm font-semibold text-[#1a1917]">{title}</span>
-        <ChevronDown size={16} className={cn("text-[#b0aba6] transition-transform duration-200", open && "rotate-180")} />
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={sectionId}
+        onClick={() => setOpen(!open)}
+        className="group w-full flex items-center justify-between py-4 text-left"
+      >
+        <span className="text-sm font-semibold text-[#1a1917] group-hover:text-accent transition-colors duration-150">{title}</span>
+        <ChevronDown
+          size={16}
+          className="text-[#b0aba6] transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+          style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
+        />
       </button>
-      <div id={sectionId} className={cn(          "overflow-hidden transition-all duration-200",
-          open ? "max-h-[800px] opacity-100 pb-4" : "max-h-0 opacity-0")}>
-        {children}
+      <div
+        id={sectionId}
+        role="region"
+        style={{
+          maxHeight: !hasMounted
+            ? (open && contentHeight ? contentHeight : 0)
+            : (open ? (contentHeight ?? 800) : 0),
+          opacity: open ? 1 : 0,
+          transition: "max-height 350ms cubic-bezier(0.4, 0, 0.2, 1), opacity 250ms ease, padding 250ms ease",
+        }}
+        className="overflow-hidden"
+      >
+        <div ref={contentRef} className="pb-4">
+          {children}
+        </div>
       </div>
     </div>
   );
@@ -259,8 +299,19 @@ export default function FilterPanel({ open, onClose, onApply, initialFilters, ca
 
   return (
     <>
-      <div className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm" aria-hidden="true" onClick={onClose} />
-      <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby="filter-panel-title" className={cn("fixed z-[70] bg-[#faf8f5] flex flex-col transition-transform duration-300 ease-out", "inset-x-0 bottom-0 top-[8vh] rounded-t-[1.5rem]", "md:inset-y-0 md:right-0 md:left-auto md:w-[380px] md:top-0 md:rounded-t-none md:rounded-l-[1.5rem]")}>
+      <div
+        className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm animate-[fadeIn_250ms_ease-out_forwards]"
+        aria-hidden="true"
+        onClick={onClose}
+        style={{ animation: "filterBackdropIn 250ms cubic-bezier(0.4, 0, 0.2, 1) forwards" }}
+      />
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="filter-panel-title"
+        className={cn("fixed z-[70] bg-[#faf8f5] flex flex-col filter-panel-animate", "inset-x-0 bottom-0 top-[8vh] rounded-t-[1.5rem]", "md:inset-y-0 md:right-0 md:left-auto md:w-[380px] md:top-0 md:rounded-t-none md:rounded-l-[1.5rem]")}
+      >
         <div className="flex items-center justify-between px-5 py-4 border-b border-black/[.06] shrink-0">
           <div className="flex items-center gap-2.5">
             <SlidersHorizontal size={17} className="text-[#1a1917]" />
