@@ -6,6 +6,7 @@ import Image from "next/image";
 import { ArrowLeft, ChevronRight, Smartphone, Shield, MapPin, Copy, CheckCircle, Loader2 } from "lucide-react";
 import { useCartStore } from "@/store/cart";
 import { formatPrice, cn } from "@/lib/utils";
+import toast from "react-hot-toast";
 
 const STEPS = ["Address", "Review", "Payment"];
 const RAZORPAY_SCRIPT = "https://checkout.razorpay.com/v1/checkout.js";
@@ -17,7 +18,10 @@ interface RazorpayOptions {
   prefill?: { name?: string; email?: string; contact?: string }; notes?: Record<string, string>; theme?: { color?: string };
   modal?: { ondismiss?: () => void }; handler: (response: RazorpayResponse) => void;
 }
-declare global { interface Window { Razorpay?: new (options: RazorpayOptions) => { open: () => void }; } }
+declare global {
+  // eslint-disable-next-line no-var
+  var Razorpay: new (options: RazorpayOptions) => { open: () => void; close: () => void } | undefined;
+}
 interface Address { id: string; name: string; phone: string; addressLine1: string; addressLine2?: string; city: string; state: string; pinCode: string; isDefault?: boolean; }
 interface OrderRef { id: string; orderNumber: string; }
 
