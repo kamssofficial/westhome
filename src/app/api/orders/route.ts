@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     const userId = (session.user as any).id as string | undefined;
     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { customerName, customerEmail, customerPhone, addressLine1, addressLine2, city, state, pinCode, country, items, discount, deliveryMethod, customerNotes, couponCode } = body;
+    const { customerName, customerEmail, customerPhone, addressLine1, addressLine2, city, state, pinCode, country, items, deliveryMethod, customerNotes, couponCode } = body;
     if (!Array.isArray(items) || items.length === 0 || items.length > 100) return NextResponse.json({ error: "Invalid cart" }, { status: 400 });
     if (!customerName || !customerPhone || !addressLine1 || !city || !state || !pinCode) return NextResponse.json({ error: "Missing required address information" }, { status: 400 });
 
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     if (!normalizedPhone) return NextResponse.json({ error: "A valid 10-digit mobile number is required to place an order" }, { status: 400 });
 
     const productIds = [...new Set(items.map((item: any) => item?.productId).filter((id: unknown): id is string => typeof id === "string" && id.length > 0))];
-    if (productIds.length !== items.length && items.some((item: any) => !item?.productId)) return NextResponse.json({ error: "Invalid product in cart" }, { status: 400 });
+    if (productIds.length === 0 || productIds.length !== items.filter((item: any) => typeof item?.productId === "string" && item.productId.length > 0).length) return NextResponse.json({ error: "Invalid product in cart" }, { status: 400 });
 
     const [products, variants] = await Promise.all([
       db.product.findMany({ where: { id: { in: productIds } }, select: { id: true, name: true, regularPrice: true, salePrice: true, isActive: true, status: true, stockQuantity: true, trackInventory: true, allowBackorder: true, categoryId: true } }),
@@ -79,6 +79,7 @@ export async function POST(request: NextRequest) {
         salePrice = variant.salePrice === null ? null : Number(variant.salePrice);
         effectivePrice = salePrice !== null && salePrice > 0 ? salePrice : Number(variant.price);
         variantName = variant.name;
+        sku = variant.sku || sku;
       } else {
         if (product.trackInventory && !product.allowBackorder && product.stockQuantity < quantity) return NextResponse.json({ error: `Insufficient stock for ${product.name}` }, { status: 409 });
         salePrice = product.salePrice === null ? null : Number(product.salePrice);
@@ -115,8 +116,6 @@ export async function POST(request: NextRequest) {
       finalDiscount = Math.min(Math.max(finalDiscount, 0), serverSubtotal);
       couponId = coupon.id;
       normalizedCouponCode = coupon.code;
-    } else {
-      finalDiscount = Math.min(Math.max(Number(discount) || 0, 0), serverSubtotal);
     }
 
     const finalTax = 0;
@@ -141,7 +140,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    if (normalizedPhone) await db.user.updateMany({ where: { id: userId, phone: null }, data: { phone: normalizedPhone } });
+    await db.user.updateMany({ where: { id: userId, phone: null }, data: { phone: normalizedPhone } });
     await db.notification.create({ data: { type: "ORDER_PLACED", title: "New Order", message: `Order ${orderNumber} placed by ${customerName} for ₹${finalTotal}`, orderId: order.id, readBy: "[]" } });
     return NextResponse.json({ order: { id: order.id, orderNumber: order.orderNumber } }, { status: 201 });
   } catch (error) {
