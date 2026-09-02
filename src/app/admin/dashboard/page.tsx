@@ -570,6 +570,234 @@ export default function AdminDashboard() {
           </div>
         </Section>
 
+        {/* ── SECTION 6: Product Performance Table ── */}
+        <Section title="Product Performance" icon={Package} defaultOpen={false}>
+          <div className="pt-4">
+            {data?.topByRevenue?.length > 0 ? (
+              <div className="overflow-x-auto -mx-5 px-5">
+                <table className="w-full text-xs min-w-[500px]">
+                  <thead><tr className="border-b border-border">
+                    <th className="text-left py-2 px-2 font-medium text-text-muted">Product</th>
+                    <th className="text-right py-2 px-2 font-medium text-text-muted">Views</th>
+                    <th className="text-right py-2 px-2 font-medium text-text-muted">Wishlists</th>
+                    <th className="text-right py-2 px-2 font-medium text-text-muted">Cart Adds</th>
+                    <th className="text-right py-2 px-2 font-medium text-text-muted">Orders</th>
+                    <th className="text-right py-2 px-2 font-medium text-text-muted">Units</th>
+                    <th className="text-right py-2 px-2 font-medium text-text-muted">Revenue</th>
+                    <th className="text-right py-2 px-2 font-medium text-text-muted">Stock</th>
+                  </tr></thead>
+                  <tbody>
+                    {data.topByRevenue.slice(0, 15).map((item: any, i: number) => {
+                      const views = data.topByViews?.find((v: any) => v.productId === item.productId)?._count?.id || 0;
+                      const wishlists = data.topByWishlist?.find((w: any) => w.productId === item.productId)?._count?.id || 0;
+                      const cartAdds = data.topByCart?.find((c: any) => c.productId === item.productId)?._count?.id || 0;
+                      const stock = item.product?.stockQuantity ?? 0;
+                      return (
+                        <tr key={i} className="border-b border-border last:border-0 hover:bg-surface-muted/30">
+                          <td className="py-2 px-2">
+                            <div className="flex items-center gap-2">
+                              <div className="w-7 h-7 rounded bg-surface-muted overflow-hidden shrink-0">
+                                {item.product?.images?.[0]?.url && <img src={item.product.images[0].url} alt="" className="w-full h-full object-cover" />}
+                              </div>
+                              <span className="font-medium text-primary truncate max-w-[120px]">{item.product?.name || "—"}</span>
+                            </div>
+                          </td>
+                          <td className="py-2 px-2 text-right text-text-muted">{views}</td>
+                          <td className="py-2 px-2 text-right text-text-muted">{wishlists}</td>
+                          <td className="py-2 px-2 text-right text-text-muted">{cartAdds}</td>
+                          <td className="py-2 px-2 text-right">{item._count?.id || 0}</td>
+                          <td className="py-2 px-2 text-right font-medium">{Number(item._sum?.quantity || 0)}</td>
+                          <td className="py-2 px-2 text-right font-medium">{fmtCurrency(Number(item._sum?.totalPrice || 0))}</td>
+                          <td className="py-2 px-2 text-right">
+                            <span className={cn("px-1.5 py-0.5 rounded-full text-[10px] font-medium", stock === 0 ? "bg-red-100 text-red-600" : stock <= 5 ? "bg-amber-100 text-amber-600" : "bg-green-100 text-green-600")}>
+                              {stock}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-xs text-text-muted py-4 text-center">No product data yet</p>
+            )}
+          </div>
+        </Section>
+
+        {/* ── SECTION 9: Wishlist Intelligence ── */}
+        <Section title="Wishlist Intelligence" icon={Heart} defaultOpen={false}>
+          <div className="pt-4">
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              <div className="p-3 bg-surface-muted/50 rounded-xl text-center">
+                <p className="text-xl font-bold text-primary">{data?.wishlist?.total || 0}</p>
+                <p className="text-xs text-text-muted mt-1">Total Items</p>
+              </div>
+              <div className="p-3 bg-surface-muted/50 rounded-xl text-center">
+                <p className="text-xl font-bold text-primary">{data?.wishlist?.today || 0}</p>
+                <p className="text-xs text-text-muted mt-1">Today</p>
+              </div>
+              <div className="p-3 bg-surface-muted/50 rounded-xl text-center">
+                <p className="text-xl font-bold text-primary">{funnel.cartAdds > 0 && funnel.wishlistAdds > 0 ? Math.round((funnel.cartAdds / funnel.wishlistAdds) * 100) : 0}%</p>
+                <p className="text-xs text-text-muted mt-1">Wishlist→Cart</p>
+              </div>
+            </div>
+            {data?.topByWishlist?.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-text-muted uppercase tracking-wider">Most Wishlisted</p>
+                {data.topByWishlist.slice(0, 5).map((item: any, i: number) => (
+                  <div key={i} className="flex items-center gap-3 py-2 border-b border-border last:border-0">
+                    <span className="text-xs font-bold text-text-muted w-5">{i + 1}</span>
+                    <div className="w-7 h-7 rounded bg-surface-muted overflow-hidden shrink-0">
+                      {item.product?.images?.[0]?.url && <img src={item.product.images[0].url} alt="" className="w-full h-full object-cover" />}
+                    </div>
+                    <span className="text-xs font-medium text-primary truncate flex-1">{item.product?.name || "—"}</span>
+                    <span className="text-xs font-semibold text-primary">{item._count?.id || 0} wishlists</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </Section>
+
+        {/* ── SECTION 10: Cart Analytics ── */}
+        <Section title="Cart Analytics" icon={ShoppingBag} defaultOpen={false}>
+          <div className="pt-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+              <div className="p-3 bg-surface-muted/50 rounded-xl text-center">
+                <p className="text-xl font-bold text-primary">{funnel.cartAdds || 0}</p>
+                <p className="text-xs text-text-muted mt-1">Cart Additions</p>
+              </div>
+              <div className="p-3 bg-surface-muted/50 rounded-xl text-center">
+                <p className="text-xl font-bold text-primary">{funnel.checkoutStarted || 0}</p>
+                <p className="text-xs text-text-muted mt-1">Checkout Started</p>
+              </div>
+              <div className="p-3 bg-surface-muted/50 rounded-xl text-center">
+                <p className="text-xl font-bold text-primary">{funnel.cartAdds > 0 && funnel.checkoutStarted > 0 ? Math.round((funnel.checkoutStarted / funnel.cartAdds) * 100) : 0}%</p>
+                <p className="text-xs text-text-muted mt-1">Cart→Checkout</p>
+              </div>
+              <div className="p-3 bg-surface-muted/50 rounded-xl text-center">
+                <p className="text-xl font-bold text-primary">{funnel.cartAdds > 0 ? Math.round(((funnel.cartAdds - (funnel.checkoutStarted || 0)) / funnel.cartAdds) * 100) : 0}%</p>
+                <p className="text-xs text-text-muted mt-1">Abandonment</p>
+              </div>
+            </div>
+            {data?.topByCart?.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-text-muted uppercase tracking-wider">Most Added to Cart</p>
+                {data.topByCart.slice(0, 5).map((item: any, i: number) => (
+                  <div key={i} className="flex items-center gap-3 py-2 border-b border-border last:border-0">
+                    <span className="text-xs font-bold text-text-muted w-5">{i + 1}</span>
+                    <div className="w-7 h-7 rounded bg-surface-muted overflow-hidden shrink-0">
+                      {item.product?.images?.[0]?.url && <img src={item.product.images[0].url} alt="" className="w-full h-full object-cover" />}
+                    </div>
+                    <span className="text-xs font-medium text-primary truncate flex-1">{item.product?.name || "—"}</span>
+                    <span className="text-xs font-semibold text-primary">{item._count?.id || 0} adds</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </Section>
+
+        {/* ── SECTION 14: Category Analytics ── */}
+        {data?.categoryAnalytics?.length > 0 && (
+          <Section title="Category Performance" icon={Layers} defaultOpen={false}>
+            <div className="pt-4">
+              <div className="space-y-3">
+                {data.categoryAnalytics.sort((a: any, b: any) => b.revenue - a.revenue).map((cat: any) => {
+                  const maxRev = Math.max(...data.categoryAnalytics.map((c: any) => c.revenue), 1);
+                  return (
+                    <div key={cat.id} className="py-2 border-b border-border last:border-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-medium text-primary">{cat.name}</span>
+                        <span className="text-xs text-text-muted">{cat.products} products · {fmtCurrency(cat.revenue)}</span>
+                      </div>
+                      <MiniBar value={cat.revenue} max={maxRev} />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </Section>
+        )}
+
+        {/* ── SECTION 20: Alerts & Actions ── */}
+        {((k.outOfStock || 0) > 0 || (k.lowStock || 0) > 0 || (data?.payments?.failed || 0) > 0 || (k.pendingPayments || 0) > 0) && (
+          <Section title="Action Required" icon={AlertTriangle} badge={(k.outOfStock || 0) + (k.lowStock || 0) + (data?.payments?.failed || 0)}>
+            <div className="pt-4 space-y-2">
+              {(k.outOfStock || 0) > 0 && (
+                <div className="flex items-center justify-between p-3 bg-red-50 rounded-xl">
+                  <div className="flex items-center gap-2">
+                    <XCircle size={14} className="text-red-500" />
+                    <span className="text-xs font-medium text-red-700">{k.outOfStock} product{k.outOfStock > 1 ? "s" : ""} out of stock</span>
+                  </div>
+                  <Link href="/admin/products" className="text-[10px] font-medium text-red-600 hover:underline">Fix →</Link>
+                </div>
+              )}
+              {(k.lowStock || 0) > 0 && (
+                <div className="flex items-center justify-between p-3 bg-amber-50 rounded-xl">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle size={14} className="text-amber-500" />
+                    <span className="text-xs font-medium text-amber-700">{k.lowStock} product{k.lowStock > 1 ? "s" : ""} low on stock</span>
+                  </div>
+                  <Link href="/admin/products" className="text-[10px] font-medium text-amber-600 hover:underline">Restock →</Link>
+                </div>
+              )}
+              {(data?.payments?.failed || 0) > 0 && (
+                <div className="flex items-center justify-between p-3 bg-red-50 rounded-xl">
+                  <div className="flex items-center gap-2">
+                    <XCircle size={14} className="text-red-500" />
+                    <span className="text-xs font-medium text-red-700">{data.payments.failed} failed payment{data.payments.failed > 1 ? "s" : ""}</span>
+                  </div>
+                  <Link href="/admin/orders" className="text-[10px] font-medium text-red-600 hover:underline">Review →</Link>
+                </div>
+              )}
+              {(k.pendingPayments || 0) > 0 && (
+                <div className="flex items-center justify-between p-3 bg-amber-50 rounded-xl">
+                  <div className="flex items-center gap-2">
+                    <Clock size={14} className="text-amber-500" />
+                    <span className="text-xs font-medium text-amber-700">{k.pendingPayments} pending payment{k.pendingPayments > 1 ? "s" : ""}</span>
+                  </div>
+                  <Link href="/admin/orders" className="text-[10px] font-medium text-amber-600 hover:underline">Review →</Link>
+                </div>
+              )}
+            </div>
+          </Section>
+        )}
+
+        {/* ── SECTION 23: Data Export ── */}
+        <Section title="Data Export" icon={Download} defaultOpen={false}>
+          <div className="pt-4 grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {[
+              { label: "Orders CSV", endpoint: "/api/orders?all=true&limit=1000" },
+              { label: "Products CSV", endpoint: "/api/products?limit=1000" },
+              { label: "Customers CSV", endpoint: "/api/customers?limit=1000" },
+            ].map(exp => (
+              <button key={exp.label} onClick={async () => {
+                try {
+                  const res = await fetch(exp.endpoint);
+                  const json = await res.json();
+                  const rows = json.orders || json.products || json.customers || [];
+                  if (!rows.length) return;
+                  const headers = Object.keys(rows[0]).filter((k: string) => typeof rows[0][k] !== "object");
+                  const esc = (v: any) => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+                  const csvLines = [headers.join(',')];
+                  for (const r of rows) { csvLines.push(headers.map((h: string) => esc(r[h])).join(',')); }
+                  const csv = csvLines.join('\n');
+                  const blob = new Blob([csv], { type: 'text/csv' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url; a.download = exp.label.toLowerCase().replace(/ /g, '-') + '.csv'; a.click();
+                  URL.revokeObjectURL(url);
+                } catch {}
+              }} className="flex items-center gap-2 p-3 bg-surface-muted/50 rounded-xl hover:bg-surface-muted transition-colors text-left">
+                <Download size={14} className="text-[#6b6560]" />
+                <span className="text-xs font-medium text-primary">{exp.label}</span>
+              </button>
+            ))}
+          </div>
+        </Section>
+
         {/* ── SECTION 22: Quick Actions ── */}
         <Section title="Quick Actions" icon={Zap} defaultOpen={false}>
           <div className="pt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
