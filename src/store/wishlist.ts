@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { trackEvent } from "@/components/ui/AnalyticsTracker";
 
 interface WishlistItem {
   id: string;
@@ -41,8 +42,10 @@ export const useWishlistStore = create<WishlistStore>()(
         const { items } = get();
         const exists = items.some((i) => i.productId === item.productId);
         if (exists) {
+          trackEvent("WISHLIST_REMOVE", { productId: item.productId });
           set({ items: items.filter((i) => i.productId !== item.productId) });
         } else {
+          trackEvent("WISHLIST_ADD", { productId: item.productId, productName: item.name });
           set({ items: [...items, { ...item, addedAt: new Date().toISOString() }] });
         }
       },

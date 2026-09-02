@@ -5,6 +5,7 @@ import IntroAnimation from "@/components/ui/IntroAnimation";
 import MobileBottomNav from "@/components/layout/MobileBottomNav";
 import { SettingsProvider } from "@/components/ui/SettingsContext";
 import Footer from "@/components/layout/Footer";
+import { SessionHeartbeat, PageViewTracker } from "@/components/ui/AnalyticsTracker";
 
 export default function ShopLayout({
   children,
@@ -13,6 +14,8 @@ export default function ShopLayout({
 }) {
   return (
     <SettingsProvider>
+      <SessionHeartbeat />
+      <PageViewTracker />
       <div className="min-h-screen flex flex-col">
         <Header />
         <IntroAnimation>

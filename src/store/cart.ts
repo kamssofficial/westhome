@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { CartItem, CustomSize } from "@/types";
+import { trackEvent } from "@/components/ui/AnalyticsTracker";
 
 interface CartStore {
   items: CartItem[];
@@ -27,8 +28,8 @@ export const useCartStore = create<CartStore>()(
       discount: 0,
 
       addItem: (item) => {
+        trackEvent("ADD_TO_CART", { productId: item.productId, productName: item.name });
         const { items } = get();
-        // Check if same product + variant + customSize already in cart
         const existingIndex = items.findIndex(
           (i) =>
             i.productId === item.productId &&
