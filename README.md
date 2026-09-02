@@ -267,3 +267,4 @@ All rights reserved. WESTHOME by BM Distributors.
 # redeploy hero
 # fix razorpay env vars
 # force redeploy webp images
+# redeploy with correct Razorpay keys
