@@ -117,7 +117,6 @@ h1, h2, h3, h4, h5, h6 {
 @keyframes pulse-ring { 0%, 100% { transform: scale(0.92); opacity: 0.4; } 50% { transform: scale(1.04); opacity: 0.85; } }
 @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
 
-/* Filter panel animations */
 @keyframes filterBackdropIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes filterBackdropOut { from { opacity: 1; } to { opacity: 0; } }
 @keyframes filterPanelSlideUp {
@@ -171,6 +170,24 @@ h1, h2, h3, h4, h5, h6 {
 .focus-ring:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; border-radius: 4px; }
 .touch-target { touch-action: manipulation; }
 .overscroll-contain { overscroll-behavior: contain; }
+
+/* UI resilience fixes */
+#mobile-navigation {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (min-width: 1024px) {
+  header nav[aria-label="Primary navigation"] {
+    min-width: 0;
+    max-width: min(48vw, 720px);
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  header nav[aria-label="Primary navigation"]::-webkit-scrollbar { display: none; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
