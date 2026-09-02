@@ -15,7 +15,7 @@ export async function createNotification(params: {
     // Find all admin/staff users who should receive notifications
     const staffUsers = await db.user.findMany({
       where: {
-        role: { in: ["ADMIN", "MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER", "STAFF"] },
+        role: { in: ["ADMIN", "MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER"] },
         isActive: true,
       },
       select: { id: true },

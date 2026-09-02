@@ -1,15 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { Home, LayoutGrid, Search, ShoppingBag, User } from "lucide-react";
+import { Home, Info, Search, ShoppingBag, User } from "lucide-react";
 import { useCartStore } from "@/store/cart";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
   { label: "Home", href: "/", icon: Home },
-  { label: "Collection", href: "/shop", icon: LayoutGrid },
+  { label: "About Us", href: "/about", icon: Info },
   { label: "Search", href: "/search", icon: Search },
   { label: "Bag", href: "/cart", icon: ShoppingBag },
   { label: "Account", href: "/account", icon: User },
@@ -18,9 +17,6 @@ const NAV_ITEMS = [
 export default function MobileBottomNav() {
   const pathname = usePathname();
   const itemCount = useCartStore((state) => state.getItemCount());
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => { setMounted(true); }, []);
 
   return (
     <nav
@@ -56,7 +52,7 @@ export default function MobileBottomNav() {
             {active && (
               <span className="absolute -top-0.5 left-1/2 h-[3px] w-5 -translate-x-1/2 rounded-full bg-foreground/80" />
             )}
-            {href === "/cart" && mounted && itemCount > 0 && (
+            {href === "/cart" && itemCount > 0 && (
               <span className="absolute right-0 top-0 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-accent px-1 text-[8px] font-bold text-white">
                 {itemCount > 9 ? "9+" : itemCount}
               </span>

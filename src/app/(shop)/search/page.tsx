@@ -1,23 +1,29 @@
 "use client";
-import { trackEvent } from "@/hooks/useAnalytics";
 
 import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
-  Search as SearchIcon, Grid3X3, List,
-  X, Clock, TrendingUp, Loader2,
+  Search as SearchIcon, SlidersHorizontal, ChevronDown, Grid3X3, List,
+  X, Clock, TrendingUp, Loader2, ArrowUpDown, Check,
 } from "lucide-react";
 import ProductCard from "@/components/ui/ProductCard";
 import { ProductGridSkeleton } from "@/components/ui/Skeleton";
-import FilterPanel, { type FilterState, EMPTY_FILTERS, SortDropdown, ActiveFilterChips } from "@/components/shop/FilterPanel";
+import FilterPanel, { type FilterState, EMPTY_FILTERS } from "@/components/shop/FilterPanel";
 import { cn } from "@/lib/utils";
 import type { Product, Category } from "@/types";
 
 const POPULAR_SEARCHES = ["woven basket", "wall art", "soap dispenser", "abstract frame", "botanical", "ceramic"];
 const PAGE_SIZE = 24;
 
-
+const SORT_OPTIONS = [
+  { label: "Recommended", value: "recommended" },
+  { label: "Newest", value: "newest" },
+  { label: "Price: Low → High", value: "price_asc" },
+  { label: "Price: High → Low", value: "price_desc" },
+  { label: "Name: A–Z", value: "name_asc" },
+  { label: "Name: Z–A", value: "name_desc" },
+];
 
 function SearchContent() {
   const searchParams = useSearchParams();
@@ -33,14 +39,14 @@ function SearchContent() {
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
-
   const [showFilters, setShowFilters] = useState(false);
+  const [showSort, setShowSort] = useState(false);
   const [filters, setFilters] = useState<FilterState>({ ...EMPTY_FILTERS });
   const [sort, setSort] = useState("recommended");
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
-  const loadingRef = useRef(false);
+  const sortRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     try { const s = localStorage.getItem("westhome-recent-searches"); if (s) setRecentSearches(JSON.parse(s)); } catch {}
@@ -48,7 +54,6 @@ function SearchContent() {
 
   useEffect(() => {
     fetch("/api/categories").then(r => r.json()).then(d => setCategories(d.categories || [])).catch(() => {});
-
   }, []);
 
   const saveRecentSearch = (q: string) => {
@@ -60,25 +65,15 @@ function SearchContent() {
 
   // Fetch products
   const fetchProducts = useCallback(async (pageNum: number, append = false) => {
-    if (loadingRef.current) return;
-    loadingRef.current = true;
     if (pageNum === 1) setLoading(true); else setLoadingMore(true);
     try {
       const params = new URLSearchParams();
       if (initialQuery) params.set("q", initialQuery);
-      if (filters.collection) params.set("category", filters.collection);
+      if (filters.category) params.set("category", filters.category);
       if (filters.subcategory) params.set("subcategory", filters.subcategory);
-      if (filters.style) params.set("style", filters.style);
-      if (filters.material) params.set("material", filters.material);
-      if (filters.color) params.set("color", filters.color);
-      if (filters.size) params.set("length", filters.size);
-      if (filters.pattern) params.set("pattern", filters.pattern);
-      if (filters.shape) params.set("shape", filters.shape);
-      if (filters.frameSize) params.set("frameSize", filters.frameSize);
       if (filters.minPrice) params.set("minPrice", filters.minPrice);
       if (filters.maxPrice) params.set("maxPrice", filters.maxPrice);
       if (filters.inStock) params.set("inStock", filters.inStock);
-
       params.set("sort", sort);
       params.set("page", String(pageNum));
       params.set("limit", String(PAGE_SIZE));
@@ -86,35 +81,31 @@ function SearchContent() {
       const data = await res.json();
       if (append) setProducts(prev => [...prev, ...(data.products || [])]);
       else setProducts(data.products || []);
-          if (query) trackEvent("SEARCH", { metadata: { query } });
       setTotal(data.total || 0);
       setHasMore(pageNum * PAGE_SIZE < (data.total || 0));
     } catch { if (!append) setProducts([]); }
-    finally { setLoading(false); setLoadingMore(false); loadingRef.current = false; }
-  }, [initialQuery, filters.collection, filters.subcategory, filters.style, filters.material, filters.color, filters.size, filters.pattern, filters.shape, filters.minPrice, filters.maxPrice, filters.inStock, sort]);
+    finally { setLoading(false); setLoadingMore(false); }
+  }, [initialQuery, filters.category, filters.subcategory, filters.minPrice, filters.maxPrice, filters.inStock, sort]);
 
   useEffect(() => { setPage(1); setHasMore(true); fetchProducts(1, false); if (initialQuery) saveRecentSearch(initialQuery); }, [fetchProducts]);
-
-  // Infinite scroll — stable observer
-  const searchPageRef = useRef(1);
-  const searchFetchRef = useRef(fetchProducts);
-  searchFetchRef.current = fetchProducts;
 
   useEffect(() => {
     if (!sentinelRef.current) return;
     const obs = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && !loadingRef.current) {
-        const next = searchPageRef.current + 1;
-        searchPageRef.current = next;
-        setPage(next);
-        searchFetchRef.current(next, true);
+      if (entries[0].isIntersecting && hasMore && !loading && !loadingMore) {
+        const next = page + 1; setPage(next); fetchProducts(next, true);
       }
-    }, { rootMargin: "400px" });
+    }, { rootMargin: "300px" });
     obs.observe(sentinelRef.current);
     return () => obs.disconnect();
+  }, [hasMore, loading, loadingMore, page, fetchProducts]);
+
+  // Close sort on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => { if (sortRef.current && !sortRef.current.contains(e.target as Node)) setShowSort(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, []);
-
-
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault(); setShowSuggestions(false);
@@ -135,21 +126,15 @@ function SearchContent() {
 
   const applyFilters = (f: FilterState) => { setFilters(f); };
 
+  // Count active filter groups
   const filterCount = [
-    filters.collection !== "",
+    filters.category !== "",
     filters.subcategory !== "",
-    filters.style !== "",
-    filters.material !== "",
-    filters.color !== "",
-    filters.size !== "",
-    filters.pattern !== "",
-    filters.shape !== "",
-    filters.frameSize !== "",
     filters.minPrice !== "" || filters.maxPrice !== "",
     filters.inStock !== "",
   ].filter(Boolean).length;
 
-  const showCatalogControls = loading || total > 0 || filterCount > 0;
+  const selectedSortLabel = SORT_OPTIONS.find(o => o.value === sort)?.label || "Recommended";
 
   return (
     <div className="animate-fade-in">
@@ -157,10 +142,10 @@ function SearchContent() {
         <div ref={suggestionsRef} className="relative">
           <form onSubmit={handleSearch} className="relative">
             <SearchIcon size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#b0aba6]" />
-            <input ref={inputRef} id="search-products" aria-label="Search products" type="text" value={query} onChange={e => { setQuery(e.target.value); setShowSuggestions(true); }}
+            <input ref={inputRef} type="text" value={query} onChange={e => { setQuery(e.target.value); setShowSuggestions(true); }}
               onFocus={() => setShowSuggestions(true)} placeholder="Search products..."
               className="w-full pl-10 pr-10 py-2.5 bg-white rounded-xl border border-black/[.08] text-sm focus:outline-none focus:ring-2 focus:ring-[#d4a574]/30 text-[#1a1917]" />
-            {query && <button type="button" aria-label="Clear search" onClick={clearSearch} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#b0aba6] hover:text-[#1a1917]"><X size={16} /></button>}
+            {query && <button type="button" onClick={clearSearch} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#b0aba6] hover:text-[#1a1917]"><X size={16} /></button>}
             {showSuggestions && !initialQuery && (
               <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl border border-black/[.08] shadow-lg z-50 overflow-hidden">
                 {recentSearches.length > 0 && (
@@ -195,41 +180,88 @@ function SearchContent() {
 
       {/* Filter & Sort toolbar */}
       <div className="container-shop pb-3">
-        {showCatalogControls && <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <button type="button" aria-label="Open filters" aria-expanded={showFilters} aria-haspopup="dialog" onClick={() => setShowFilters(true)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-[1.35rem] border border-black/[.08] bg-white text-sm font-medium text-[#1a1917] hover:bg-[#f7f5f2] transition-colors">
-              Filter
+            <button onClick={() => setShowFilters(true)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-black/[.08] bg-white text-sm font-medium text-[#1a1917] hover:bg-[#f7f5f2] transition-colors">
+              <SlidersHorizontal size={14} /> Filter
               {filterCount > 0 && (
                 <span className="w-5 h-5 rounded-full bg-[#d4a574] text-white text-[10px] font-bold flex items-center justify-center">{filterCount}</span>
               )}
             </button>
             {initialQuery && (
-              <button type="button" aria-label="Clear search query" onClick={clearSearch} className="flex items-center gap-1 px-2.5 py-1.5 bg-[#d4a574]/10 text-[#d4a574] rounded-full text-xs font-medium hover:bg-[#d4a574]/20 transition-colors">
+              <button onClick={clearSearch} className="flex items-center gap-1 px-2.5 py-1.5 bg-[#d4a574]/10 text-[#d4a574] rounded-full text-xs font-medium hover:bg-[#d4a574]/20 transition-colors">
                 &quot;{initialQuery}&quot; <X size={12} />
               </button>
             )}
           </div>
           <div className="flex items-center gap-2">
-            <SortDropdown value={sort} onChange={setSort} />
-            <button type="button" aria-label="Grid view" aria-pressed={viewMode === "grid"} onClick={() => setViewMode("grid")}
+            <div ref={sortRef} className="relative">
+              <button onClick={() => setShowSort(!showSort)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-black/[.08] bg-white text-sm font-medium text-[#1a1917] hover:bg-[#f7f5f2] transition-colors">
+                <ArrowUpDown size={14} className="text-[#6b6560]" />
+                <span className="hidden sm:inline">{selectedSortLabel}</span>
+                <span className="sm:hidden">Sort</span>
+                <ChevronDown size={14} className={cn("text-[#b0aba6] transition-transform", showSort && "rotate-180")} />
+              </button>
+              {showSort && (
+                <div className="absolute top-full right-0 mt-2 w-52 bg-white rounded-xl border border-black/[.08] shadow-lg z-50 py-1.5">
+                  {SORT_OPTIONS.map(opt => (
+                    <button key={opt.value} onClick={() => { setSort(opt.value); setShowSort(false); }}
+                      className={cn("w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors",
+                        sort === opt.value ? "text-[#1a1917] font-medium bg-[#f7f5f2]" : "text-[#6b6560] hover:bg-[#f7f5f2]"
+                      )}>
+                      {sort === opt.value && <Check size={14} className="text-[#d4a574] shrink-0" />}
+                      <span className={sort === opt.value ? "" : "ml-[22px]"}>{opt.label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <button onClick={() => setViewMode("grid")}
               className={cn("p-2 rounded-lg", viewMode === "grid" ? "bg-[#1a1917] text-white" : "bg-white border border-black/[.08]")}>
               <Grid3X3 size={16} />
             </button>
-            <button type="button" aria-label="List view" aria-pressed={viewMode === "list"} onClick={() => setViewMode("list")}
+            <button onClick={() => setViewMode("list")}
               className={cn("p-2 rounded-lg", viewMode === "list" ? "bg-[#1a1917] text-white" : "bg-white border border-black/[.08]")}>
               <List size={16} />
             </button>
           </div>
-        </div>}
-        {showCatalogControls && <FilterPanel open={showFilters} onClose={() => setShowFilters(false)} onApply={applyFilters}
-          initialFilters={filters} categories={categories} resultCount={total} />}
+        </div>
+        <FilterPanel open={showFilters} onClose={() => setShowFilters(false)} onApply={applyFilters}
+          initialFilters={filters} categories={categories} resultCount={total} />
       </div>
 
       {/* Active Filter Chips */}
       {filterCount > 0 && (
         <div className="container-shop pb-2">
-          <ActiveFilterChips filters={filters} categories={categories} onRemove={(key) => setFilters(p => ({...p, [key]: ""}))} onClearAll={() => setFilters({ ...EMPTY_FILTERS })} />
+          <div className="flex flex-wrap gap-2">
+            {filters.category && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#1a1917] text-white rounded-full text-xs font-medium">
+                {categories.find(c => c.slug === filters.category)?.name || filters.category}
+                <button onClick={() => setFilters(p => ({...p, category: ""}))} className="ml-0.5 hover:opacity-60"><X size={12} /></button>
+              </span>
+            )}
+            {filters.subcategory && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#1a1917] text-white rounded-full text-xs font-medium">
+                {filters.subcategory.replace(/-/g, " ")}
+                <button onClick={() => setFilters(p => ({...p, subcategory: ""}))} className="ml-0.5 hover:opacity-60"><X size={12} /></button>
+              </span>
+            )}
+            {(filters.minPrice || filters.maxPrice) && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#1a1917] text-white rounded-full text-xs font-medium">
+                {"₹"}{filters.minPrice || "0"} - {"₹"}{filters.maxPrice || "∞"}
+                <button onClick={() => setFilters(p => ({...p, minPrice: "", maxPrice: ""}))} className="ml-0.5 hover:opacity-60"><X size={12} /></button>
+              </span>
+            )}
+            {filters.inStock && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#1a1917] text-white rounded-full text-xs font-medium">
+                In Stock
+                <button onClick={() => setFilters(p => ({...p, inStock: ""}))} className="ml-0.5 hover:opacity-60"><X size={12} /></button>
+              </span>
+            )}
+            <button onClick={() => setFilters({ ...EMPTY_FILTERS })} className="text-xs text-[#d4a574] font-medium hover:underline ml-1">Clear all</button>
+          </div>
         </div>
       )}
 

@@ -28,8 +28,7 @@ export default function AdminCategoriesPage() {
   const dragItem = useRef<number>(null);
   const dragOverItem = useRef<number>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
-  const uploadTargetRef = useRef<string | null>(null);
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [uploadTarget, setUploadTarget] = useState<string | null>(null);
 
   const fetchCategories = useCallback(async () => {
     try {
@@ -40,13 +39,6 @@ export default function AdminCategoriesPage() {
   }, []);
 
   useEffect(() => { fetchCategories(); }, [fetchCategories]);
-
-  useEffect(() => {
-    if (toast) {
-      const t = setTimeout(() => setToast(null), 3000);
-      return () => clearTimeout(t);
-    }
-  }, [toast]);
 
   const handleSaveOrder = async () => {
     try {
@@ -77,41 +69,27 @@ export default function AdminCategoriesPage() {
     try {
       const fd = new FormData(); fd.append("file", file); fd.append("folder", "categories");
       const uploadRes = await fetch("/api/upload", { method: "POST", body: fd });
-      if (!uploadRes.ok) {
-        const err = await uploadRes.json().catch(() => ({ error: "Upload failed" }));
-        setToast({ message: err.error || "Image upload failed — please try again", type: "error" });
-        return;
-      }
-      const { url } = await uploadRes.json();
-      // Try CategoryImage API first, fall back to updating category image field
-      let saved = false;
-      try {
-        const imgRes = await fetch("/api/categories/" + categoryId + "/images", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url, isPrimary: true, alt: file.name }),
-        });
-        saved = imgRes.ok;
+      if (uploadRes.ok) {
+        const { url } = await uploadRes.json();
+        // Try CategoryImage API first, fall back to updating category image field
+        let saved = false;
+        try {
+          const imgRes = await fetch("/api/categories/" + categoryId + "/images", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url, isPrimary: true, alt: file.name }),
+          });
+          saved = imgRes.ok;
+        } catch {}
         if (!saved) {
-          const imgErr = await imgRes.json().catch(() => ({}));
-          console.error("CategoryImage API failed:", imgErr);
+          await fetch("/api/categories/" + categoryId, {
+            method: "PUT", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ image: url }),
+          });
         }
-      } catch (e) { console.error("CategoryImage API error:", e); }
-      if (!saved) {
-        const putRes = await fetch("/api/categories/" + categoryId, {
-          method: "PUT", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ image: url }),
-        });
-        if (!putRes.ok) {
-          setToast({ message: "Image uploaded but failed to save to category", type: "error" });
-          return;
-        }
+        fetchCategories();
       }
-      setToast({ message: "Image uploaded successfully", type: "success" });
-      await fetchCategories();
-    } catch (e) { 
-      console.error(e); 
-      setToast({ message: "Upload failed — please try again", type: "error" });
-    } finally { setUploadingImage(null); }
+    } catch (e) { console.error(e); }
+    finally { setUploadingImage(null); }
   };
 
   const handleDeleteImage = async (categoryId: string, imageId: string) => {
@@ -157,15 +135,13 @@ export default function AdminCategoriesPage() {
   };
 
   const triggerImageUpload = (categoryId: string) => {
-    uploadTargetRef.current = categoryId;
+    setUploadTarget(categoryId);
     imageInputRef.current?.click();
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    const target = uploadTargetRef.current;
-    if (file && target) { handleImageUpload(target, file); }
-    uploadTargetRef.current = null;
+    if (file && uploadTarget) { handleImageUpload(uploadTarget, file); }
     if (imageInputRef.current) imageInputRef.current.value = "";
   };
 
@@ -173,7 +149,7 @@ export default function AdminCategoriesPage() {
 
   return (
     <div className="space-y-5">
-      <input ref={imageInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFileChange} className="absolute w-px h-px overflow-hidden" style={{ clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }} />
+      <input ref={imageInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFileChange} className="hidden" />
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -391,12 +367,6 @@ export default function AdminCategoriesPage() {
           onDelete={handleDeleteCategory}
           onArchive={handleArchiveCategory}
         />
-      )}
-
-      {toast && (
-        <div className={"fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl text-sm font-medium shadow-lg transition-all duration-300 " + (toast.type === "success" ? "bg-emerald-600 text-white" : "bg-red-600 text-white")}>
-          {toast.message}
-        </div>
       )}
     </div>
   );

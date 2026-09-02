@@ -45,10 +45,6 @@ export interface Product {
   allowBackorder: boolean;
   trackInventory: boolean;
 
-  // Frame Size
-  frameSizeWidth?: number;
-  frameSizeHeight?: number;
-
   // Physical Dimensions
   height?: number;
   width?: number;

@@ -2,14 +2,14 @@
 
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
-import { ArrowLeft, Package, Truck, Save, CheckCircle, CreditCard, XCircle, Clock, User, MapPin, FileText, ChevronDown, Eye, ShoppingCart, Phone, Mail, Trash2 } from "lucide-react";
+import { ArrowLeft, Package, Truck, Save, CheckCircle, CreditCard, XCircle, Clock, User, MapPin, FileText, ChevronDown, Eye, ShoppingCart, Phone, Mail } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { formatPrice, formatDate, getStatusColor, cn } from "@/lib/utils";
 import toast from "react-hot-toast";
 
 interface OrderItem {
-  id: string; productName: string; variantName: string | null; sku: string | null;
+  id: string; productName: string; variantName: string | null;
   quantity: number; unitPrice: number; totalPrice: number; image: string | null;
 }
 
@@ -67,7 +67,6 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
   const [showAllStatuses, setShowAllStatuses] = useState(false);
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [paymentNote, setPaymentNote] = useState("");
-  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => { fetchOrder(); }, [id]);
 
@@ -104,22 +103,6 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
       }
     } catch { toast.error("Failed to update order"); }
     finally { setUpdating(false); }
-  };
-
-  const handleDelete = async () => {
-    if (!confirm("Are you sure you want to delete this order? This action cannot be undone.")) return;
-    setDeleting(true);
-    try {
-      const res = await fetch(`/api/admin/orders/${id}`, { method: "DELETE" });
-      if (res.ok) {
-        toast.success("Order deleted");
-        window.location.href = "/admin/orders";
-      } else {
-        const err = await res.json();
-        toast.error(err.error || "Failed to delete");
-      }
-    } catch { toast.error("Failed to delete order"); }
-    finally { setDeleting(false); }
   };
 
   const handleFullUpdate = async () => {
@@ -242,7 +225,7 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
           <div className="bg-surface rounded-[1.35rem] border border-border p-5">
             <h2 className="font-semibold text-sm mb-3">Payment</h2>
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between"><span className="text-text-secondary">Method</span><span>{order.paymentMethod || "UPI"}</span></div>
+              <div className="flex justify-between"><span className="text-text-secondary">Method</span><span>{order.paymentMethod || "Razorpay"}</span></div>
               <div className="flex justify-between">
                 <span className="text-text-secondary">Status</span>
                 <span className={cn(order.paymentStatus === "COMPLETED" ? "text-success font-medium" : "text-warning font-medium")}>
@@ -300,7 +283,6 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{item.productName}</p>
                     {item.variantName && <p className="text-xs text-text-muted">{item.variantName}</p>}
-                    {item.sku && <p className="text-xs text-[#b0aba6] font-mono">SKU: {item.sku}</p>}
                     <p className="text-xs text-text-muted">Qty: {item.quantity} x {formatPrice(item.unitPrice)}</p>
                   </div>
                   <p className="text-sm font-semibold">{formatPrice(item.totalPrice)}</p>

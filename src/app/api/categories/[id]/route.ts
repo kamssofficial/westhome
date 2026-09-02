@@ -6,7 +6,7 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const authResult = await requireAuthRole(["ADMIN", "MANAGER", "CONTENT_MANAGER", "STAFF"]);
+  const authResult = await requireAuthRole(["ADMIN", "MANAGER", "CONTENT_MANAGER"]);
   if (authResult.error) return authResult.error;
 
   try {
@@ -34,7 +34,7 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const authResult = await requireAuthRole(["ADMIN", "MANAGER", "STAFF"]);
+  const authResult = await requireAuthRole(["ADMIN", "MANAGER"]);
   if (authResult.error) return authResult.error;
 
   try {

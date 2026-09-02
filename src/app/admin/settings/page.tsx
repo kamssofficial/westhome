@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { Save, Store, Truck, AlertTriangle } from "lucide-react";
-import HeroManager from "@/components/admin/HeroManager";
 import toast from "react-hot-toast";
 
 interface Settings {
@@ -42,15 +41,7 @@ export default function AdminSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  useEffect(() => {
-    fetch("/api/admin/settings").then(r => r.ok ? r.json() : null).then(d => { if (d) setS(d); }).finally(() => setLoading(false));
-  }, []);
-
-
-
-
-
-  
+  useEffect(() => { (async () => { setLoading(true); try { const r = await fetch("/api/settings"); if (r.ok) { const d = await r.json(); if (d.settings) setS((p) => ({ ...p, ...d.settings, storePickup: d.settings.storePickup === true || d.settings.storePickup === "true" })); } } catch {} finally { setLoading(false); } })(); }, []);
 
   const u = (k: keyof Settings, v: string | boolean) => { setS((p) => ({ ...p, [k]: v })); setErrs((p) => { const n = { ...p }; delete n[k]; return n; }); setSaved(false); };
 
@@ -103,9 +94,6 @@ export default function AdminSettingsPage() {
           </label>
         </div>
       </div>
-
-      <HeroManager />
-
 
       <div className="flex items-center justify-between">
         {saved && <p className="text-xs text-emerald-600 font-medium">All changes saved</p>}

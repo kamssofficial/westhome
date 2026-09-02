@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Users, Trash2 } from "lucide-react";
+import { Users } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
 interface Customer {
@@ -27,21 +27,6 @@ export default function AdminCustomersPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Delete customer "${name}" and all their data? This cannot be undone.`)) return;
-    try {
-      const res = await fetch(`/api/admin/customers/${id}`, { method: "DELETE" });
-      if (res.ok) {
-        setCustomers((prev) => prev.filter((c) => c.id !== id));
-      } else {
-        const data = await res.json();
-        alert(data.error || "Failed to delete customer");
-      }
-    } catch (err) {
-      alert("Failed to delete customer");
-    }
-  };
-
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-semibold">Customers</h1>
@@ -55,12 +40,11 @@ export default function AdminCustomersPage() {
               <th className="text-left px-4 py-3 font-medium text-text-secondary hidden md:table-cell">Phone</th>
               <th className="text-right px-4 py-3 font-medium text-text-secondary">Orders</th>
               <th className="text-right px-4 py-3 font-medium text-text-secondary hidden md:table-cell">Joined</th>
-              <th className="text-right px-4 py-3 font-medium text-text-secondary">Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-text-muted">Loading...</td></tr>
+              <tr><td colSpan={5} className="px-4 py-8 text-center text-text-muted">Loading...</td></tr>
             ) : customers.length > 0 ? (
               customers.map((c) => (
                 <tr key={c.id} className="border-b border-border last:border-0 hover:bg-surface-muted/50 cursor-pointer" onClick={() => router.push("/admin/customers/" + c.id)}>
@@ -72,7 +56,7 @@ export default function AdminCustomersPage() {
                 </tr>
               ))
             ) : (
-              <tr><td colSpan={6} className="px-4 py-12 text-center text-text-muted">
+              <tr><td colSpan={5} className="px-4 py-12 text-center text-text-muted">
                 <Users size={32} className="mx-auto mb-2" />
                 No customers yet
               </td></tr>

@@ -7,7 +7,7 @@ import { Eye, EyeOff } from "lucide-react";
 
 function LoginForm() {
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/admin/dashboard";
+  const callbackUrl = searchParams.get("callbackUrl") || "/account";
   const error = searchParams.get("error");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -81,24 +81,21 @@ function LoginForm() {
           <input type="hidden" name="callbackUrl" value={callbackUrl} />
 
           <div>
-            <label htmlFor="login-email" className="text-xs font-medium text-[#6b6560] mb-1 block">Email</label>
-            <input id="login-email" type="email" name="email" autoComplete="email" required
+            <label className="text-xs font-medium text-[#6b6560] mb-1 block">Email</label>
+            <input type="email" name="email" autoComplete="email" required
               className="w-full px-3 py-2.5 bg-white border border-black/[.06] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#d4a574]/30"
               placeholder="your@email.com" />
           </div>
           <div>
-            <label htmlFor="login-password" className="text-xs font-medium text-[#6b6560] mb-1 block">Password</label>
+            <label className="text-xs font-medium text-[#6b6560] mb-1 block">Password</label>
             <div className="relative">
-              <input id="login-password" type={showPassword ? "text" : "password"} name="password" autoComplete="current-password" required
+              <input type={showPassword ? "text" : "password"} name="password" autoComplete="current-password" required
                 className="w-full px-3 py-2.5 pr-10 bg-white border border-black/[.06] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#d4a574]/30"
                 placeholder="••••••••" />
-              <button type="button" aria-label={showPassword ? "Hide password" : "Show password"} aria-pressed={showPassword} onClick={() => setShowPassword(!showPassword)}
+              <button type="button" onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-[#b0aba6] hover:text-[#1a1917]">
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
-            </div>
-            <div className="text-right">
-              <Link href="/forgot-password" className="text-xs text-[#6b6560] hover:text-[#1a1917]">Forgot password?</Link>
             </div>
           </div>
           <button type="submit" disabled={loading}

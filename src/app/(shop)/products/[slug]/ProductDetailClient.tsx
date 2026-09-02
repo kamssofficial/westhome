@@ -1,5 +1,4 @@
 "use client";
-import { useTrackPageView, trackEvent } from "@/hooks/useAnalytics";
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
@@ -7,11 +6,10 @@ import Link from "next/link";
 import { useSettings } from "@/components/ui/SettingsContext";
 import {
   Heart, Minus, Plus, Star, ChevronLeft, ChevronRight,
-  MessageCircle, Share2, ChevronDown, ShieldCheck, Truck, Headphones, ShoppingBag, Ruler, X,
+  MessageCircle, Share2, ChevronDown, ShieldCheck, Truck, Headphones,
 } from "lucide-react";
 import ProductCard from "@/components/ui/ProductCard";
-import { cn, formatPrice, getWhatsAppUrl, generateProductWhatsAppMessage } from "@/lib/utils"
-
+import { cn, formatPrice, getWhatsAppUrl, generateProductWhatsAppMessage } from "@/lib/utils";
 import { useCartStore } from "@/store/cart";
 import { useWishlistStore } from "@/store/wishlist";
 import toast from "react-hot-toast";
@@ -25,9 +23,7 @@ interface ProductDetailProps {
   reviewCount: number;
   relatedProducts: any[];
 }
-export default function ProductDetailClient(
-  // Analytics tracking
-{ product, reviews: initialReviews, reviewAvg: initialReviewAvg, reviewCount: initialReviewCount, relatedProducts: initialRelated }: ProductDetailProps) {
+export default function ProductDetailClient({ product, reviews: initialReviews, reviewAvg: initialReviewAvg, reviewCount: initialReviewCount, relatedProducts: initialRelated }: ProductDetailProps) {
   const { whatsappNumber } = useSettings();
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(product?.variants?.length ? product.variants[0] : null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -43,14 +39,10 @@ export default function ProductDetailClient(
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewMessage, setReviewMessage] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [showSizeGuide, setShowSizeGuide] = useState(false);
 
   const addToCart = useCartStore((s) => s.addItem);
   const toggleWishlist = useWishlistStore((s) => s.toggleItem);
   const isInWishlist = useWishlistStore((s) => s.isInWishlist);
-
-  // Track product page view
-  useTrackPageView(product?.id, product?.categoryId, product?.subcategory?.id);
 
 
 
@@ -68,7 +60,6 @@ export default function ProductDetailClient(
   const totalReviews = realReviewCount;
 
   const handleAddToCart = () => {
-    trackEvent("ADD_TO_CART", { productId: product?.id, categoryId: product?.categoryId });
     if (!inStock) return;
     addToCart({
       id: selectedVariant?.id || product.id,
@@ -85,60 +76,31 @@ export default function ProductDetailClient(
     toast.success("Added to cart");
   };
 
-  const handleBuyNow = () => {
-    if (!inStock) return;
-    addToCart({
-      id: selectedVariant?.id || product.id,
-      productId: product.id,
-      variantId: selectedVariant?.id,
-      name: product.name,
-      variantName: selectedVariant?.name,
-      price: Number(currentPrice),
-      salePrice: selectedVariant?.salePrice ? Number(selectedVariant.salePrice) : product.salePrice ? Number(product.salePrice) : undefined,
-      quantity,
-      image: images[selectedImageIndex]?.url,
-      maxStock: selectedVariant?.stockQuantity ?? product.stockQuantity,
-    });
-    window.location.href = '/checkout';
-  };
-
   const whatsappUrl = getWhatsAppUrl(
     whatsappNumber.replace(/[^0-9]/g, ""),
     generateProductWhatsAppMessage(product.name, `${typeof window !== "undefined" ? window.location.origin : ""}/products/${product.slug}`)
   );
 
   return (
-    <div className="animate-fade-in overflow-x-hidden">
+    <div className="animate-fade-in">
       {/* Back header */}
       <div className="container-shop pt-3 pb-1 flex items-center justify-between">
         <Link href="/shop" className="p-1 hover:bg-surface-muted rounded-lg transition-colors">
           <ChevronLeft size={22} />
         </Link>
         <div className="flex items-center gap-2">
-          <button
-            onClick={async () => {
-              const url = typeof window !== "undefined" ? window.location.href : "";
-              const text = product.name;
-              if (navigator.share) {
-                try { await navigator.share({ title: text, url }); } catch {}
-              } else {
-                try { await navigator.clipboard.writeText(url); toast.success("Link copied!"); } catch { toast.error("Failed to copy"); }
-              }
-            }}
-            className="p-1 hover:bg-surface-muted rounded-lg transition-colors"
-          >
+          <button className="p-1 hover:bg-surface-muted rounded-lg transition-colors">
             <Share2 size={20} />
           </button>
           <button
             onClick={() => {
-              const wasInWishlist = isInWishlist(product.id);
               toggleWishlist({
                 id: product.id, productId: product.id, name: product.name,
                 slug: product.slug, price: Number(originalPrice),
                 salePrice: product.salePrice ? Number(product.salePrice) : undefined,
                 image: images[0]?.url,
               });
-              toast.success(wasInWishlist ? "Removed from wishlist" : "Added to wishlist");
+              toast.success(isInWishlist(product.id) ? "Removed from wishlist" : "Added to wishlist");
             }}
             className={cn(
               "p-1 rounded-lg transition-colors",
@@ -220,25 +182,9 @@ export default function ProductDetailClient(
       </div>
 
       {/* Product Info */}
-      <div className="container-shop mt-4 overflow-hidden">
-        <h1 className="text-xl font-semibold text-primary leading-snug break-words">{product.name}</h1>
-        {selectedVariant?.name && (
-          <p className="text-xs font-medium text-text-secondary mt-1">{selectedVariant.name}</p>
-        )}
-        {(product as any).frameSizeWidth && (product as any).frameSizeHeight && (
-          <p className="text-xs font-medium text-text-secondary mt-1">
-            Frame Size: {(product as any).frameSizeWidth} × {(product as any).frameSizeHeight} cm
-          </p>
-        )}
-        <div className="flex items-baseline gap-2 mt-1.5">
-          <p className="text-xl font-bold text-primary">{formatPrice(currentPrice)}</p>
-          {selectedVariant?.salePrice && Number(selectedVariant.salePrice) < Number(product.regularPrice) && (
-            <p className="text-sm text-text-muted line-through">{formatPrice(product.regularPrice)}</p>
-          )}
-          {!selectedVariant?.salePrice && product.salePrice && Number(product.salePrice) < Number(product.regularPrice) && (
-            <p className="text-sm text-text-muted line-through">{formatPrice(product.regularPrice)}</p>
-          )}
-        </div>
+      <div className="container-shop mt-4">
+        <h1 className="text-xl font-semibold text-primary leading-tight">{product.name}</h1>
+        <p className="text-xl font-bold text-primary mt-1">{formatPrice(currentPrice)}</p>
 
         {/* Rating */}
         <div className="flex items-center gap-2 mt-2">
@@ -253,70 +199,13 @@ export default function ProductDetailClient(
 
         {/* Description */}
         {product.shortDescription && (
-          <p className="text-sm text-secondary leading-relaxed mt-3.5">
+          <p className="text-sm text-secondary leading-relaxed mt-3">
             {product.shortDescription}
           </p>
-        )}                {/* Variant Selection */}
-        {product.variants && product.variants.length > 0 && (() => {
-          const attrGroups: Record<string, { name: string; values: { value: string; colorCode?: string; variantId: string; price: number; salePrice?: number; inStock: boolean }[] }> = {};
-          product.variants.forEach((v: any) => {
-            v.attributes?.forEach((a: any) => {
-              if (!attrGroups[a.attributeName]) attrGroups[a.attributeName] = { name: a.attributeName, values: [] };
-              const already = attrGroups[a.attributeName].values.find((x) => x.value === a.value);
-              if (!already) {
-                attrGroups[a.attributeName].values.push({
-                  value: a.value,
-                  colorCode: a.colorCode,
-                  variantId: v.id,
-                  price: Number(v.salePrice || v.price),
-                  salePrice: v.salePrice ? Number(v.salePrice) : undefined,
-                  inStock: v.stockQuantity > 0,
-                });
-              }
-            });
-          });
-          const groups = Object.values(attrGroups);
-          if (groups.length === 0) return null;
-          return (
-            <div className="mt-5 space-y-4">
-              {groups.map((group) => (
-                <div key={group.name}>
-                  <p className="text-xs font-medium text-text-muted uppercase tracking-wider mb-2">{group.name}</p>
-                  <div className="flex flex-wrap gap-2">
-                    {group.values.map((val) => {
-                      const isSelected = selectedVariant?.id === val.variantId;
-                      const isColor = group.name.toLowerCase() === 'color';
-                      if (isColor) {
-                        return (
-                          <button key={val.value} onClick={() => { const variant = product.variants.find((v: any) => v.id === val.variantId); if (variant) setSelectedVariant(variant); }}
-                            className={cn('w-9 h-9 rounded-full border-2 transition-all flex items-center justify-center', isSelected ? 'border-primary scale-110 ring-2 ring-primary/30' : 'border-border hover:border-foreground/30')}
-                            title={val.value}>
-                            <div className='w-6 h-6 rounded-full' style={{ backgroundColor: val.colorCode || val.value }} />
-                          </button>
-                        );
-                      }
-                      return (
-                        <button key={val.value} onClick={() => { const variant = product.variants.find((v: any) => v.id === val.variantId); if (variant) setSelectedVariant(variant); }}
-                          className={cn('px-4 py-2.5 rounded-xl text-sm font-medium border transition-all text-left min-w-[80px]',
-                            isSelected ? 'border-primary bg-primary text-white' : 'border-border bg-white text-primary hover:border-foreground/30',
-                            !val.inStock && 'opacity-40 cursor-not-allowed'
-                          )}>
-                          <span className="block text-xs leading-tight">{val.value}</span>
-                          <span className={cn('block text-[11px] mt-0.5', isSelected ? 'text-white/70' : 'text-text-secondary')}>
-                            {val.salePrice ? formatPrice(val.salePrice) : formatPrice(val.price)}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-          );
-        })()}
+        )}
 
         {/* Quantity */}
-        <div className="flex items-center gap-4 mt-4">
+        <div className="flex items-center gap-4 mt-5">
           <div className="flex items-center border border-border rounded-[1.35rem] overflow-hidden">
             <button
               onClick={() => setQuantity((q) => Math.max(1, q - 1))}
@@ -332,15 +221,6 @@ export default function ProductDetailClient(
               <Plus size={16} />
             </button>
           </div>
-          {((product as any).height || (product as any).width || (product as any).length || (product as any).depth || (product as any).diameter) && (
-            <button
-              onClick={() => setShowSizeGuide(true)}
-              className="flex items-center gap-1.5 text-xs font-medium text-text-secondary hover:text-primary transition-colors ml-auto"
-            >
-              <Ruler size={14} />
-              Size Guide
-            </button>
-          )}
         </div>
 
         {/* Add to Cart */}
@@ -348,42 +228,24 @@ export default function ProductDetailClient(
           onClick={handleAddToCart}
           disabled={!inStock}
           className={cn(
-            "w-full h-12 rounded-2xl text-sm font-semibold transition-all duration-100 mt-5",
+            "w-full py-3.5 rounded-2xl text-sm font-semibold transition-all duration-200 mt-5",
             inStock
-              ? "bg-primary text-white hover:bg-primary-hover active:scale-[0.97] shadow-[0_4px_14px_rgba(31,33,31,0.18)]"
+              ? "bg-primary text-white hover:bg-primary-hover active:scale-[0.98]"
               : "bg-surface-muted text-text-muted cursor-not-allowed"
           )}
         >
-          <span className="flex items-center justify-center gap-2">
-            <ShoppingBag size={16} strokeWidth={2} />
-            {inStock ? "Add to Cart" : "Out of Stock"}
-          </span>
+          {inStock ? "Add to Cart" : "Out of Stock"}
         </button>
 
-        {/* Buy Now */}
-        <button
-          onClick={() => { trackEvent("BUY_NOW", { productId: product?.id, categoryId: product?.categoryId }); handleBuyNow(); }}
-          disabled={!inStock}
-          className={cn(
-            "w-full h-12 rounded-2xl text-sm font-semibold transition-all duration-100 mt-2.5",
-            inStock
-              ? "bg-white text-primary border border-black/[.12] hover:bg-surface-muted active:scale-[0.97]"
-              : "bg-surface-muted text-text-muted border border-black/[.06] cursor-not-allowed"
-          )}
-        >
-          {inStock ? "Buy Now" : "Out of Stock"}
-        </button>
-
-        {/* Enquire on WhatsApp */}
+        {/* Buy on WhatsApp */}
         <a
           href={whatsappUrl}
           target="_blank"
           rel="noopener noreferrer"
-          onClick={() => trackEvent("WHATSAPP_ENQUIRY", { productId: product?.id, categoryId: product?.categoryId })}
-          className="w-full h-12 rounded-2xl text-sm font-semibold border border-[#25D366]/35 bg-white text-[#25D366] hover:bg-[#25D366]/[0.06] active:scale-[0.97] transition-all duration-100 text-center flex items-center justify-center gap-2 mt-2.5"
+          className="w-full py-3.5 rounded-2xl text-sm font-semibold border-2 border-primary text-primary hover:bg-primary hover:text-white transition-all duration-200 text-center flex items-center justify-center gap-2 mt-3"
         >
-          <MessageCircle size={16} strokeWidth={2} />
-          Enquire on WhatsApp
+          <MessageCircle size={18} />
+          Buy on WhatsApp
         </a>
 
         {/* Accordion sections */}
@@ -820,94 +682,6 @@ export default function ProductDetailClient(
           </div>
         )}
       </div>
-
-      {/* Size Guide Modal */}
-      {showSizeGuide && (
-        <>
-          <div className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm" style={{ animation: "filterBackdropIn 250ms ease forwards" }} onClick={() => setShowSizeGuide(false)} />
-          <div className="fixed inset-x-0 bottom-0 top-[12vh] z-[70] bg-[#faf8f5] rounded-t-[1.5rem] flex flex-col" style={{ animation: "filterPanelSlideUp 350ms cubic-bezier(0.32, 0.72, 0, 1) forwards" }}>
-            <div className="flex items-center justify-between px-5 py-4 border-b border-black/[.06] shrink-0">
-              <div className="flex items-center gap-2.5">
-                <Ruler size={17} className="text-[#1a1917]" />
-                <span className="text-base font-semibold text-[#1a1917]">Size Guide</span>
-              </div>
-              <button onClick={() => setShowSizeGuide(false)} className="w-8 h-8 flex items-center justify-center hover:bg-black/[.04] rounded-full transition-colors">
-                <X size={18} className="text-[#6b6560]" />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto px-5 py-5">
-              {/* Visual diagram */}
-              <div className="relative bg-white rounded-2xl border border-black/[.06] p-6 mb-5">
-                <div className="relative mx-auto" style={{ width: "160px", height: "120px" }}>
-                  <div className="absolute inset-0 border-2 border-[#d4a574] rounded-lg" />
-                  {(product as any).width && (
-                    <div className="absolute -bottom-6 left-0 right-0 flex items-center justify-center">
-                      <div className="h-[1px] bg-[#d4a574] flex-1" />
-                      <span className="px-2 text-[11px] font-semibold text-[#d4a574] whitespace-nowrap">{(product as any).width} {(product as any).dimensionUnit || "cm"}</span>
-                      <div className="h-[1px] bg-[#d4a574] flex-1" />
-                    </div>
-                  )}
-                  {(product as any).height && (
-                    <div className="absolute -right-12 top-0 bottom-0 flex flex-col items-center justify-center">
-                      <div className="w-[1px] bg-[#d4a574] flex-1" />
-                      <span className="py-1 text-[11px] font-semibold text-[#d4a574] whitespace-nowrap" style={{ writingMode: "vertical-lr" }}>{(product as any).height} {(product as any).dimensionUnit || "cm"}</span>
-                      <div className="w-[1px] bg-[#d4a574] flex-1" />
-                    </div>
-                  )}
-                </div>
-              </div>
-              {/* Dimension list */}
-              <div className="space-y-0">
-                {(product as any).frameSizeWidth && (product as any).frameSizeHeight && (
-                  <div className="flex items-center justify-between py-3 border-b border-black/[.04]">
-                    <span className="text-sm text-secondary">Frame Size</span>
-                    <span className="text-sm font-semibold text-primary">{(product as any).frameSizeWidth} × {(product as any).frameSizeHeight} cm</span>
-                  </div>
-                )}
-                {(product as any).height && (
-                  <div className="flex items-center justify-between py-3 border-b border-black/[.04]">
-                    <span className="text-sm text-secondary">Height</span>
-                    <span className="text-sm font-semibold text-primary">{(product as any).height} {(product as any).dimensionUnit || "cm"}</span>
-                  </div>
-                )}
-                {(product as any).width && (
-                  <div className="flex items-center justify-between py-3 border-b border-black/[.04]">
-                    <span className="text-sm text-secondary">Width</span>
-                    <span className="text-sm font-semibold text-primary">{(product as any).width} {(product as any).dimensionUnit || "cm"}</span>
-                  </div>
-                )}
-                {(product as any).length && (
-                  <div className="flex items-center justify-between py-3 border-b border-black/[.04]">
-                    <span className="text-sm text-secondary">Length</span>
-                    <span className="text-sm font-semibold text-primary">{(product as any).length} {(product as any).dimensionUnit || "cm"}</span>
-                  </div>
-                )}
-                {(product as any).depth && (
-                  <div className="flex items-center justify-between py-3 border-b border-black/[.04]">
-                    <span className="text-sm text-secondary">Depth</span>
-                    <span className="text-sm font-semibold text-primary">{(product as any).depth} {(product as any).dimensionUnit || "cm"}</span>
-                  </div>
-                )}
-                {(product as any).diameter && (
-                  <div className="flex items-center justify-between py-3 border-b border-black/[.04]">
-                    <span className="text-sm text-secondary">Diameter</span>
-                    <span className="text-sm font-semibold text-primary">{(product as any).diameter} {(product as any).dimensionUnit || "cm"}</span>
-                  </div>
-                )}
-                {(product as any).weight && (
-                  <div className="flex items-center justify-between py-3 border-b border-black/[.04]">
-                    <span className="text-sm text-secondary">Weight</span>
-                    <span className="text-sm font-semibold text-primary">{(product as any).weight} {(product as any).weightUnit || "kg"}</span>
-                  </div>
-                )}
-              </div>
-              <p className="text-xs text-text-muted mt-4 leading-relaxed">
-                All dimensions are approximate and measured in {(product as any).dimensionUnit || "cm"}. Actual size may vary slightly.
-              </p>
-            </div>
-          </div>
-        </>
-      )}
     </div>
   );
 }

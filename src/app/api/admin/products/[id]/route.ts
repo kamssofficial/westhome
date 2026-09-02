@@ -4,7 +4,7 @@ import db from "@/lib/db";
 import { requireAuthRole } from "@/lib/apiAuth";
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const authResult = await requireAuthRole(["ADMIN", "MANAGER", "PRODUCT_MANAGER", "STAFF"]);
+  const authResult = await requireAuthRole(["ADMIN", "MANAGER", "PRODUCT_MANAGER"]);
   if (authResult.error) return authResult.error;
 
   const { id } = await params;
@@ -29,7 +29,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const authResult = await requireAuthRole(["ADMIN", "MANAGER", "PRODUCT_MANAGER", "STAFF"]);
+  const authResult = await requireAuthRole(["ADMIN"]);
   if (authResult.error) return authResult.error;
 
   const { id } = await params;

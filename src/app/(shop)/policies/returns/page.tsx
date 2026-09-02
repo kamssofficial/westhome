@@ -34,7 +34,7 @@ export default function ReturnPolicyPage() {
           </p>
           <ul className="list-disc list-inside mt-2 space-y-1">
             <li>
-              Email: <a href="mailto:info@westhome.in" className="text-accent hover:underline">info@westhome.in</a>
+              Email: <a href="mailto:info@westhomebybmd.com" className="text-accent hover:underline">info@westhomebybmd.com</a>
             </li>
             <li>
               WhatsApp: <a href={`https://wa.me/${whatsappNumber.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">WhatsApp us</a>

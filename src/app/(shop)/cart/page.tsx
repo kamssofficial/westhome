@@ -54,7 +54,7 @@ export default function CartPage() {
     <div className="animate-fade-in">
       {/* Header */}
       <div className="container-shop pt-3 pb-2 flex items-center gap-3">
-        <Link href="/shop" aria-label="Back to shop" className="p-1 hover:bg-surface-muted rounded-lg transition-colors">
+        <Link href="/shop" className="p-1 hover:bg-surface-muted rounded-lg transition-colors">
           <ArrowLeft size={20} />
         </Link>
         <h1 className="text-xl font-semibold text-primary">My Cart</h1>
@@ -62,7 +62,7 @@ export default function CartPage() {
 
       {/* Items count */}
       <div className="container-shop pb-3">
-        <p className="text-sm text-secondary">{items.reduce((sum, item) => sum + item.quantity, 0)} Items</p>
+        <p className="text-sm text-secondary">{items.length} Items</p>
       </div>
 
       {/* Cart items */}
@@ -94,18 +94,13 @@ export default function CartPage() {
               <div className="flex items-center justify-between mt-2">
                 <div className="flex items-center border border-border rounded-lg overflow-hidden">
                   <button
-                    type="button"
-                    aria-label={`Decrease quantity of ${item.name}`}
                     onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                    disabled={item.quantity <= 1}
-                    className="w-7 h-7 flex items-center justify-center hover:bg-surface-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="w-7 h-7 flex items-center justify-center hover:bg-surface-muted transition-colors"
                   >
                     <Minus size={12} />
                   </button>
                   <span className="w-8 text-center text-xs font-semibold">{item.quantity}</span>
                   <button
-                    type="button"
-                    aria-label={`Increase quantity of ${item.name}`}
                     onClick={() => updateQuantity(item.id, item.quantity + 1)}
                     className="w-7 h-7 flex items-center justify-center hover:bg-surface-muted transition-colors"
                   >
@@ -113,8 +108,6 @@ export default function CartPage() {
                   </button>
                 </div>
                 <button
-                  type="button"
-                  aria-label={`Remove ${item.name} from cart`}
                   onClick={() => removeItem(item.id)}
                   className="p-1.5 text-text-muted hover:text-error transition-colors"
                 >
@@ -136,14 +129,14 @@ export default function CartPage() {
             </div>
           ) : (
             <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-700">
-              Add {formatPrice(amountNeeded)} more to get FREE delivery. <Link href="/policies/shipping" className="underline text-xs">Shipping policy</Link>
+              Add {formatPrice(amountNeeded)} more to get FREE delivery.
             </div>
           )}
 
           <h3 className="text-sm font-semibold text-primary mb-3">Order Summary</h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-secondary">Subtotal ({items.reduce((s, i) => s + i.quantity, 0)} items)</span>
+              <span className="text-secondary">Subtotal ({items.length} items)</span>
               <span className="font-medium">{formatPrice(subtotal)}</span>
             </div>
             <div className="flex justify-between">
@@ -155,7 +148,7 @@ export default function CartPage() {
               <span className="font-bold text-primary">{formatPrice(total)}</span>
             </div>
           </div>
-          <p className="text-[10px] text-text-muted mt-1">(Inclusive of all taxes) · <Link href="/policies/shipping" className="underline text-accent">Shipping & Returns</Link></p>
+          <p className="text-[10px] text-text-muted mt-1">(Inclusive of all taxes)</p>
         </div>
       </div>
 

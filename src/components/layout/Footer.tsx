@@ -149,8 +149,8 @@ export default function Footer({ className }: { className?: string }) {
               />
             </a>
             <div className="mt-5 flex items-start gap-2 text-sm text-white/55">
-              <MapPin size={15} className="mt-0.5 shrink-0" /> City Gate Building,
-              Karandakkad, Kasaragod — 671121
+              <MapPin size={15} className="mt-0.5 shrink-0" /> Store Location,
+              India
             </div>
           </div>
         </div>

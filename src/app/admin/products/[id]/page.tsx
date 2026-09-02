@@ -8,7 +8,6 @@ import Button from "@/components/ui/Button";
 import ImageUploader from "@/components/admin/ImageUploader";
 import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
-import ProductAnalytics from "@/components/admin/ProductAnalytics";
 
 export default function AdminProductEditPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -23,8 +22,6 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
     trackInventory: true, allowBackorder: false, categoryId: "", subcategoryId: "",
     isFeatured: false, isBestseller: false, isNewArrival: false, isComingSoon: false,
     status: "DRAFT", purchaseMethod: "BOTH",
-    // Frame size
-    frameSizeWidth: "", frameSizeHeight: "",
     // Physical dimensions
     height: "", width: "", length: "", depth: "", diameter: "",
     dimensionUnit: "cm", weight: "", weightUnit: "kg",
@@ -46,8 +43,6 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
   });
 
   const [images, setImages] = useState<any[]>([]);
-  const [variantAttributes, setVariantAttributes] = useState<{name: string; values: {value: string; colorCode?: string}[]}[]>([]);
-  const [variants, setVariants] = useState<{id?: string; name: string; price: string; salePrice: string; stockQuantity: string; sku: string; attributes: {attributeName: string; value: string; colorCode?: string}[]}[]>([]);
 
   useEffect(() => {
     Promise.all([
@@ -66,8 +61,6 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
           isFeatured: p.isFeatured ?? false, isBestseller: p.isBestseller ?? false,
           isNewArrival: p.isNewArrival ?? false, isComingSoon: p.isComingSoon ?? false,
           status: p.status || "DRAFT", purchaseMethod: p.purchaseMethod || "BOTH",
-          // Frame size
-          frameSizeWidth: p.frameSizeWidth ? String(p.frameSizeWidth) : "", frameSizeHeight: p.frameSizeHeight ? String(p.frameSizeHeight) : "",
           // Physical dimensions
           height: p.height ? String(p.height) : "", width: p.width ? String(p.width) : "",
           length: p.length ? String(p.length) : "", depth: p.depth ? String(p.depth) : "",
@@ -97,20 +90,6 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
           seoTitle: p.seoTitle || "", seoDescription: p.seoDescription || "",
         });
         // Load images
-        if (p.variantAttributes?.length) {
-          setVariantAttributes(p.variantAttributes.map((a: any) => ({
-            name: a.name,
-            values: a.values?.map((v: any) => ({ value: v.value, colorCode: v.colorCode })) || [],
-          })));
-        }
-        if (p.variants?.length) {
-          setVariants(p.variants.map((v: any) => ({
-            id: v.id, name: v.name,
-            price: String(v.price || ''), salePrice: v.salePrice ? String(v.salePrice) : '',
-            stockQuantity: String(v.stockQuantity || 0), sku: v.sku || '',
-            attributes: v.attributes?.map((a: any) => ({ attributeName: a.attributeName, value: a.value, colorCode: a.colorCode })) || [],
-          })));
-        }
         if (p.images?.length) {
           setImages(p.images.map((img: any) => ({
             id: img.id, url: img.url, alt: img.alt || "", isPrimary: img.isPrimary, position: img.position,
@@ -136,9 +115,6 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
           salePrice: form.salePrice ? parseFloat(form.salePrice) : null,
           stockQuantity: parseInt(form.stockQuantity) || 0,
           lowStockThreshold: parseInt(form.lowStockThreshold) || 5,
-          // Frame size
-          frameSizeWidth: form.frameSizeWidth ? parseFloat(form.frameSizeWidth) : null,
-          frameSizeHeight: form.frameSizeHeight ? parseFloat(form.frameSizeHeight) : null,
           // Physical dimensions
           height: form.height ? parseFloat(form.height) : null,
           width: form.width ? parseFloat(form.width) : null,
@@ -157,13 +133,10 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
           // Packaging
           packagingWeight: form.packagingWeight ? parseFloat(form.packagingWeight) : null,
           images: images,
-          variantAttributes: variantAttributes.map(a => ({ name: a.name, values: a.values })),
-          variants: variants.map(v => ({ name: v.name, price: parseFloat(v.price) || 0, salePrice: v.salePrice ? parseFloat(v.salePrice) : null, stockQuantity: parseInt(v.stockQuantity) || 0, sku: v.sku || null, attributes: v.attributes })),
         }),
       });
       if (res.ok) {
         toast.success("Product updated");
-        router.push("/admin/products");
       } else {
         toast.error("Failed to update");
       }
@@ -223,8 +196,8 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
         {/* Pricing & Stock */}
         <div className="bg-surface rounded-[1.35rem] border border-border p-5">
           <h2 className="font-semibold mb-4">Pricing & Stock</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div><label className="text-xs font-medium text-text-secondary mb-1 block">Regular Price (₹)</label><input type="number" step="0.01" value={form.regularPrice} onChange={(e) => setForm({ ...form, regularPrice: e.target.value })} className={inputClass} /></div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div><label className="text-xs font-medium text-text-secondary mb-1 block">Regular Price (₹) *</label><input type="number" step="0.01" value={form.regularPrice} onChange={(e) => setForm({ ...form, regularPrice: e.target.value })} className={inputClass} /></div>
             <div><label className="text-xs font-medium text-text-secondary mb-1 block">Sale Price (₹)</label><input type="number" step="0.01" value={form.salePrice} onChange={(e) => setForm({ ...form, salePrice: e.target.value })} className={inputClass} /></div>
             <div><label className="text-xs font-medium text-text-secondary mb-1 block">Stock</label><input type="number" value={form.stockQuantity} onChange={(e) => setForm({ ...form, stockQuantity: e.target.value })} className={inputClass} /></div>
           </div>
@@ -250,7 +223,7 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
           <h2 className="font-semibold mb-4">Status & Flags</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div><label className="text-xs font-medium text-text-secondary mb-1 block">Status</label><select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className={inputClass}><option value="DRAFT">Draft</option><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option><option value="ARCHIVED">Archived</option></select></div>
-            <div><label className="text-xs font-medium text-text-secondary mb-1 block">Purchase Method</label><select value={form.purchaseMethod} onChange={(e) => setForm({ ...form, purchaseMethod: e.target.value })} className={inputClass}><option value="BUY_ONLINE">Buy Online</option><option value="ENQUIRY">Enquiry Only</option><option value="BOTH">Both</option></select></div>
+            <div><label className="text-xs font-medium text-text-secondary mb-1 block">Purchase Method</label><select value={form.purchaseMethod} onChange={(e) => setForm({ ...form, purchaseMethod: e.target.value })} className={inputClass}><option value="BUY_ONLINE">Buy Online</option><option value="WHATSAPP">WhatsApp Only</option><option value="BOTH">Both</option></select></div>
           </div>
           <div className="flex flex-wrap items-center gap-4">
             {([["isFeatured", "Featured"], ["isBestseller", "Bestseller"], ["isNewArrival", "New Arrival"], ["isComingSoon", "Coming Soon"]] as const).map(([key, label]) => (
@@ -259,22 +232,6 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
                 {label}
               </label>
             ))}
-          </div>
-        </div>
-
-        {/* Frame Size */}
-        <div className="bg-surface rounded-[1.35rem] border border-border p-5">
-          <h2 className="font-semibold mb-4">Frame Size</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div><label className="text-xs font-medium text-text-secondary mb-1 block">Width (cm)</label><input type="number" step="1" value={form.frameSizeWidth} onChange={(e) => setForm({ ...form, frameSizeWidth: e.target.value })} className={inputClass} placeholder="e.g. 80" /></div>
-            <div><label className="text-xs font-medium text-text-secondary mb-1 block">Height (cm)</label><input type="number" step="1" value={form.frameSizeHeight} onChange={(e) => setForm({ ...form, frameSizeHeight: e.target.value })} className={inputClass} placeholder="e.g. 120" /></div>
-            <div className="flex items-end">
-              {form.frameSizeWidth && form.frameSizeHeight && (
-                <div className="px-3 py-2 bg-white rounded-xl border border-border text-sm font-medium">
-                  Preview: {form.frameSizeWidth} × {form.frameSizeHeight} cm
-                </div>
-              )}
-            </div>
           </div>
         </div>
 
@@ -354,71 +311,7 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
           )}
         </div>
 
-        {/* Variants */}
-        <div className="bg-surface rounded-[1.35rem] border border-border p-5">
-          <h2 className="font-semibold mb-4">Size & Color Variants</h2>
-          <p className="text-xs text-text-muted mb-4">Define attributes (Color, Size) and create variants with individual prices.</p>
-          <div className="space-y-3 mb-4">
-            {variantAttributes.map((attr, ai) => (
-              <div key={ai} className="p-3 bg-surface-muted rounded-xl">
-                <div className="flex items-center gap-2 mb-2">
-                  <input type="text" value={attr.name} onChange={(e) => { const a = [...variantAttributes]; a[ai].name = e.target.value; setVariantAttributes(a); }}
-                    className="flex-1 px-3 py-1.5 bg-white border border-border rounded-lg text-xs font-medium" placeholder="Attribute (e.g. Color)" />
-                  <button onClick={() => setVariantAttributes(variantAttributes.filter((_, i) => i !== ai))} className="p-1.5 text-error hover:bg-error/10 rounded-lg text-xs">Remove</button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {attr.values.map((val, vi) => (
-                    <div key={vi} className="flex items-center gap-1 bg-white border border-border rounded-lg px-2 py-1">
-                      {attr.name.toLowerCase() === "color" && val.colorCode && <div className="w-4 h-4 rounded-full border" style={{ backgroundColor: val.colorCode }} />}
-                      <span className="text-xs">{val.value}</span>
-                      <button onClick={() => { const a = [...variantAttributes]; a[ai].values = a[ai].values.filter((_, j) => j !== vi); setVariantAttributes(a); }} className="text-text-muted hover:text-error text-xs ml-1">×</button>
-                    </div>
-                  ))}
-                  <input type="text" placeholder="Add value" className="px-2 py-1 bg-white border border-border rounded-lg text-xs w-20"
-                    onKeyDown={(e) => { if (e.key === "Enter" && (e.target as HTMLInputElement).value.trim()) {
-                      const a = [...variantAttributes]; a[ai].values = [...a[ai].values, { value: (e.target as HTMLInputElement).value.trim(), colorCode: attr.name.toLowerCase() === "color" ? "#888888" : undefined }]; setVariantAttributes(a); (e.target as HTMLInputElement).value = "";
-                    }}} />
-                </div>
-              </div>
-            ))}
-            <button onClick={() => setVariantAttributes([...variantAttributes, { name: "", values: [] }])} className="text-xs text-accent hover:underline">+ Add Attribute (Color, Size, etc.)</button>
-          </div>
-          {variants.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-text-muted mb-2">Variants ({variants.length})</p>
-              {variants.map((v, vi) => (
-                <div key={vi} className="flex items-center gap-2 p-3 bg-surface-muted rounded-xl flex-wrap">
-                  <span className="text-xs font-medium text-text-secondary min-w-[100px]">{v.name || "Variant " + (vi + 1)}</span>
-                  <input type="number" step="0.01" value={v.price} onChange={(e) => { const vs = [...variants]; vs[vi].price = e.target.value; setVariants(vs); }}
-                    className="w-24 px-2 py-1 bg-white border border-border rounded-lg text-xs" placeholder="Price" />
-                  <input type="number" step="0.01" value={v.salePrice} onChange={(e) => { const vs = [...variants]; vs[vi].salePrice = e.target.value; setVariants(vs); }}
-                    className="w-24 px-2 py-1 bg-white border border-border rounded-lg text-xs" placeholder="Sale Price" />
-                  <input type="number" value={v.stockQuantity} onChange={(e) => { const vs = [...variants]; vs[vi].stockQuantity = e.target.value; setVariants(vs); }}
-                    className="w-20 px-2 py-1 bg-white border border-border rounded-lg text-xs" placeholder="Stock" />
-                  <button onClick={() => setVariants(variants.filter((_, i) => i !== vi))} className="p-1 text-error hover:bg-error/10 rounded text-xs">×</button>
-                </div>
-              ))}
-            </div>
-          )}
-          {variantAttributes.length > 0 && variantAttributes.some(a => a.values.length > 0) && (
-            <button onClick={() => {
-              const combos: any[] = [];
-              const attrArrays = variantAttributes.filter(a => a.values.length > 0);
-              const gen = (idx: number, cur: any[]) => {
-                if (idx === attrArrays.length) {
-                  const name = cur.map(a => a.value).join(" / ");
-                  const existing = variants.find(v => v.name === name);
-                  combos.push(existing || { name, price: form.salePrice || "", salePrice: "", stockQuantity: "0", sku: "", attributes: cur });
-                  return;
-                }
-                for (const val of attrArrays[idx].values) { gen(idx + 1, [...cur, { attributeName: attrArrays[idx].name, value: val.value, colorCode: val.colorCode }]); }
-              };
-              gen(0, []);
-              setVariants(combos);
-            }} className="mt-3 text-xs text-accent hover:underline">Generate Variants from Attributes</button>
-          )}
-        </div>
-{/* SEO */}
+        {/* SEO */}
         <div className="bg-surface rounded-[1.35rem] border border-border p-5">
           <h2 className="font-semibold mb-4">SEO</h2>
           <div className="space-y-4">
@@ -426,10 +319,6 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
             <div><label className="text-xs font-medium text-text-secondary mb-1 block">Meta Description</label><textarea value={form.seoDescription} onChange={(e) => setForm({ ...form, seoDescription: e.target.value })} className={cn(inputClass, "resize-y")} rows={2} maxLength={160} /></div>
           </div>
         </div>
-
-        
-        {/* Product Analytics */}
-        <ProductAnalytics productId={id} />
 
         <Button onClick={handleSave} loading={saving} size="lg"><Save size={16} /> Save Changes</Button>
       </div>

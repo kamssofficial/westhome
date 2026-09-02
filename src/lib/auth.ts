@@ -5,14 +5,19 @@ import db from "./db";
 
 declare module "next-auth" {
   interface Session {
-    user: { id: string; email: string; name: string; role: string; };
+    user: {
+      id: string;
+      email: string;
+      name: string;
+      role: string;
+    };
   }
-  interface User { role: string; }
+  interface User {
+    role: string;
+  }
 }
 
-function normalizeEmail(value: unknown): string {
-  return typeof value === "string" ? value.trim().toLowerCase() : "";
-}
+
 
 export const authOptions: NextAuthConfig = {
   providers: [
@@ -23,22 +28,44 @@ export const authOptions: NextAuthConfig = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        const email = normalizeEmail(credentials?.email);
-        const password = typeof credentials?.password === "string" ? credentials.password : "";
-        if (!email || !password) return null;
+        if (!credentials?.email || !credentials?.password) {
+          return null;
+        }
 
-        const user = await db.user.findUnique({ where: { email } });
-        if (!user || user.isActive === false) return null;
-        if (!user.passwordHash) return null;
+        const user = await db.user.findUnique({
+          where: { email: credentials.email as string },
+        });
 
-        const isValid = await bcrypt.compare(password, user.passwordHash);
-        if (!isValid) return null;
+        if (!user) {
+          return null;
+        }
+        // isActive may be undefined if field wasn't migrated — treat undefined as true
+        if (user.isActive === false) {
+          return null;
+        }
 
-        return { id: user.id, email: user.email, name: user.name || "", role: user.role };
+        const isValid = await bcrypt.compare(
+          credentials.password as string,
+          user.passwordHash
+        );
+
+        if (!isValid) {
+          return null;
+        }
+
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name || "",
+          role: user.role,
+        };
       },
     }),
   ],
-  session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 },
+  session: {
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
@@ -50,26 +77,40 @@ export const authOptions: NextAuthConfig = {
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).role = token.role || "CUSTOMER";
+        (session.user as any).role = token.role;
         (session.user as any).id = token.id;
         (session.user as any).permissions = token.permissions || "[]";
       }
       return session;
     },
     async redirect({ url, baseUrl }) {
+      // Allow relative callback URLs
       if (url.startsWith("/")) return url;
+      // Allow redirects to the same origin
       try {
-        const parsed = new URL(url);
-        if (parsed.origin === baseUrl) return parsed.pathname + parsed.search;
+        const urlObj = new URL(url);
+        if (urlObj.origin === baseUrl) return urlObj.pathname;
       } catch {}
       return baseUrl;
     },
   },
-  pages: { signIn: "/login", error: "/login" },
+  pages: {
+    signIn: "/login",
+    error: "/login",
+  },
   cookies: {
-    csrfToken: { name: "authjs.csrf-token", options: { httpOnly: true, sameSite: "lax", path: "/", secure: true } },
-    sessionToken: { name: "authjs.session-token", options: { httpOnly: true, sameSite: "lax", path: "/", secure: true, maxAge: 30 * 24 * 60 * 60 } },
-    callbackUrl: { name: "authjs.callback-url", options: { httpOnly: true, sameSite: "lax", path: "/", secure: true } },
+    csrfToken: {
+      name: "authjs.csrf-token",
+      options: { httpOnly: true, sameSite: "lax", path: "/", secure: true },
+    },
+    sessionToken: {
+      name: "authjs.session-token",
+      options: { httpOnly: true, sameSite: "lax", path: "/", secure: true, maxAge: 30 * 24 * 60 * 60 },
+    },
+    callbackUrl: {
+      name: "authjs.callback-url",
+      options: { httpOnly: true, sameSite: "lax", path: "/", secure: true },
+    },
   },
   trustHost: true,
   secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
@@ -77,23 +118,38 @@ export const authOptions: NextAuthConfig = {
 
 export const { handlers, signIn, signOut, auth } = NextAuth(authOptions);
 
+// Helper functions
 export async function getCurrentUser() {
   const session = await auth();
   if (!session?.user?.id) return null;
-  return db.user.findUnique({ where: { id: (session.user as any).id }, select: { id: true, email: true, name: true, role: true, phone: true, createdAt: true } });
+
+  const user = await db.user.findUnique({
+    where: { id: (session.user as any).id },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      role: true,
+      phone: true,
+      createdAt: true,
+    },
+  });
+
+  return user;
 }
 
 export async function requireAuth() {
   const session = await auth();
-  const userId = (session?.user as { id?: string } | undefined)?.id;
-  if (!userId) throw new Error("Unauthorized");
-  const user = await db.user.findUnique({ where: { id: userId }, select: { isActive: true } });
-  if (!user?.isActive) throw new Error("Unauthorized");
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized");
+  }
   return session;
 }
 
 export async function requireAdmin() {
   const session = await auth();
-  if (!session?.user || (session.user as any).role !== "ADMIN") throw new Error("Unauthorized: Admin access required");
+  if (!session?.user || (session.user as any).role !== "ADMIN") {
+    throw new Error("Unauthorized: Admin access required");
+  }
   return session;
 }

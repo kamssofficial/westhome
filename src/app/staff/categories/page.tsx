@@ -16,7 +16,7 @@ export default function StaffCategoriesPage() {
   const [uploadingImage, setUploadingImage] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
-  const uploadTargetRef = useRef<string | null>(null);
+  const [uploadTarget, setUploadTarget] = useState<string | null>(null);
 
   const fetchCategories = useCallback(async () => {
     try {
@@ -33,62 +33,43 @@ export default function StaffCategoriesPage() {
     try {
       const fd = new FormData(); fd.append("file", file); fd.append("folder", "categories");
       const uploadRes = await fetch("/api/upload", { method: "POST", body: fd });
-      if (!uploadRes.ok) {
-        const err = await uploadRes.json().catch(() => ({ error: "Upload failed" }));
-        setUploadSuccess("error: " + (err.error || "Upload failed"));
-        setTimeout(() => setUploadSuccess(null), 3000);
-        return;
-      }
-      const { url } = await uploadRes.json();
-      let saved = false;
-      try {
-        const imgRes = await fetch("/api/categories/" + categoryId + "/images", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url, isPrimary: true, alt: file.name }),
-        });
-        saved = imgRes.ok;
+      if (uploadRes.ok) {
+        const { url } = await uploadRes.json();
+        // Try CategoryImage API first, fall back to updating category image field
+        let saved = false;
+        try {
+          const imgRes = await fetch("/api/categories/" + categoryId + "/images", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url, isPrimary: true, alt: file.name }),
+          });
+          saved = imgRes.ok;
+        } catch {}
         if (!saved) {
-          const imgErr = await imgRes.json().catch(() => ({}));
-          console.error("CategoryImage API failed:", imgErr);
+          await fetch("/api/categories/" + categoryId, {
+            method: "PUT", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ image: url }),
+          });
         }
-      } catch (e) { console.error("CategoryImage API error:", e); }
-      if (!saved) {
-        const putRes = await fetch("/api/categories/" + categoryId, {
-          method: "PUT", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ image: url }),
-        });
-        if (!putRes.ok) {
-          setUploadSuccess("error: Image saved but failed to update category");
-          setTimeout(() => setUploadSuccess(null), 3000);
-          return;
-        }
+        fetchCategories();
       }
-      setUploadSuccess("Image uploaded successfully");
-      setTimeout(() => setUploadSuccess(null), 3000);
-      await fetchCategories();
-    } catch (e) {
-      console.error(e);
-      setUploadSuccess("error: Upload failed — please try again");
-      setTimeout(() => setUploadSuccess(null), 3000);
-    } finally { setUploadingImage(null); }
+    } catch (e) { console.error(e); }
+    finally { setUploadingImage(null); }
   };
 
   const triggerImageUpload = (categoryId: string) => {
-    uploadTargetRef.current = categoryId;
+    setUploadTarget(categoryId);
     imageInputRef.current?.click();
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    const target = uploadTargetRef.current;
-    if (file && target) { handleImageUpload(target, file); }
-    uploadTargetRef.current = null;
+    if (file && uploadTarget) { handleImageUpload(uploadTarget, file); }
     if (imageInputRef.current) imageInputRef.current.value = "";
   };
 
   return (
     <div className="space-y-5">
-      <input ref={imageInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFileChange} className="absolute w-px h-px overflow-hidden" style={{ clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }} />
+      <input ref={imageInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFileChange} className="hidden" />
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">

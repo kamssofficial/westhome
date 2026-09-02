@@ -365,7 +365,7 @@ function renderReceiptContent(
     /* 11 */ (
       <div key="meta2" className="flex justify-between text-[9px]">
         <span className="opacity-50">Paid with</span>
-        <span className="font-medium">UPI Payment</span>
+        <span className="font-medium">Razorpay UPI</span>
       </div>
     ),
     /* 12 */ (

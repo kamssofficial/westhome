@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import WestHomeLogo from "@/components/ui/WestHomeLogo";
 import { Search, ShoppingBag, Menu, X, User, ArrowUpRight } from "lucide-react";
@@ -13,8 +13,7 @@ const BASE_NAV = [
   { label: "About Us", href: "/about" },
 ];
 
-interface NavSub { label: string; href: string; }
-interface NavCat { label: string; href: string; children: NavSub[]; }
+interface NavCat { label: string; href: string; }
 
 export default function Header() {
   const pathname = usePathname();
@@ -22,22 +21,15 @@ export default function Header() {
   const itemCount = useCartStore((state) => state.getItemCount());
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [collectionsOpen, setCollectionsOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [mounted, setMounted] = useState(false);
   const [navCategories, setNavCategories] = useState<NavCat[]>([]);
-  const mobileMenuCloseRef = useRef<HTMLButtonElement>(null);
-  const mobileMenuPreviousFocusRef = useRef<HTMLElement | null>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     fetch("/api/categories")
       .then(r => r.json())
       .then(d => {
-        if (d.categories) setNavCategories(d.categories.map((c: any) => ({ label: c.name, href: "/collections/" + c.slug, children: (c.subcategories || []).map((sub: any) => ({ label: sub.name, href: "/collections/" + c.slug + "?sub=" + sub.slug })) })));
+        if (d.categories) setNavCategories(d.categories.map((c: any) => ({ label: c.name, href: "/collections/" + c.slug })));
       })
       .catch(() => {});
   }, []);
@@ -48,56 +40,6 @@ export default function Header() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
-
-  useEffect(() => {
-    if (!mobileMenuOpen) return;
-    mobileMenuPreviousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const focusTimer = window.setTimeout(() => mobileMenuCloseRef.current?.focus(), 0);
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        setMobileMenuOpen(false);
-        return;
-      }
-      if (event.key !== "Tab") return;
-      const dialog = document.getElementById("mobile-navigation");
-      if (!dialog) return;
-      const focusable = Array.from(dialog.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], input:not([disabled]), [tabindex]:not([tabindex="-1"])'));
-      if (!focusable.length) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.clearTimeout(focusTimer);
-      document.removeEventListener("keydown", handleKeyDown);
-      mobileMenuPreviousFocusRef.current?.focus();
-      mobileMenuPreviousFocusRef.current = null;
-    };
-  }, [mobileMenuOpen]);
-
-  useEffect(() => {
-    if (!searchOpen) return;
-    const focusTimer = window.setTimeout(() => searchInputRef.current?.focus(), 0);
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        setSearchOpen(false);
-      }
-    };
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.clearTimeout(focusTimer);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [searchOpen]);
 
   const handleSearch = (event: React.FormEvent) => {
     event.preventDefault();
@@ -168,9 +110,7 @@ export default function Header() {
                   "flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-foreground/[.06] active:scale-95 touch-target",
                   searchOpen && "bg-foreground/[.06]"
                 )}
-                aria-label={searchOpen ? "Close search" : "Search"}
-                aria-expanded={searchOpen}
-                aria-controls="site-search-panel"
+                aria-label="Search"
               >
                 <Search size={19} strokeWidth={1.8} />
               </button>
@@ -184,19 +124,18 @@ export default function Header() {
               <Link
                 href="/cart"
                 className="relative flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-foreground/[.06] active:scale-95"
-                aria-label={`Cart with ${mounted ? itemCount : 0} items`}
+                aria-label={`Cart with ${itemCount} items`}
               >
                 <ShoppingBag size={19} strokeWidth={1.8} />
-                {mounted && itemCount > 0 && (
+                {itemCount > 0 && (
                   <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[9px] font-bold text-white">
-                    {mounted ? (itemCount > 9 ? "9+" : itemCount) : ""}
+                    {itemCount > 9 ? "9+" : itemCount}
                   </span>
                 )}
               </Link>
             </div>
           </div>
           <div
-            id="site-search-panel"
             className={cn(
               "grid transition-[grid-template-rows,opacity] duration-[400ms]",
               searchOpen
@@ -219,7 +158,6 @@ export default function Header() {
                     Search the collection
                   </label>
                   <input
-                    ref={searchInputRef}
                     id="site-search"
                     name="search"
                     type="search"
@@ -265,7 +203,6 @@ export default function Header() {
         <aside
           role="dialog"
           aria-modal="true"
-          id="mobile-navigation"
           aria-label="Mobile navigation"
           className={cn(
             "material absolute bottom-3 left-3 top-3 flex w-[min(86vw,22rem)] flex-col overscroll-contain rounded-[1.6rem] p-5 transition-transform duration-500 ease-[cubic-bezier(.23,.88,.26,.92)]",
@@ -281,7 +218,6 @@ export default function Header() {
               />
             <button
               type="button"
-              ref={mobileMenuCloseRef}
               onClick={() => setMobileMenuOpen(false)}
               className="flex h-10 w-10 items-center justify-center rounded-full bg-foreground/[.06] active:scale-95"
               aria-label="Close menu"
@@ -294,88 +230,22 @@ export default function Header() {
               Explore WESTHOME
             </p>
             <nav className="space-y-1" aria-label="Mobile navigation">
-              {/* Home */}
-              <Link
-                href="/"
-                onClick={() => setMobileMenuOpen(false)}
-                className={cn(
-                  "flex items-center justify-between rounded-2xl px-4 py-3.5 text-[15px] font-semibold transition-colors",
-                  isActive("/") ? "bg-foreground text-white" : "text-foreground hover:bg-foreground/[.06]"
-                )}
-              >
-                Home
-                {isActive("/") && <ArrowUpRight size={15} />}
-              </Link>
-
-              {/* Collections — expandable */}
-              <div>
-                <button
-                  type="button"
-                  aria-expanded={collectionsOpen}
-                  aria-controls="mobile-collections-list"
-                  onClick={() => setCollectionsOpen(!collectionsOpen)}
+              {[...BASE_NAV, ...navCategories].map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMobileMenuOpen(false)}
                   className={cn(
-                    "flex w-full items-center justify-between rounded-2xl px-4 py-3.5 text-[15px] font-semibold transition-colors",
-                    "text-foreground hover:bg-foreground/[.06]"
+                    "flex items-center justify-between rounded-2xl px-4 py-3.5 text-[15px] font-semibold transition-colors",
+                    isActive(link.href)
+                      ? "bg-foreground text-white"
+                      : "text-foreground hover:bg-foreground/[.06]"
                   )}
                 >
-                  Collections
-                  <svg className={cn("h-4 w-4 transition-transform duration-200", collectionsOpen && "rotate-180")} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
-                </button>
-                {collectionsOpen && navCategories.length > 0 && (
-                  <div id="mobile-collections-list" className="ml-4 space-y-0.5 border-l-2 border-foreground/[.08] pl-2 max-h-[60vh] overflow-y-auto">
-                    {navCategories.map((cat) => (
-                      <div key={cat.href}>
-                        <Link
-                          href={cat.href}
-                          onClick={() => setMobileMenuOpen(false)}
-                          className={cn(
-                            "flex items-center justify-between rounded-xl px-3 py-2.5 text-[14px] font-medium transition-colors",
-                            isActive(cat.href)
-                              ? "bg-foreground text-white"
-                              : "text-foreground/70 hover:bg-foreground/[.06] hover:text-foreground"
-                          )}
-                        >
-                          {cat.label}
-                          {isActive(cat.href) && <ArrowUpRight size={13} />}
-                        </Link>
-                        {cat.children && cat.children.length > 0 && (
-                          <div className="ml-4 space-y-0.5 border-l-2 border-foreground/[.06] pl-2">
-                            {cat.children.map((sub) => (
-                              <Link
-                                key={sub.href}
-                                href={sub.href}
-                                onClick={() => setMobileMenuOpen(false)}
-                                className={cn(
-                                  "flex items-center justify-between rounded-lg px-3 py-2 text-[13px] font-medium transition-colors",
-                                  isActive(sub.href)
-                                    ? "bg-foreground text-white"
-                                    : "text-foreground/50 hover:bg-foreground/[.06] hover:text-foreground"
-                                )}
-                              >
-                                {sub.label}
-                              </Link>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* About Us */}
-              <Link
-                href="/about"
-                onClick={() => setMobileMenuOpen(false)}
-                className={cn(
-                  "flex items-center justify-between rounded-2xl px-4 py-3.5 text-[15px] font-semibold transition-colors",
-                  isActive("/about") ? "bg-foreground text-white" : "text-foreground hover:bg-foreground/[.06]"
-                )}
-              >
-                About Us
-                {isActive("/about") && <ArrowUpRight size={15} />}
-              </Link>
+                  {link.label}
+                  {isActive(link.href) && <ArrowUpRight size={15} />}
+                </Link>
+              ))}
             </nav>
           </div>
           <div className="space-y-1 border-t border-foreground/[.08] pt-4">

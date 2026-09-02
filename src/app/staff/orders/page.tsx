@@ -7,7 +7,6 @@ import { cn } from "@/lib/utils";
 interface Order { id: string; orderNumber: string; customerName: string; status: string; total: number; createdAt: string; items: { productName: string; quantity: number }[]; }
 
 const STATUS_COLORS: Record<string, string> = {
-  NEW: "bg-cyan-50 text-cyan-700 border border-cyan-200",
   PENDING: "bg-amber-50 text-amber-700 border border-amber-200",
   CONFIRMED: "bg-blue-50 text-blue-700 border border-blue-200",
   PROCESSING: "bg-indigo-50 text-indigo-700 border border-indigo-200",
@@ -67,7 +66,6 @@ export default function StaffOrdersPage() {
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
             className="px-3 py-2.5 pr-8 bg-white border border-black/[.08] rounded-xl text-sm focus:outline-none appearance-none text-[#1a1917]">
             <option value="">All Status</option>
-            <option value="NEW">New</option>
             <option value="PENDING">Pending</option>
             <option value="CONFIRMED">Confirmed</option>
             <option value="PROCESSING">Processing</option>
@@ -115,9 +113,8 @@ export default function StaffOrdersPage() {
                     <td className="px-4 py-3">
                       <div className="relative">
                         <select value={order.status} onChange={(e) => updateStatus(order.id, e.target.value)}
-                          disabled={updatingId === order.id || order.status === "CANCELLED" || order.status === "DELIVERED"}
+                          disabled={updatingId === order.id}
                           className="px-2 py-1 pr-6 border border-black/[.08] rounded-lg text-xs focus:outline-none appearance-none bg-white text-[#1a1917]">
-                          <option value="NEW">New</option>
                           <option value="PENDING">Pending</option>
                           <option value="CONFIRMED">Confirmed</option>
                           <option value="PROCESSING">Processing</option>

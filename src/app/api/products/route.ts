@@ -1,5 +1,4 @@
 import { notifyProductUpdated } from "@/lib/notifications";
-import { cache, CACHE_TTL, MemoryCache } from "@/lib/cache";
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { requireAuthRole } from "@/lib/apiAuth";
@@ -10,7 +9,6 @@ export async function GET(request: NextRequest) {
     const query = searchParams.get("q") || searchParams.get("query") || "";
     const category = searchParams.get("category") || "";
     const subcategory = searchParams.get("subcategory") || "";
-    const type = searchParams.get("type") || "";
     const sort = searchParams.get("sort") || "recommended";
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "24");
@@ -20,65 +18,14 @@ export async function GET(request: NextRequest) {
     const lite = searchParams.get("lite") === "true";
     const idsParam = searchParams.get("ids");
 
-    // Generate cache key
-    const cacheKey = MemoryCache.generateKey("products", {
-      query, category, subcategory, type, sort, page, limit,
-      featured, newArrivals, bestsellers, lite, idsParam,
-      status: searchParams.get("status"),
-      all: searchParams.get("all"),
-      minPrice: searchParams.get("minPrice"),
-      maxPrice: searchParams.get("maxPrice"),
-      material: searchParams.get("material"),
-      color: searchParams.get("color"),
-      inStock: searchParams.get("inStock"),
-      onSale: searchParams.get("onSale"),
-      style: searchParams.get("style"),
-      pattern: searchParams.get("pattern"),
-      shape: searchParams.get("shape"),
-      finish: searchParams.get("finish"),
-      isNewArrival: searchParams.get("isNewArrival"),
-      isFeatured: searchParams.get("isFeatured"),
-      minRating: searchParams.get("minRating"),
-      frameSize: searchParams.get("frameSize"),
-    });
-
-    // Check cache first
-    const cached = cache.get(cacheKey);
-    if (cached) {
-      return NextResponse.json(cached);
-    }
-
     // Admin/staff can see all statuses; storefront only ACTIVE
     const statusFilter = searchParams.get("status");
     const isAdminView = !!(statusFilter || searchParams.get("all"));
     const where: any = isAdminView ? {} : { isActive: true, status: "ACTIVE" };
     if (statusFilter) where.status = statusFilter;
-    if (query) {
-      // Normalize frame size queries: "80x120", "80 x 120", "80×120" all match
-      const normalizedQuery = query.replace(/\s*[x×X]\s*/g, 'x');
-      const isFrameSizeQuery = /^\d+x\d+$/i.test(normalizedQuery);
-      if (isFrameSizeQuery) {
-        const [w, h] = normalizedQuery.toLowerCase().split('x').map(Number);
-        where.OR = [
-          { name: { contains: query, mode: "insensitive" } },
-          { description: { contains: query, mode: "insensitive" } },
-          { shortDescription: { contains: query, mode: "insensitive" } },
-          { material: { contains: query, mode: "insensitive" } },
-          { frameSizeWidth: w, frameSizeHeight: h },
-          { frameSizeWidth: h, frameSizeHeight: w },
-        ];
-      } else {
-        where.OR = [
-          { name: { contains: query, mode: "insensitive" } },
-          { description: { contains: query, mode: "insensitive" } },
-          { shortDescription: { contains: query, mode: "insensitive" } },
-          { material: { contains: query, mode: "insensitive" } },
-        ];
-      }
-    }
+    if (query) { where.OR = [{ name: { contains: query, mode: "insensitive" } }, { description: { contains: query, mode: "insensitive" } }, { shortDescription: { contains: query, mode: "insensitive" } }, { material: { contains: query, mode: "insensitive" } }]; }
     if (category) { where.category = { slug: category }; }
     if (subcategory) { where.subcategory = { slug: subcategory }; }
-    if (type) { where.subcategory = { slug: type }; }
     if (featured) where.isFeatured = true;
     if (newArrivals) where.isNewArrival = true;
     if (bestsellers) where.isBestseller = true;
@@ -124,37 +71,19 @@ export async function GET(request: NextRequest) {
     if (maxWidth) where.width = { ...where.width, lte: parseFloat(maxWidth) };
     if (minHeight) where.height = { ...where.height, gte: parseFloat(minHeight) };
     if (maxHeight) where.height = { ...where.height, lte: parseFloat(maxHeight) };
-    // Exact length match (for carpet filter)
-    const exactLength = searchParams.get("length");
-    if (exactLength) where.length = parseFloat(exactLength);
     if (minLength) where.length = { ...where.length, gte: parseFloat(minLength) };
     if (maxLength) where.length = { ...where.length, lte: parseFloat(maxLength) };
     if (minDiameter) where.diameter = { ...where.diameter, gte: parseFloat(minDiameter) };
     if (maxDiameter) where.diameter = { ...where.diameter, lte: parseFloat(maxDiameter) };
-    // Frame size filter (format: "WxH" e.g. "80x120")
-    const frameSize = searchParams.get("frameSize");
-    if (frameSize) {
-      const normalized = frameSize.replace(/\s*[x×X]\s*/g, 'x');
-      const parts = normalized.split('x').map(Number);
-      if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-        where.AND = [
-          ...(where.AND || []),
-          { OR: [
-            { frameSizeWidth: parts[0], frameSizeHeight: parts[1] },
-            { frameSizeWidth: parts[1], frameSizeHeight: parts[0] },
-          ]},
-        ];
-      }
-    }
 
-    let orderBy: any = [{ createdAt: "desc" }, { id: "asc" }];
+    let orderBy: any = { createdAt: "desc" };
     switch (sort) {
-      case "price_asc": orderBy = [{ regularPrice: "asc" }, { id: "asc" }]; break;
-      case "name_asc": orderBy = [{ name: "asc" }, { id: "asc" }]; break;
-      case "name_desc": orderBy = [{ name: "desc" }, { id: "asc" }]; break;
-      case "price_desc": orderBy = [{ regularPrice: "desc" }, { id: "asc" }]; break;
-      case "bestselling": orderBy = { isBestseller: "desc", orderItems: { _count: "desc" }, id: "asc" }; break;
-      default: orderBy = [{ isFeatured: "desc" }, { createdAt: "desc" }, { id: "asc" }]; break;
+      case "price_asc": orderBy = { regularPrice: "asc" }; break;
+      case "name_asc": orderBy = { name: "asc" }; break;
+      case "name_desc": orderBy = { name: "desc" }; break;
+      case "price_desc": orderBy = { regularPrice: "desc" }; break;
+      case "bestselling": orderBy = { orderItems: { _count: "desc" } }; break;
+      default: orderBy = [{ isFeatured: "desc" }, { createdAt: "desc" }]; break;
     }
 
     // Rating filter - applied after fetch since it's computed
@@ -169,14 +98,14 @@ export async function GET(request: NextRequest) {
               subcategory: { select: { id: true, name: true, slug: true } },
               images: { orderBy: [{ isPrimary: "desc" }, { position: "asc" }], take: 1 },
               variants: { where: { isActive: true }, orderBy: { position: "asc" }, take: 1, include: { images: { orderBy: { position: "asc" }, take: 1 } } },
-              _count: { select: { reviews: { where: { status: "APPROVED" } } } },
+              reviews: { where: { status: "APPROVED" }, select: { rating: true } },
             }
           : {
               category: { select: { id: true, name: true, slug: true } },
               subcategory: { select: { id: true, name: true, slug: true } },
-              images: { orderBy: [{ isPrimary: "desc" }, { position: "asc" }], take: 5 },
-              variants: { where: { isActive: true }, orderBy: { position: "asc" }, include: { images: { orderBy: { position: "asc" }, take: 1 }, attributes: { include: { variantAttribute: true } } } },
-              _count: { select: { reviews: { where: { status: "APPROVED" } } } },
+              images: { orderBy: [{ isPrimary: "desc" }, { position: "asc" }] },
+              variants: { where: { isActive: true }, orderBy: { position: "asc" }, include: { images: { orderBy: { position: "asc" } }, attributes: { include: { variantAttribute: true } } } },
+              reviews: { where: { status: "APPROVED" }, select: { rating: true } },
               tags: true,
             },
         orderBy, skip: (page - 1) * limit, take: limit,
@@ -187,8 +116,8 @@ export async function GET(request: NextRequest) {
       ...product,
       regularPrice: Number(product.regularPrice),
       salePrice: product.salePrice ? Number(product.salePrice) : null,
-      rating: product.averageRating || null,
-      reviewCount: product.reviewCount || 0,
+      rating: product.reviews.length > 0 ? product.reviews.reduce((s, r) => s + r.rating, 0) / product.reviews.length : null,
+      reviewCount: product.reviews.length,
       tags: (product as any).tags?.map((t: any) => t.tag) || [],
       variants: product.variants.map((v) => ({ ...v, price: Number(v.price), salePrice: v.salePrice ? Number(v.salePrice) : null, attributes: (v as any).attributes?.map((a: any) => ({ attributeId: a.variantAttributeId, attributeName: a.variantAttribute?.name, value: a.value, colorCode: a.colorCode })) || [] })),
       // Physical attributes
@@ -216,8 +145,6 @@ export async function GET(request: NextRequest) {
       packagingDimensions: product.packagingDimensions,
       packagingWeight: product.packagingWeight ? Number(product.packagingWeight) : null,
       includedItems: product.includedItems,
-      frameSizeWidth: product.frameSizeWidth ? Number(product.frameSizeWidth) : null,
-      frameSizeHeight: product.frameSizeHeight ? Number(product.frameSizeHeight) : null,
       allowCustomSize: product.allowCustomSize,
       customSizeUnit: product.customSizeUnit,
       customSizeMinWidth: product.customSizeMinWidth ? Number(product.customSizeMinWidth) : null,
@@ -229,9 +156,6 @@ export async function GET(request: NextRequest) {
       customSizePricingMethod: product.customSizePricingMethod,
       customSizeRequiresApproval: product.customSizeRequiresApproval,
     }));
-    
-    // Cache the result
-    cache.set(cacheKey, { products: transformed, total, page, totalPages: Math.ceil(total / limit) }, CACHE_TTL.PRODUCTS_LIST);
     return NextResponse.json({ products: transformed, total, page, totalPages: Math.ceil(total / limit) });
   } catch (error) {
     return NextResponse.json({ products: [], total: 0, page: 1, totalPages: 0 });
@@ -239,24 +163,12 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const authResult = await requireAuthRole(["ADMIN", "MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER", "STAFF"]);
+  const authResult = await requireAuthRole(["ADMIN", "MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER"]);
   if (authResult.error) return authResult.error;
 
   try {
     const body = await request.json();
-    
-    // F-01: Validate pricing
-    // At least one price must be provided
-    if ((!body.regularPrice || Number(body.regularPrice) <= 0) && (!body.salePrice || Number(body.salePrice) <= 0)) {
-      return NextResponse.json({ error: "At least one price must be greater than zero" }, { status: 400 });
-    }
-    // If both prices are provided, sale must be less than regular
-    if (body.regularPrice && body.salePrice && Number(body.salePrice) > Number(body.regularPrice)) {
-      return NextResponse.json({ error: "Sale price must be less than regular price" }, { status: 400 });
-    }
-    
-    let slug = body.name.toLowerCase().replace(/[^\w\s-]/g, "").replace(/[\s_-]+/g, "-").replace(/^-+|-+$/g, "");
-    { const existing = await db.product.findUnique({ where: { slug } }); if (existing) slug = slug + "-" + Date.now().toString(36); }
+    const slug = body.name.toLowerCase().replace(/[^\w\s-]/g, "").replace(/[\s_-]+/g, "-").replace(/^-+|-+$/g, "");
     const product = await db.product.create({
       data: {
         name: body.name,
@@ -270,8 +182,6 @@ export async function POST(request: NextRequest) {
         lowStockThreshold: body.lowStockThreshold || 5,
         trackInventory: body.trackInventory ?? true,
         allowBackorder: body.allowBackorder ?? false,
-        frameSizeWidth: body.frameSizeWidth ? parseFloat(body.frameSizeWidth) : null,
-        frameSizeHeight: body.frameSizeHeight ? parseFloat(body.frameSizeHeight) : null,
         allowCustomSize: body.allowCustomSize ?? false,
         customSizeUnit: body.customSizeUnit,
         customSizeMinWidth: body.customSizeMinWidth,
@@ -316,72 +226,6 @@ export async function POST(request: NextRequest) {
         includedItems: body.includedItems,
       },
     });
-    // Handle images if provided
-    if (body.images && Array.isArray(body.images) && body.images.length > 0) {
-      for (const img of body.images) {
-        await db.productImage.create({
-          data: {
-            productId: product.id,
-            url: img.url,
-            alt: img.alt || "",
-            isPrimary: img.isPrimary ?? false,
-            position: img.position ?? 0,
-            imageType: img.imageType || "PRODUCT",
-          },
-        });
-      }
-    }
-
-    // Handle variant attributes if provided
-    if (body.variantAttributes && Array.isArray(body.variantAttributes)) {
-      for (let i = 0; i < body.variantAttributes.length; i++) {
-        const a = body.variantAttributes[i];
-        const created = await db.variantAttribute.create({
-          data: { productId: product.id, name: a.name, type: a.name.toLowerCase() === "color" ? "COLOR" : "TEXT", position: i },
-        });
-        // Attribute values will be created when variants are added
-      }
-    }
-
-    // Handle variants if provided
-    if (body.variants && Array.isArray(body.variants)) {
-      for (let i = 0; i < body.variants.length; i++) {
-        const v = body.variants[i];
-        const variant = await db.productVariant.create({
-          data: {
-            productId: product.id,
-            name: v.name,
-            price: v.price,
-            salePrice: v.salePrice || null,
-            stockQuantity: v.stockQuantity || 0,
-            sku: v.sku || null,
-            position: i,
-          },
-        });
-        if (v.attributes && Array.isArray(v.attributes)) {
-          for (const a of v.attributes) {
-            const attr = await db.variantAttribute.findFirst({ where: { productId: product.id, name: a.attributeName } });
-            if (attr) {
-              let attrValue = await db.variantAttributeValue.findFirst({ where: { variantAttributeId: attr.id, value: a.value } });
-              if (!attrValue) {
-                attrValue = await db.variantAttributeValue.create({
-                  data: { variantAttributeId: attr.id, variantId: variant.id, value: a.value, colorCode: a.colorCode || null, position: 0 },
-                });
-              } else {
-                await db.variantAttributeValue.update({ where: { id: attrValue.id }, data: { variantId: variant.id } });
-              }
-            }
-          }
-        }
-      }
-    }
-
-    // Re-fetch product with images for response
-    const productWithImages = await db.product.findUnique({
-      where: { id: product.id },
-      include: { images: { orderBy: [{ isPrimary: "desc" }, { position: "asc" }] } },
-    });
-
     // Log the action
     await db.auditLog.create({
       data: {
@@ -393,7 +237,7 @@ export async function POST(request: NextRequest) {
     });
     notifyProductUpdated(product.name, "added").catch(() => {});
 
-    return NextResponse.json({ product: productWithImages }, { status: 201 });
+    return NextResponse.json({ product }, { status: 201 });
   } catch (error) {
     return NextResponse.json({ error: "Failed to create product" }, { status: 500 });
   }

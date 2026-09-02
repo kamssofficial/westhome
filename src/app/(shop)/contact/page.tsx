@@ -9,7 +9,7 @@ export default function ContactPage() {
   return (
     <div className="animate-fade-in">
       <div className="container-shop pt-3 pb-2 flex items-center gap-3">
-        <Link href="/" aria-label="Back to home" className="p-1 hover:bg-surface-muted rounded-lg transition-colors">
+        <Link href="/" className="p-1 hover:bg-surface-muted rounded-lg transition-colors">
           <ArrowLeft size={20} />
         </Link>
         <h1 className="text-xl font-semibold text-primary">Contact Us</h1>
@@ -52,7 +52,7 @@ export default function ContactPage() {
               <div>
                 <p className="text-sm font-medium text-primary">Phone</p>
                 <a href={`tel:${contactPhone.replace(/[^0-9+]/g, "")}`} className="text-sm text-accent hover:underline">
-                  {contactPhone}
+                  +91 98950 71144
                 </a>
               </div>
             </div>
@@ -65,7 +65,7 @@ export default function ContactPage() {
               <div>
                 <p className="text-sm font-medium text-primary">Email</p>
                 <a href={`mailto:${contactEmail}`} className="text-sm text-accent hover:underline">
-                  {contactEmail}
+                  info@westhomebybmd.com
                 </a>
               </div>
             </div>

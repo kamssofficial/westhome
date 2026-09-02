@@ -19,7 +19,7 @@ export default function TermsOfServicePage() {
 
         <section>
           <h2 className="text-base font-semibold text-primary mb-2">3. Payment</h2>
-          <p>We accept payments through UPI payments directly via the BHIM UPI standard. All payments are made directly to our UPI account. No payment gateway is involved.</p>
+          <p>We accept payments through Razorpay, including UPI, credit/debit cards, and net banking. All payments are processed securely.</p>
         </section>
 
         <section>
@@ -39,7 +39,7 @@ export default function TermsOfServicePage() {
 
         <section>
           <h2 className="text-base font-semibold text-primary mb-2">7. Contact</h2>
-          <p>For questions about these Terms, contact us at <a href="mailto:info@westhome.in" className="text-accent hover:underline">info@westhome.in</a>.</p>
+          <p>For questions about these Terms, contact us at <a href="mailto:info@westhomebybmd.com" className="text-accent hover:underline">info@westhomebybmd.com</a>.</p>
         </section>
       </div>
     </div>

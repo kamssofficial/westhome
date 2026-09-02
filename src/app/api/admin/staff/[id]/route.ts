@@ -33,7 +33,7 @@ export async function GET(
       },
     });
 
-    if (!user || user.role === "CUSTOMER") {
+    if (!user) {
       return NextResponse.json({ error: "Staff member not found" }, { status: 404 });
     }
 
@@ -58,12 +58,12 @@ export async function PUT(
 
     // Find existing user
     const existing = await db.user.findUnique({ where: { id } });
-    if (!existing || existing.role === "CUSTOMER") {
+    if (!existing) {
       return NextResponse.json({ error: "Staff member not found" }, { status: 404 });
     }
 
     // Validate role
-    const validRoles = ["ADMIN", "MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER", "STAFF"];
+    const validRoles = ["ADMIN", "MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER"];
     if (role && !validRoles.includes(role)) {
       return NextResponse.json({ error: "Invalid role" }, { status: 400 });
     }
@@ -118,7 +118,7 @@ export async function PUT(
   }
 }
 
-// DELETE /api/admin/staff/[id] — Deactivate (soft) or permanently delete staff member
+// DELETE /api/admin/staff/[id] — Deactivate staff member (soft delete)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -128,73 +128,42 @@ export async function DELETE(
 
   try {
     const { id } = await params;
-    const { searchParams } = new URL(request.url);
-    const permanent = searchParams.get("permanent") === "true";
 
     const existing = await db.user.findUnique({ where: { id } });
-    if (!existing || existing.role === "CUSTOMER") {
+    if (!existing) {
       return NextResponse.json({ error: "Staff member not found" }, { status: 404 });
     }
 
-    const isSeededTestAdmin = existing.email.toLowerCase() === "sanoojbm1144@gmail.com";
-    // Protect the last real admin. The known seeded test admin may be permanently removed only if
-    // another active staff account can be promoted atomically, so the store is never left unmanaged.
+    // Prevent deleting the last admin
     if (existing.role === "ADMIN") {
       const adminCount = await db.user.count({ where: { role: "ADMIN", isActive: true } });
-      if (adminCount <= 1 && !(permanent && isSeededTestAdmin)) {
-        return NextResponse.json({ error: "Cannot delete the last admin account" }, { status: 400 });
+      if (adminCount <= 1) {
+        return NextResponse.json(
+          { error: "Cannot deactivate the last admin account" },
+          { status: 400 }
+        );
       }
     }
 
-    // Prevent self-deletion
-    if (authResult.session.user.id === id) {
-      return NextResponse.json({ error: "Cannot delete your own account" }, { status: 400 });
-    }
+    // Soft delete - set isActive to false
+    await db.user.update({
+      where: { id },
+      data: { isActive: false },
+    });
 
-    if (permanent) {
-      // Permanent deletion: remove personal data and dependent records atomically while preserving historical order rows.
-      await db.$transaction(async (tx) => {
-        if (existing.role === "ADMIN" && isSeededTestAdmin) {
-          const replacementAdmin = await tx.user.findFirst({
-            where: { id: { not: id }, isActive: true, role: { in: ["MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER", "STAFF"] } },
-            orderBy: { createdAt: "asc" },
-            select: { id: true, email: true },
-          });
-          if (!replacementAdmin) throw new Error("Cannot remove the test admin because no active staff account can replace it");
-          await tx.user.update({ where: { id: replacementAdmin.id }, data: { role: "ADMIN" } });
-          await tx.auditLog.create({ data: { action: "UPDATE", entity: "USER", entityId: replacementAdmin.id, details: { reason: "Promoted while removing seeded test admin", email: replacementAdmin.email } } });
-        }
-        await tx.auditLog.create({ data: { action: "DELETE", entity: "USER", entityId: id, details: { email: existing.email, name: existing.name, role: existing.role, permanent: true } } });
-        await tx.order.updateMany({ where: { userId: id }, data: { userId: null, customerName: "Deleted Staff", customerEmail: "deleted@westhome.invalid", customerPhone: "DELETED" } });
-        await tx.wishlist.deleteMany({ where: { userId: id } });
-        await tx.recentlyViewed.deleteMany({ where: { userId: id } });
-        await tx.address.deleteMany({ where: { userId: id } });
-        await tx.review.deleteMany({ where: { userId: id } });
-        await tx.couponUsage.deleteMany({ where: { userId: id } });
-        await tx.analyticsEvent.updateMany({ where: { userId: id }, data: { userId: null } });
-        await tx.liveSession.deleteMany({ where: { userId: id } });
-        await tx.user.delete({ where: { id } });
-      });
+    // Log the action
+    await db.auditLog.create({
+      data: {
+        action: "DEACTIVATE",
+        entity: "USER",
+        entityId: id,
+        details: { email: existing.email },
+      },
+    });
 
-
-      return NextResponse.json({ success: true, permanent: true });
-    } else {
-      // Soft delete — deactivate
-      await db.user.update({ where: { id }, data: { isActive: false } });
-
-      await db.auditLog.create({
-        data: {
-          action: "DEACTIVATE",
-          entity: "USER",
-          entityId: id,
-          details: { email: existing.email },
-        },
-      });
-
-      return NextResponse.json({ success: true });
-    }
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Staff delete error:", error);
-    return NextResponse.json({ error: "Failed to delete staff member" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to deactivate staff member" }, { status: 500 });
   }
 }

@@ -5,8 +5,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
-  LayoutDashboard, Package, ShoppingCart, Users,
-  Menu, Store, Tag, Settings,
+  LayoutDashboard, Package, ShoppingCart, Users, FolderTree,
+  Menu, Store,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import WestHomeLogo from "@/components/ui/WestHomeLogo";
@@ -19,9 +19,8 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/staff/dashboard", icon: LayoutDashboard },
   { label: "Orders", href: "/staff/orders", icon: ShoppingCart },
   { label: "Products", href: "/staff/products", icon: Package },
+  { label: "Categories", href: "/staff/categories", icon: FolderTree },
   { label: "Customers", href: "/staff/customers", icon: Users },
-  { label: "Categories", href: "/staff/categories", icon: Tag },
-  { label: "Settings", href: "/staff/settings", icon: Settings },
 ];
 
 const PAGE_TITLES: Record<string, string> = {
@@ -30,7 +29,6 @@ const PAGE_TITLES: Record<string, string> = {
   "/staff/products": "Products",
   "/staff/customers": "Customers",
   "/staff/categories": "Categories",
-  "/staff/settings": "Settings",
 };
 
 export default function StaffLayout({ children }: { children: React.ReactNode }) {
@@ -147,7 +145,7 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
           </div>
 
           <div className="flex items-center gap-2">
-            <NotificationBell accentRing="ring-[#faf8f5]" basePath="/staff" />
+            <NotificationBell accentRing="ring-[#faf8f5]" />
             <div className="w-px h-6 bg-black/[.08] mx-1" />
             <ProfileMenu userName={userName} userRole={userRole} userInitials={initials} basePath="/staff" accentRing="ring-[#faf8f5]" />
           </div>

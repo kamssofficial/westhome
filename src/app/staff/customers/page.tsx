@@ -3,21 +3,6 @@
 import { useState, useEffect } from "react";
 import { Search, Mail, Phone, User } from "lucide-react";
 
-// Mask sensitive data for staff view
-function maskEmail(email: string): string {
-  if (!email) return "";
-  const [local, domain] = email.split("@");
-  if (!domain) return email;
-  const masked = local.length > 2 ? local[0] + "*".repeat(local.length - 2) + local[local.length - 1] : local[0] + "*";
-  return masked + "@" + domain;
-}
-
-function maskPhone(phone: string | null): string {
-  if (!phone) return "";
-  if (phone.length <= 4) return phone;
-  return "*".repeat(phone.length - 4) + phone.slice(-4);
-}
-
 interface Customer {
   id: string; name: string; email: string; phone: string | null; createdAt: string;
   _count?: { orders: number };
@@ -36,7 +21,7 @@ export default function StaffCustomersPage() {
       params.set("limit", "50");
       const res = await fetch(`/api/customers?${params.toString()}`);
       const data = await res.json();
-      setCustomers((data.customers || []).filter((c: Customer) => !c.email.includes("deleted") && !c.email.includes("test") && !c.email.includes("debug")));
+      setCustomers(data.customers || []);
     } catch {} finally { setLoading(false); }
   };
 
@@ -63,28 +48,26 @@ export default function StaffCustomersPage() {
         ) : (
           <div className="divide-y divide-black/[.04]">
             {customers.map((customer) => (
-              <div key={customer.id} className="px-4 py-3 hover:bg-[#f7f5f2] transition-colors">
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-full bg-[#f0ede8] flex items-center justify-center flex-shrink-0">
-                    <User size={18} className="text-[#6b6560]" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm font-medium text-[#1a1917] truncate">{customer.name}</p>
-                      <span className="text-xs text-[#6b6560] flex-shrink-0">{customer._count?.orders || 0} orders</span>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1">
-                      <span className="flex items-center gap-1 text-xs text-[#b0aba6] min-w-0">
-                        <Mail size={10} className="flex-shrink-0" /> <span className="truncate">{maskEmail(customer.email)}</span>
+              <div key={customer.id} className="flex items-center gap-4 px-4 py-3 hover:bg-[#f7f5f2] transition-colors">
+                <div className="w-10 h-10 rounded-full bg-[#f0ede8] flex items-center justify-center flex-shrink-0">
+                  <User size={18} className="text-[#6b6560]" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-[#1a1917] truncate">{customer.name}</p>
+                  <div className="flex items-center gap-3 mt-0.5">
+                    <span className="flex items-center gap-1 text-xs text-[#b0aba6]">
+                      <Mail size={10} /> {customer.email}
+                    </span>
+                    {customer.phone && (
+                      <span className="flex items-center gap-1 text-xs text-[#b0aba6]">
+                        <Phone size={10} /> {customer.phone}
                       </span>
-                      {customer.phone && (
-                        <span className="flex items-center gap-1 text-xs text-[#b0aba6] flex-shrink-0">
-                          <Phone size={10} /> {maskPhone(customer.phone)}
-                        </span>
-                      )}
-                      <span className="text-[10px] text-[#b0aba6] flex-shrink-0">Joined {new Date(customer.createdAt).toLocaleDateString()}</span>
-                    </div>
+                    )}
                   </div>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <p className="text-xs text-[#6b6560]">{customer._count?.orders || 0} orders</p>
+                  <p className="text-[10px] text-[#b0aba6] mt-0.5">Joined {new Date(customer.createdAt).toLocaleDateString()}</p>
                 </div>
               </div>
             ))}

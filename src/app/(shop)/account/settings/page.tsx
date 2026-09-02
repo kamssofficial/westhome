@@ -31,35 +31,17 @@ export default function AccountSettingsPage() {
   }, []);
 
   const handleSave = async () => {
-    // Validate phone before saving
-    const phone = form.phone.trim();
-    if (!phone) {
-      toast.error("Mobile number is required");
-      return;
-    }
-    const cleaned = phone.replace(/\D/g, "");
-    const digits = cleaned.startsWith("0") ? cleaned.slice(1) : cleaned;
-    const num = digits.startsWith("91") && digits.length > 10 ? digits.slice(2) : digits;
-    if (!/^\d{10}$/.test(num) || !/^[6-9]/.test(num)) {
-      toast.error("Enter a valid 10-digit Indian mobile number");
-      return;
-    }
-    // Normalize phone before saving
-    const normalizedPhone = num;
-    
     setSaving(true);
     try {
       const res = await fetch("/api/account/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, phone: normalizedPhone }),
+        body: JSON.stringify(form),
       });
       if (res.ok) {
         toast.success("Profile updated");
-        setForm({ ...form, phone: normalizedPhone });
       } else {
-        const err = await res.json();
-        toast.error(err.error || "Failed to update profile");
+        toast.error("Failed to update profile");
       }
     } catch {
       toast.error("Failed to update");
@@ -90,7 +72,7 @@ export default function AccountSettingsPage() {
           </div>
         </div>
         <div>
-          <label className="text-xs font-medium text-text-secondary mb-1 block">Mobile Number *</label>
+          <label className="text-xs font-medium text-text-secondary mb-1 block">Phone</label>
           <div className="relative">
             <Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
             <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={`${inputClass} pl-10`} placeholder="+91 XXXXX XXXXX" />

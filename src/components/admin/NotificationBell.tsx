@@ -14,7 +14,10 @@ interface Notification {
   createdAt: string;
 }
 
-interface NotificationBellProps {  className?: string;  accentRing?: string;  basePath?: string;}
+interface NotificationBellProps {
+  className?: string;
+  accentRing?: string;
+}
 
 function timeAgo(dateStr: string): string {
   const now = new Date();
@@ -46,7 +49,7 @@ const TYPE_ICONS: Record<string, string> = {
   GENERAL: "\u{1F514}",
 };
 
-export default function NotificationBell({ className, accentRing = "ring-[#f7f5f2]", basePath = "/admin" }: NotificationBellProps) {
+export default function NotificationBell({ className, accentRing = "ring-[#f7f5f2]" }: NotificationBellProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);

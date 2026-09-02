@@ -9,19 +9,22 @@ interface StoreSettings {
   storeName: string;
 }
 
-const DEFAULT_SETTINGS: StoreSettings = {
-  contactPhone: "+91 9895071144",
-  whatsappNumber: "+91 9895071144",
+const SettingsContext = createContext<StoreSettings>({
+  contactPhone: "+91 98950 71144",
+  whatsappNumber: "+91 98950 71144",
   contactEmail: "info@westhomebybmd.com",
   storeName: "WESTHOME",
-};
-
-const SettingsContext = createContext<StoreSettings>(DEFAULT_SETTINGS);
+});
 
 export const useSettings = () => useContext(SettingsContext);
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
-  const [settings, setSettings] = useState<StoreSettings>(DEFAULT_SETTINGS);
+  const [settings, setSettings] = useState<StoreSettings>({
+    contactPhone: "+91 98950 71144",
+    whatsappNumber: "+91 98950 71144",
+    contactEmail: "info@westhomebybmd.com",
+    storeName: "WESTHOME",
+  });
 
   useEffect(() => {
     fetch("/api/settings")
@@ -29,10 +32,10 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       .then((data) => {
         if (data.settings) {
           setSettings({
-            contactPhone: data.settings.contactPhone || DEFAULT_SETTINGS.contactPhone,
-            whatsappNumber: data.settings.whatsappNumber || DEFAULT_SETTINGS.whatsappNumber,
-            contactEmail: data.settings.contactEmail || DEFAULT_SETTINGS.contactEmail,
-            storeName: data.settings.storeName || DEFAULT_SETTINGS.storeName,
+            contactPhone: data.settings.contactPhone || "+91 98950 71144",
+            whatsappNumber: data.settings.whatsappNumber || "+91 98950 71144",
+            contactEmail: data.settings.contactEmail || "info@westhomebybmd.com",
+            storeName: data.settings.storeName || "WESTHOME",
           });
         }
       })
