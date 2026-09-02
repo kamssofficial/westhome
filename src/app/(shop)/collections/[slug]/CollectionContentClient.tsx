@@ -54,13 +54,12 @@ function CategoryContent({ category: initialCategory, initialProducts, initialTo
         if (maxPrice) fetchParams.set("maxPrice", maxPrice);
         if (material) fetchParams.set("material", material);
         if (inStockOnly) fetchParams.set("inStock", "true");
-        if (onSaleOnly) fetchParams.set("onSale", "true");
-        const prodRes = await fetch("/api/products?lite=true&" + fetchParams.toString());
-        if (prodRes.ok) {
-          const prodData = await prodRes.json();
-          setProducts(prodData.products || []);
-          setTotal(prodData.total || 0);
-        }
+        if (onSaleOnly) fetchParams.set("onSale", "true");          const prodRes = await fetch("/api/products?lite=true&" + fetchParams.toString());
+          if (prodRes.ok) {
+            const prodData = await prodRes.json();
+            setProducts((prev) => page === 1 ? (prodData.products || []) : [...prev, ...(prodData.products || [])]);
+            setTotal(prodData.total || 0);
+          }
       } catch (err) {
         console.error("Collection fetch error:", err);
       } finally {
@@ -214,6 +213,17 @@ function CategoryContent({ category: initialCategory, initialProducts, initialTo
             description="This collection doesn't have any products yet. Check back soon!"
             action={{ label: "Browse All Products", href: "/shop" }}
           />
+        )}
+        {products.length > 0 && products.length < total && (
+          <div className="flex justify-center mt-6">
+            <button
+              onClick={() => setPage((p) => p + 1)}
+              disabled={loading}
+              className="px-8 py-3 rounded-full border border-border text-sm font-medium hover:bg-surface-muted transition-colors disabled:opacity-50"
+            >
+              {loading ? "Loading..." : `Load More (${products.length} of ${total})`}
+            </button>
+          </div>
         )}
       </div>
     </div>
