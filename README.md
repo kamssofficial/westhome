@@ -268,3 +268,4 @@ All rights reserved. WESTHOME by BM Distributors.
 # fix razorpay env vars
 # force redeploy webp images
 # redeploy with correct Razorpay keys
+# redeploy with live Razorpay keys
