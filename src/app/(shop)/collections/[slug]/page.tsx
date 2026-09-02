@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import db from "@/lib/db";
+import fs from "fs";
+import path from "path";
 import { CollectionContentClient } from "./CollectionContentClient";
 
 interface PageProps {
@@ -136,11 +138,25 @@ export default async function CollectionPage({ params }: PageProps) {
   const category = await getCategory(slug);
   if (!category) notFound();
   const { products, total } = await getInitialProducts(slug);
+  // Load static collection images from public directory
+  let staticImages: string[] = [];
+  if (total === 0) {
+    try {
+      const dirName = slug.charAt(0).toUpperCase() + slug.slice(1);
+      const dirPath = path.join(process.cwd(), "public", "collections", dirName);
+      if (fs.existsSync(dirPath)) {
+        const files = fs.readdirSync(dirPath).filter(f => f.endsWith(".webp") || f.endsWith(".png"));
+        staticImages = files.map(f => `/collections/${dirName}/${f}`);
+      }
+    } catch {}
+  }
+
   return (
     <CollectionContentClient
       category={category}
       initialProducts={products}
       initialTotal={total}
+      staticImages={staticImages}
     />
   );
 }

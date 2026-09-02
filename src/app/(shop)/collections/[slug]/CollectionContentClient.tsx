@@ -22,8 +22,9 @@ interface CollectionContentProps {
   category: any;
   initialProducts: any[];
   initialTotal: number;
+  staticImages?: string[];
 }
-function CategoryContent({ category: initialCategory, initialProducts, initialTotal: initialTotalCount }: CollectionContentProps) {
+function CategoryContent({ category: initialCategory, initialProducts, initialTotal: initialTotalCount, staticImages = [] }: CollectionContentProps) {
   const slug = initialCategory?.slug || "";
 
   const [products, setProducts] = useState<any[]>(initialProducts || []);
@@ -70,6 +71,8 @@ function CategoryContent({ category: initialCategory, initialProducts, initialTo
     };
     fetchData();
   }, [slug, sort, page, minPrice, maxPrice, material, inStockOnly, onSaleOnly]);
+
+
 
   const hasMore = products.length < total;
 
@@ -230,6 +233,14 @@ function CategoryContent({ category: initialCategory, initialProducts, initialTo
           )}>
             {products.map((product, i) => (
               <ProductCard key={product.id} product={product} priority={i < 4} />
+            ))}
+          </div>
+        ) : staticImages.length > 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {staticImages.map((img, i) => (
+              <div key={i} className="relative aspect-square bg-surface-muted rounded-2xl overflow-hidden">
+                <img src={img} alt={`${category?.name || "Collection"} ${i + 1}`} className="w-full h-full object-cover" loading="lazy" />
+              </div>
             ))}
           </div>
         ) : (
