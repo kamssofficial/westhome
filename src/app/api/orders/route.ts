@@ -21,24 +21,17 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status");
     const showAll = searchParams.get("all") === "true";
     const where: any = {};
-
     if (session?.user) {
       const role = (session.user as any).role;
-      if (showAll && (role === "ADMIN" || role === "MANAGER" || role === "ORDER_MANAGER")) {
-        // No userId filter — show all orders
-      } else {
-        where.userId = (session.user as any).id;
-      }
-    } else {
-      return NextResponse.json({ orders: [], total: 0 });
-    }
+      if (!(showAll && (role === "ADMIN" || role === "MANAGER" || role === "ORDER_MANAGER"))) where.userId = (session.user as any).id;
+    } else return NextResponse.json({ orders: [], total: 0 });
     if (status) where.status = status;
     const [orders, total] = await Promise.all([
       db.order.findMany({ where, include: { items: true, payment: true, statusHistory: { orderBy: { createdAt: "desc" } } }, orderBy: { createdAt: "desc" }, skip: (page - 1) * limit, take: limit }),
       db.order.count({ where }),
     ]);
     return NextResponse.json({ orders: orders.map((o) => ({ ...o, subtotal: Number(o.subtotal), discount: Number(o.discount), deliveryCharge: Number(o.deliveryCharge), tax: Number(o.tax), total: Number(o.total), items: o.items.map((i) => ({ ...i, unitPrice: Number(i.unitPrice), salePrice: i.salePrice ? Number(i.salePrice) : null, totalPrice: Number(i.totalPrice) })) })), total, page, totalPages: Math.ceil(total / limit) });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ orders: [], total: 0 });
   }
 }
@@ -46,177 +39,65 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
+    if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const body = await request.json();
     const userId = (session.user as any).id;
-
-    const {
-      customerName,
-      customerEmail,
-      customerPhone,
-      addressLine1,
-      addressLine2,
-      city,
-      state,
-      pinCode,
-      country,
-      items,
-      subtotal,
-      discount,
-      deliveryCharge,
-      tax,
-      total,
-      paymentMethod,
-      deliveryMethod,
-      customerNotes,
-      couponCode,
-    } = body;
-
-    if (!items || items.length === 0) {
-      return NextResponse.json({ error: "No items in cart" }, { status: 400 });
-    }
-
-    // Validate required fields
-    if (!customerName || !customerPhone || !addressLine1 || !city || !state || !pinCode) {
-      return NextResponse.json({ error: "Missing required address information" }, { status: 400 });
-    }
-
-    // SECURITY: Validate mobile phone server-side
+    const { customerName, customerEmail, customerPhone, addressLine1, addressLine2, city, state, pinCode, country, items, subtotal, discount, deliveryCharge, tax, total, paymentMethod, deliveryMethod, customerNotes } = body;
+    if (!items || items.length === 0) return NextResponse.json({ error: "No items in cart" }, { status: 400 });
+    if (!customerName || !customerPhone || !addressLine1 || !city || !state || !pinCode) return NextResponse.json({ error: "Missing required address information" }, { status: 400 });
     const normalizedPhone = validateAndNormalizePhone(customerPhone);
-    if (!normalizedPhone) {
-      return NextResponse.json(
-        { error: "A valid 10-digit mobile number is required to place an order" },
-        { status: 400 }
-      );
-    }
+    if (!normalizedPhone) return NextResponse.json({ error: "A valid 10-digit mobile number is required to place an order" }, { status: 400 });
 
-    // SECURITY: Server-side price validation — recalculate from database
     const productIds = items.map((item: any) => item.productId);
-    const products = await db.product.findMany({
-      where: { id: { in: productIds } },
-      select: { id: true, regularPrice: true, salePrice: true, isActive: true, stockQuantity: true, trackInventory: true },
-    });
-    
+    const products = await db.product.findMany({ where: { id: { in: productIds } }, select: { id: true, regularPrice: true, salePrice: true, isActive: true, stockQuantity: true, trackInventory: true } });
     const productMap = new Map(products.map(p => [p.id, p]));
-    
-    // Validate and recalculate server-side
     let serverSubtotal = 0;
     const validatedItems = items.map((item: any) => {
       const product = productMap.get(item.productId);
-      if (!product || !product.isActive) {
-        throw new Error(`Product ${item.productId} not found or inactive`);
-      }
-      if (product.trackInventory && product.stockQuantity < item.quantity) {
-        throw new Error(`Insufficient stock for ${item.productName}`);
-      }
+      if (!product || !product.isActive) throw new Error(`Product ${item.productId} not found or inactive`);
+      if (product.trackInventory && product.stockQuantity < item.quantity) throw new Error(`Insufficient stock for ${item.productName}`);
       const regularPrice = Number(product.regularPrice);
       const salePrice = product.salePrice !== null ? Number(product.salePrice) : null;
-      // The configured sale price is the single customer-facing and order price.
-      // Fall back only when a product has no valid sale price configured yet.
       const effectivePrice = salePrice !== null && salePrice > 0 ? salePrice : regularPrice;
       const totalPrice = effectivePrice * item.quantity;
       serverSubtotal += totalPrice;
       return { ...item, unitPrice: effectivePrice, salePrice, totalPrice };
     });
-    
-    // Server-side delivery charge validation
+
     const settings = await db.siteSetting.findMany();
     const settingsObj: Record<string, any> = {};
     settings.forEach((s) => { settingsObj[s.key] = s.value; });
     const dc = settingsObj.deliveryConfig;
     const freeThreshold = dc ? Number(dc.freeDeliveryThreshold) || 2000 : Number(settingsObj.freeDeliveryThreshold) || 2000;
     const defaultDeliveryCharge = dc ? Number(dc.defaultDeliveryCharge) || 149 : Number(settingsObj.defaultDeliveryCharge) || 149;
-    
-    let serverDeliveryCharge: number;
-    if (deliveryMethod === "express") {
-      serverDeliveryCharge = 299;
-    } else {
-      serverDeliveryCharge = serverSubtotal > freeThreshold ? 0 : defaultDeliveryCharge;
-    }
-    
-    const finalDeliveryCharge = serverDeliveryCharge;
+    const serverDeliveryCharge = deliveryMethod === "express" ? 299 : serverSubtotal > freeThreshold ? 0 : defaultDeliveryCharge;
     const finalSubtotal = serverSubtotal;
     const finalDiscount = Math.min(Number(discount) || 0, finalSubtotal);
     const finalTax = Number(tax) || 0;
-    const finalTotal = finalSubtotal - finalDiscount + finalDeliveryCharge + finalTax;
+    const finalTotal = finalSubtotal - finalDiscount + serverDeliveryCharge + finalTax;
 
-    // Generate order number
     const date = new Date();
     const year = date.getFullYear().toString().slice(-2);
     const month = (date.getMonth() + 1).toString().padStart(2, "0");
     const random = Math.floor(Math.random() * 10000).toString().padStart(4, "0");
     const orderNumber = `WH${year}${month}${random}`;
 
-    // Create order with items
+    const paymentIsRazorpay = paymentMethod === "razorpay";
     const order = await db.order.create({
       data: {
-        orderNumber,
-        userId,
-        status: "NEW",
-        customerName,
-        customerEmail,
-        customerPhone: normalizedPhone,
-        addressLine1,
-        addressLine2: addressLine2 || null,
-        city,
-        state,
-        pinCode,
-        country: country || "India",
-        subtotal: finalSubtotal,
-        discount: finalDiscount,
-        deliveryCharge: finalDeliveryCharge,
-        tax: finalTax,
-        total: finalTotal,
-        paymentMethod: paymentMethod || null,
-        paymentStatus: "PENDING",
-        deliveryMethod: deliveryMethod || "delivery",
-        customerNotes: customerNotes || null,
-        items: {
-          create: validatedItems.map((item: any) => ({
-            productId: item.productId,
-            variantId: item.variantId || null,
-            productName: item.productName,
-            variantName: item.variantName || null,
-            sku: item.sku || null,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            salePrice: item.salePrice || null,
-            totalPrice: item.totalPrice,
-            image: item.image || null,
-            customSize: item.customSize || null,
-          })),
-        },
-        statusHistory: {
-          create: {
-            status: "NEW",
-            note: "Order placed",
-          },
-        },
+        orderNumber, userId, status: "NEW", customerName, customerEmail, customerPhone: normalizedPhone,
+        addressLine1, addressLine2: addressLine2 || null, city, state, pinCode, country: country || "India",
+        subtotal: finalSubtotal, discount: finalDiscount, deliveryCharge: serverDeliveryCharge, tax: finalTax, total: finalTotal,
+        paymentMethod: paymentIsRazorpay ? "razorpay" : (paymentMethod || null), paymentStatus: "PENDING", deliveryMethod: deliveryMethod || "delivery", customerNotes: customerNotes || null,
+        items: { create: validatedItems.map((item: any) => ({ productId: item.productId, variantId: item.variantId || null, productName: item.productName, variantName: item.variantName || null, sku: item.sku || null, quantity: item.quantity, unitPrice: item.unitPrice, salePrice: item.salePrice || null, totalPrice: item.totalPrice, image: item.image || null, customSize: item.customSize || null })) },
+        statusHistory: { create: { status: "NEW", note: "Order placed" } },
+        ...(paymentIsRazorpay ? { payment: { create: { amount: finalTotal, currency: "INR", status: "PENDING", method: "razorpay" } } } : {}),
       },
+      include: { payment: true },
     });
 
-    // Also save phone to user profile if logged in and missing
-    if (userId && normalizedPhone) {
-      await db.user.updateMany({
-        where: { id: userId, phone: null },
-        data: { phone: normalizedPhone },
-      });
-    }
-
-    // Create notification
-    await db.notification.create({
-      data: {
-        type: "ORDER_PLACED",
-        title: "New Order",
-        message: `Order ${orderNumber} placed by ${customerName} for ₹${finalTotal}`,
-        orderId: order.id,
-        readBy: "[]",
-      },
-    });
-
+    await db.user.updateMany({ where: { id: userId, phone: null }, data: { phone: normalizedPhone } });
+    await db.notification.create({ data: { type: "ORDER_PLACED", title: "New Order", message: `Order ${orderNumber} placed by ${customerName} for ₹${finalTotal}`, orderId: order.id, readBy: "[]" } });
     return NextResponse.json({ order: { id: order.id, orderNumber: order.orderNumber } }, { status: 201 });
   } catch (error) {
     console.error("Order creation error:", error);
