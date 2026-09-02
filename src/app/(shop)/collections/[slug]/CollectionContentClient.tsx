@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { SlidersHorizontal, ChevronDown, ArrowRight, ArrowLeft, Grid3X3, List } from "lucide-react";
 import ProductCard from "@/components/ui/ProductCard";
@@ -29,9 +29,11 @@ function CategoryContent({ category: initialCategory, initialProducts, initialTo
   const [products, setProducts] = useState<any[]>(initialProducts || []);
   const [category, setCategory] = useState<any>(initialCategory || null);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [total, setTotal] = useState(initialTotalCount || 0);
   const [sort, setSort] = useState("recommended");
   const [page, setPage] = useState(1);
+  const sentinelRef = useRef<HTMLDivElement>(null);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [showSubcategories, setShowSubcategories] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
@@ -68,6 +70,30 @@ function CategoryContent({ category: initialCategory, initialProducts, initialTo
     };
     fetchData();
   }, [slug, sort, page, minPrice, maxPrice, material, inStockOnly, onSaleOnly]);
+
+  const hasMore = products.length < total;
+
+  const loadMore = useCallback(() => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    setPage((p) => p + 1);
+  }, [loadingMore, hasMore]);
+
+  useEffect(() => {
+    if (page === 1) return;
+    setLoadingMore(false);
+  }, [products.length]);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      (entries) => { if (entries[0].isIntersecting) loadMore(); },
+      { rootMargin: "200px" }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [loadMore]);
 
   const hasSubcategories = category?.subcategories && category.subcategories.length > 0;
 
@@ -214,16 +240,14 @@ function CategoryContent({ category: initialCategory, initialProducts, initialTo
             action={{ label: "Browse All Products", href: "/shop" }}
           />
         )}
-        {products.length > 0 && products.length < total && (
-          <div className="flex justify-center mt-6">
-            <button
-              onClick={() => setPage((p) => p + 1)}
-              disabled={loading}
-              className="px-8 py-3 rounded-full border border-border text-sm font-medium hover:bg-surface-muted transition-colors disabled:opacity-50"
-            >
-              {loading ? "Loading..." : `Load More (${products.length} of ${total})`}
-            </button>
+        {hasMore && <div ref={sentinelRef} className="h-10" />}
+        {loadingMore && (
+          <div className="flex justify-center py-6">
+            <div className="w-5 h-5 border-2 border-border border-t-primary rounded-full animate-spin" />
           </div>
+        )}
+        {!hasMore && products.length > 0 && (
+          <p className="text-center text-xs text-text-muted py-6">All {total} products loaded</p>
         )}
       </div>
     </div>
