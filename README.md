@@ -264,3 +264,4 @@ All rights reserved. WESTHOME by BM Distributors.
 # v2 - Razorpay integrated
 
 # redeploy
+# redeploy hero
