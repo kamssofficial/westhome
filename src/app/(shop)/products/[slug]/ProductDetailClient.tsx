@@ -6,8 +6,9 @@ import Link from "next/link";
 import { useSettings } from "@/components/ui/SettingsContext";
 import {
   Heart, Minus, Plus, Star, ChevronLeft, ChevronRight,
-  MessageCircle, Share2, ChevronDown, ShieldCheck, Truck, Headphones,
+  MessageCircle, Share2, ChevronDown, ShieldCheck, Truck, Headphones, Zap,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import ProductCard from "@/components/ui/ProductCard";
 import { cn, formatPrice, getWhatsAppUrl, generateProductWhatsAppMessage } from "@/lib/utils";
 import { useCartStore } from "@/store/cart";
@@ -40,6 +41,7 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
   const [reviewMessage, setReviewMessage] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
+  const router = useRouter();
   const addToCart = useCartStore((s) => s.addItem);
   const toggleWishlist = useWishlistStore((s) => s.toggleItem);
   const isInWishlist = useWishlistStore((s) => s.isInWishlist);
@@ -235,6 +237,25 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
           )}
         >
           {inStock ? "Add to Cart" : "Out of Stock"}
+        </button>
+
+        {/* Buy Now */}
+        <button
+          onClick={() => {
+            if (!inStock) return;
+            handleAddToCart();
+            router.push("/checkout");
+          }}
+          disabled={!inStock}
+          className={cn(
+            "w-full py-3.5 rounded-2xl text-sm font-semibold transition-all duration-200 mt-3 flex items-center justify-center gap-2",
+            inStock
+              ? "bg-accent text-white hover:opacity-90 active:scale-[0.98]"
+              : "bg-surface-muted text-text-muted cursor-not-allowed"
+          )}
+        >
+          <Zap size={16} />
+          {inStock ? "Buy Now" : "Out of Stock"}
         </button>
 
         {/* Buy on WhatsApp */}
