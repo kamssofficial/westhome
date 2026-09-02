@@ -14,8 +14,7 @@ interface ProductCardProps {
   priority?: boolean;
 }
 
-// Generate a tiny blur placeholder as a data URL (warm cream tone)
-const BLUR_PLACEHOLDER = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJnIiB41PSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNlYmU3ZGYiLz48c3RvcCBvZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iI2YwZWRlOCIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgZmlsbD0idXJsKCNnKSIvPjwvc3ZnPg==";
+const BLUR_PLACEHOLDER = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJnIiB41PSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNlYmU3ZGYiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiNmMGVkZTgiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIGZpbGw9InVybCgjZykiLz48L3N2Zz4=";
 
 function ProductCardInner({ product, priority = false }: ProductCardProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -25,8 +24,10 @@ function ProductCardInner({ product, priority = false }: ProductCardProps) {
 
   const primaryImage = product.images.find((i) => i.isPrimary) || product.images[0];
   const inStock = product.trackInventory ? product.stockQuantity > 0 : true;
+  const displayPrice = product.salePrice || product.regularPrice;
+  const formattedPrice = formatPrice(displayPrice);
 
-  const handleWishlist = (e: React.MouseEvent) => {
+  const handleWishlist = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
     toggleWishlist({
@@ -41,97 +42,87 @@ function ProductCardInner({ product, priority = false }: ProductCardProps) {
     toast.success(isInWishlist ? "Removed from wishlist" : "Added to wishlist");
   };
 
-  // Precompute price to avoid recalculation
-  const displayPrice = product.salePrice || product.regularPrice;
-  const formattedPrice = formatPrice(displayPrice);
-
   return (
-    <Link
-      href={`/products/${product.slug}`}
-      className="group block card-press touch-target"
-    >
-      <div className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-card-hover transition-all duration-300">
-        {/* Image */}
-        <div className="relative aspect-square bg-surface-muted overflow-hidden">
-          {primaryImage && !imageError ? (
-            <>
-              {/* Skeleton/loading shimmer */}
-              {!imageLoaded && (
-                <div className="absolute inset-0 bg-gradient-to-br from-[#ebe7df] via-[#f5f3ef] to-[#ebe7df] animate-pulse" />
-              )}
-              <Image
-                src={primaryImage.url}
-                alt={primaryImage.alt || product.name}
-                fill
-                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                className={cn(
-                  "object-cover transition-all duration-500",
-                  imageLoaded ? "opacity-100 group-hover:scale-105" : "opacity-0"
+    <article className="group block card-press">
+      <div className="relative overflow-hidden rounded-xl bg-white shadow-sm transition-all duration-300 hover:shadow-card-hover">
+        <Link
+          href={`/products/${product.slug}`}
+          className="block touch-target focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-inset"
+          aria-label={`View ${product.name}`}
+        >
+          <div className="relative aspect-square overflow-hidden bg-surface-muted">
+            {primaryImage && !imageError ? (
+              <>
+                {!imageLoaded && (
+                  <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-[#ebe7df] via-[#f5f3ef] to-[#ebe7df]" />
                 )}
-                priority={priority}
-                placeholder="blur"
-                blurDataURL={BLUR_PLACEHOLDER}
-                onLoad={() => setImageLoaded(true)}
-                onError={() => setImageError(true)}
-                quality={priority ? 85 : 75}
-              />
-            </>
-          ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center text-text-muted">
-              <ImageOff size={24} className="mb-1 opacity-40" />
-              <span className="text-[10px]">No image</span>
-            </div>
-          )}
-
-          {/* Wishlist heart */}
-          <button
-            onClick={handleWishlist}
-            className={cn(
-              "absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 active:scale-90",
-              isInWishlist
-                ? "bg-white text-error shadow-sm"
-                : "bg-white/80 backdrop-blur-sm text-text-muted hover:bg-white hover:text-error"
+                <Image
+                  src={primaryImage.url}
+                  alt={primaryImage.alt || product.name}
+                  fill
+                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                  className={cn(
+                    "object-cover transition-all duration-500",
+                    imageLoaded ? "opacity-100 group-hover:scale-105" : "opacity-0"
+                  )}
+                  priority={priority}
+                  placeholder="blur"
+                  blurDataURL={BLUR_PLACEHOLDER}
+                  onLoad={() => setImageLoaded(true)}
+                  onError={() => setImageError(true)}
+                  quality={priority ? 85 : 75}
+                />
+              </>
+            ) : (
+              <div className="flex h-full w-full flex-col items-center justify-center text-text-muted">
+                <ImageOff size={24} className="mb-1 opacity-40" />
+                <span className="text-[10px]">No image</span>
+              </div>
             )}
-            aria-label={isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
-            aria-pressed={isInWishlist}
-            type="button"
-          >
-            <Heart size={15} fill={isInWishlist ? "currentColor" : "none"} />
-          </button>
 
-          {/* Badges */}
-          {(product.isNewArrival || !inStock) && (
-            <div className="absolute top-3 left-3 flex flex-col gap-1">
+            <div className="absolute left-3 top-3 flex flex-col gap-1">
               {product.isNewArrival && (
-                <span className="px-2 py-0.5 bg-primary text-white text-[10px] font-semibold rounded-full">
+                <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold text-white">
                   New
                 </span>
               )}
               {!inStock && (
-                <span className="px-2 py-0.5 bg-text-muted text-white text-[10px] font-semibold rounded-full">
+                <span className="rounded-full bg-text-muted px-2 py-0.5 text-[10px] font-semibold text-white">
                   Sold Out
                 </span>
               )}
             </div>
-          )}
-        </div>
-
-        {/* Info */}
-        <div className="p-2.5">
-          <p className="font-label text-[9px] tracking-[0.15em] text-accent mb-0.5">
-            {product.subcategory?.name || product.category?.name}
-          </p>
-          <h3 className="text-[13px] font-medium text-primary line-clamp-1 leading-snug">
-            {product.name}
-          </h3>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-sm font-semibold text-primary">
-              {formattedPrice}
-            </span>
           </div>
-        </div>
+
+          <div className="p-2.5">
+            <p className="mb-0.5 font-label text-[9px] tracking-[0.15em] text-accent">
+              {product.subcategory?.name || product.category?.name}
+            </p>
+            <h3 className="line-clamp-1 text-[13px] font-medium leading-snug text-primary">
+              {product.name}
+            </h3>
+            <div className="mt-1 flex items-center gap-2">
+              <span className="text-sm font-semibold text-primary">{formattedPrice}</span>
+            </div>
+          </div>
+        </Link>
+
+        <button
+          type="button"
+          onClick={handleWishlist}
+          className={cn(
+            "absolute right-3 top-3 flex h-10 w-10 touch-target items-center justify-center rounded-full transition-all duration-200 active:scale-90",
+            isInWishlist
+              ? "bg-white text-error shadow-sm"
+              : "bg-white/80 text-text-muted backdrop-blur-sm hover:bg-white hover:text-error"
+          )}
+          aria-label={isInWishlist ? `Remove ${product.name} from wishlist` : `Add ${product.name} to wishlist`}
+          aria-pressed={isInWishlist}
+        >
+          <Heart size={15} fill={isInWishlist ? "currentColor" : "none"} />
+        </button>
       </div>
-    </Link>
+    </article>
   );
 }
 
