@@ -16,11 +16,11 @@ export default function ShopLayout({
 }) {
   return (
     <SettingsProvider>
-        <HeartbeatWrapper />
+      <HeartbeatWrapper />
       <div className="min-h-screen flex flex-col">
         <Header />
         <IntroAnimation>
-          <main className="flex-1 bottom-nav-safe">
+          <main className="flex-1 pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-0">
             {children}
           </main>
         </IntroAnimation>
