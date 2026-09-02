@@ -11,6 +11,7 @@ import {
 import { useRouter } from "next/navigation";
 import ProductCard from "@/components/ui/ProductCard";
 import { cn, formatPrice, getWhatsAppUrl, generateProductWhatsAppMessage } from "@/lib/utils";
+import PriceDisplay from "@/components/ui/PriceDisplay";
 import { useCartStore } from "@/store/cart";
 import { useWishlistStore } from "@/store/wishlist";
 import toast from "react-hot-toast";
@@ -186,7 +187,7 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
       {/* Product Info */}
       <div className="container-shop mt-4">
         <h1 className="text-xl font-semibold text-primary leading-tight">{product.name}</h1>
-        <p className="text-xl font-bold text-primary mt-1">{formatPrice(currentPrice)}</p>
+        <PriceDisplay regularPrice={product.regularPrice} salePrice={product.salePrice} size="lg" className="mt-1" />
 
         {/* Rating */}
         <div className="flex items-center gap-2 mt-2">

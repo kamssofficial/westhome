@@ -4,7 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Heart, ImageOff } from "lucide-react";
-import { cn, formatPrice, calculateDiscount } from "@/lib/utils";
+import { cn, calculateDiscount } from "@/lib/utils";
+import PriceDisplay from "@/components/ui/PriceDisplay";
 import { useWishlistStore } from "@/store/wishlist";
 import toast from "react-hot-toast";
 import type { Product } from "@/types";
@@ -105,15 +106,8 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
           <h3 className="text-[13px] font-medium text-primary line-clamp-1 leading-snug">
             {product.name}
           </h3>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-sm font-semibold text-primary">
-              {formatPrice(product.salePrice || product.regularPrice)}
-            </span>
-            {product.salePrice && (
-              <span className="text-[11px] text-text-muted line-through">
-                {formatPrice(product.regularPrice)}
-              </span>
-            )}
+          <div className="mt-1">
+            <PriceDisplay regularPrice={product.regularPrice} salePrice={product.salePrice} size="md" />
           </div>
         </div>
       </div>
