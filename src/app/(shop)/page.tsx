@@ -75,7 +75,7 @@ export default function HomePage() {
     <div className="">
       {/* HERO */}
       <section className="container-shop relative mt-5 overflow-hidden rounded-[2rem] bg-[#1f2521] text-white shadow-[0_20px_70px_rgba(31,33,31,.18)] md:mt-7">
-        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url(/images/banners/hero.png)" }} />
+        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url(/images/banners/hero.webp)" }} />
         
         <div className="absolute -right-4 top-10 h-44 w-44 rounded-full bg-[#d5966e]/20 blur-3xl" />
         
@@ -243,7 +243,7 @@ export default function HomePage() {
         <div className="grid overflow-hidden rounded-[2rem] bg-[#c9b8a6] md:grid-cols-[1fr_1.1fr] md:items-center">
           <div className="relative min-h-[280px] overflow-hidden md:min-h-[480px] order-2 md:order-1">
             <Image
-              src="/images/banners/comfort-edit.png"
+              src="/images/banners/comfort-edit.webp"
               alt="Soft comforters collection"
               fill
               className="object-cover transition-transform duration-1000 hover:scale-105"
