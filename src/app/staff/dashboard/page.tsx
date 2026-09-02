@@ -30,7 +30,7 @@ export default function StaffDashboard() {
   useEffect(() => {
     Promise.all([
       fetch("/api/products?limit=1").then(r => r.json()),
-      fetch("/api/orders?limit=10").then(r => r.json()).catch(() => ({ orders:[], total:0 })),
+      fetch("/api/orders?limit=10&all=true").then(r => r.json()).catch(() => ({ orders:[], total:0 })),
       fetch("/api/customers?limit=1").then(r => r.json()).catch(() => ({ total:0 })),
     ]).then(([products, ordersData, customers]) => {
       const orders = ordersData.orders || [];
