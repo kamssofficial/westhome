@@ -9,7 +9,6 @@ const SHOP_LINKS = [
   { label: "Wall Decor", href: "/collections/wall-decor" },
   { label: "Laundry", href: "/collections/laundry" },
   { label: "Comforters", href: "/collections/comforters" },
-  { label: "Lamps", href: "/collections/lamps" },
   { label: "Carpets", href: "/collections/carpets" },
   { label: "Clocks", href: "/collections/clocks" },
   { label: "Accessories", href: "/collections/accessories" },
