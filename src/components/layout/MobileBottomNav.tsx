@@ -10,7 +10,7 @@ const NAV_ITEMS = [
   { label: "Home", href: "/", icon: Home },
   { label: "Collections", href: "/shop", icon: LayoutGrid },
   { label: "Search", href: "/search", icon: Search },
-  { label: "Bag", href: "/cart", icon: ShoppingBag },
+  { label: "Cart", href: "/cart", icon: ShoppingBag },
   { label: "Account", href: "/account", icon: User },
 ];
 
