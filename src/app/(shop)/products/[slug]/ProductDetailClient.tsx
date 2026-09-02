@@ -259,7 +259,7 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
           {inStock ? "Buy Now" : "Out of Stock"}
         </button>
 
-        {/* Buy on WhatsApp */}
+        {/*           Enquire on WhatsApp */}
         <a
           href={whatsappUrl}
           target="_blank"
@@ -267,7 +267,7 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
           className="w-full py-3.5 rounded-2xl text-sm font-semibold border-2 border-primary text-primary hover:bg-primary hover:text-white transition-all duration-200 text-center flex items-center justify-center gap-2 mt-3"
         >
           <MessageCircle size={18} />
-          Buy on WhatsApp
+                    Enquire on WhatsApp
         </a>
 
         {/* Accordion sections */}
