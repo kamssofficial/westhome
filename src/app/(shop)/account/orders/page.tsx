@@ -48,6 +48,7 @@ export default function OrdersPage() {
   const [activeTab, setActiveTab] = useState("All");
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/orders")
@@ -58,6 +59,19 @@ export default function OrdersPage() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  const handleCancel = async (orderId: string) => {
+    if (!confirm("Cancel this order?")) return;
+    setCancellingId(orderId);
+    try {
+      const res = await fetch(`/api/orders/${orderId}`, { method: "DELETE" });
+      if (res.ok) {
+        setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, status: "CANCELLED" } : o));
+      }
+    } catch {} finally {
+      setCancellingId(null);
+    }
+  };
 
   const filtered = activeTab === "All"
     ? orders
@@ -126,7 +140,18 @@ export default function OrdersPage() {
               </div>
               <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
                 <span className="text-sm text-secondary">{order.items.length} item{order.items.length > 1 ? "s" : ""}</span>
-                <span className="text-sm font-bold text-primary">{formatPrice(order.total)}</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-bold text-primary">{formatPrice(order.total)}</span>
+                  {(order.status === "NEW" || order.status === "PAYMENT_FAILED") && (
+                    <button
+                      onClick={(e) => { e.preventDefault(); handleCancel(order.id); }}
+                      disabled={cancellingId === order.id}
+                      className="text-xs text-red-500 hover:text-red-700 font-medium underline"
+                    >
+                      {cancellingId === order.id ? "Cancelling..." : "Cancel"}
+                    </button>
+                  )}
+                </div>
               </div>
             </Link>
           ))

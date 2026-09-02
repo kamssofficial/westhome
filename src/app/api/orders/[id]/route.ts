@@ -118,3 +118,47 @@ export async function PATCH(
     return NextResponse.json({ error: "Failed to update order" }, { status: 500 });
   }
 }
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id } = await params;
+    const userId = (session.user as any).id;
+    const role = (session.user as any).role;
+
+    const order = await db.order.findUnique({ where: { id } });
+    if (!order) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
+
+    // Customers can only cancel their own unpaid orders
+    if (role === "CUSTOMER" && order.userId !== userId) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
+    if (order.status !== "NEW" && order.paymentStatus === "COMPLETED") {
+      return NextResponse.json({ error: "Cannot cancel a paid order" }, { status: 400 });
+    }
+
+    await db.order.update({
+      where: { id },
+      data: {
+        status: "CANCELLED",
+        statusHistory: {
+          create: { status: "CANCELLED", note: "Cancelled by customer" },
+        },
+      },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Order DELETE error:", error);
+    return NextResponse.json({ error: "Failed to cancel order" }, { status: 500 });
+  }
+}

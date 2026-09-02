@@ -64,6 +64,18 @@ export default function CheckoutPage() {
 
   useEffect(() => { setMounted(true); }, []);
   useEffect(() => {
+    // Check for existing pending order to avoid duplicates on retry
+    fetch("/api/orders?status=NEW&limit=1")
+      .then((r) => r.json())
+      .then((data) => {
+        const pending = data.orders?.[0];
+        if (pending?.id && pending?.orderNumber) {
+          setOrderResult({ id: pending.id, orderNumber: pending.orderNumber });
+        }
+      })
+      .catch(() => {});
+  }, []);
+  useEffect(() => {
     fetch("/api/settings").then((r) => r.json()).then((d) => {
       if (d.settings) { if (d.settings.freeDeliveryThreshold) setFreeThreshold(Number(d.settings.freeDeliveryThreshold)); if (d.settings.defaultDeliveryCharge) setDeliveryChargeRate(Number(d.settings.defaultDeliveryCharge)); }
     }).catch(() => {});
