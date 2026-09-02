@@ -37,6 +37,12 @@ export async function GET(
       return NextResponse.json({ error: "Staff member not found" }, { status: 404 });
     }
 
+    // SECURITY: Only allow viewing staff-role users through this endpoint
+    const STAFF_ROLES = ["ADMIN", "MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER", "STAFF"];
+    if (!STAFF_ROLES.includes(user.role)) {
+      return NextResponse.json({ error: "Staff member not found" }, { status: 404 });
+    }
+
     return NextResponse.json({ staff: user });
   } catch (error) {
     return NextResponse.json({ error: "Failed to fetch staff member" }, { status: 500 });

@@ -32,7 +32,9 @@ export async function GET(request: NextRequest) {
     const query = searchParams.get("q") || "";
     const role = searchParams.get("role") || "";
 
-    const where: any = {};
+    // SECURITY: Only return staff/admin roles, NEVER customers
+    const STAFF_ROLES = ["ADMIN", "MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER", "STAFF"];
+    const where: any = { role: { in: STAFF_ROLES } };
     if (query) {
       where.OR = [
         { name: { contains: query, mode: "insensitive" } },
