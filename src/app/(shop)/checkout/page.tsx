@@ -3,14 +3,13 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeft, ChevronRight, Smartphone, Shield, MapPin, Copy, CheckCircle, Loader2 } from "lucide-react";
+import { ArrowLeft, ChevronRight, Shield, MapPin, CheckCircle, Loader2 } from "lucide-react";
 import { useCartStore } from "@/store/cart";
 import { formatPrice, cn } from "@/lib/utils";
 import toast from "react-hot-toast";
 
 const STEPS = ["Address", "Review", "Payment"];
 const RAZORPAY_SCRIPT = "https://checkout.razorpay.com/v1/checkout.js";
-const STORE_UPI_ID = "bmdistributorsindia-1@okicici";
 
 interface RazorpayResponse { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string; }
 interface RazorpayOptions {
@@ -49,7 +48,7 @@ export default function CheckoutPage() {
   const [userEmail, setUserEmail] = useState("");
   const [freeThreshold, setFreeThreshold] = useState(2000);
   const [deliveryChargeRate, setDeliveryChargeRate] = useState(149);
-  const [upiCopied, setUpiCopied] = useState(false);
+
 
   const items = useCartStore((s) => s.items);
   const couponCode = useCartStore((s) => s.couponCode);
@@ -77,9 +76,7 @@ export default function CheckoutPage() {
     fetch("/api/auth/session").then((r) => r.json()).then((data) => { if (data?.user?.email) setUserEmail(data.user.email); }).catch(() => {});
   }, []);
 
-  const handleCopyUPI = () => {
-    navigator.clipboard.writeText(STORE_UPI_ID).then(() => { setUpiCopied(true); window.setTimeout(() => setUpiCopied(false), 2500); }).catch(() => {});
-  };
+
 
   const createOrder = async (): Promise<OrderRef> => {
     const addr = addresses.find((a) => a.id === selectedAddress);
@@ -164,7 +161,7 @@ export default function CheckoutPage() {
     {step === 2 && <div className="container-shop">
       <h2 className="text-sm font-semibold text-primary mb-3">Secure Payment</h2>
       <div className="bg-surface rounded-[1.35rem] border border-foreground/[.08] p-5 shadow-sm mb-5"><div className="flex items-center gap-2 mb-3"><Shield size={18} className="text-accent" /><h3 className="text-sm font-semibold text-primary">Pay securely with Razorpay</h3></div><p className="text-xs text-secondary mb-4">UPI, cards, net banking and supported wallets are available in the secure Razorpay checkout.</p><div className="rounded-[1.35rem] bg-surface-muted p-4"><div className="flex justify-between text-sm"><span className="text-secondary">Amount to pay</span><span className="font-bold text-primary">{formatPrice(total)}</span></div></div></div>
-      <div className="bg-surface rounded-[1.35rem] border border-foreground/[.08] p-4 mb-4"><div className="flex items-center gap-3"><Smartphone size={18} className="text-accent" /><div><p className="text-sm font-medium text-primary">UPI supported</p><p className="text-xs text-secondary">Google Pay, PhonePe, Paytm and more through Razorpay.</p></div></div><button type="button" onClick={handleCopyUPI} className="mt-3 flex items-center gap-1.5 px-3 py-2 bg-white rounded-lg border border-border text-xs font-medium">{upiCopied ? <><CheckCircle size={14} className="text-success" /> Copied</> : <><Copy size={14} /> Copy store UPI ID</>}</button></div>
+
       <div className="flex items-center gap-2 text-xs text-secondary mb-6"><Shield size={14} /><span>Payment is verified securely on our server before the order is confirmed.</span></div>
       <div className="bg-surface rounded-[1.35rem] border border-foreground/[.08] p-4 shadow-sm mb-6"><div className="flex justify-between text-sm"><span className="font-semibold text-primary">Total</span><span className="font-bold text-primary">{formatPrice(total)}</span></div></div>
       <div className="sticky bottom-[120px] lg:static bg-white/95 backdrop-blur-sm py-3 -mx-4 px-4 border-t border-border z-[60]"><button type="button" onClick={handlePay} disabled={placingOrder || verifyingPayment} className="w-full py-3.5 bg-primary text-white rounded-full text-sm font-semibold disabled:opacity-50 flex items-center justify-center gap-2">{(placingOrder || verifyingPayment) && <Loader2 size={16} className="animate-spin" />}{verifyingPayment ? "Verifying Payment..." : placingOrder ? "Opening Secure Checkout..." : `Pay ${formatPrice(total)} Securely`}</button>{orderResult && <p className="text-[10px] text-text-muted text-center mt-2">Order {orderResult.orderNumber} is saved. You can retry payment safely if the payment window is closed.</p>}</div>
