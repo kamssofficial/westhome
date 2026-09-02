@@ -265,3 +265,4 @@ All rights reserved. WESTHOME by BM Distributors.
 
 # redeploy
 # redeploy hero
+# fix razorpay env vars
