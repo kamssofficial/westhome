@@ -261,3 +261,4 @@ npx prisma generate  # Generate Prisma client
 ## License
 
 All rights reserved. WESTHOME by BM Distributors.
+# v2 - Razorpay integrated
