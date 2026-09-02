@@ -16,11 +16,11 @@ export async function POST(request: NextRequest) {
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const { orderId, amount } = await request.json();
+    const { orderId, amount: requestedAmount } = await request.json();
 
-    if (!orderId || !amount) {
+    if (!orderId) {
       return NextResponse.json(
-        { error: "Order ID and amount are required" },
+        { error: "Order ID is required" },
         { status: 400 }
       );
     }
@@ -37,6 +37,12 @@ export async function POST(request: NextRequest) {
     // SECURITY: Ensure the order belongs to the authenticated user
     if (order.userId && order.userId !== (session.user as any).id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    // Use the order's total if amount was not provided by the client
+    const amount = requestedAmount || order.total;
+    if (!amount || amount <= 0) {
+      return NextResponse.json({ error: "Invalid payment amount" }, { status: 400 });
     }
 
     // Create Razorpay order

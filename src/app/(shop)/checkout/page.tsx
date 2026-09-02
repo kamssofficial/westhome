@@ -100,7 +100,7 @@ export default function CheckoutPage() {
   const openRazorpay = async (order: OrderRef) => {
     const loaded = await loadRazorpay();
     if (!loaded || !window.Razorpay) throw new Error("Payment gateway could not be loaded. Check your connection and try again.");
-    const createPayment = await fetch("/api/payment/create", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ orderId: order.id }) });
+    const createPayment = await fetch("/api/payment/create", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ orderId: order.id, amount: total }) });
     const paymentData = await createPayment.json().catch(() => ({}));
     if (!createPayment.ok || !paymentData?.razorpayOrderId || !paymentData?.keyId) throw new Error(paymentData?.error || "Unable to start secure payment.");
     const address = addresses.find((a) => a.id === selectedAddress);
