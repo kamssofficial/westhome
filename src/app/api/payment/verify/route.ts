@@ -152,8 +152,12 @@ export async function POST(request: NextRequest) {
       verified: true,
       message: "Payment verified successfully",
     });
-  } catch (error) {
-    console.error("Payment verification error:", error);
+  } catch (error: any) {
+    const msg = error?.message || "Unknown error";
+    if (msg.includes("Unauthorized")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    console.error("Payment verification error:", msg);
     return NextResponse.json(
       { error: "Payment verification failed" },
       { status: 500 }

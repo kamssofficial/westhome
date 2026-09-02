@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
         where.userId = (session.user as any).id;
       }
     } else {
-      return NextResponse.json({ orders: [], total: 0 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     if (status) where.status = status;
     const [orders, total] = await Promise.all([

@@ -66,9 +66,13 @@ export async function POST(request: NextRequest) {
       keyId: process.env.RAZORPAY_KEY_ID,
     });
   } catch (error: any) {
-    console.error("Payment creation error:", error?.message || error);
+    const msg = error?.message || "Unknown error";
+    if (msg.includes("Unauthorized")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    console.error("Payment creation error:", msg);
     return NextResponse.json(
-      { error: "Failed to create payment", detail: error?.message || "Unknown error" },
+      { error: "Failed to create payment", detail: msg },
       { status: 500 }
     );
   }
