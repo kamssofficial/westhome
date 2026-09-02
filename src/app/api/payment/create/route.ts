@@ -5,9 +5,12 @@ import { requireAuth } from "@/lib/auth";
 // Razorpay initialization
 const Razorpay = require("razorpay");
 
+if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+  console.error("RAZORPAY_KEY_ID or RAZORPAY_KEY_SECRET is not set");
+}
 const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
+  key_id: process.env.RAZORPAY_KEY_ID || "",
+  key_secret: process.env.RAZORPAY_KEY_SECRET || "",
 });
 
 export async function POST(request: NextRequest) {
@@ -62,10 +65,10 @@ export async function POST(request: NextRequest) {
       currency: razorpayOrder.currency,
       keyId: process.env.RAZORPAY_KEY_ID,
     });
-  } catch (error) {
-    console.error("Payment creation error:", error);
+  } catch (error: any) {
+    console.error("Payment creation error:", error?.message || error);
     return NextResponse.json(
-      { error: "Failed to create payment" },
+      { error: "Failed to create payment", detail: error?.message || "Unknown error" },
       { status: 500 }
     );
   }
