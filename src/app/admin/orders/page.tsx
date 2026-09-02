@@ -90,53 +90,51 @@ function AdminOrdersPageContent() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-surface-muted/50">
-                <th className="text-left px-4 py-3 font-medium text-text-secondary">Order #</th>
-                <th className="text-left px-4 py-3 font-medium text-text-secondary">Customer</th>
-                <th className="text-right px-4 py-3 font-medium text-text-secondary">Total</th>
-                <th className="text-center px-4 py-3 font-medium text-text-secondary">Status</th>
-                <th className="text-center px-4 py-3 font-medium text-text-secondary hidden md:table-cell">Payment</th>
-                <th className="text-right px-4 py-3 font-medium text-text-secondary hidden md:table-cell">Date</th>
-                <th className="text-right px-4 py-3 font-medium text-text-secondary">Actions</th>
+                <th className="text-left px-3 py-3 font-medium text-text-secondary">Order</th>
+                <th className="text-right px-3 py-3 font-medium text-text-secondary">Total</th>
+                <th className="text-center px-3 py-3 font-medium text-text-secondary hidden sm:table-cell">Status</th>
+                <th className="text-center px-3 py-3 font-medium text-text-secondary hidden md:table-cell">Payment</th>
+                <th className="text-right px-3 py-3 font-medium text-text-secondary hidden md:table-cell">Date</th>
+                <th className="text-right px-3 py-3 font-medium text-text-secondary">View</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="border-b border-border">
-                    <td className="px-4 py-3"><Skeleton className="h-5 w-20" /></td>
-                    <td className="px-4 py-3"><Skeleton className="h-5 w-28" /></td>
-                    <td className="px-4 py-3"><Skeleton className="h-5 w-16 ml-auto" /></td>
-                    <td className="px-4 py-3"><Skeleton className="h-5 w-20 mx-auto" /></td>
-                    <td className="px-4 py-3 hidden md:table-cell"><Skeleton className="h-5 w-20 mx-auto" /></td>
-                    <td className="px-4 py-3 hidden md:table-cell"><Skeleton className="h-5 w-20 ml-auto" /></td>
-                    <td className="px-4 py-3"><Skeleton className="h-5 w-8 ml-auto" /></td>
+                    <td className="px-3 py-3"><Skeleton className="h-5 w-20" /><Skeleton className="h-3 w-24 mt-1" /></td>
+                    <td className="px-3 py-3"><Skeleton className="h-5 w-16 ml-auto" /></td>
+                    <td className="px-3 py-3 hidden sm:table-cell"><Skeleton className="h-5 w-20 mx-auto" /></td>
+                    <td className="px-3 py-3 hidden md:table-cell"><Skeleton className="h-5 w-20 mx-auto" /></td>
+                    <td className="px-3 py-3 hidden md:table-cell"><Skeleton className="h-5 w-20 ml-auto" /></td>
+                    <td className="px-3 py-3"><Skeleton className="h-5 w-8 ml-auto" /></td>
                   </tr>
                 ))
               ) : orders.length > 0 ? (
                 orders.map((order) => (
                   <tr key={order.id} className="border-b border-border last:border-0 hover:bg-surface-muted/50">
-                    <td className="px-4 py-3">
-                      <Link href={`/admin/orders/${order.id}`} className="font-medium hover:text-accent">
+                    <td className="px-3 py-3">
+                      <Link href={`/admin/orders/${order.id}`} className="font-medium hover:text-accent text-xs sm:text-sm">
                         {order.orderNumber}
                       </Link>
+                      <p className="text-xs text-text-muted truncate max-w-[100px] sm:max-w-none">{order.customerName}</p>
+                      <span className={cn("sm:hidden inline-block mt-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-medium", getStatusColor(order.status))}>
+                        {order.status.replace(/_/g, " ")}
+                      </span>
                     </td>
-                    <td className="px-4 py-3">
-                      <p className="truncate max-w-[150px]">{order.customerName}</p>
-                      <p className="text-xs text-text-muted">{order.customerPhone}</p>
-                    </td>
-                    <td className="px-4 py-3 text-right font-medium">{formatPrice(order.total)}</td>
-                    <td className="px-4 py-3 text-center">
+                    <td className="px-3 py-3 text-right font-medium text-xs sm:text-sm">{formatPrice(order.total)}</td>
+                    <td className="px-3 py-3 text-center hidden sm:table-cell">
                       <span className={cn("px-2 py-0.5 rounded-full text-xs font-medium", getStatusColor(order.status))}>
                         {order.status.replace(/_/g, " ")}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-center hidden md:table-cell">
+                    <td className="px-3 py-3 text-center hidden md:table-cell">
                       <span className={cn("text-xs", order.paymentStatus === "COMPLETED" ? "text-success" : "text-warning")}>
                         {order.paymentStatus}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-right text-text-muted hidden md:table-cell">{formatDate(order.createdAt)}</td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-3 py-3 text-right text-text-muted hidden md:table-cell text-xs">{formatDate(order.createdAt)}</td>
+                    <td className="px-3 py-3 text-right">
                       <Link href={`/admin/orders/${order.id}`} className="p-1.5 hover:bg-surface-muted rounded-lg inline-flex">
                         <Eye size={14} className="text-text-muted" />
                       </Link>
