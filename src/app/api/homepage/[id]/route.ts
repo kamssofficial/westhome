@@ -13,9 +13,16 @@ export async function PUT(
     const { id } = await params;
     const body = await request.json();
 
+    // SECURITY: Allowlist fields — do not mass-assign raw body
+    const ALLOWED_FIELDS = ["type", "title", "subtitle", "description", "image", "videoUrl", "buttonText", "buttonLink", "buttonStyle", "isActive", "position", "backgroundColor", "textColor", "content"] as const;
+    const data: Record<string, any> = {};
+    for (const field of ALLOWED_FIELDS) {
+      if (body[field] !== undefined) data[field] = body[field];
+    }
+
     const section = await db.homepageSection.update({
       where: { id },
-      data: body,
+      data,
     });
 
     return NextResponse.json({ section });

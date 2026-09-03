@@ -56,7 +56,7 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
   if (!product) return null;
 
   const images = product.images?.length ? product.images : [];
-  const currentPrice = selectedVariant?.salePrice || selectedVariant?.price || product.salePrice || product.regularPrice;
+  const currentPrice = (selectedVariant?.salePrice != null && selectedVariant.salePrice > 0 ? selectedVariant.salePrice : selectedVariant?.price) ?? (product.salePrice != null && product.salePrice > 0 ? product.salePrice : product.regularPrice);
   const originalPrice = product.regularPrice;
   const inStock = product.trackInventory ? (selectedVariant?.stockQuantity ?? product.stockQuantity) > 0 : true;
   const rating = reviewAvg !== null ? reviewAvg : (product.rating || 0);

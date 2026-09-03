@@ -19,7 +19,7 @@ export default function WishlistPage() {
         id: item.productId,
         productId: item.productId,
         name: item.name,
-        price: item.salePrice || item.price,
+        price: item.salePrice != null && item.salePrice > 0 ? item.salePrice : item.price,
         quantity: 1,
         image: item.image,
         maxStock: 10,
@@ -69,7 +69,7 @@ export default function WishlistPage() {
                 <div className="flex-1 min-w-0">
                   <h3 className="text-sm font-medium text-primary truncate">{item.name}</h3>
                   <p className="text-sm font-semibold text-primary mt-1">
-                    {formatPrice(item.salePrice || item.price)}
+                    {formatPrice(item.salePrice != null && item.salePrice > 0 ? item.salePrice : item.price)}
                   </p>
                   <div className="flex items-center gap-2 mt-2">
                     <button
@@ -78,7 +78,7 @@ export default function WishlistPage() {
                           id: item.productId,
                           productId: item.productId,
                           name: item.name,
-                          price: item.salePrice || item.price,
+                          price: item.salePrice != null && item.salePrice > 0 ? item.salePrice : item.price,
                           quantity: 1,
                           image: item.image,
                           maxStock: 10,

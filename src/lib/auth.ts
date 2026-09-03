@@ -58,6 +58,7 @@ export const authOptions: NextAuthConfig = {
           email: user.email,
           name: user.name || "",
           role: user.role,
+          permissions: user.permissions || "[]",
         };
       },
     }),
@@ -101,15 +102,15 @@ export const authOptions: NextAuthConfig = {
   cookies: {
     csrfToken: {
       name: "authjs.csrf-token",
-      options: { httpOnly: true, sameSite: "lax", path: "/", secure: true },
+      options: { httpOnly: true, sameSite: "lax", path: "/", secure: process.env.NODE_ENV === "production" },
     },
     sessionToken: {
       name: "authjs.session-token",
-      options: { httpOnly: true, sameSite: "lax", path: "/", secure: true, maxAge: 30 * 24 * 60 * 60 },
+      options: { httpOnly: true, sameSite: "lax", path: "/", secure: process.env.NODE_ENV === "production", maxAge: 30 * 24 * 60 * 60 },
     },
     callbackUrl: {
       name: "authjs.callback-url",
-      options: { httpOnly: true, sameSite: "lax", path: "/", secure: true },
+      options: { httpOnly: true, sameSite: "lax", path: "/", secure: process.env.NODE_ENV === "production" },
     },
   },
   trustHost: true,

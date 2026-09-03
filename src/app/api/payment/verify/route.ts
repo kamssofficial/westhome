@@ -65,9 +65,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // SECURITY: Verify Razorpay amount matches order total
+    const orderForVerify = await db.order.findUnique({ where: { id: orderId }, select: { total: true, paymentStatus: true, paymentId: true } });
+    if (!orderForVerify) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
+    // Check amount from Razorpay order matches our order total (in paise)
+    const expectedPaise = Math.round(Number(orderForVerify.total) * 100);
+    // We cannot fetch from Razorpay here without API call, but we stored amount on Payment
+    const paymentRecord = await db.payment.findFirst({ where: { orderId }, select: { amount: true } });
+    if (paymentRecord && Math.round(Number(paymentRecord.amount) * 100) !== expectedPaise) {
+      return NextResponse.json({ error: "Payment amount mismatch" }, { status: 400 });
+    }
+    
     // IDEMPOTENCY: Check if this order was already processed
-    const orderStatus = await db.order.findUnique({ where: { id: orderId }, select: { paymentStatus: true, paymentId: true } });
-    if (orderStatus?.paymentStatus === "COMPLETED" && orderStatus.paymentId) {
+    if (orderForVerify.paymentStatus === "COMPLETED" && orderForVerify.paymentId) {
       return NextResponse.json({
         verified: true,
         message: "Payment already verified",

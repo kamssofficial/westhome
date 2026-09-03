@@ -20,7 +20,8 @@ export async function PATCH(
       return NextResponse.json({ error: "Notification not found" }, { status: 404 });
     }
 
-    const readByArray: string[] = JSON.parse(notification.readBy || "[]");
+    let readByArray: string[] = [];
+    try { readByArray = JSON.parse(notification.readBy || "[]"); } catch { readByArray = []; }
     if (!readByArray.includes(userId)) {
       readByArray.push(userId);
       await db.notification.update({

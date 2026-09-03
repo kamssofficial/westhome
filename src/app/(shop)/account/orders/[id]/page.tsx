@@ -80,7 +80,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
       for (const item of order.items) {
         const product = products.find((p: any) => p.id === item.productId);
         if (!product) continue;
-        const price = product.salePrice || product.regularPrice;
+        const price = product.salePrice != null && product.salePrice > 0 ? product.salePrice : product.regularPrice;
         const image = product.images && product.images[0] ? product.images[0].url : item.image;
         addItem({
           id: item.productId + "-" + (item.variantId || "default") + "-" + Date.now(),

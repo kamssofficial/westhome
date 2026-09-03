@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
 
 export async function POST() {
+  // Require authentication to prevent abuse
+  const session = await auth().catch(() => null);
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const res = new NextResponse(JSON.stringify({ ok: true }), {
     status: 200,
     headers: { "Content-Type": "application/json" },

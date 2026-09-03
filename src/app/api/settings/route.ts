@@ -3,16 +3,23 @@ import db from "@/lib/db";
 import { Prisma } from "@prisma/client";
 import { requireAdmin } from "@/lib/apiAuth";
 
-// SECURITY: Settings keys that should NEVER be exposed to unauthenticated users
-const SENSITIVE_KEYS = ["smtp_password", "api_secret", "webhook_secret", "internal_note"];
+// SECURITY: Only expose these keys publicly (allowlist, not denylist)
+const PUBLIC_KEYS = [
+  "storeName", "storePhone", "storeEmail", "whatsappNumber",
+  "freeDeliveryThreshold", "defaultDeliveryCharge",
+  "currency", "currencySymbol",
+  "storeAddress", "storeCity", "storeState",
+  "footerText", "footerLinks",
+  "metaTitle", "metaDescription",
+];
 
 export async function GET() {
   try {
     const settings = await db.siteSetting.findMany();
     const settingsObj: Record<string, any> = {};
     settings.forEach((s) => {
-      // SECURITY: Strip sensitive keys from public response
-      if (!SENSITIVE_KEYS.includes(s.key)) {
+      // SECURITY: Only expose public keys (allowlist)
+      if (PUBLIC_KEYS.includes(s.key)) {
         settingsObj[s.key] = s.value;
       }
     });

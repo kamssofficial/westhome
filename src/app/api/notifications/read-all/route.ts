@@ -12,16 +12,22 @@ export async function PATCH() {
 
   try {
     // Find all notifications not yet read by this user
-    const unread = await db.notification.findMany({
-      where: {
-        NOT: { readBy: { contains: userId } },
-      },
+    // Fetch all and filter in JS for exact userId match (avoids substring false-positives)
+    const allNotifications = await db.notification.findMany({
       select: { id: true, readBy: true },
+      take: 200,
+    });
+    const unread = allNotifications.filter((n) => {
+      try {
+        const arr: string[] = JSON.parse(n.readBy || "[]");
+        return !arr.includes(userId);
+      } catch { return true; }
     });
 
     // Update each to include this user's ID
     for (const n of unread) {
-      const arr: string[] = JSON.parse(n.readBy || "[]");
+      let arr: string[] = [];
+      try { arr = JSON.parse(n.readBy || "[]"); } catch { arr = []; }
       if (!arr.includes(userId)) {
         arr.push(userId);
         await db.notification.update({

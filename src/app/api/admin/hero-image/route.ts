@@ -43,8 +43,8 @@ export async function POST(request: NextRequest) {
   if (authResult.error) return authResult.error;
 
   try {
-    const userId = (authResult as any).userId || "unknown";
-    const userName = (authResult as any).userName || "Staff";
+    const userId = (authResult.session?.user as any)?.id || "unknown";
+    const userName = (authResult.session?.user as any)?.name || "Staff";
 
     const formData = await request.formData();
     const file = formData.get("file") as File | null;

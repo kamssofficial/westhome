@@ -52,6 +52,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("Customers API error:", error);
-    return NextResponse.json({ customers: [], total: 0 });
+    return NextResponse.json({ error: "Failed to fetch customers" }, { status: 500 });
   }
 }

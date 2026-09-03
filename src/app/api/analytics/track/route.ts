@@ -1,14 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
+import { auth } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { eventType, sessionId, userId, productId, categoryId, subcategoryId, metadata, userAgent, deviceType, source, utmSource, utmMedium, utmCampaign, referrer } = body;
+    const { eventType, sessionId, productId, categoryId, subcategoryId, metadata, userAgent, deviceType, source, utmSource, utmMedium, utmCampaign, referrer } = body;
 
     if (!eventType || !sessionId) {
       return NextResponse.json({ ok: true });
     }
+
+    // SECURITY: Get userId from session, never trust client
+    const session = await auth().catch(() => null);
+    const userId = (session?.user as any)?.id || null;
 
     // Build metadata with traffic source info
     const enrichedMetadata: any = { ...(metadata || {}) };
@@ -22,7 +27,7 @@ export async function POST(request: NextRequest) {
       data: {
         eventType: String(eventType).toUpperCase(),
         sessionId: String(sessionId),
-        userId: userId || null,
+        userId,
         productId: productId || null,
         categoryId: categoryId || null,
         subcategoryId: subcategoryId || null,

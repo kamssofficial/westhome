@@ -180,12 +180,18 @@ export async function POST(request: NextRequest) {
     const finalTax = Number(tax) || 0;
     const finalTotal = finalSubtotal - finalDiscount + finalDeliveryCharge + finalTax;
 
-    // Generate order number
+    // Generate collision-safe order number with retry
     const date = new Date();
     const year = date.getFullYear().toString().slice(-2);
     const month = (date.getMonth() + 1).toString().padStart(2, "0");
-    const random = Math.floor(Math.random() * 10000).toString().padStart(4, "0");
-    const orderNumber = `WH${year}${month}${random}`;
+    let orderNumber = "";
+    for (let attempt = 0; attempt < 10; attempt++) {
+      const random = Math.floor(Math.random() * 100000).toString().padStart(5, "0");
+      orderNumber = `WH${year}${month}${random}`;
+      const existing = await db.order.findUnique({ where: { orderNumber }, select: { id: true } });
+      if (!existing) break;
+      if (attempt === 9) throw new Error("Failed to generate unique order number");
+    }
 
     // Create order with items
     const order = await db.order.create({

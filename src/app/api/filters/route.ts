@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     if (subcategorySlug) where.subcategory = { slug: subcategorySlug };
 
     // Use parallel efficient queries instead of loading all products
-    const [materials, colors, styles, patterns, shapes, finishes, priceAgg, stockCheck, statusCheck, reviewAgg, totalProducts] = await Promise.all([
+    const [materials, colors, styles, patterns, shapes, finishes, priceAgg, inStockCount, outOfStockCount, featuredCount, newArrivalCount, onSaleCount, hasRatings, totalProducts] = await Promise.all([
       db.product.findMany({ where, select: { material: true }, distinct: ["material"] }),
       db.product.findMany({ where, select: { color: true }, distinct: ["color"] }),
       db.product.findMany({ where, select: { style: true }, distinct: ["style"] }),
@@ -21,9 +21,12 @@ export async function GET(request: NextRequest) {
       db.product.findMany({ where, select: { shape: true }, distinct: ["shape"] }),
       db.product.findMany({ where, select: { finish: true }, distinct: ["finish"] }),
       db.product.aggregate({ where, _min: { regularPrice: true, salePrice: true }, _max: { regularPrice: true, salePrice: true } }),
-      db.product.findMany({ where, select: { stockQuantity: true }, take: 1 }),
-      db.product.findMany({ where, select: { isFeatured: true, isNewArrival: true, salePrice: true }, take: 1 }),
-      db.review.findMany({ where: { product: where, status: "APPROVED" }, select: { rating: true }, take: 1 }),
+      db.product.count({ where: { ...where, stockQuantity: { gt: 0 } } }),
+      db.product.count({ where: { ...where, stockQuantity: { lte: 0 } } }),
+      db.product.count({ where: { ...where, isFeatured: true } }),
+      db.product.count({ where: { ...where, isNewArrival: true } }),
+      db.product.count({ where: { ...where, salePrice: { not: null } } }),
+      db.review.count({ where: { product: where, status: "APPROVED" } }),
       db.product.count({ where }),
     ]);
 
@@ -44,13 +47,13 @@ export async function GET(request: NextRequest) {
       finishes: extract(finishes, "finish"),
       dimensions: { widths: [], heights: [], lengths: [], diameters: [] },
       priceRange: { min: minPrice, max: maxPrice },
-      availability: { inStock: stockCheck.length > 0 && stockCheck.some(p => p.stockQuantity > 0), outOfStock: stockCheck.length > 0 && stockCheck.some(p => p.stockQuantity <= 0) },
+      availability: { inStock: inStockCount > 0, outOfStock: outOfStockCount > 0 },
       productStatus: {
-        featured: statusCheck.some(p => p.isFeatured),
-        newArrival: statusCheck.some(p => p.isNewArrival),
-        onSale: statusCheck.some(p => p.salePrice !== null),
+        featured: featuredCount > 0,
+        newArrival: newArrivalCount > 0,
+        onSale: onSaleCount > 0,
       },
-      hasRatings: reviewAgg.length > 0,
+      hasRatings: hasRatings > 0,
       totalProducts,
     });
   } catch (error) {

@@ -87,7 +87,7 @@ export default function CartPage() {
                 <p className="text-xs text-secondary mt-0.5">{item.variantName}</p>
               )}
               <p className="text-sm font-semibold text-primary mt-1">
-                {formatPrice(item.salePrice || item.price)}
+                {formatPrice(item.salePrice != null && item.salePrice > 0 ? item.salePrice : item.price)}
               </p>
 
               {/* Quantity controls */}
