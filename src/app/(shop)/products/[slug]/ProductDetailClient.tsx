@@ -27,7 +27,16 @@ interface ProductDetailProps {
 }
 export default function ProductDetailClient({ product, reviews: initialReviews, reviewAvg: initialReviewAvg, reviewCount: initialReviewCount, relatedProducts: initialRelated }: ProductDetailProps) {
   const { whatsappNumber } = useSettings();
-  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(product?.variants?.length ? product.variants[0] : null);
+  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>(() => {
+    const initial: Record<string, string> = {};
+    const firstVariant = product?.variants?.[0];
+    if (firstVariant) {
+      firstVariant.attributes.forEach((attr: any) => {
+        initial[attr.attributeName] = attr.value;
+      });
+    }
+    return initial;
+  });
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [openAccordion, setOpenAccordion] = useState<string | null>(null);
@@ -52,6 +61,51 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
 
 
   
+
+  // Derive active variant from selected attribute values
+  const activeVariant = (product?.variants?.length
+    ? product.variants.find((v: any) =>
+        v.attributes.length > 0 &&
+        v.attributes.every((a: any) => selectedAttributes[a.attributeName] === a.value)
+      ) || null
+    : null) as ProductVariant | null;
+  const selectedVariant = activeVariant;
+
+  // Compute grouped attributes for the selector UI
+  const attributeGroups: Record<string, string[]> = {};
+  if (product?.variants) {
+    for (const v of product.variants) {
+      for (const attr of v.attributes) {
+        if (!attributeGroups[attr.attributeName]) {
+          attributeGroups[attr.attributeName] = [];
+        }
+        if (!attributeGroups[attr.attributeName].includes(attr.value)) {
+          attributeGroups[attr.attributeName].push(attr.value);
+        }
+      }
+    }
+  }
+
+  // Compute available attribute values given current selections
+  const getAvailableValues = (attrName: string): string[] => {
+    if (!product?.variants) return [];
+    return product.variants
+      .filter((v: any) =>
+        v.attributes.every((a: any) =>
+          a.attributeName === attrName || selectedAttributes[a.attributeName] === a.value
+        )
+      )
+      .map((v: any) => {
+        const attr = v.attributes.find((a: any) => a.attributeName === attrName);
+        return attr?.value;
+      })
+      .filter((val): val is string => !!val)
+      .filter((val, i, arr) => arr.indexOf(val) === i);
+  };
+
+  const handleAttributeSelect = (attrName: string, value: string) => {
+    setSelectedAttributes((prev) => ({ ...prev, [attrName]: value }));
+  };
 
   if (!product) return null;
 
@@ -207,6 +261,46 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
           </p>
         )}
 
+        {/* Variant / Size Selector */}
+        {Object.keys(attributeGroups).length > 0 && (
+          <div className="mt-5 space-y-4">
+            {Object.entries(attributeGroups).map(([attrName, values]) => (
+              <div key={attrName}>
+                <p className="text-sm font-medium text-primary mb-2.5">
+                  {attrName}:
+                  <span className="font-normal text-secondary ml-1">
+                    {selectedAttributes[attrName] || values[0]}
+                  </span>
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {values.map((value) => {
+                    const isSelected = selectedAttributes[attrName] === value;
+                    const availableValues = getAvailableValues(attrName);
+                    const isAvailable = availableValues.includes(value);
+                    return (
+                      <button
+                        key={value}
+                        onClick={() => handleAttributeSelect(attrName, value)}
+                        disabled={!isAvailable}
+                        className={cn(
+                          "px-4 py-2 rounded-xl text-sm font-medium border-2 transition-all duration-200",
+                          isSelected
+                            ? "border-primary bg-primary text-white shadow-sm"
+                            : isAvailable
+                              ? "border-border bg-white text-primary hover:border-primary/50"
+                              : "border-border bg-surface-muted text-text-muted cursor-not-allowed line-through"
+                        )}
+                      >
+                        {value}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Quantity */}
         <div className="flex items-center gap-4 mt-5">
           <div className="flex items-center border border-border rounded-[1.35rem] overflow-hidden">
@@ -218,7 +312,7 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
             </button>
             <span className="w-12 text-center text-sm font-semibold">{quantity}</span>
             <button
-              onClick={() => setQuantity((q) => Math.min(10, q + 1))}
+              onClick={() => setQuantity((q) => Math.min(selectedVariant?.stockQuantity ?? 10, q + 1))}
               className="w-10 h-10 flex items-center justify-center hover:bg-surface-muted transition-colors"
             >
               <Plus size={16} />
@@ -237,7 +331,7 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
               : "bg-surface-muted text-text-muted cursor-not-allowed"
           )}
         >
-          {inStock ? "Add to Cart" : "Out of Stock"}
+          {inStock ? `Add to Cart${selectedVariant ? ` - ${selectedVariant.name}` : ""}` : "Out of Stock"}
         </button>
 
         {/* Buy Now */}
