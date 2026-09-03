@@ -86,90 +86,89 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Payment is verified - update order
-    await db.order.update({
-      where: { id: orderId },
-      data: {
-        paymentId: razorpay_payment_id,
-        paymentStatus: "COMPLETED",
-        paymentVerified: true,
-        status: "CONFIRMED",
-        statusHistory: {
-          create: {
-            status: "CONFIRMED",
-            note: "Payment verified and order confirmed",
+    // SECURITY: Use transaction for atomicity — prevents race condition
+    // where concurrent verify calls both decrement stock
+    const processedOrder = await db.$transaction(async (tx) => {
+      // Re-check paymentStatus inside transaction (optimistic lock)
+      const freshOrder = await tx.order.findUnique({ where: { id: orderId }, select: { paymentStatus: true, paymentId: true } });
+      if (freshOrder?.paymentStatus === "COMPLETED" && freshOrder.paymentId) {
+        return null; // Already processed
+      }
+
+      // Update order
+      await tx.order.update({
+        where: { id: orderId },
+        data: {
+          paymentId: razorpay_payment_id,
+          paymentStatus: "COMPLETED",
+          paymentVerified: true,
+          status: "CONFIRMED",
+          statusHistory: {
+            create: {
+              status: "CONFIRMED",
+              note: "Payment verified and order confirmed",
+            },
           },
         },
-      },
-    });
+      });
 
-    // Update payment record
-    await db.payment.updateMany({
-      where: { orderId },
-      data: {
-        razorpayOrderId: razorpay_order_id,
-        razorpayPaymentId: razorpay_payment_id,
-        razorpaySignature: razorpay_signature,
-        status: "COMPLETED",
-      },
-    });
+      // Update payment record
+      await tx.payment.updateMany({
+        where: { orderId },
+        data: {
+          razorpayOrderId: razorpay_order_id,
+          razorpayPaymentId: razorpay_payment_id,
+          razorpaySignature: razorpay_signature,
+          status: "COMPLETED",
+        },
+      });
 
-    // Update stock
-    const order = await db.order.findUnique({
-      where: { id: orderId },
-      include: { items: true },
-    });
+      // Decrement stock atomically
+      const orderWithItems = await tx.order.findUnique({ where: { id: orderId }, include: { items: true } });
+      if (orderWithItems) {
+        for (const item of orderWithItems.items) {
+          if (item.variantId) {
+            await tx.productVariant.update({
+              where: { id: item.variantId },
+              data: { stockQuantity: { decrement: item.quantity } },
+            });
+          } else {
+            await tx.product.update({
+              where: { id: item.productId },
+              data: { stockQuantity: { decrement: item.quantity } },
+            });
+          }
+        }
 
-    if (order) {
-      for (const item of order.items) {
-        if (item.variantId) {
-          await db.productVariant.update({
-            where: { id: item.variantId },
-            data: {
-              stockQuantity: {
-                decrement: item.quantity,
-              },
-            },
+        // Increment coupon usage atomically
+        if (orderWithItems.couponId) {
+          await tx.coupon.update({
+            where: { id: orderWithItems.couponId },
+            data: { usedCount: { increment: 1 } },
           });
-        } else {
-          await db.product.update({
-            where: { id: item.productId },
-            data: {
-              stockQuantity: {
-                decrement: item.quantity,
-              },
-            },
-          });
+          if (orderWithItems.userId) {
+            await tx.couponUsage.create({
+              data: { couponId: orderWithItems.couponId, userId: orderWithItems.userId, orderId: orderWithItems.id },
+            });
+          }
         }
       }
+      return orderWithItems;
+    });
 
-      // Check for low stock and notify
-        for (const item of order.items) {
-          try {
-            const product = await db.product.findUnique({ where: { id: item.productId } });
-            if (product && product.trackInventory && product.stockQuantity <= (product.lowStockThreshold || 5)) {
-              notifyLowStock(product.id, product.name, product.stockQuantity).catch(() => {});
-            }
-          } catch {}
+    // If already processed, return success
+    if (!processedOrder) {
+      return NextResponse.json({ verified: true, message: "Payment already verified" });
+    }
+
+    // Post-transaction: low stock notifications (non-critical, outside transaction)
+    for (const item of processedOrder.items) {
+      try {
+        const product = await db.product.findUnique({ where: { id: item.productId } });
+        if (product && product.trackInventory && product.stockQuantity <= (product.lowStockThreshold || 5)) {
+          notifyLowStock(product.id, product.name, product.stockQuantity).catch(() => {});
         }
-
-      // Increment coupon usage if applicable
-      if (order.couponId) {
-        await db.coupon.update({
-          where: { id: order.couponId },
-          data: { usedCount: { increment: 1 } },
-        });
-
-        if (order.userId) {
-          await db.couponUsage.create({
-            data: {
-              couponId: order.couponId,
-              userId: order.userId,
-              orderId: order.id,
-            },
-          });
-        }
-      }
+      } catch {}
     }
 
     return NextResponse.json({

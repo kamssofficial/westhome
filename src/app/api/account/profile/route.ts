@@ -100,10 +100,11 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Soft delete - deactivate account instead of hard delete (preserves order history)
+    // Soft delete - deactivate account (preserves order history)
+    // SECURITY: Fully anonymize email to prevent data leakage
     await db.user.update({
       where: { id: userId },
-      data: { isActive: false, email: `deleted_${Date.now()}_${user.email}` },
+      data: { isActive: false, email: `deleted_${Date.now()}_${Date.now()}@anonymized.invalid`, name: "Deleted User", phone: null },
     });
 
     return NextResponse.json({ message: "Account deleted successfully" });

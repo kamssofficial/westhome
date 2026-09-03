@@ -5,7 +5,8 @@ export async function GET() {
   try {
     const promotions = await db.promotion.findMany({ orderBy: { position: "asc" } });
     return NextResponse.json({ promotions });
-  } catch {
-    return NextResponse.json({ promotions: [] });
+  } catch (error) {
+    console.error("Promotions GET error:", error);
+    return NextResponse.json({ error: "Failed to fetch promotions" }, { status: 500 });
   }
 }

@@ -33,7 +33,7 @@ export async function GET() {
     return NextResponse.json({ active, history });
   } catch (error) {
     console.error("Hero GET error:", error);
-    return NextResponse.json({ active: null, history: [] });
+    return NextResponse.json({ error: "Failed to fetch hero images" }, { status: 500 });
   }
 }
 

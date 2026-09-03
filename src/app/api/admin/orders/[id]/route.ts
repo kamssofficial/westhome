@@ -96,6 +96,27 @@ export async function PUT(
     const updates: any = {};
 
     if (body.status) {
+      // SECURITY: Validate status transitions using state machine
+      const currentOrder = await db.order.findUnique({ where: { id }, select: { status: true } });
+      if (!currentOrder) return NextResponse.json({ error: "Order not found" }, { status: 404 });
+      
+      const VALID_TRANSITIONS: Record<string, string[]> = {
+        NEW: ["CONFIRMED", "CANCELLED", "ON_HOLD"],
+        CONFIRMED: ["PROCESSING", "SHIPPED", "CANCELLED", "ON_HOLD"],
+        PROCESSING: ["SHIPPED", "CANCELLED", "ON_HOLD"],
+        SHIPPED: ["OUT_FOR_DELIVERY", "DELIVERED", "ON_HOLD"],
+        OUT_FOR_DELIVERY: ["DELIVERED"],
+        ON_HOLD: ["CONFIRMED", "PROCESSING", "CANCELLED"],
+        DELIVERED: ["REFUNDED"],
+        CANCELLED: [],
+        PAYMENT_FAILED: ["NEW"],
+        REFUNDED: [],
+      };
+      const allowed = VALID_TRANSITIONS[currentOrder.status] || [];
+      if (!allowed.includes(body.status)) {
+        return NextResponse.json({ error: `Cannot transition from ${currentOrder.status} to ${body.status}` }, { status: 400 });
+      }
+
       updates.status = body.status;
       if (body.status === "DELIVERED") {
         updates.deliveredAt = new Date();
@@ -169,10 +190,21 @@ export async function PATCH(
     }
 
     // Confirm payment (set paymentStatus to COMPLETED)
+    // SECURITY: Only allow for COD orders or orders with existing Razorpay verification
     if (body.action === "confirm_payment") {
-      const order = await db.order.findUnique({ where: { id } });
+      const order = await db.order.findUnique({ where: { id }, select: { paymentMethod: true, paymentStatus: true, paymentId: true } });
       if (!order) {
         return NextResponse.json({ error: "Order not found" }, { status: 404 });
+      }
+      // Razorpay orders should be verified through /api/payment/verify, not manually
+      if (order.paymentMethod === "RAZORPAY" && !order.paymentId) {
+        return NextResponse.json({ error: "Razorpay orders must be verified through payment verification, not manually" }, { status: 400 });
+      }
+      if (order.paymentStatus === "COMPLETED") {
+        return NextResponse.json({ error: "Payment already confirmed" }, { status: 400 });
+      }
+      if (!body.note) {
+        return NextResponse.json({ error: "Staff note required for manual payment confirmation" }, { status: 400 });
       }
 
       await db.order.update({
@@ -182,10 +214,11 @@ export async function PATCH(
       await db.orderStatusHistory.create({
         data: {
           orderId: id,
-          status: order.status,
-          note: body.note || "Payment confirmed by staff",
+          status: order.paymentStatus as any,
+          note: body.note,
         },
       });
+      { const o = await db.order.findUnique({ where: { id }, select: { orderNumber: true } }); if (o) notifyOrderStatusChange(id, o.orderNumber, "PAYMENT_CONFIRMED").catch(() => {}); }
 
       return NextResponse.json({ success: true, paymentStatus: "COMPLETED" });
     }
@@ -218,6 +251,9 @@ export async function PATCH(
       if (!order) {
         return NextResponse.json({ error: "Order not found" }, { status: 404 });
       }
+      if (order.status !== "SHIPPED" && order.status !== "OUT_FOR_DELIVERY") {
+        return NextResponse.json({ error: "Order must be SHIPPED or OUT_FOR_DELIVERY first" }, { status: 400 });
+      }
 
       await db.order.update({
         where: { id },
@@ -233,6 +269,11 @@ export async function PATCH(
 
     // Quick cancel
     if (body.action === "cancel") {
+      const order = await db.order.findUnique({ where: { id }, select: { status: true } });
+      if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
+      if (order.status === "DELIVERED" || order.status === "CANCELLED" || order.status === "REFUNDED") {
+        return NextResponse.json({ error: `Cannot cancel ${order.status} order` }, { status: 400 });
+      }
       await db.order.update({
         where: { id },
         data: { status: "CANCELLED" },

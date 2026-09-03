@@ -162,23 +162,23 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       },
     });
 
-    // Handle images update if provided
+    // Handle images update if provided (atomic transaction)
     if (body.images && Array.isArray(body.images)) {
-      // Delete existing images
-      await db.productImage.deleteMany({ where: { productId: product.id } });
-      // Create new images
-      for (const img of body.images) {
-        await db.productImage.create({
-          data: {
-            productId: product.id,
-            url: img.url,
-            alt: img.alt || "",
-            isPrimary: img.isPrimary ?? false,
-            position: img.position ?? 0,
-            imageType: img.imageType || "PRODUCT",
-          },
-        });
-      }
+      await db.$transaction(async (tx) => {
+        await tx.productImage.deleteMany({ where: { productId: product.id } });
+        for (const img of body.images) {
+          await tx.productImage.create({
+            data: {
+              productId: product.id,
+              url: img.url,
+              alt: img.alt || "",
+              isPrimary: img.isPrimary ?? false,
+              position: img.position ?? 0,
+              imageType: img.imageType || "PRODUCT",
+            },
+          });
+        }
+      });
     }
 
     // Log the action

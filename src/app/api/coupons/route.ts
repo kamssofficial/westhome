@@ -12,7 +12,8 @@ export async function GET() {
     });
     return NextResponse.json({ coupons });
   } catch (error) {
-    return NextResponse.json({ coupons: [] });
+    console.error("Coupons GET error:", error);
+    return NextResponse.json({ error: "Failed to fetch coupons" }, { status: 500 });
   }
 }
 
@@ -22,6 +23,20 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
+    // Validate coupon values
+    if (!body.code || !body.type || body.value === undefined) {
+      return NextResponse.json({ error: "code, type, and value are required" }, { status: 400 });
+    }
+    if (body.type !== "PERCENTAGE" && body.type !== "FIXED") {
+      return NextResponse.json({ error: "type must be PERCENTAGE or FIXED" }, { status: 400 });
+    }
+    if (typeof body.value !== "number" || body.value <= 0) {
+      return NextResponse.json({ error: "value must be a positive number" }, { status: 400 });
+    }
+    if (body.type === "PERCENTAGE" && body.value > 100) {
+      return NextResponse.json({ error: "percentage value cannot exceed 100" }, { status: 400 });
+    }
+
     const coupon = await db.coupon.create({
       data: {
         code: body.code.toUpperCase(),

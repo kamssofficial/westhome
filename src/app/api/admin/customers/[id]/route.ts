@@ -78,6 +78,11 @@ export async function GET(
       return NextResponse.json({ error: "Customer not found" }, { status: 404 });
     }
 
+    // SECURITY: Only expose CUSTOMER role users through this endpoint
+    if (customer.role !== "CUSTOMER") {
+      return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+    }
+
     // Calculate stats
     const totalSpent = customer.orders.reduce(
       (sum, o) => sum + Number(o.total),

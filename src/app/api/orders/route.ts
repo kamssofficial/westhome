@@ -193,12 +193,15 @@ export async function POST(request: NextRequest) {
       if (attempt === 9) throw new Error("Failed to generate unique order number");
     }
 
-    // Create order with items
-    const order = await db.order.create({
-      data: {
-        orderNumber,
-        userId,
-        status: "NEW",
+    // Create order with items (retry on P2002 unique constraint collision)
+    let order: any = null;
+    for (let retry = 0; retry < 5; retry++) {
+      try {
+        order = await db.order.create({
+          data: {
+            orderNumber,
+            userId,
+            status: "NEW",
         customerName,
         customerEmail,
         customerPhone,
@@ -241,6 +244,18 @@ export async function POST(request: NextRequest) {
         },
       },
     });
+        break; // Success
+      } catch (e: any) {
+        if (e?.code === "P2002" && retry < 4) {
+          // Unique constraint collision — regenerate order number and retry
+          const newRandom = Math.floor(Math.random() * 100000).toString().padStart(5, "0");
+          orderNumber = `WH${year}${month}${newRandom}`;
+          continue;
+        }
+        throw e;
+      }
+    }
+    if (!order) throw new Error("Failed to create order after retries");
 
     // Create payment record so payment/verify can find it
     if (paymentMethod !== "cod") {

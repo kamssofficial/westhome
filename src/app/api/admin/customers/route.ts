@@ -28,6 +28,7 @@ export async function GET() {
       })),
     });
   } catch (error) {
-    return NextResponse.json({ customers: [] });
+    console.error("Customers API error:", error);
+    return NextResponse.json({ error: "Failed to fetch customers" }, { status: 500 });
   }
 }

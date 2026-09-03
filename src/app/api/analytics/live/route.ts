@@ -1,22 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
+import { auth } from "@/lib/auth";
 
 // POST — heartbeat (update or create live session)
+// Public endpoint (no auth required) but uses session when available
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { sessionId, deviceType, userAgent } = body;
-    if (!sessionId) return NextResponse.json({ ok: true });
+    if (!sessionId || typeof sessionId !== "string" || sessionId.length > 100) {
+      return NextResponse.json({ ok: true });
+    }
 
-    // Check if session is staff
-    let isStaff = false;
-    // We don't know userId from client, so mark isStaff based on path context
-    // The client won't send this for staff pages
+    // SECURITY: Get userId from session if authenticated (don't trust client)
+    const session = await auth().catch(() => null);
+    const userId = (session?.user as any)?.id || null;
+    const isStaff = !!(session?.user && ["ADMIN", "MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER", "STAFF"].includes((session.user as any).role));
 
     await db.liveSession.upsert({
       where: { sessionId },
-      update: { lastActive: new Date(), deviceType, userAgent },
-      create: { sessionId, deviceType, userAgent, isStaff },
+      update: { lastActive: new Date(), deviceType, userAgent, userId, isStaff },
+      create: { sessionId, deviceType, userAgent, userId, isStaff },
     });
 
     // Cleanup old sessions (older than 10 minutes)

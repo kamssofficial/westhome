@@ -9,8 +9,9 @@ export async function GET() {
       orderBy: { slug: "asc" },
     });
     return NextResponse.json({ pages });
-  } catch {
-    return NextResponse.json({ pages: [] });
+  } catch (error) {
+    console.error("Content GET error:", error);
+    return NextResponse.json({ error: "Failed to fetch content" }, { status: 500 });
   }
 }
 
