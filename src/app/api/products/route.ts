@@ -173,7 +173,8 @@ export async function GET(request: NextRequest) {
       : transformed;
     return NextResponse.json({ products: filteredProducts, total: minRatingNum > 0 ? filteredProducts.length : total, page, totalPages: Math.ceil((minRatingNum > 0 ? filteredProducts.length : total) / limit) });
   } catch (error) {
-    return NextResponse.json({ products: [], total: 0, page: 1, totalPages: 0 });
+    console.error("GET /api/products error:", error);
+    return NextResponse.json({ error: "Failed to fetch products" }, { status: 500 });
   }
 }
 

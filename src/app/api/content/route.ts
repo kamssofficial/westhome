@@ -4,7 +4,10 @@ import { requireAuthRole } from "@/lib/apiAuth";
 
 export async function GET() {
   try {
-    const pages = await db.contentPage.findMany({ orderBy: { slug: "asc" } });
+    const pages = await db.contentPage.findMany({
+      where: { isPublished: true },
+      orderBy: { slug: "asc" },
+    });
     return NextResponse.json({ pages });
   } catch {
     return NextResponse.json({ pages: [] });

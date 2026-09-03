@@ -65,16 +65,29 @@ export default function CheckoutPage() {
   useEffect(() => { setMounted(true); }, []);
   useEffect(() => {
     // Check for existing pending order to avoid duplicates on retry
+    // SECURITY: Only reuse if the order items match the current cart
     fetch("/api/orders?status=NEW&limit=1")
       .then((r) => r.json())
       .then((data) => {
         const pending = data.orders?.[0];
-        if (pending?.id && pending?.orderNumber) {
-          setOrderResult({ id: pending.id, orderNumber: pending.orderNumber });
+        if (pending?.id && pending?.orderNumber && pending?.items) {
+          // Compare order items with current cart items by productId+variantId
+          const orderItemKeys = new Set<string>(
+            (pending.items as any[]).map((i: any) => `${i.productId}:${i.variantId || ""}`)
+          );
+          const cartItemKeys = new Set<string>(
+            items.map((i) => `${i.productId}:${i.variantId || ""}`)
+          );
+          const matches =
+            orderItemKeys.size === cartItemKeys.size &&
+            [...orderItemKeys].every((k) => cartItemKeys.has(k));
+          if (matches) {
+            setOrderResult({ id: pending.id, orderNumber: pending.orderNumber });
+          }
         }
       })
       .catch(() => {});
-  }, []);
+  }, [items]);
   useEffect(() => {
     fetch("/api/settings").then((r) => r.json()).then((d) => {
       if (d.settings) { if (d.settings.freeDeliveryThreshold) setFreeThreshold(Number(d.settings.freeDeliveryThreshold)); if (d.settings.defaultDeliveryCharge) setDeliveryChargeRate(Number(d.settings.defaultDeliveryCharge)); }

@@ -29,19 +29,22 @@ export default function StaffDashboard() {
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/products?limit=1").then(r => r.json()),
-      fetch("/api/orders?limit=10&all=true").then(r => r.json()).catch(() => ({ orders:[], total:0 })),
-      fetch("/api/customers?limit=1").then(r => r.json()).catch(() => ({ total:0 })),
-    ]).then(([products, ordersData, customers]) => {
-      const orders = ordersData.orders || [];
-      const pending = orders.filter((o:any) => o.status === "PENDING").length;
-      const today = new Date().toDateString();
-      const todayOrders = orders.filter((o:any) => new Date(o.createdAt).toDateString() === today).length;
-      setStats({ totalProducts: products.total||0, totalOrders: ordersData.total||orders.length, totalCustomers: customers.total||0, pendingOrders: pending, lowStock:0, ordersToday: todayOrders, recentOrders: orders.slice(0,5), lowStockProducts: [] });
-      fetch("/api/products?limit=100&all=true").then(r => r.json()).then(d => {
-        const ls = (d.products||[]).filter((p:any) => p.stockQuantity <= (p.lowStockThreshold||5));
-        setStats(prev => ({ ...prev, lowStock: ls.length, lowStockProducts: ls.slice(0,5) }));
-      }).catch(()=>{});
+      fetch("/api/admin/dashboard").then(r => r.json()).catch(() => ({})),
+      fetch("/api/products?limit=100&all=true").then(r => r.json()).catch(() => ({ products:[], total:0 })),
+    ]).then(([dash, productsData]) => {
+      const kpis = dash.kpis || {};
+      const orderStatus = dash.orderStatus || {};
+      const pending = (orderStatus.NEW || 0) + (orderStatus.CONFIRMED || 0) + (orderStatus.PROCESSING || 0);
+      setStats({
+        totalProducts: productsData.total || kpis.totalProducts || 0,
+        totalOrders: kpis.totalOrders || 0,
+        totalCustomers: kpis.totalCustomers || 0,
+        pendingOrders: pending,
+        lowStock: dash.inventory?.lowStock || 0,
+        ordersToday: kpis.ordersToday || 0,
+        recentOrders: dash.recentActivity?.orders || [],
+        lowStockProducts: (dash.inventory?.products || []).filter((p: any) => p.stockQuantity <= (p.lowStockThreshold || 5)).slice(0, 5),
+      });
     }).finally(() => setLoading(false));
   }, []);
 

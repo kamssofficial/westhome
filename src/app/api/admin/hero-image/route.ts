@@ -18,8 +18,11 @@ interface HeroImage {
   createdAt: string;
 }
 
-// GET — get active hero + history
+// GET — get active hero + history (requires auth)
 export async function GET() {
+  const authResult = await requireAuthRole(["ADMIN", "MANAGER", "CONTENT_MANAGER"]);
+  if (authResult.error) return authResult.error;
+
   try {
     const activeSetting = await db.siteSetting.findUnique({ where: { key: HERO_ACTIVE_KEY } });
     const historySetting = await db.siteSetting.findUnique({ where: { key: HERO_HISTORY_KEY } });

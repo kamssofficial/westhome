@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
         salePrice = product.salePrice ? Number(product.salePrice) : null;
       }
       
-      const effectivePrice = salePrice || unitPrice;
+      const effectivePrice = salePrice != null ? salePrice : unitPrice;
       const totalPrice = effectivePrice * item.quantity;
       serverSubtotal += totalPrice;
       return { ...item, unitPrice, salePrice, totalPrice };
