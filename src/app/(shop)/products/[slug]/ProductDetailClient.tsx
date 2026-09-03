@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSettings } from "@/components/ui/SettingsContext";
@@ -72,44 +72,53 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
   const selectedVariant = activeVariant;
 
   // Compute grouped attributes for the selector UI
-  const attributeGroups: Record<string, string[]> = {};
-  if (product?.variants) {
-    for (const v of product.variants) {
-      for (const attr of v.attributes) {
-        if (!attributeGroups[attr.attributeName]) {
-          attributeGroups[attr.attributeName] = [];
-        }
-        if (!attributeGroups[attr.attributeName].includes(attr.value)) {
-          attributeGroups[attr.attributeName].push(attr.value);
+  const attributeGroups: Record<string, string[]> = useMemo(() => {
+    const groups: Record<string, string[]> = {};
+    if (product?.variants) {
+      for (const v of product.variants) {
+        for (const attr of v.attributes) {
+          if (!groups[attr.attributeName]) {
+            groups[attr.attributeName] = [];
+          }
+          if (!groups[attr.attributeName].includes(attr.value)) {
+            groups[attr.attributeName].push(attr.value);
+          }
         }
       }
     }
-  }
+    return groups;
+  }, [product?.variants])
 
   // Compute available attribute values given current selections
-  const getAvailableValues = (attrName: string): string[] => {
-    if (!product?.variants) return [];
-    return product.variants
-      .filter((v: any) =>
-        v.attributes.every((a: any) =>
-          a.attributeName === attrName || selectedAttributes[a.attributeName] === a.value
+  const getAvailableValues = useCallback(
+    (attrName: string): string[] => {
+      if (!product?.variants) return [];
+      return product.variants
+        .filter((v: any) =>
+          v.attributes.every((a: any) =>
+            a.attributeName === attrName || selectedAttributes[a.attributeName] === a.value
+          )
         )
-      )
-      .map((v: any) => {
-        const attr = v.attributes.find((a: any) => a.attributeName === attrName);
-        return attr?.value;
-      })
-      .filter((val): val is string => !!val)
-      .filter((val, i, arr) => arr.indexOf(val) === i);
-  };
+        .map((v: any) => {
+          const attr = v.attributes.find((a: any) => a.attributeName === attrName);
+          return attr?.value;
+        })
+        .filter((val): val is string => !!val)
+        .filter((val, i, arr) => arr.indexOf(val) === i);
+    },
+    [product?.variants, selectedAttributes]
+  );
 
   const handleAttributeSelect = (attrName: string, value: string) => {
     setSelectedAttributes((prev) => ({ ...prev, [attrName]: value }));
+    setQuantity(1);
   };
 
   if (!product) return null;
 
-  const images = product.images?.length ? product.images : [];
+  // Use variant images if available, otherwise fall back to product images
+  const variantImages = selectedVariant?.images?.length ? selectedVariant.images : [];
+  const images = variantImages.length > 0 ? variantImages : (product.images?.length ? product.images : []);
   const currentPrice = (selectedVariant?.salePrice != null && selectedVariant.salePrice > 0 ? selectedVariant.salePrice : selectedVariant?.price) ?? (product.salePrice != null && product.salePrice > 0 ? product.salePrice : product.regularPrice);
   const originalPrice = product.regularPrice;
   const inStock = product.trackInventory ? (selectedVariant?.stockQuantity ?? product.stockQuantity) > 0 : true;
@@ -241,7 +250,7 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
       {/* Product Info */}
       <div className="container-shop mt-4">
         <h1 className="text-xl font-semibold text-primary leading-tight">{product.name}</h1>
-        <PriceDisplay regularPrice={product.regularPrice} salePrice={product.salePrice} size="lg" className="mt-1" />
+        <PriceDisplay regularPrice={selectedVariant ? Number(selectedVariant.price) : product.regularPrice} salePrice={selectedVariant ? (selectedVariant.salePrice ? Number(selectedVariant.salePrice) : null) : product.salePrice} size="lg" className="mt-1" />
 
         {/* Rating */}
         <div className="flex items-center gap-2 mt-2">
@@ -273,9 +282,10 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
                   </span>
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {values.map((value) => {
-                    const isSelected = selectedAttributes[attrName] === value;
+                  {(() => {
                     const availableValues = getAvailableValues(attrName);
+                    return values.map((value) => {
+                    const isSelected = selectedAttributes[attrName] === value;
                     const isAvailable = availableValues.includes(value);
                     return (
                       <button
@@ -292,10 +302,9 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
                         )}
                       >
                         {value}
-                      </button>
-                    );
-                  })}
-                </div>
+                      </button>                      );
+                    });
+                  })()}</div>
               </div>
             ))}
           </div>
