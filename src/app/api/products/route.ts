@@ -2,6 +2,7 @@ import { notifyProductUpdated } from "@/lib/notifications";
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { requireAuthRole } from "@/lib/apiAuth";
+import { auth } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,7 +21,16 @@ export async function GET(request: NextRequest) {
 
     // Admin/staff can see all statuses; storefront only ACTIVE
     const statusFilter = searchParams.get("status");
-    const isAdminView = !!(statusFilter || searchParams.get("all"));
+    const requestedAll = searchParams.get("all");
+    let isAdminView = !!(statusFilter || requestedAll);
+    if (isAdminView) {
+      // Verify the user is actually staff/admin
+      const session = await auth();
+      const role = (session?.user as any)?.role;
+      if (!role || role === "CUSTOMER") {
+        isAdminView = false; // Fall back to storefront filter
+      }
+    }
     const where: any = isAdminView ? {} : { isActive: true, status: "ACTIVE" };
     if (statusFilter) where.status = statusFilter;
     if (query) { where.OR = [{ name: { contains: query, mode: "insensitive" } }, { description: { contains: query, mode: "insensitive" } }, { shortDescription: { contains: query, mode: "insensitive" } }, { material: { contains: query, mode: "insensitive" } }]; }
@@ -156,7 +166,12 @@ export async function GET(request: NextRequest) {
       customSizePricingMethod: product.customSizePricingMethod,
       customSizeRequiresApproval: product.customSizeRequiresApproval,
     }));
-    return NextResponse.json({ products: transformed, total, page, totalPages: Math.ceil(total / limit) });
+    
+    // Apply minRating filter post-fetch (rating is computed from reviews)
+    const filteredProducts = minRatingNum > 0
+      ? transformed.filter((p) => p.rating !== null && p.rating >= minRatingNum)
+      : transformed;
+    return NextResponse.json({ products: filteredProducts, total: minRatingNum > 0 ? filteredProducts.length : total, page, totalPages: Math.ceil((minRatingNum > 0 ? filteredProducts.length : total) / limit) });
   } catch (error) {
     return NextResponse.json({ products: [], total: 0, page: 1, totalPages: 0 });
   }

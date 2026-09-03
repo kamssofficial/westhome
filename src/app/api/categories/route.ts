@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const slug = body.name.toLowerCase().replace(/[^ws-]/g, "").replace(/[s_-]+/g, "-");
+    const slug = body.name.toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/[\s_-]+/g, "-").replace(/^-|-$/g, "");
     const category = await db.category.create({
       data: { name: body.name, slug, description: body.description, image: body.image, position: body.position || 0 },
     });

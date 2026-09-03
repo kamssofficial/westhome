@@ -38,12 +38,16 @@ export async function POST(request: NextRequest) {
     }
 
     // SECURITY: Ensure the order belongs to the authenticated user
-    if (order.userId && order.userId !== (session.user as any).id) {
+    // Orders with null userId (guest) cannot be paid — require userId
+    if (!order.userId) {
+      return NextResponse.json({ error: "Invalid order" }, { status: 400 });
+    }
+    if (order.userId !== (session.user as any).id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Use the order's total if amount was not provided by the client
-    const amount = requestedAmount || order.total;
+    // SECURITY: Always use server-side order total, never trust client amount
+    const amount = Number(order.total);
     if (!amount || amount <= 0) {
       return NextResponse.json({ error: "Invalid payment amount" }, { status: 400 });
     }

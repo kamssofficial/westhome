@@ -153,7 +153,8 @@ export async function PATCH(
     const updates: Record<string, any> = {};
     for (const field of ALLOWED_FIELDS) {
       if (body[field] !== undefined) {
-        updates[field] = body[field] || null;
+        // SECURITY: Use explicit null check to preserve false values
+        updates[field] = body[field] === null ? null : body[field];
       }
     }
 

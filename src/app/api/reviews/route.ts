@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     const { getToken } = await import("next-auth/jwt");
     const token = await getToken({
       req,
-      secret: process.env.NEXTAUTH_SECRET,
+      secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
     });
 
     if (!(token as any)?.id) {

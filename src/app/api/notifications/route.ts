@@ -12,9 +12,19 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const limit = parseInt(searchParams.get("limit") || "20", 10);
   const unreadOnly = searchParams.get("unread") === "true";
+  const role = (session.user as any).role as string;
+  const isStaff = role === "ADMIN" || role === "MANAGER" || role === "ORDER_MANAGER" || role === "PRODUCT_MANAGER" || role === "CONTENT_MANAGER" || role === "STAFF";
 
   try {
+    // Customers only see notifications related to their own orders;
+    // Staff see all notifications
+    const where: any = isStaff ? {} : {
+      orderId: {
+        in: (await db.order.findMany({ where: { userId }, select: { id: true } })).map(o => o.id),
+      },
+    };
     const notifications = await db.notification.findMany({
+      where,
       orderBy: { createdAt: "desc" },
       take: Math.min(limit, 50),
       select: {

@@ -142,8 +142,9 @@ export async function DELETE(
     if (role === "CUSTOMER" && order.userId !== userId) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
-    if (order.status !== "NEW" && order.paymentStatus === "COMPLETED") {
-      return NextResponse.json({ error: "Cannot cancel a paid order" }, { status: 400 });
+    // Cannot cancel orders that have already been paid or shipped/delivered
+    if (order.paymentStatus === "COMPLETED" || order.status === "SHIPPED" || order.status === "DELIVERED") {
+      return NextResponse.json({ error: "Cannot cancel this order" }, { status: 400 });
     }
 
     await db.order.update({

@@ -65,7 +65,7 @@ export const useCartStore = create<CartStore>()(
         set({ items: updated });
       },
 
-      clearCart: () => set({ items: [], couponCode: null }),
+      clearCart: () => set({ items: [], couponCode: null, discount: 0 }),
 
       applyCoupon: (code, discountAmount) => set({ couponCode: code, discount: discountAmount }),
 

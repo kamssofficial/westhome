@@ -1,8 +1,14 @@
 import { NextResponse } from "next/server";
 import db from "@/lib/db";
+import { requireAuth } from "@/lib/auth";
 
 export async function POST() {
   try {
+    // SECURITY: Only admins can run migrations
+    const session = await requireAuth();
+    if (!session?.user || (session.user as any).role !== "ADMIN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const results: string[] = [];
 
     // Step 1: Add averageRating and reviewCount columns if they don't exist

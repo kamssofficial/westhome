@@ -31,7 +31,8 @@ export async function GET(request: NextRequest) {
     ]);
     return NextResponse.json({ orders: orders.map((o) => ({ ...o, subtotal: Number(o.subtotal), discount: Number(o.discount), deliveryCharge: Number(o.deliveryCharge), tax: Number(o.tax), total: Number(o.total), items: o.items.map((i) => ({ ...i, unitPrice: Number(i.unitPrice), salePrice: i.salePrice ? Number(i.salePrice) : null, totalPrice: Number(i.totalPrice) })) })), total, page, totalPages: Math.ceil(total / limit) });
   } catch (error) {
-    return NextResponse.json({ orders: [], total: 0 });
+    console.error("GET /api/orders error:", error);
+    return NextResponse.json({ error: "Failed to fetch orders" }, { status: 500 });
   }
 }
 
@@ -77,14 +78,23 @@ export async function POST(request: NextRequest) {
     }
 
     // SECURITY: Server-side price validation — recalculate from database
-    // Fetch all products in the order to validate prices
+    // Fetch all products AND their variants in the order to validate prices
     const productIds = items.map((item: any) => item.productId);
-    const products = await db.product.findMany({
-      where: { id: { in: productIds } },
-      select: { id: true, regularPrice: true, salePrice: true, isActive: true, stockQuantity: true, trackInventory: true },
-    });
+    const variantIds = items.filter((item: any) => item.variantId).map((item: any) => item.variantId);
+    
+    const [products, variants] = await Promise.all([
+      db.product.findMany({
+        where: { id: { in: productIds } },
+        select: { id: true, regularPrice: true, salePrice: true, isActive: true, stockQuantity: true, trackInventory: true },
+      }),
+      variantIds.length > 0 ? db.productVariant.findMany({
+        where: { id: { in: variantIds }, isActive: true },
+        select: { id: true, productId: true, price: true, stockQuantity: true },
+      }) : Promise.resolve([]),
+    ]);
     
     const productMap = new Map(products.map(p => [p.id, p]));
+    const variantMap = new Map(variants.map(v => [v.id, v]));
     
     // Validate and recalculate server-side
     let serverSubtotal = 0;
@@ -93,16 +103,62 @@ export async function POST(request: NextRequest) {
       if (!product || !product.isActive) {
         throw new Error(`Product ${item.productId} not found or inactive`);
       }
-      if (product.trackInventory && product.stockQuantity < item.quantity) {
-        throw new Error(`Insufficient stock for ${item.productName}`);
+      
+      // Use variant price/stock if variant is specified
+      let unitPrice: number;
+      let salePrice: number | null = null;
+      
+      if (item.variantId) {
+        const variant = variantMap.get(item.variantId);
+        if (!variant) throw new Error(`Variant ${item.variantId} not found`);
+        unitPrice = Number(variant.price);
+        if (product.trackInventory && variant.stockQuantity < item.quantity) {
+          throw new Error(`Insufficient stock for ${item.productName} (variant)`);
+        }
+      } else {
+        if (product.trackInventory && !item.variantId && product.stockQuantity < item.quantity) {
+          throw new Error(`Insufficient stock for ${item.productName}`);
+        }
+        unitPrice = Number(product.regularPrice);
+        salePrice = product.salePrice ? Number(product.salePrice) : null;
       }
-      const unitPrice = Number(product.regularPrice);
-      const salePrice = product.salePrice ? Number(product.salePrice) : null;
+      
       const effectivePrice = salePrice || unitPrice;
       const totalPrice = effectivePrice * item.quantity;
       serverSubtotal += totalPrice;
       return { ...item, unitPrice, salePrice, totalPrice };
     });
+    
+    // Server-side coupon validation
+    let serverDiscount = 0;
+    let serverCouponId: string | null = null;
+    if (couponCode) {
+      const coupon = await db.coupon.findFirst({
+        where: {
+          code: couponCode.toUpperCase(),
+          isActive: true,
+        },
+      });
+      if (!coupon) {
+        return NextResponse.json({ error: "Invalid coupon code" }, { status: 400 });
+      }
+      if (coupon.expiresAt && new Date(coupon.expiresAt) < new Date()) {
+        return NextResponse.json({ error: "Coupon has expired" }, { status: 400 });
+      }
+      if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) {
+        return NextResponse.json({ error: "Coupon usage limit reached" }, { status: 400 });
+      }
+      if (coupon.minOrderAmount && serverSubtotal < Number(coupon.minOrderAmount)) {
+        return NextResponse.json({ error: `Minimum order ₹${coupon.minOrderAmount} required` }, { status: 400 });
+      }
+      if (coupon.type === "PERCENTAGE") {
+        serverDiscount = serverSubtotal * (Number(coupon.value) / 100);
+        if (coupon.maxDiscountAmount) serverDiscount = Math.min(serverDiscount, Number(coupon.maxDiscountAmount));
+      } else {
+        serverDiscount = Math.min(Number(coupon.value), serverSubtotal);
+      }
+      serverCouponId = coupon.id;
+    }
     
     // Server-side delivery charge validation
     const settings = await db.siteSetting.findMany();
@@ -120,7 +176,7 @@ export async function POST(request: NextRequest) {
     
     const finalDeliveryCharge = serverDeliveryCharge;
     const finalSubtotal = serverSubtotal;
-    const finalDiscount = Math.min(Number(discount) || 0, finalSubtotal); // Prevent negative discount
+    const finalDiscount = serverDiscount; // Server-validated coupon discount only
     const finalTax = Number(tax) || 0;
     const finalTotal = finalSubtotal - finalDiscount + finalDeliveryCharge + finalTax;
 
@@ -155,6 +211,7 @@ export async function POST(request: NextRequest) {
         paymentStatus: paymentMethod === "cod" ? "PENDING" : "PENDING",
         deliveryMethod: deliveryMethod || "delivery",
         customerNotes: customerNotes || null,
+        couponId: serverCouponId,
         items: {
           create: validatedItems.map((item: any) => ({
             productId: item.productId,
@@ -178,6 +235,34 @@ export async function POST(request: NextRequest) {
         },
       },
     });
+
+    // Create payment record so payment/verify can find it
+    if (paymentMethod !== "cod") {
+      await db.payment.create({
+        data: {
+          orderId: order.id,
+          amount: finalTotal,
+          status: "PENDING",
+        },
+      });
+    }
+
+    // For COD orders, decrement stock immediately since payment/verify won't be called
+    if (paymentMethod === "cod") {
+      for (const item of validatedItems) {
+        if (item.variantId) {
+          await db.productVariant.update({
+            where: { id: item.variantId },
+            data: { stockQuantity: { decrement: item.quantity } },
+          });
+        } else {
+          await db.product.update({
+            where: { id: item.productId },
+            data: { stockQuantity: { decrement: item.quantity } },
+          });
+        }
+      }
+    }
 
     // Create notification
     await db.notification.create({

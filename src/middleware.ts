@@ -18,7 +18,7 @@ export async function middleware(request: NextRequest) {
     }
 
     if (role !== "ADMIN") {
-      const staffRoles = ["MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER"];
+      const staffRoles = ["MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER", "STAFF"];
       if (staffRoles.includes(role)) {
         // Staff can access product management routes
         if (pathname.startsWith("/admin/products")) {

@@ -2,6 +2,7 @@ import { notifyProductUpdated } from "@/lib/notifications";
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { requireAuthRole } from "@/lib/apiAuth";
+import { auth } from "@/lib/auth";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   try {
@@ -17,7 +18,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         include: { category: { select: { id: true, name: true, slug: true } }, subcategory: { select: { id: true, name: true, slug: true } }, images: { orderBy: [{ isPrimary: "desc" }, { position: "asc" }] }, variants: { where: { isActive: true }, orderBy: { position: "asc" }, include: { images: { orderBy: { position: "asc" } }, attributes: { include: { variantAttribute: true } } } }, reviews: { where: { status: "APPROVED" }, select: { rating: true } }, tags: true },
       });
     }
-    if (!product || !product.isActive) { return NextResponse.json({ error: "Product not found" }, { status: 404 }); }
+    if (!product) { return NextResponse.json({ error: "Product not found" }, { status: 404 }); }
+    // Non-active products are hidden from storefront but accessible to admin/staff
+    if (!product.isActive) {
+      const session = await auth().catch(() => null);
+      const role = (session?.user as any)?.role;
+      if (!role || role === "CUSTOMER") {
+        return NextResponse.json({ error: "Product not found" }, { status: 404 });
+      }
+    }
     const reviews = product.reviews;
     const avgRating = reviews.length > 0 ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : null;
     const transformed = {

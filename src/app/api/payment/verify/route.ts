@@ -22,7 +22,10 @@ export async function POST(request: NextRequest) {
     if (!existingOrder) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
-    if (existingOrder.userId && existingOrder.userId !== (session.user as any).id) {
+    if (!existingOrder.userId) {
+      return NextResponse.json({ error: "Invalid order" }, { status: 400 });
+    }
+    if (existingOrder.userId !== (session.user as any).id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -60,6 +63,15 @@ export async function POST(request: NextRequest) {
         { error: "Payment verification failed" },
         { status: 400 }
       );
+    }
+
+    // IDEMPOTENCY: Check if this order was already processed
+    const orderStatus = await db.order.findUnique({ where: { id: orderId }, select: { paymentStatus: true, paymentId: true } });
+    if (orderStatus?.paymentStatus === "COMPLETED" && orderStatus.paymentId) {
+      return NextResponse.json({
+        verified: true,
+        message: "Payment already verified",
+      });
     }
 
     // Payment is verified - update order
