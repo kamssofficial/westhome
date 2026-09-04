@@ -221,11 +221,12 @@ export async function GET(request: NextRequest) {
     const cMap = Object.fromEntries(custDetails.map(c => [c.id, c]));
 
     // ── Geographic ──
-    const geoData = await db.order.groupBy({
+    const geoDataRaw = await db.order.groupBy({
       by: ["state"], _count: { id: true }, _sum: { total: true },
-      where: { createdAt: { gte: since }, NOT: [{ state: null }] },
-      orderBy: { _count: { id: "desc" } }, take: 20,
+      where: { createdAt: { gte: since } },
+      orderBy: { _count: { id: "desc" } }, take: 30,
     });
+    const geoData = geoDataRaw.filter(g => g.state != null);
 
     // ── Recent Activity ──
     const [recentOrders, recentPayments, recentUsers] = await Promise.all([
