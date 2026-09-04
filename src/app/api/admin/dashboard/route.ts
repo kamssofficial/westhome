@@ -223,7 +223,7 @@ export async function GET(request: NextRequest) {
     // ── Geographic ──
     const geoData = await db.order.groupBy({
       by: ["state"], _count: { id: true }, _sum: { total: true },
-      where: { createdAt: { gte: since }, state: { not: null } },
+      where: { createdAt: { gte: since }, NOT: [{ state: null }] },
       orderBy: { _count: { id: "desc" } }, take: 20,
     });
 
