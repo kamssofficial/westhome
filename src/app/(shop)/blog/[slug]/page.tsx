@@ -12,6 +12,11 @@ export function generateStaticParams() {
   return blogArticles.map((a) => ({ slug: a.slug }));
 }
 
+// All articles are statically generated above — any other slug is genuinely
+// unknown. Without this, an unmatched slug renders the 404 UI under HTTP 200
+// (a soft-404 that wastes crawl budget); this makes Next return a real 404.
+export const dynamicParams = false;
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const article = blogArticles.find((a) => a.slug === slug);

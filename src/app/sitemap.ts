@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import db from "@/lib/db";
+import { blogArticles } from "@/lib/blog";
 
 const SITE_URL = "https://www.westhome.in";
 
@@ -14,14 +15,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/shop/all`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
     { url: `${SITE_URL}/about`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
     { url: `${SITE_URL}/contact`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
-    { url: `${SITE_URL}/collections`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${SITE_URL}/account`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
-    { url: `${SITE_URL}/cart`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
-    { url: `${SITE_URL}/wishlist`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
-    { url: `${SITE_URL}/login`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
-    { url: `${SITE_URL}/register`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
-    { url: `${SITE_URL}/policies`, lastModified: now, changeFrequency: "yearly", priority: 0.2 },
+    { url: `${SITE_URL}/blog`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
+    // Policies live under /policies/<page> — the bare /policies route does not exist.
+    { url: `${SITE_URL}/policies/privacy`, lastModified: now, changeFrequency: "yearly", priority: 0.2 },
+    { url: `${SITE_URL}/policies/terms`, lastModified: now, changeFrequency: "yearly", priority: 0.2 },
+    { url: `${SITE_URL}/policies/returns`, lastModified: now, changeFrequency: "yearly", priority: 0.2 },
+    { url: `${SITE_URL}/policies/shipping`, lastModified: now, changeFrequency: "yearly", priority: 0.2 },
   ];
+
+  // Blog articles are static content — expose them so Google can find them.
+  const blogEntries: MetadataRoute.Sitemap = blogArticles.map((a) => ({
+    url: `${SITE_URL}/blog/${a.slug}`,
+    lastModified: new Date(`${a.date}T00:00:00Z`),
+    changeFrequency: "monthly" as const,
+    priority: 0.7,
+  }));
 
   let categories: MetadataRoute.Sitemap = [];
   let products: MetadataRoute.Sitemap = [];
@@ -56,5 +64,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error("sitemap: failed to load products", e);
   }
 
-  return [...staticEntries, ...categories, ...products];
+  return [...staticEntries, ...blogEntries, ...categories, ...products];
 }

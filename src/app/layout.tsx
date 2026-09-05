@@ -3,8 +3,22 @@ import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import Providers from "@/components/layout/Providers";
 
+const SITE_URL = "https://www.westhome.in";
+
+// NEXTAUTH_URL can be unset locally or come back as an invalid placeholder
+// (e.g. Vercel CLI writes literal `[SENSITIVE]` for protected env vars after
+// `vercel env pull`), which `new URL(...)` rejects. Never let metadata config
+// crash the whole app — fall back to the canonical site URL.
+function siteUrl(value: string | undefined): URL {
+  try {
+    return new URL(value || SITE_URL);
+  } catch {
+    return new URL(SITE_URL);
+  }
+}
+
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXTAUTH_URL || "https://www.westhome.in"),
+  metadataBase: siteUrl(process.env.NEXTAUTH_URL),
   title: {
     default: "WESTHOME by BM Distributors | Premium Home & Lifestyle",
     template: "%s | WESTHOME by BM Distributors",

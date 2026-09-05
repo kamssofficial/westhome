@@ -192,6 +192,20 @@ export default async function ProductPage({ params }: PageProps) {
     getReviews(product.id),
   ]);
 
+  const baseStock =
+    product.variants.length > 0
+      ? product.variants.reduce((s: number, v: any) => s + (v.stockQuantity ?? 0), 0)
+      : product.stockQuantity ?? 0;
+  // Mirror ProductDetailClient's buyability exactly: inventory is ignored when
+  // trackInventory is off (e.g. WhatsApp/backorder products), otherwise the
+  // product is buyable when any active variant (or the product itself) has stock.
+  const isInStock = product.trackInventory === false || baseStock > 0;
+  // Mirror the client's price display: salePrice only applies when > 0.
+  const listedPrice =
+    product.salePrice != null && product.salePrice > 0
+      ? product.salePrice
+      : product.regularPrice;
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -212,8 +226,8 @@ export default async function ProductPage({ params }: PageProps) {
       "@type": "Offer",
       url: `https://www.westhome.in/products/${product.slug}`,
       priceCurrency: "INR",
-      price: product.salePrice ?? product.regularPrice,
-      availability: product.stockQuantity > 0
+      price: listedPrice,
+      availability: isInStock
         ? "https://schema.org/InStock"
         : "https://schema.org/OutOfStock",
       itemCondition: "https://schema.org/NewCondition",
@@ -231,12 +245,15 @@ export default async function ProductPage({ params }: PageProps) {
           }
         : undefined,
   };
+  // JSON-LD inside a <script> must not contain the literal "</script>"; escape
+  // "<" so DB-controlled text (names/descriptions) can never break out of it.
+  const jsonLdHtml = JSON.stringify(jsonLd).replace(/</g, "\\u003c");
 
   return (
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml }}
       />
       <ProductDetailClient
         product={product}
