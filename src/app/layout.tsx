@@ -4,7 +4,7 @@ import { Toaster } from "react-hot-toast";
 import Providers from "@/components/layout/Providers";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXTAUTH_URL || "http://localhost:57583"),
+  metadataBase: new URL(process.env.NEXTAUTH_URL || "https://www.westhome.in"),
   title: {
     default: "WESTHOME by BM Distributors | Premium Home & Lifestyle",
     template: "%s | WESTHOME by BM Distributors",
@@ -54,6 +54,53 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-screen bg-background text-foreground antialiased">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Store",
+              "@id": "https://www.westhome.in/#store",
+              name: "WESTHOME by BM Distributors",
+              alternateName: "WestHome",
+              url: "https://www.westhome.in/",
+              description:
+                "Premium home décor and lifestyle products curated for your comfort — laundry baskets, frames, soap dispensers, cushions, clocks and more.",
+              image: "https://www.westhome.in/images/logo/westhome-logo-transparent.png",
+              priceRange: "₹₹",
+              telephone: "+919895071144",
+              email: "info@westhomebybmd.com",
+              address: {
+                "@type": "PostalAddress",
+                streetAddress: "City Gate Building, near Press Club Junction, Karandakkad",
+                addressLocality: "Kasaragod",
+                addressRegion: "Kerala",
+                postalCode: "671121",
+                addressCountry: "IN",
+              },
+              geo: {
+                "@type": "GeoCoordinates",
+                latitude: 12.4924,
+                longitude: 74.9899,
+              },
+              openingHoursSpecification: [
+                {
+                  "@type": "OpeningHoursSpecification",
+                  dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+                  opens: "10:00",
+                  closes: "20:00",
+                },
+                {
+                  "@type": "OpeningHoursSpecification",
+                  dayOfWeek: "Sunday",
+                  opens: "11:00",
+                  closes: "18:00",
+                },
+              ],
+              sameAs: ["https://www.westhome.in/"],
+            }),
+          }}
+        />
         <Toaster
           position="top-center"
           toastOptions={{

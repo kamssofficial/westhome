@@ -17,6 +17,7 @@ const COMPANY_LINKS = [
   { label: "About us", href: "/about" },
   { label: "Contact", href: "/contact" },
   { label: "Store location", href: "/contact#location" },
+  { label: "Blog", href: "/blog" },
 ];
 const POLICY_LINKS = [
   { label: "Privacy", href: "/policies/privacy" },

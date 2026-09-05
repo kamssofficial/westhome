@@ -2,16 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { requireAuth } from "@/lib/auth";
 
-// Razorpay initialization
+// Razorpay initialization (lazy — keys are required at request time, not module load,
+// so the build and dev server can start without production credentials)
 const Razorpay = require("razorpay");
 
-if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
-  console.error("RAZORPAY_KEY_ID or RAZORPAY_KEY_SECRET is not set");
+function getRazorpay() {
+  const keyId = process.env.RAZORPAY_KEY_ID;
+  const keySecret = process.env.RAZORPAY_KEY_SECRET;
+  if (!keyId || !keySecret) {
+    return null;
+  }
+  return new Razorpay({
+    key_id: keyId,
+    key_secret: keySecret,
+  });
 }
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID || "",
-  key_secret: process.env.RAZORPAY_KEY_SECRET || "",
-});
 
 export async function POST(request: NextRequest) {
   try {
@@ -53,6 +58,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Create Razorpay order
+    const razorpay = getRazorpay();
+    if (!razorpay) {
+      return NextResponse.json(
+        { error: "Payment is not configured. Please try again later." },
+        { status: 503 }
+      );
+    }
     const razorpayOrder = await razorpay.orders.create({
       amount: Math.round(amount * 100), // Razorpay expects amount in paise
       currency: "INR",

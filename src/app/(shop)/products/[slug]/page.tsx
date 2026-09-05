@@ -192,13 +192,59 @@ export default async function ProductPage({ params }: PageProps) {
     getReviews(product.id),
   ]);
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "@id": `https://www.westhome.in/products/${product.slug}#product`,
+    name: product.seoTitle || product.name,
+    description:
+      product.seoDescription ||
+      product.shortDescription ||
+      product.description?.substring(0, 160) ||
+      product.name,
+    image: product.images?.length ? product.images.map((img: any) => img.url) : undefined,
+    sku: product.sku || undefined,
+    brand: {
+      "@type": "Brand",
+      name: "WESTHOME by BM Distributors",
+    },
+    offers: {
+      "@type": "Offer",
+      url: `https://www.westhome.in/products/${product.slug}`,
+      priceCurrency: "INR",
+      price: product.salePrice ?? product.regularPrice,
+      availability: product.stockQuantity > 0
+        ? "https://schema.org/InStock"
+        : "https://schema.org/OutOfStock",
+      itemCondition: "https://schema.org/NewCondition",
+      seller: {
+        "@type": "Organization",
+        name: "WESTHOME by BM Distributors",
+      },
+    },
+    aggregateRating:
+      product.rating != null && product.reviewCount > 0
+        ? {
+            "@type": "AggregateRating",
+            ratingValue: Number(product.rating.toFixed(1)),
+            reviewCount: product.reviewCount,
+          }
+        : undefined,
+  };
+
   return (
-    <ProductDetailClient
-      product={product}
-      reviews={reviewData.reviews}
-      reviewAvg={reviewData.avgRating}
-      reviewCount={reviewData.reviewCount}
-      relatedProducts={relatedProducts}
-    />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <ProductDetailClient
+        product={product}
+        reviews={reviewData.reviews}
+        reviewAvg={reviewData.avgRating}
+        reviewCount={reviewData.reviewCount}
+        relatedProducts={relatedProducts}
+      />
+    </>
   );
 }
