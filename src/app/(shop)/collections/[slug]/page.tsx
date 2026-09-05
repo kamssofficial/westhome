@@ -125,10 +125,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const category = await getCategory(slug);
   if (!category) return { title: "Collection Not Found" };
   const description = category.description || ("Shop " + category.name + " at WESTHOME. Premium home decor, wall art, and accessories.");
+  const canonical = `/collections/${category.slug}`;
   return {
     title: category.name,
     description,
-    openGraph: { title: category.name, description, type: "website" },
+    alternates: { canonical },
+    openGraph: {
+      title: category.name,
+      description,
+      type: "website",
+      url: canonical,
+      images: [{ url: "/images/logo/westhome-logo-transparent.png", alt: "WESTHOME by BM Distributors" }],
+    },
     twitter: { card: "summary", title: category.name, description },
   };
 }

@@ -7,6 +7,15 @@ export const metadata: Metadata = {
   title: "Home Decor Blog & Styling Tips",
   description:
     "Styling tips, buying guides and organisation ideas for Indian homes — from wall clocks and cushion covers to laundry room storage.",
+  alternates: { canonical: "/blog" },
+  openGraph: {
+    title: "WESTHOME Journal — Home Decor Blog",
+    description:
+      "Styling tips, buying guides and organisation ideas for Indian homes — from wall clocks and cushion covers to laundry room storage.",
+    type: "website",
+    url: "/blog",
+    images: [{ url: "/images/logo/westhome-logo-transparent.png", alt: "WESTHOME by BM Distributors" }],
+  },
 };
 
 export default function BlogPage() {

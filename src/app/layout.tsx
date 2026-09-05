@@ -41,9 +41,11 @@ export const metadata: Metadata = {
     title: "WESTHOME by BM Distributors",
     description:
       "Premium home décor and lifestyle products curated for your comfort.",
+    images: [{ url: "/images/logo/westhome-logo-transparent.png", alt: "WESTHOME by BM Distributors" }],
   },
   twitter: {
     card: "summary_large_image",
+    images: ["/images/logo/westhome-logo-transparent.png"],
   },
   robots: {
     index: true,
@@ -111,7 +113,10 @@ export default function RootLayout({
                   closes: "18:00",
                 },
               ],
-              sameAs: ["https://www.westhome.in/"],
+              sameAs: [
+                "https://www.facebook.com/westhomebybmdistributors/",
+                "https://www.instagram.com/westhomebybmd/",
+              ],
             }),
           }}
         />

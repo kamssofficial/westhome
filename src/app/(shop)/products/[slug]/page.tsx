@@ -164,12 +164,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     ? product.images.map((img: any) => ({ url: img.url, alt: img.alt || product.name }))
     : [];
 
+  const canonical = `/products/${product.slug}`;
+
   return {
     title: product.seoTitle || product.name,
     description: product.seoDescription || product.shortDescription || product.description?.substring(0, 160) || product.name,
+    alternates: { canonical },
     openGraph: {
       title: product.seoTitle || product.name,
       description: product.seoDescription || product.shortDescription || product.description?.substring(0, 160) || product.name,
+      url: canonical,
       images: images.length > 0 ? [images[0]] : undefined,
       type: "website",
     },

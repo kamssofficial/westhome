@@ -6,11 +6,13 @@ import { Star, ExternalLink } from "lucide-react";
 /**
  * Google review prompt shown after a successful order.
  *
- * Update GOOGLE_REVIEW_URL with the store's real Google Business Profile
- * review link (search.google.com/local/writereview?placeid=...). The QR code
- * is rendered via the free api.qrserver.com endpoint — no dependency needed.
+ * Points at the store's official Google profile (share.google link resolves to
+ * the business's Maps listing). For a one-tap "write a review" flow, replace
+ * with the link Google Business Profile gives under "Ask for reviews"
+ * (search.google.com/local/writereview?placeid=...) once the Place ID is known.
+ * The QR code is rendered via the free api.qrserver.com endpoint.
  */
-const GOOGLE_REVIEW_URL = "https://search.google.com/local/writereview?placeid=REPLACE_WITH_PLACE_ID";
+const GOOGLE_REVIEW_URL = "https://share.google/ODd8DypNkU7MrL9QE";
 
 export default function GoogleReviewPrompt() {
   const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(GOOGLE_REVIEW_URL)}`;

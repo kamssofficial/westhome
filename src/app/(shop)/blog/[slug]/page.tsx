@@ -21,13 +21,17 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params;
   const article = blogArticles.find((a) => a.slug === slug);
   if (!article) return { title: "Article Not Found" };
+  const canonical = `/blog/${article.slug}`;
   return {
     title: article.title,
     description: article.excerpt,
+    alternates: { canonical },
     openGraph: {
       title: article.title,
       description: article.excerpt,
       type: "article",
+      url: canonical,
+      images: [{ url: "/images/logo/westhome-logo-transparent.png", alt: "WESTHOME by BM Distributors" }],
     },
   };
 }
