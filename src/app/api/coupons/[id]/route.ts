@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { requireAdmin } from "@/lib/apiAuth";
+import { logAdminAction } from "@/lib/audit";
 
 export async function PUT(
   request: NextRequest,
@@ -44,6 +45,8 @@ export async function PUT(
       data: updates,
     });
 
+    await logAdminAction({ action: "UPDATE", entity: "COUPON", entityId: id, details: { code: coupon.code, changes: Object.keys(updates) }, request });
+
     return NextResponse.json({ coupon });
   } catch (error) {
     console.error("Coupon update error:", error);
@@ -75,6 +78,7 @@ export async function DELETE(
     }
 
     await db.coupon.delete({ where: { id } });
+    await logAdminAction({ action: "DELETE", entity: "COUPON", entityId: id, details: { code: existing.code }, request });
 
     return NextResponse.json({ success: true });
   } catch (error) {

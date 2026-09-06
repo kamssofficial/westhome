@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { requireAuthRole } from "@/lib/apiAuth";
 import { auth } from "@/lib/auth";
+import { logAdminAction } from "@/lib/audit";
 
 export async function GET(request: NextRequest) {
   try {
@@ -243,13 +244,12 @@ export async function POST(request: NextRequest) {
       },
     });
     // Log the action
-    await db.auditLog.create({
-      data: {
-        action: "CREATE",
-        entity: "PRODUCT",
-        entityId: product.id,
-        details: { name: product.name, slug: product.slug },
-      },
+    await logAdminAction({
+      action: "CREATE",
+      entity: "PRODUCT",
+      entityId: product.id,
+      details: { name: product.name, slug: product.slug },
+      request,
     });
     notifyProductUpdated(product.name, "added").catch(() => {});
 

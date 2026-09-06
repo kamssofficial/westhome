@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { requireAdmin } from "@/lib/apiAuth";
+import { logAdminAction } from "@/lib/audit";
 
 export async function GET() {
   const authResult = await requireAdmin();
@@ -50,6 +51,7 @@ export async function POST(request: NextRequest) {
         expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,
       },
     });
+    await logAdminAction({ action: "CREATE", entity: "COUPON", entityId: coupon.id, details: { code: coupon.code, type: coupon.type, value: coupon.value }, request });
     return NextResponse.json({ coupon }, { status: 201 });
   } catch (error: any) {
     if (error?.code === "P2002") {

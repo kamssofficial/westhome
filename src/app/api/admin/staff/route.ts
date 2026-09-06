@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { requireAdmin } from "@/lib/apiAuth";
+import { logAdminAction } from "@/lib/audit";
 
 // SECURITY: Simple in-memory rate limiter for staff creation
 const staffCreationAttempts = new Map<string, { count: number; resetAt: number }>();
@@ -134,13 +135,12 @@ export async function POST(request: NextRequest) {
     });
 
     // Log the action
-    await db.auditLog.create({
-      data: {
-        action: "CREATE",
-        entity: "USER",
-        entityId: user.id,
-        details: { name: user.name, email: user.email, role: user.role },
-      },
+    await logAdminAction({
+      action: "CREATE",
+      entity: "USER",
+      entityId: user.id,
+      details: { name: user.name, email: user.email, role: user.role },
+      request,
     });
 
     return NextResponse.json({ staff: user }, { status: 201 });

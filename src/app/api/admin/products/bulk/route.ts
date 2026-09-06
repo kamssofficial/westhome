@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { requireAuthRole } from "@/lib/apiAuth";
+import { logAdminAction } from "@/lib/audit";
 
 export async function POST(request: NextRequest) {
   const authResult = await requireAuthRole(["ADMIN", "MANAGER", "PRODUCT_MANAGER"]);
@@ -37,6 +38,14 @@ export async function POST(request: NextRequest) {
     const result = await db.product.updateMany({ where: { id: { in: ids } }, data: { status: update.status as any, isActive: update.isActive } });
     successCount = result.count;
   }
+
+  await logAdminAction({
+    action: "BULK_" + action.toUpperCase(),
+    entity: "PRODUCT",
+    entityId: null,
+    details: { ids, successCount, failCount },
+    request,
+  });
 
   return NextResponse.json({ successCount, failCount });
 }

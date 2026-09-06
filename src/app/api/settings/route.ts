@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { Prisma } from "@prisma/client";
 import { requireAdmin } from "@/lib/apiAuth";
+import { logAdminAction } from "@/lib/audit";
 
 // SECURITY: Only expose these keys publicly (allowlist, not denylist)
 const PUBLIC_KEYS = [
@@ -46,6 +47,7 @@ export async function PUT(request: NextRequest) {
       });
     }
 
+    await logAdminAction({ action: "UPDATE", entity: "SETTINGS", entityId: null, details: { keys: Object.keys(body) }, request });
     return NextResponse.json({ message: "Settings updated" });
   } catch (error) {
     console.error("Settings update error:", error);

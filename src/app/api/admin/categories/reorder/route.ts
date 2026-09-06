@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import db from '@/lib/db';
 import { requireAuthRole } from '@/lib/apiAuth';
+import { logAdminAction } from "@/lib/audit";
 
 export async function PATCH(request: NextRequest) {
   const authResult = await requireAuthRole(['ADMIN', 'MANAGER']);
@@ -21,6 +22,7 @@ export async function PATCH(request: NextRequest) {
     );
 
     await db.$transaction(updates);
+    await logAdminAction({ action: "REORDER", entity: "CATEGORY", entityId: null, details: { categoryIds }, request });
 
     return NextResponse.json({ success: true });
   } catch (error) {

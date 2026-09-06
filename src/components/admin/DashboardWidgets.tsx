@@ -1,0 +1,62 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import {
+  TrendingUp, TrendingDown, Minus, ChevronDown, ExternalLink,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+
+export function Trend({ current, previous, className }: { current: number; previous: number; className?: string }) {
+  const pct = previous === 0 ? (current > 0 ? 100 : 0) : Math.round(((current - previous) / previous) * 100);
+  if (pct === 0) return <span className={cn("text-xs text-text-muted flex items-center gap-0.5", className)}><Minus size={12} /> 0%</span>;
+  return (
+    <span className={cn("text-xs font-medium flex items-center gap-0.5", pct > 0 ? "text-green-600" : "text-red-500", className)}>
+      {pct > 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+      {Math.abs(pct)}%
+    </span>
+  );
+}
+
+export function KPICard({ label, value, icon: Icon, trend, href, bg, accent }: { label: string; value: string | number; icon: any; trend?: { current: number; previous: number }; href?: string; bg?: string; accent?: string }) {
+  const card = (
+    <div className={cn("bg-white rounded-2xl border border-black/[.06] p-4 hover:shadow-md transition-all", href && "cursor-pointer")}>
+      <div className="flex items-start justify-between mb-3">
+        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", bg || "bg-[#f0ede8]")}>
+          <Icon size={18} className={accent || "text-[#6b6560]"} />
+        </div>
+        {trend && <Trend current={trend.current} previous={trend.previous} />}
+      </div>
+      <p className="text-2xl font-bold text-primary tracking-tight">{value}</p>
+      <p className="text-xs text-text-muted mt-1">{label}</p>
+      {href && <ExternalLink size={10} className="text-text-muted mt-2" />}
+    </div>
+  );
+  return href ? <Link href={href}>{card}</Link> : card;
+}
+
+export function Section({ title, icon: Icon, children, defaultOpen = true, badge }: { title: string; icon: any; children: React.ReactNode; defaultOpen?: boolean; badge?: string | number }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="bg-white rounded-2xl border border-black/[.06] overflow-hidden">
+      <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between px-5 py-4 hover:bg-surface-muted/30 transition-colors">
+        <div className="flex items-center gap-3">
+          <Icon size={18} className="text-[#6b6560]" />
+          <h2 className="text-sm font-semibold text-primary">{title}</h2>
+          {badge !== undefined && <span className="px-2 py-0.5 bg-accent/10 text-accent text-[10px] font-bold rounded-full">{badge}</span>}
+        </div>
+        <ChevronDown size={16} className={cn("text-text-muted transition-transform", open && "rotate-180")} />
+      </button>
+      {open && <div className="px-5 pb-5 border-t border-border">{children}</div>}
+    </div>
+  );
+}
+
+export function MiniBar({ value, max, color }: { value: number; max: number; color?: string }) {
+  const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
+  return (
+    <div className="w-full h-1.5 bg-surface-muted rounded-full overflow-hidden">
+      <div className={cn("h-full rounded-full transition-all", color || "bg-accent")} style={{ width: `${pct}%` }} />
+    </div>
+  );
+}

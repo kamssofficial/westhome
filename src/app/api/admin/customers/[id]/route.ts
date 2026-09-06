@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { requireAdminOrManager } from "@/lib/apiAuth";
+import { logAdminAction } from "@/lib/audit";
 
 export async function GET(
   request: NextRequest,
@@ -249,13 +250,12 @@ export async function DELETE(
     });
 
     // Log the action
-    await db.auditLog.create({
-      data: {
-        action: "DELETE",
-        entity: "USER",
-        entityId: id,
-        details: { email: existing.email, performedBy: (session?.user as any)?.id },
-      },
+    await logAdminAction({
+      action: "DELETE",
+      entity: "USER",
+      entityId: id,
+      details: { email: existing.email },
+      request,
     });
 
     return NextResponse.json({ message: "Customer deleted" });

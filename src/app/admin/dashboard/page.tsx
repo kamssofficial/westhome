@@ -3,15 +3,16 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import {
-  Package, ShoppingCart, Users, TrendingUp, TrendingDown, DollarSign,
+  Package, ShoppingCart, Users, DollarSign,
   Eye, Heart, ShoppingBag, AlertTriangle, ArrowUpRight, ArrowDownRight,
   RefreshCw, Calendar, BarChart3, Target, Truck, Clock, Search, Filter,
-  ChevronDown, ChevronRight, Minus, Activity, Zap, Shield, Layers,
+  ChevronRight, Activity, Zap, Shield, Layers,
   PieChart, Map, MessageSquare, Smartphone, Monitor, Tablet, Star,
   ExternalLink, Download, MoreHorizontal, CheckCircle, XCircle,
   Package as PackageIcon, UserPlus, CreditCard, Percent, Boxes,
 } from "lucide-react";
 import { formatPrice, cn } from "@/lib/utils";
+import { Trend, KPICard, Section, MiniBar } from "@/components/admin/DashboardWidgets";
 
 // ─── Types ──
 interface DashboardData {
@@ -55,75 +56,33 @@ const STATUS_COLORS: Record<string, string> = {
   PAYMENT_FAILED: "bg-red-100 text-red-700",
 };
 
-// ─── Helpers ──
-function Trend({ current, previous, className }: { current: number; previous: number; className?: string }) {
-  const pct = previous === 0 ? (current > 0 ? 100 : 0) : Math.round(((current - previous) / previous) * 100);
-  if (pct === 0) return <span className={cn("text-xs text-text-muted flex items-center gap-0.5", className)}><Minus size={12} /> 0%</span>;
-  return (
-    <span className={cn("text-xs font-medium flex items-center gap-0.5", pct > 0 ? "text-green-600" : "text-red-500", className)}>
-      {pct > 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-      {Math.abs(pct)}%
-    </span>
-  );
-}
-
-function KPICard({ label, value, icon: Icon, trend, href, bg, accent }: { label: string; value: string | number; icon: any; trend?: { current: number; previous: number }; href?: string; bg?: string; accent?: string }) {
-  const card = (
-    <div className={cn("bg-white rounded-2xl border border-black/[.06] p-4 hover:shadow-md transition-all", href && "cursor-pointer")}>
-      <div className="flex items-start justify-between mb-3">
-        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", bg || "bg-[#f0ede8]")}>
-          <Icon size={18} className={accent || "text-[#6b6560]"} />
-        </div>
-        {trend && <Trend current={trend.current} previous={trend.previous} />}
-      </div>
-      <p className="text-2xl font-bold text-primary tracking-tight">{value}</p>
-      <p className="text-xs text-text-muted mt-1">{label}</p>
-      {href && <ExternalLink size={10} className="text-text-muted mt-2" />}
-    </div>
-  );
-  return href ? <Link href={href}>{card}</Link> : card;
-}
-
-function Section({ title, icon: Icon, children, defaultOpen = true, badge }: { title: string; icon: any; children: React.ReactNode; defaultOpen?: boolean; badge?: string | number }) {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <div className="bg-white rounded-2xl border border-black/[.06] overflow-hidden">
-      <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between px-5 py-4 hover:bg-surface-muted/30 transition-colors">
-        <div className="flex items-center gap-3">
-          <Icon size={18} className="text-[#6b6560]" />
-          <h2 className="text-sm font-semibold text-primary">{title}</h2>
-          {badge !== undefined && <span className="px-2 py-0.5 bg-accent/10 text-accent text-[10px] font-bold rounded-full">{badge}</span>}
-        </div>
-        <ChevronDown size={16} className={cn("text-text-muted transition-transform", open && "rotate-180")} />
-      </button>
-      {open && <div className="px-5 pb-5 border-t border-border">{children}</div>}
-    </div>
-  );
-}
-
-function MiniBar({ value, max, color }: { value: number; max: number; color?: string }) {
-  const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
-  return (
-    <div className="w-full h-1.5 bg-surface-muted rounded-full overflow-hidden">
-      <div className={cn("h-full rounded-full transition-all", color || "bg-accent")} style={{ width: `${pct}%` }} />
-    </div>
-  );
-}
-
 // ─── Main Dashboard ──
 export default function AdminDashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [range, setRange] = useState("30d");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async (r: string, silent = false) => {
     if (!silent) setLoading(true);
     setRefreshing(true);
     try {
       const res = await fetch(`/api/admin/dashboard?range=${r}`);
-      if (res.ok) setData(await res.json());
-    } catch {} finally {
+      if (res.status === 401 || res.status === 403) {
+        // Stale/expired session — bounce to login instead of showing a fake zero dashboard.
+        window.location.href = "/login";
+        return;
+      }
+      if (res.ok) {
+        setData(await res.json());
+        setError(null);
+      } else {
+        setError("Failed to load dashboard data.");
+      }
+    } catch {
+      setError("Failed to load dashboard data.");
+    } finally {
       setLoading(false);
       setRefreshing(false);
     }
@@ -133,6 +92,18 @@ export default function AdminDashboard() {
 
   const fmt = (n: number) => n >= 100000 ? `${(n / 100000).toFixed(1)}L` : n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n);
   const fmtCurrency = (n: number) => `₹${n.toLocaleString("en-IN")}`;
+
+  if (error && !data) {
+    return (
+      <div className="min-h-screen bg-[#f5f3ef] p-4 md:p-6 flex items-center justify-center">
+        <div className="bg-white rounded-2xl border border-black/[.06] p-8 max-w-md w-full text-center">
+          <p className="text-sm font-semibold text-primary">Couldn't load the dashboard</p>
+          <p className="text-xs text-text-muted mt-1">{error}</p>
+          <button onClick={() => fetchData(range)} className="mt-4 px-4 py-2 text-xs font-medium bg-stone-900 text-white rounded-lg hover:bg-stone-800 transition-colors">Retry</button>
+        </div>
+      </div>
+    );
+  }
 
   if (loading && !data) {
     return (
@@ -178,6 +149,13 @@ export default function AdminDashboard() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 space-y-4">
+
+        {error && data && (
+          <div className="bg-red-50 border border-red-200 text-red-600 text-xs font-medium rounded-xl px-4 py-2.5 flex items-center justify-between">
+            <span>{error}</span>
+            <button onClick={() => fetchData(range)} className="underline font-semibold">Retry</button>
+          </div>
+        )}
 
         {/* ── SECTION 1: Live Store ── */}
         {live.sessions > 0 && (

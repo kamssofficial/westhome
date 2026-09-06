@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { requireAdmin } from "@/lib/apiAuth";
+import { logAdminAction } from "@/lib/audit";
 
 // GET /api/admin/staff/[id] — Get staff member details
 export async function GET(
@@ -107,14 +108,14 @@ export async function PUT(
       },
     });
 
-    // Log the action
-    await db.auditLog.create({
-      data: {
-        action: "UPDATE",
-        entity: "USER",
-        entityId: id,
-        details: { changes: updateData },
-      },
+    // Log the action (password hashes are scrubbed from the audit record)
+    const { passwordHash: _passwordHash, ...visibleChanges } = updateData;
+    await logAdminAction({
+      action: "UPDATE",
+      entity: "USER",
+      entityId: id,
+      details: { changes: visibleChanges },
+      request,
     });
 
     return NextResponse.json({ staff: updated });
@@ -158,13 +159,12 @@ export async function DELETE(
     });
 
     // Log the action
-    await db.auditLog.create({
-      data: {
-        action: "DEACTIVATE",
-        entity: "USER",
-        entityId: id,
-        details: { email: existing.email },
-      },
+    await logAdminAction({
+      action: "DEACTIVATE",
+      entity: "USER",
+      entityId: id,
+      details: { email: existing.email },
+      request,
     });
 
     return NextResponse.json({ success: true });

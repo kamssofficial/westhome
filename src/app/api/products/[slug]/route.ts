@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { requireAuthRole } from "@/lib/apiAuth";
 import { auth } from "@/lib/auth";
+import { logAdminAction } from "@/lib/audit";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   try {
@@ -182,13 +183,12 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     // Log the action
-    await db.auditLog.create({
-      data: {
-        action: "UPDATE",
-        entity: "PRODUCT",
-        entityId: product.id,
-        details: { name: updated.name, slug: updated.slug },
-      },
+    await logAdminAction({
+      action: "UPDATE",
+      entity: "PRODUCT",
+      entityId: product.id,
+      details: { name: updated.name, slug: updated.slug },
+      request,
     });
     notifyProductUpdated(updated.name, "updated").catch(() => {});
 
@@ -210,13 +210,12 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     if (!product) return NextResponse.json({ error: "Product not found" }, { status: 404 });
 
     // Log the action
-    await db.auditLog.create({
-      data: {
-        action: "DELETE",
-        entity: "PRODUCT",
-        entityId: product.id,
-        details: { name: product.name, slug: product.slug },
-      },
+    await logAdminAction({
+      action: "DELETE",
+      entity: "PRODUCT",
+      entityId: product.id,
+      details: { name: product.name, slug: product.slug },
+      request,
     });
 
     await db.product.delete({ where: { id: product.id } });

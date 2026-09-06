@@ -2,6 +2,7 @@ import { notifyProductUpdated } from "@/lib/notifications";
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { requireAuthRole } from "@/lib/apiAuth";
+import { logAdminAction } from "@/lib/audit";
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const authResult = await requireAuthRole(["ADMIN", "MANAGER", "PRODUCT_MANAGER"]);
@@ -20,8 +21,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     },
   });
 
-  await db.auditLog.create({
-    data: { action: "UPDATE", entity: "PRODUCT", entityId: id, details: { name: updated.name, status: updated.status } },
+  await logAdminAction({
+    action: "UPDATE", entity: "PRODUCT", entityId: id, details: { name: updated.name, status: updated.status }, request,
   });
   notifyProductUpdated(updated.name, "status changed to " + updated.status.toLowerCase()).catch(() => {});
 
@@ -55,8 +56,8 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   await db.productVariant.deleteMany({ where: { productId: id } });
   await db.product.delete({ where: { id } });
 
-  await db.auditLog.create({
-    data: { action: "DELETE", entity: "PRODUCT", entityId: id, details: { name: product.name } },
+  await logAdminAction({
+    action: "DELETE", entity: "PRODUCT", entityId: id, details: { name: product.name }, request,
   });
 
   return NextResponse.json({ success: true });

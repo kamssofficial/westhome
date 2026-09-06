@@ -2,6 +2,7 @@ import { notifyOrderStatusChange } from "@/lib/notifications";
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { requireOrderManager } from "@/lib/apiAuth";
+import { logAdminAction } from "@/lib/audit";
 
 export async function GET(
   request: NextRequest,
@@ -148,6 +149,14 @@ export async function PUT(
       data: updates,
     });
 
+    await logAdminAction({
+      action: "UPDATE",
+      entity: "ORDER",
+      entityId: id,
+      details: { changes: updates, note: body.note || null },
+      request,
+    });
+
     return NextResponse.json({ order });
   } catch (error) {
     console.error("Admin order update error:", error);
@@ -185,6 +194,7 @@ export async function PATCH(
         data: { orderId: id, status: "CONFIRMED", note: "Order confirmed by staff" },
       });
       { const o = await db.order.findUnique({ where: { id }, select: { orderNumber: true } }); if (o) notifyOrderStatusChange(id, o.orderNumber, "CONFIRMED").catch(() => {}); }
+      await logAdminAction({ action: "CONFIRM", entity: "ORDER", entityId: id, details: { note: body.note || null }, request });
 
       return NextResponse.json({ success: true, status: "CONFIRMED" });
     }
@@ -219,6 +229,7 @@ export async function PATCH(
         },
       });
       { const o = await db.order.findUnique({ where: { id }, select: { orderNumber: true } }); if (o) notifyOrderStatusChange(id, o.orderNumber, "PAYMENT_CONFIRMED").catch(() => {}); }
+      await logAdminAction({ action: "PAYMENT_CONFIRMED", entity: "ORDER", entityId: id, details: { note: body.note }, request });
 
       return NextResponse.json({ success: true, paymentStatus: "COMPLETED" });
     }
@@ -241,6 +252,7 @@ export async function PATCH(
         data: { orderId: id, status: "SHIPPED", note: body.note || "Shipped" },
       });
       { const o = await db.order.findUnique({ where: { id }, select: { orderNumber: true } }); if (o) notifyOrderStatusChange(id, o.orderNumber, "SHIPPED").catch(() => {}); }
+      await logAdminAction({ action: "SHIP", entity: "ORDER", entityId: id, details: { trackingNumber: body.trackingNumber || null, note: body.note || null }, request });
 
       return NextResponse.json({ success: true, status: "SHIPPED" });
     }
@@ -263,6 +275,7 @@ export async function PATCH(
         data: { orderId: id, status: "DELIVERED", note: body.note || "Delivered" },
       });
       { const o = await db.order.findUnique({ where: { id }, select: { orderNumber: true } }); if (o) notifyOrderStatusChange(id, o.orderNumber, "DELIVERED").catch(() => {}); }
+      await logAdminAction({ action: "DELIVER", entity: "ORDER", entityId: id, details: { note: body.note || null }, request });
 
       return NextResponse.json({ success: true, status: "DELIVERED" });
     }
@@ -282,6 +295,7 @@ export async function PATCH(
         data: { orderId: id, status: "CANCELLED", note: body.note || "Cancelled by staff" },
       });
       { const o = await db.order.findUnique({ where: { id }, select: { orderNumber: true } }); if (o) notifyOrderStatusChange(id, o.orderNumber, "CANCELLED").catch(() => {}); }
+      await logAdminAction({ action: "CANCEL", entity: "ORDER", entityId: id, details: { note: body.note || null }, request });
 
       return NextResponse.json({ success: true, status: "CANCELLED" });
     }

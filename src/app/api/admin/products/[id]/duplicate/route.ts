@@ -2,6 +2,7 @@ import { notifyProductUpdated } from "@/lib/notifications";
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { requireAuthRole } from "@/lib/apiAuth";
+import { logAdminAction } from "@/lib/audit";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const authResult = await requireAuthRole(["ADMIN", "MANAGER", "PRODUCT_MANAGER"]);
@@ -45,8 +46,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     await db.productTag.create({ data: { ...tagData, productId: duplicate.id } });
   }
 
-  await db.auditLog.create({
-    data: { action: "CREATE", entity: "PRODUCT", entityId: duplicate.id, details: { name: duplicate.name, duplicatedFrom: original.id } },
+  await logAdminAction({
+    action: "CREATE", entity: "PRODUCT", entityId: duplicate.id, details: { name: duplicate.name, duplicatedFrom: original.id }, request,
   });
 
   notifyProductUpdated(duplicate.name, "added (duplicated)").catch(() => {});

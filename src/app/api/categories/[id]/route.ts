@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { requireAuthRole } from "@/lib/apiAuth";
+import { logAdminAction } from "@/lib/audit";
 
 export async function PUT(
   request: NextRequest,
@@ -23,6 +24,8 @@ export async function PUT(
         position: body.position,
       },
     });
+
+    await logAdminAction({ action: "UPDATE", entity: "CATEGORY", entityId: id, details: { name: body.name }, request });
 
     return NextResponse.json({ category });
   } catch (error) {
@@ -61,7 +64,9 @@ export async function DELETE(
       );
     }
 
+    const deletedCategory = await db.category.findUnique({ where: { id }, select: { name: true } });
     await db.category.delete({ where: { id } });
+    await logAdminAction({ action: "DELETE", entity: "CATEGORY", entityId: id, details: { name: deletedCategory?.name ?? null }, request });
     return NextResponse.json({ message: "Category deleted" });
   } catch (error) {
     return NextResponse.json({ error: "Failed to delete category" }, { status: 500 });

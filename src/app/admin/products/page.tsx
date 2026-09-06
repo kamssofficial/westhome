@@ -103,6 +103,7 @@ function ConfirmDialog({ title, message, confirmLabel, danger, onConfirm, onCanc
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -122,6 +123,7 @@ export default function AdminProductsPage() {
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const params = new URLSearchParams();
       if (debouncedSearch) params.set("q", debouncedSearch);
@@ -129,8 +131,13 @@ export default function AdminProductsPage() {
       params.set("page", String(page));
       params.set("limit", "25");
       const res = await fetch("/api/admin/products?" + params.toString());
+      if (res.status === 401 || res.status === 403) {
+        window.location.href = "/login";
+        return;
+      }
       if (res.ok) { const d = await res.json(); setProducts(d.products); setTotal(d.total); }
-    } catch {} finally { setLoading(false); }
+      else { setLoadError("Failed to load products."); setProducts([]); }
+    } catch { setLoadError("Failed to load products."); setProducts([]); } finally { setLoading(false); }
   }, [debouncedSearch, statusFilter, page]);
 
   useEffect(() => { fetchProducts(); setSelectedIds(new Set()); }, [fetchProducts]);
@@ -347,7 +354,8 @@ export default function AdminProductsPage() {
                   </td>
                 </tr>
               )) : (
-                <tr><td colSpan={8} className="px-4 py-12 text-center"><Package size={32} className="text-text-muted mx-auto mb-2" /><p className="text-sm font-medium text-primary">No products found</p><p className="text-xs text-text-muted mt-1">Try changing your search or filters.</p></td></tr>
+                loadError ? <tr><td colSpan={8} className="px-4 py-12 text-center"><Package size={32} className="text-text-muted mx-auto mb-2" /><p className="text-sm font-medium text-red-500">{loadError}</p><button onClick={() => fetchProducts()} className="mt-2 text-xs font-medium text-accent underline">Retry</button></td></tr>
+                : <tr><td colSpan={8} className="px-4 py-12 text-center"><Package size={32} className="text-text-muted mx-auto mb-2" /><p className="text-sm font-medium text-primary">No products found</p><p className="text-xs text-text-muted mt-1">Try changing your search or filters.</p></td></tr>
               )}
             </tbody>
           </table>

@@ -18,16 +18,31 @@ export async function middleware(request: NextRequest) {
     }
 
     if (role !== "ADMIN") {
+      // Per-page access matrix — mirrors the role lists enforced by each /api/admin/* route.
+      const can = (roles: string[]) => roles.includes(role);
+      const allowed =
+        pathname.startsWith("/admin/products")
+          ? can(["MANAGER", "PRODUCT_MANAGER"])
+          : pathname.startsWith("/admin/categories")
+            ? can(["MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER"])
+            : pathname.startsWith("/admin/orders")
+              ? can(["MANAGER", "ORDER_MANAGER"])
+              : pathname.startsWith("/admin/customers")
+                ? can(["MANAGER"])
+                : pathname.startsWith("/admin/audit") || pathname.startsWith("/admin/staff")
+                  || pathname.startsWith("/admin/settings") || pathname.startsWith("/admin/coupons")
+                  ? false
+                  : pathname.startsWith("/admin/homepage") || pathname.startsWith("/admin/content")
+                    ? can(["MANAGER", "CONTENT_MANAGER"])
+                    : pathname.startsWith("/admin/promotions")
+                      ? can(["MANAGER"])
+                      : can(["MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER", "STAFF"]); // dashboard, analytics, anything else
+
+      if (allowed) {
+        return NextResponse.next();
+      }
       const staffRoles = ["MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER", "STAFF"];
       if (staffRoles.includes(role)) {
-        // Staff can access product management routes
-        if (pathname.startsWith("/admin/products")) {
-          return NextResponse.next();
-        }
-        // Staff can access categories (read-only useful for product context)
-        if (pathname.startsWith("/admin/categories")) {
-          return NextResponse.next();
-        }
         return NextResponse.redirect(new URL("/staff/dashboard", request.url));
       }
       return NextResponse.redirect(new URL("/account", request.url));
