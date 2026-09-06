@@ -30,6 +30,29 @@ const nextConfig: NextConfig = {
         { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
         { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=(self)" },
         { key: "X-XSS-Protection", value: "1; mode=block" },
+        // Strict CSP on production only (Next emits inline bootstrap scripts, and dev
+        // needs eval-based source maps). Razorpay's checkout iframe + API are allowed.
+        ...(process.env.NODE_ENV === "production"
+          ? [
+              {
+                key: "Content-Security-Policy",
+                value: [
+                  "default-src 'self'",
+                  "script-src 'self' 'unsafe-inline' https://checkout.razorpay.com",
+                  "style-src 'self' 'unsafe-inline'",
+                  "img-src 'self' data: blob: https:",
+                  "font-src 'self' data:",
+                  "media-src 'self' data: blob: https:",
+                  "connect-src 'self' https://api.razorpay.com https://checkout.razorpay.com https://*.vercel-storage.com https://*.public.blob.vercel-storage.com",
+                  "frame-src 'self' https://checkout.razorpay.com",
+                  "object-src 'none'",
+                  "base-uri 'self'",
+                  "form-action 'self' https://api.razorpay.com",
+                  "frame-ancestors 'none'",
+                ].join("; "),
+              },
+            ]
+          : []),
       ],
     },
     {

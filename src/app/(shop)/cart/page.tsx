@@ -95,13 +95,16 @@ export default function CartPage() {
                 <div className="flex items-center border border-border rounded-lg overflow-hidden">
                   <button
                     onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                    className="w-7 h-7 flex items-center justify-center hover:bg-surface-muted transition-colors"
+                    disabled={item.quantity <= 1}
+                    aria-label={`Decrease quantity of ${item.name}`}
+                    className="w-7 h-7 flex items-center justify-center hover:bg-surface-muted transition-colors disabled:opacity-40"
                   >
                     <Minus size={12} />
                   </button>
                   <span className="w-8 text-center text-xs font-semibold">{item.quantity}</span>
                   <button
                     onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                    aria-label={`Increase quantity of ${item.name}`}
                     className="w-7 h-7 flex items-center justify-center hover:bg-surface-muted transition-colors"
                   >
                     <Plus size={12} />
@@ -109,6 +112,7 @@ export default function CartPage() {
                 </div>
                 <button
                   onClick={() => removeItem(item.id)}
+                  aria-label={`Remove ${item.name} from cart`}
                   className="p-1.5 text-text-muted hover:text-error transition-colors"
                 >
                   <Trash2 size={14} />

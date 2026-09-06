@@ -73,7 +73,8 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
                 ? "bg-white text-error shadow-sm"
                 : "bg-white/80 backdrop-blur-sm text-text-muted hover:bg-white hover:text-error"
             )}
-            aria-label="Add to wishlist"
+            aria-label={isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
+            aria-pressed={isInWishlist}
           >
             <Heart size={15} fill={isInWishlist ? "currentColor" : "none"} />
           </button>

@@ -45,6 +45,7 @@ export default function CheckoutPage() {
   const [loadingAddresses, setLoadingAddresses] = useState(true);
   const [placingOrder, setPlacingOrder] = useState(false);
   const [verifyingPayment, setVerifyingPayment] = useState(false);
+  const [paymentAcknowledged, setPaymentAcknowledged] = useState(false);
   const [orderResult, setOrderResult] = useState<OrderRef | null>(null);
   const [userEmail, setUserEmail] = useState("");
   const [freeThreshold, setFreeThreshold] = useState(2000);
@@ -119,8 +120,10 @@ export default function CheckoutPage() {
       }),
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok || !data?.order?.id || !data?.order?.orderNumber) throw new Error(data?.error || "Failed to create your order.");
-    return data.order as OrderRef;
+    if (res.ok && data?.order?.id && data?.order?.orderNumber) {
+      return data.order as OrderRef;
+    }
+    throw new Error(data?.error || "Failed to create your order.");
   };
 
   const openRazorpay = async (order: OrderRef) => {
@@ -140,7 +143,7 @@ export default function CheckoutPage() {
           const verify = await fetch("/api/payment/verify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ orderId: order.id, razorpay_order_id: response.razorpay_order_id, razorpay_payment_id: response.razorpay_payment_id, razorpay_signature: response.razorpay_signature }) });
           const verifyData = await verify.json().catch(() => ({}));
           if (!verify.ok || !verifyData?.verified) throw new Error(verifyData?.error || "Payment verification failed.");
-          setOrderResult(order); clearCart(); setStep(3); toast.success("Payment successful");
+          setPaymentAcknowledged(true); setOrderResult(order); clearCart(); setStep(3); toast.success("Payment successful");
         } catch (error) { toast.error(error instanceof Error ? error.message : "Payment verification failed. Please contact support."); }
         finally { setVerifyingPayment(false); }
       },
@@ -186,16 +189,18 @@ export default function CheckoutPage() {
       <div className="sticky bottom-[120px] lg:static bg-white/95 backdrop-blur-sm py-3 -mx-4 px-4 border-t border-border z-[60]"><button type="button" onClick={() => setStep(2)} className="w-full py-3.5 bg-primary text-white rounded-full text-sm font-semibold flex items-center justify-center gap-2">Proceed to Payment <ChevronRight size={16} /></button></div>
     </div>}
 
-    {step === 2 && <div className="container-shop">
-      <h2 className="text-sm font-semibold text-primary mb-3">Secure Payment</h2>
+    {step === 2 && (
+    <div className="container-shop">
+      <h2 className="text-sm font-semibold text-primary mb-3">Payment Method</h2>
       <div className="bg-surface rounded-[1.35rem] border border-foreground/[.08] p-5 shadow-sm mb-5"><div className="flex items-center gap-2 mb-3"><Shield size={18} className="text-accent" /><h3 className="text-sm font-semibold text-primary">Pay securely with Razorpay</h3></div><p className="text-xs text-secondary mb-4">UPI, cards, net banking and supported wallets are available in the secure Razorpay checkout.</p><div className="rounded-[1.35rem] bg-surface-muted p-4"><div className="flex justify-between text-sm"><span className="text-secondary">Amount to pay</span><span className="font-bold text-primary">{formatPrice(total)}</span></div></div></div>
 
       <div className="flex items-center gap-2 text-xs text-secondary mb-6"><Shield size={14} /><span>Payment is verified securely on our server before the order is confirmed.</span></div>
       <div className="bg-surface rounded-[1.35rem] border border-foreground/[.08] p-4 shadow-sm mb-6"><div className="flex justify-between text-sm"><span className="font-semibold text-primary">Total</span><span className="font-bold text-primary">{formatPrice(total)}</span></div></div>
       <div className="h-20 lg:hidden" />
-      <div className="sticky bottom-[120px] lg:static bg-white/95 backdrop-blur-sm py-3 -mx-4 px-4 border-t border-border z-[60]"><button type="button" onClick={handlePay} disabled={placingOrder || verifyingPayment} className="w-full py-3.5 bg-primary text-white rounded-full text-sm font-semibold disabled:opacity-50 flex items-center justify-center gap-2">{(placingOrder || verifyingPayment) && <Loader2 size={16} className="animate-spin" />}{verifyingPayment ? "Verifying Payment..." : placingOrder ? "Opening Secure Checkout..." : `Pay ${formatPrice(total)} Securely`}</button>{orderResult && <p className="text-[10px] text-text-muted text-center mt-2">Order {orderResult.orderNumber} is saved. You can retry payment safely if the payment window is closed.</p>}</div>
-    </div>}
+      <div className="sticky bottom-[120px] lg:static bg-white/95 backdrop-blur-sm py-3 -mx-4 px-4 border-t border-border z-[60]"><button type="button" onClick={handlePay} disabled={placingOrder || verifyingPayment} className="w-full py-3.5 bg-primary text-white rounded-full text-sm font-semibold disabled:opacity-50 flex items-center justify-center gap-2">{(placingOrder || verifyingPayment) && <Loader2 size={16} className="animate-spin" />}{verifyingPayment ? "Verifying Payment..." : placingOrder ? "Opening Secure Checkout..." : `Place Order — ${formatPrice(total)} (Payment Pending)`}</button>{orderResult && <p className="text-[10px] text-text-muted text-center mt-2">Order {orderResult.orderNumber} is saved. You can retry payment safely if the payment window is closed.</p>}</div>
+    </div>)}
 
-    {step === 3 && <div className="container-shop py-12 text-center"><div className="w-16 h-16 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-4"><CheckCircle size={34} className="text-success" /></div><h2 className="text-xl font-semibold text-primary mb-2">Payment Successful</h2><p className="text-sm text-secondary mb-4">Thank you. Your order has been confirmed.</p><div className="bg-surface rounded-[1.35rem] border border-foreground/[.08] p-4 shadow-sm inline-block mb-4"><p className="text-xs text-secondary mb-1">Order Number</p><p className="text-lg font-bold text-primary">{orderResult?.orderNumber || "—"}</p></div><p className="text-xs text-secondary mb-8">You can track your order status in My Orders.</p><div className="max-w-md mx-auto mb-8"><GoogleReviewPrompt /></div><Link href="/shop" className="block w-full py-3.5 bg-primary text-white rounded-full text-sm font-semibold text-center">Continue Shopping</Link><Link href="/account/orders" className="block w-full py-3 text-sm font-medium text-secondary text-center mt-2">View My Orders</Link></div>}
+    {step === 3 && (
+    <div className="container-shop py-12 text-center"><div className="w-16 h-16 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-4"><CheckCircle size={34} className="text-success" /></div><h2 className="text-xl font-semibold text-primary mb-2">Thank You!</h2><p className="text-sm text-secondary mb-4">Your order has been confirmed.</p><div className="bg-surface rounded-[1.35rem] border border-foreground/[.08] p-4 shadow-sm inline-block mb-4"><p className="text-xs text-secondary mb-1">Order Number</p><p className="text-lg font-bold text-primary">{orderResult?.orderNumber || "—"}</p></div><p className="text-xs text-secondary mb-8">You can track your order status in My Orders.</p><div className="max-w-md mx-auto mb-8"><GoogleReviewPrompt /></div><Link href="/shop" className="block w-full py-3.5 bg-primary text-white rounded-full text-sm font-semibold text-center">Continue Shopping</Link><Link href="/account/orders" className="block w-full py-3 text-sm font-medium text-secondary text-center mt-2">View My Orders</Link></div>)}
   </div>;
 }

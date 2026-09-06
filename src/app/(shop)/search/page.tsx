@@ -136,6 +136,9 @@ function SearchContent() {
 
   const selectedSortLabel = SORT_OPTIONS.find(o => o.value === sort)?.label || "Recommended";
 
+  // Hide filter/sort/view controls entirely when there are no results and no active filters
+  const showCatalogControls = loading || total > 0 || filterCount > 0;
+
   return (
     <div className="animate-fade-in">
       <div className="container-shop pt-3 pb-2">
@@ -179,7 +182,7 @@ function SearchContent() {
       </div>
 
       {/* Filter & Sort toolbar */}
-      <div className="container-shop pb-3">
+      {showCatalogControls && <div className="container-shop pb-3">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <button onClick={() => setShowFilters(true)}
@@ -218,11 +221,11 @@ function SearchContent() {
                 </div>
               )}
             </div>
-            <button onClick={() => setViewMode("grid")}
+            <button onClick={() => setViewMode("grid")} aria-label="Grid view"
               className={cn("p-2 rounded-lg", viewMode === "grid" ? "bg-[#1a1917] text-white" : "bg-white border border-black/[.08]")}>
               <Grid3X3 size={16} />
             </button>
-            <button onClick={() => setViewMode("list")}
+            <button onClick={() => setViewMode("list")} aria-label="List view"
               className={cn("p-2 rounded-lg", viewMode === "list" ? "bg-[#1a1917] text-white" : "bg-white border border-black/[.08]")}>
               <List size={16} />
             </button>
@@ -230,7 +233,7 @@ function SearchContent() {
         </div>
         <FilterPanel open={showFilters} onClose={() => setShowFilters(false)} onApply={applyFilters}
           initialFilters={filters} categories={categories} resultCount={total} />
-      </div>
+      </div>}
 
       {/* Active Filter Chips */}
       {filterCount > 0 && (

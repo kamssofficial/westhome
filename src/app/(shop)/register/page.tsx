@@ -8,7 +8,7 @@ import Button from "@/components/ui/Button";
 import toast from "react-hot-toast";
 
 export default function RegisterPage() {
-  const [form, setForm] = useState({ name: "", email: "", phone: "", password: "", confirmPassword: "" });
+  const [form, setForm] = useState({ name: "", email: "", phone: "", password: "", confirmPassword: "", consent: false });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -21,6 +21,10 @@ export default function RegisterPage() {
     }
     if (form.password.length < 6) {
       toast.error("Password must be at least 6 characters");
+      return;
+    }
+    if (!form.consent) {
+      toast.error("Please accept the Privacy Policy to create an account");
       return;
     }
 
@@ -74,29 +78,45 @@ export default function RegisterPage() {
 
         <form onSubmit={handleSubmit} className="bg-surface border border-border rounded-[1.35rem] p-5 md:p-6 space-y-4">
           <div>
-            <label className="text-xs font-medium text-text-secondary mb-1 block">Full Name *</label>
-            <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" placeholder="Your name" autoComplete="name" />
+            <label htmlFor="register-name" className="text-xs font-medium text-text-secondary mb-1 block">Full Name *</label>
+            <input id="register-name" type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" placeholder="Your name" autoComplete="name" />
           </div>
           <div>
-            <label className="text-xs font-medium text-text-secondary mb-1 block">Email *</label>
-            <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" placeholder="your@email.com" autoComplete="email" spellCheck={false} />
+            <label htmlFor="register-email" className="text-xs font-medium text-text-secondary mb-1 block">Email *</label>
+            <input id="register-email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" placeholder="your@email.com" autoComplete="email" spellCheck={false} />
           </div>
           <div>
-            <label className="text-xs font-medium text-text-secondary mb-1 block">Phone</label>
-            <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" placeholder="+91 XXXXX XXXXX" autoComplete="tel" inputMode="tel" />
+            <label htmlFor="register-phone" className="text-xs font-medium text-text-secondary mb-1 block">Phone</label>
+            <input id="register-phone" type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" placeholder="+91 XXXXX XXXXX" autoComplete="tel" inputMode="tel" />
           </div>
           <div>
-            <label className="text-xs font-medium text-text-secondary mb-1 block">Password *</label>
+            <label htmlFor="register-password" className="text-xs font-medium text-text-secondary mb-1 block">Password *</label>
             <div className="relative">
-              <input type={showPassword ? "text" : "password"} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required className="w-full px-3 py-2.5 pr-10 bg-surface border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" placeholder="Min. 6 characters" autoComplete="new-password" />
-              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-foreground">
+              <input id="register-password" type={showPassword ? "text" : "password"} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required className="w-full px-3 py-2.5 pr-10 bg-surface border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" placeholder="Min. 6 characters" autoComplete="new-password" />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Hide password" : "Show password"} aria-pressed={showPassword} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-foreground">
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
           </div>
           <div>
-            <label className="text-xs font-medium text-text-secondary mb-1 block">Confirm Password *</label>
-            <input type="password" value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} required className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" placeholder="Confirm your password" autoComplete="new-password" />
+            <label htmlFor="register-confirm-password" className="text-xs font-medium text-text-secondary mb-1 block">Confirm Password *</label>
+            <input id="register-confirm-password" type="password" value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} required className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" placeholder="Confirm your password" autoComplete="new-password" />
+          </div>
+          <div className="flex items-start gap-2.5">
+            <input
+              id="consent"
+              type="checkbox"
+              checked={form.consent}
+              onChange={(e) => setForm({ ...form, consent: e.target.checked })}
+              className="mt-0.5 w-4 h-4 rounded border-border accent-accent shrink-0"
+              required
+            />
+            <label htmlFor="consent" className="text-xs text-text-secondary leading-relaxed">
+              I agree to the processing of my personal data as described in the{" "}
+              <Link href="/policies/privacy" className="text-accent font-medium hover:underline">Privacy Policy</Link>{" "}
+              and the{" "}
+              <Link href="/policies/terms" className="text-accent font-medium hover:underline">Terms of Service</Link>.
+            </label>
           </div>
           <Button type="submit" fullWidth size="lg" loading={loading}>Create Account</Button>
         </form>

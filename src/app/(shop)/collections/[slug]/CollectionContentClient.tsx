@@ -100,6 +100,9 @@ function CategoryContent({ category: initialCategory, initialProducts, initialTo
 
   const hasSubcategories = category?.subcategories && category.subcategories.length > 0;
 
+  // Hide filter/sort/view controls when the collection is empty and nothing is filtered
+  const showCatalogControls = loading || products.length > 0 || total > 0;
+
   return (
     <div className="animate-fade-in">
       {/* Back button */}
@@ -115,8 +118,8 @@ function CategoryContent({ category: initialCategory, initialProducts, initialTo
         
       </div>
 
-      {/* Filter / Sort bar — always visible */}
-      <div className="container-shop pb-3">
+      {/* Filter / Sort bar */}
+      {showCatalogControls && <div className="container-shop pb-3">
         <div className="flex items-center justify-between">
           <button
             onClick={() => setShowFilters(!showFilters)}
@@ -142,12 +145,14 @@ function CategoryContent({ category: initialCategory, initialProducts, initialTo
             </div>
             <button
               onClick={() => setViewMode("grid")}
+              aria-label="Grid view"
               className={cn("p-2 rounded-lg", viewMode === "grid" ? "bg-primary text-white" : "bg-surface border border-border")}
             >
               <Grid3X3 size={16} />
             </button>
             <button
               onClick={() => setViewMode("list")}
+              aria-label="List view"
               className={cn("p-2 rounded-lg", viewMode === "list" ? "bg-primary text-white" : "bg-surface border border-border")}
             >
               <List size={16} />
@@ -192,7 +197,7 @@ function CategoryContent({ category: initialCategory, initialProducts, initialTo
             )}
           </div>
         )}
-      </div>
+      </div>}
 
       {/* Subcategory grid (when applicable) */}
       {hasSubcategories && showSubcategories && (
@@ -258,7 +263,7 @@ function CategoryContent({ category: initialCategory, initialProducts, initialTo
           </div>
         )}
         {!hasMore && products.length > 0 && (
-          <p className="text-center text-xs text-text-muted py-6">All {total} products loaded</p>
+          <p className="text-center text-xs text-text-muted py-6">End of collection.</p>
         )}
       </div>
     </div>

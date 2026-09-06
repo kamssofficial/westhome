@@ -52,7 +52,7 @@ export default function ContactPage() {
               <div>
                 <p className="text-sm font-medium text-primary">Phone</p>
                 <a href={`tel:${contactPhone.replace(/[^0-9+]/g, "")}`} className="text-sm text-accent hover:underline">
-                  +91 98950 71144
+                  {contactPhone}
                 </a>
               </div>
             </div>
@@ -65,7 +65,7 @@ export default function ContactPage() {
               <div>
                 <p className="text-sm font-medium text-primary">Email</p>
                 <a href={`mailto:${contactEmail}`} className="text-sm text-accent hover:underline">
-                  info@westhomebybmd.com
+                  {contactEmail}
                 </a>
               </div>
             </div>

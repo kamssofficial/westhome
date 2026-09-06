@@ -37,7 +37,7 @@ function Section({ title, defaultOpen = false, children }: { title: string; defa
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="border-b border-black/[.04] last:border-0">
-      <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between py-4 text-left">
+      <button onClick={() => setOpen(!open)} aria-expanded={open} className="w-full flex items-center justify-between py-4 text-left">
         <span className="text-sm font-semibold text-[#1a1917]">{title}</span>
         <ChevronDown size={16} className={cn("text-[#b0aba6] transition-transform duration-200", open && "rotate-180")} />
       </button>
@@ -52,6 +52,14 @@ export default function FilterPanel({ open, onClose, onApply, initialFilters, ca
   const [loadingSubs, setLoadingSubs] = useState(false);
 
   useEffect(() => { if (open) setF(initialFilters); }, [open, initialFilters]);
+
+  // Close on Escape
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
 
   // Fetch subcategories when Accessories is selected
   useEffect(() => {
@@ -91,7 +99,11 @@ export default function FilterPanel({ open, onClose, onApply, initialFilters, ca
   return (
     <>
       <div className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className={cn(
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Filters"
+        className={cn(
         "fixed z-[70] bg-[#faf8f5] overflow-hidden flex flex-col transition-transform duration-300",
         "inset-x-0 bottom-0 top-[8vh] rounded-t-[1.5rem]",
         "md:inset-y-0 md:right-0 md:left-auto md:w-[380px] md:top-0 md:rounded-t-none md:rounded-l-[1.5rem]"
@@ -105,7 +117,7 @@ export default function FilterPanel({ open, onClose, onApply, initialFilters, ca
           </div>
           <div className="flex items-center gap-3">
             {activeCount > 0 && <button onClick={clearAll} className="text-xs font-medium text-[#d4a574] hover:text-[#c49564]">Clear All</button>}
-            <button onClick={onClose} className="w-8 h-8 flex items-center justify-center hover:bg-black/[.04] rounded-full"><X size={18} className="text-[#6b6560]" /></button>
+            <button onClick={onClose} aria-label="Close filters" className="w-8 h-8 flex items-center justify-center hover:bg-black/[.04] rounded-full"><X size={18} className="text-[#6b6560]" /></button>
           </div>
         </div>
 
@@ -149,8 +161,8 @@ export default function FilterPanel({ open, onClose, onApply, initialFilters, ca
           <Section title="Price" defaultOpen={true}>
             <div className="flex items-center gap-2">
               <div className="flex-1">
-                <label className="text-[10px] font-medium text-[#b0aba6] uppercase tracking-wider mb-1 block">Min</label>
-                <input type="number" min="0" value={f.minPrice} onChange={e => set("minPrice", e.target.value)}
+                <label htmlFor="filter-min-price" className="text-[10px] font-medium text-[#b0aba6] uppercase tracking-wider mb-1 block">Min</label>
+                <input id="filter-min-price" type="number" min="0" value={f.minPrice} onChange={e => set("minPrice", e.target.value)}
                   placeholder="₹0" className="w-full px-3 py-2 bg-white border border-black/[.08] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#d4a574]/30" />
               </div>
               <span className="text-[#b0aba6] mt-4">—</span>

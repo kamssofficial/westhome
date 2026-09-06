@@ -105,13 +105,13 @@ export async function POST(request: NextRequest) {
       }
       
       // Use variant price/stock if variant is specified
-      let unitPrice: number;
+      let regularPrice: number;
       let salePrice: number | null = null;
       
       if (item.variantId) {
         const variant = variantMap.get(item.variantId);
         if (!variant) throw new Error(`Variant ${item.variantId} not found`);
-        unitPrice = Number(variant.price);
+        regularPrice = Number(variant.price);
         if (product.trackInventory && variant.stockQuantity < item.quantity) {
           throw new Error(`Insufficient stock for ${item.productName} (variant)`);
         }
@@ -119,14 +119,15 @@ export async function POST(request: NextRequest) {
         if (product.trackInventory && !item.variantId && product.stockQuantity < item.quantity) {
           throw new Error(`Insufficient stock for ${item.productName}`);
         }
-        unitPrice = Number(product.regularPrice);
+        regularPrice = Number(product.regularPrice);
         salePrice = product.salePrice ? Number(product.salePrice) : null;
       }
       
-      const effectivePrice = salePrice != null ? salePrice : unitPrice;
+      // The customer pays the sale price when one is live; record that as the unit price.
+      const effectivePrice = salePrice !== null && salePrice > 0 ? salePrice : regularPrice;
       const totalPrice = effectivePrice * item.quantity;
       serverSubtotal += totalPrice;
-      return { ...item, unitPrice, salePrice, totalPrice };
+      return { ...item, unitPrice: effectivePrice, salePrice, totalPrice };
     });
     
     // Server-side coupon validation

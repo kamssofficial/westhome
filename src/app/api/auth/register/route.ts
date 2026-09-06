@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { name, email, password, phone } = body;
+    const { name, email, password, phone, consent } = body;
 
     // Rate limit check (needs email early)
     if (!email) {
@@ -45,6 +45,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Validation
+    if (consent !== true) {
+      return NextResponse.json(
+        { error: "Please accept the Privacy Policy to create an account" },
+        { status: 400 }
+      );
+    }
+
     if (!name || !password) {
       return NextResponse.json(
         { error: "Name, email, and password are required" },

@@ -28,6 +28,19 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const userId = (session.user as any).id;
 
+    // SECURITY: validate required fields server-side — client validation is not enough
+    const requiredFields = ["name", "phone", "addressLine1", "city", "state", "pinCode"];
+    const missing = requiredFields.filter((f) => !body[f] || String(body[f]).trim() === "");
+    if (missing.length > 0) {
+      return NextResponse.json({ error: `Missing required fields: ${missing.join(", ")}` }, { status: 400 });
+    }
+
+    // Normalize phone (strip spaces/dashes) and validate format
+    const normalizedPhone = String(body.phone).replace(/[\s-]/g, "");
+    if (!/^\+?\d{10,15}$/.test(normalizedPhone)) {
+      return NextResponse.json({ error: "Invalid phone number" }, { status: 400 });
+    }
+
     // If first address, make it default
     const existingCount = await db.address.count({ where: { userId } });
 
@@ -35,7 +48,7 @@ export async function POST(request: NextRequest) {
       data: {
         userId,
         name: body.name,
-        phone: body.phone,
+        phone: normalizedPhone,
         addressLine1: body.addressLine1,
         addressLine2: body.addressLine2 || null,
         city: body.city,

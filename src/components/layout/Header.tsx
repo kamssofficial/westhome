@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import WestHomeLogo from "@/components/ui/WestHomeLogo";
-import { Search, ShoppingBag, Menu, X, User, ArrowUpRight } from "lucide-react";
+import { Search, ShoppingBag, Menu, X, User, ArrowUpRight, ChevronDown } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useCartStore } from "@/store/cart";
 import { cn } from "@/lib/utils";
@@ -23,7 +23,9 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [collectionsOpen, setCollectionsOpen] = useState(false);
   const [navCategories, setNavCategories] = useState<NavCat[]>([]);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetch("/api/categories")
@@ -40,6 +42,25 @@ export default function Header() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  // Close the search overlay and mobile menu on Escape
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setSearchOpen(false);
+        setMobileMenuOpen(false);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  // Focus the search input once the overlay expands
+  useEffect(() => {
+    if (!searchOpen) return;
+    const t = setTimeout(() => searchInputRef.current?.focus(), 300);
+    return () => clearTimeout(t);
+  }, [searchOpen]);
 
   const handleSearch = (event: React.FormEvent) => {
     event.preventDefault();
@@ -159,6 +180,7 @@ export default function Header() {
                   </label>
                   <input
                     id="site-search"
+                    ref={searchInputRef}
                     name="search"
                     type="search"
                     value={searchQuery}
@@ -230,7 +252,7 @@ export default function Header() {
               Explore WESTHOME
             </p>
             <nav className="space-y-1" aria-label="Mobile navigation">
-              {[...BASE_NAV, ...navCategories].map((link) => (
+              {BASE_NAV.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
@@ -246,6 +268,41 @@ export default function Header() {
                   {isActive(link.href) && <ArrowUpRight size={15} />}
                 </Link>
               ))}
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setCollectionsOpen((value) => !value)}
+                  aria-expanded={collectionsOpen}
+                  aria-controls="mobile-collections-list"
+                  className="flex w-full items-center justify-between rounded-2xl px-4 py-3.5 text-[15px] font-semibold transition-colors text-foreground hover:bg-foreground/[.06]"
+                >
+                  Collections
+                  <ChevronDown
+                    size={15}
+                    className={cn("transition-transform", collectionsOpen && "rotate-180")}
+                  />
+                </button>
+                {collectionsOpen && (
+                  <div id="mobile-collections-list" className="space-y-1 pb-1 pl-3 pt-1">
+                    {navCategories.map((link) => (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={cn(
+                          "flex items-center justify-between rounded-2xl px-4 py-3 text-[14px] font-medium transition-colors",
+                          isActive(link.href)
+                            ? "bg-foreground text-white"
+                            : "text-foreground hover:bg-foreground/[.06]"
+                        )}
+                      >
+                        {link.label}
+                        {isActive(link.href) && <ArrowUpRight size={14} />}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
             </nav>
           </div>
           <div className="space-y-1 border-t border-foreground/[.08] pt-4">

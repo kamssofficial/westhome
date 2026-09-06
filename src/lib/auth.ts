@@ -3,6 +3,20 @@ import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import db from "./db";
 
+// The Vercel project env historically points NEXTAUTH_URL at the *.vercel.app
+// deployment host. NextAuth uses that host for every redirect (login, register,
+// logout, errors), bouncing real users from www.westhome.in to a cookie-less
+// origin where their session doesn't exist. Pin the auth base to the production
+// domain on production deployments so redirects stay on the real site.
+const configuredAuthBase = (process.env.AUTH_URL || process.env.NEXTAUTH_URL || "").toLowerCase();
+if (
+  (process.env.NODE_ENV === "production" || process.env.VERCEL_ENV === "production") &&
+  configuredAuthBase &&
+  configuredAuthBase.includes("vercel.app")
+) {
+  process.env.AUTH_URL = "https://www.westhome.in";
+}
+
 declare module "next-auth" {
   interface Session {
     user: {

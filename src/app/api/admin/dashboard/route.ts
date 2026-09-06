@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
     const statusMap: Record<string, number> = {};
     statusCounts.forEach(s => { statusMap[s.status] = s._count.id; });
 
-    const todayOrders = await db.order.count({ where: { createdAt: { gte: todayStart } } });
+    const ordersToday = await db.order.count({ where: { createdAt: { gte: todayStart } } });
     const weekOrders = await db.order.count({ where: { createdAt: { gte: weekStart } } });
     const monthOrders = await db.order.count({ where: { createdAt: { gte: monthStart } } });
 
@@ -89,16 +89,16 @@ export async function GET(request: NextRequest) {
 
     // ── Customers ──
     const [totalCustomers, newCustomers, prevNewCustomers] = await Promise.all([
-      db.user.count({ where: { role: "CUSTOMER" } }),
-      db.user.count({ where: { role: "CUSTOMER", createdAt: { gte: since } } }),
-      db.user.count({ where: { role: "CUSTOMER", createdAt: { gte: prevStart, lte: prevEnd } } }),
+      db.user.count({ where: { role: "CUSTOMER", isActive: true } }),
+      db.user.count({ where: { role: "CUSTOMER", isActive: true, createdAt: { gte: since } } }),
+      db.user.count({ where: { role: "CUSTOMER", isActive: true, createdAt: { gte: prevStart, lte: prevEnd } } }),
     ]);
     const returningCustomers = totalCustomers - newCustomers;
 
     // ── Products ──
-    const [totalProducts, activeProducts, outOfStock, lowStockProducts] = await Promise.all([
+    const [totalProducts, activeProducts, outOfStock, lowStockProductsAtRisk] = await Promise.all([
       db.product.count(),
-      db.product.count({ where: { isActive: true } }),
+      db.product.count({ where: { status: "ACTIVE" } }),
       db.product.count({ where: { trackInventory: true, stockQuantity: 0 } }),
       db.product.findMany({ where: { trackInventory: true, stockQuantity: { gt: 0, lte: 5 } }, select: { id: true, name: true, stockQuantity: true, lowStockThreshold: true }, take: 50 }),
     ]);
@@ -276,9 +276,9 @@ export async function GET(request: NextRequest) {
       insights.push("Your highest-selling product is " + pMap[topByRevenue[0].productId!].name + ".");
     }
     if (outOfStock > 0) insights.push(outOfStock + " product" + (outOfStock > 1 ? "s are" : " is") + " currently out of stock.");
-    if (lowStockProducts.length > 0) insights.push(lowStockProducts.length + " product" + (lowStockProducts.length > 1 ? "s need" : " needs") + " restocking soon.");
+    if (lowStockProductsAtRisk.length > 0) insights.push(lowStockProductsAtRisk.length + " product" + (lowStockProductsAtRisk.length > 1 ? "s need" : " needs") + " restocking soon.");
     if (conversionRate > 0) insights.push("Your conversion rate is " + conversionRate + "%.");
-    if (todayOrders > 0) insights.push(todayOrders + " order" + (todayOrders > 1 ? "s placed" : " placed") + " today.");
+    if (ordersToday > 0) insights.push(ordersToday + " order" + (ordersToday > 1 ? "s placed" : " placed") + " today.");
     const topDevice = devices.sort((a, b) => b._count.id - a._count.id)[0];
     if (topDevice) {
       const tv = events["VIEW"] || events["PAGE_VIEW"] || 1;
@@ -297,8 +297,8 @@ export async function GET(request: NextRequest) {
         returningCustomers, conversionRate,
         productsSold: productsSold.length, unitsSold, prevUnitsSold, unitsChange: pctChange(unitsSold, prevUnitsSold),
         refunds: refundCount, pendingPayments, cancelledOrders: cancelledCount,
-        lowStock: lowStockProducts.length, outOfStock, totalProducts, activeProducts,
-        todayOrders, weekOrders, monthOrders,
+        lowStock: lowStockProductsAtRisk.length, outOfStock, totalProducts, activeProducts,
+        ordersToday, weekOrders, monthOrders,
       },
       // Live
       live: { sessions: liveSessions, devices: liveDevices.map(d => ({ type: d.deviceType || "unknown", count: d._count.id })) },
@@ -335,7 +335,7 @@ export async function GET(request: NextRequest) {
       // Payments
       payments: { success: paymentSuccess, failed: paymentFailed, successRate: (paymentSuccess + paymentFailed) > 0 ? Math.round((paymentSuccess / (paymentSuccess + paymentFailed)) * 100) : 0 },
       // Low Stock
-      lowStockProducts: lowStockProducts.map(p => ({ id: p.id, name: p.name, stock: p.stockQuantity, threshold: p.lowStockThreshold || 5 })),
+      lowStockProducts: lowStockProductsAtRisk.map(p => ({ id: p.id, name: p.name, stock: p.stockQuantity, threshold: p.lowStockThreshold || 5 })),
       // Insights
       insights,
       // Unique visitors

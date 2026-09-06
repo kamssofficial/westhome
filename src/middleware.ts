@@ -2,9 +2,22 @@ import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 
 export async function middleware(request: NextRequest) {
+  // The *.vercel.app alias is a second live, crawlable copy of the store and the
+  // cookie-less host that misconfigured auth redirects used to land on. Permanently
+  // fold it into the production domain so there is exactly one origin for the site.
+  if (request.nextUrl.hostname === "westhome.vercel.app") {
+    const target = new URL(request.nextUrl.pathname + request.nextUrl.search, "https://www.westhome.in");
+    return NextResponse.redirect(target, 301);
+  }
+
   const token = await getToken({ req: request, secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET });
   const { pathname } = request.nextUrl;
   const role = (token as any)?.role;
+
+  // /shop/all was replaced by /search — issue a real permanent redirect.
+  if (pathname === "/shop/all") {
+    return NextResponse.redirect(new URL("/search", request.url), 308);
+  }
 
   // ── Admin routes: ADMIN only ──
   if (pathname.startsWith("/admin")) {
@@ -105,9 +118,11 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    "/",
     "/admin/:path*",
     "/staff/:path*",
     "/account/:path*",
     "/checkout/:path*",
+    "/((?!_next/static|_next/image|favicon.ico|images|robots.txt|sitemap.xml).*)",
   ],
 };
