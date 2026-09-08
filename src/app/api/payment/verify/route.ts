@@ -1,189 +1,234 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
+import { Prisma } from "@prisma/client";
 import db from "@/lib/db";
 import { notifyLowStock } from "@/lib/notifications";
 import { requireAuth } from "@/lib/auth";
 
-export async function POST(request: NextRequest) {
-  try {
-    const session = await requireAuth();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    const {
-      razorpay_order_id,
-      razorpay_payment_id,
-      razorpay_signature,
-      orderId,
-    } = await request.json();
+const Razorpay = require("razorpay");
 
-    // SECURITY: Verify the order belongs to the authenticated user
-    const existingOrder = await db.order.findUnique({ where: { id: orderId } });
-    if (!existingOrder) {
-      return NextResponse.json({ error: "Order not found" }, { status: 404 });
-    }
-    if (!existingOrder.userId) {
-      return NextResponse.json({ error: "Invalid order" }, { status: 400 });
-    }
-    if (existingOrder.userId !== (session.user as any).id) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+function getRazorpay() {
+  const keyId = process.env.RAZORPAY_KEY_ID;
+  const keySecret = process.env.RAZORPAY_KEY_SECRET;
+  if (!keyId || !keySecret) return null;
+  return new Razorpay({ key_id: keyId, key_secret: keySecret });
+}
 
-    // Verify signature
-    const body = razorpay_order_id + "|" + razorpay_payment_id;
-    const expectedSignature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET!)
-      .update(body.toString())
-      .digest("hex");
+async function verifyPaymentOnce(params: {
+  orderId: string;
+  razorpayOrderId: string;
+  razorpayPaymentId: string;
+  razorpaySignature: string;
+  userId: string;
+}) {
+  const { orderId, razorpayOrderId, razorpayPaymentId, razorpaySignature, userId } = params;
+  const expectedSignature = crypto
+    .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET || "")
+    .update(`${razorpayOrderId}|${razorpayPaymentId}`)
+    .digest("hex");
 
-    // SECURITY: Use timing-safe comparison to prevent timing attacks
-    const sigBuffer = Buffer.from(razorpay_signature || "", "utf8");
-    const expectedBuffer = Buffer.from(expectedSignature, "utf8");
-    const isAuthentic =
-      sigBuffer.length === expectedBuffer.length &&
-      crypto.timingSafeEqual(sigBuffer, expectedBuffer);
+  const sigBuffer = Buffer.from(razorpaySignature || "", "utf8");
+  const expectedBuffer = Buffer.from(expectedSignature, "utf8");
+  const isAuthentic =
+    sigBuffer.length === expectedBuffer.length &&
+    crypto.timingSafeEqual(sigBuffer, expectedBuffer);
+  if (!isAuthentic) throw new Error("Payment signature verification failed");
 
-    if (!isAuthentic) {
-      // Payment verification failed
-      await db.order.update({
+  const razorpay = getRazorpay();
+  if (!razorpay) throw new Error("Payment is not configured");
+
+  const [rpOrder, rpPayment] = await Promise.all([
+    razorpay.orders.fetch(razorpayOrderId),
+    razorpay.payments.fetch(razorpayPaymentId),
+  ]);
+
+  const expectedOrder = await db.order.findUnique({
+    where: { id: orderId },
+    include: { payment: true },
+  });
+  if (!expectedOrder || expectedOrder.userId !== userId) throw new Error("Forbidden");
+  if (!expectedOrder.payment) throw new Error("Payment record not found");
+  if (expectedOrder.payment.razorpayOrderId !== razorpayOrderId) {
+    throw new Error("Razorpay order does not match this order");
+  }
+  if (rpOrder.receipt !== expectedOrder.orderNumber) {
+    throw new Error("Razorpay receipt does not match this order");
+  }
+
+  const expectedPaise = Math.round(Number(expectedOrder.total) * 100);
+  if (Number(rpOrder.amount) !== expectedPaise || Number(rpPayment.amount) !== expectedPaise) {
+    throw new Error("Payment amount mismatch");
+  }
+  if (rpOrder.currency !== "INR" || rpPayment.currency !== "INR") {
+    throw new Error("Payment currency mismatch");
+  }
+  if (rpPayment.order_id !== razorpayOrderId) {
+    throw new Error("Payment is not attached to the expected Razorpay order");
+  }
+  if (rpPayment.status !== "captured") {
+    throw new Error(`Payment is not captured (status: ${rpPayment.status})`);
+  }
+
+  return db.$transaction(
+    async (tx) => {
+      const freshOrder = await tx.order.findUnique({
         where: { id: orderId },
-        data: {
-          paymentStatus: "FAILED",
-          status: "PAYMENT_FAILED",
-          statusHistory: {
-            create: {
-              status: "PAYMENT_FAILED",
-              note: "Payment signature verification failed",
-            },
-          },
-        },
+        include: { items: true, payment: true },
       });
-
-      return NextResponse.json(
-        { error: "Payment verification failed" },
-        { status: 400 }
-      );
-    }
-
-    // SECURITY: Verify Razorpay amount matches order total
-    const orderForVerify = await db.order.findUnique({ where: { id: orderId }, select: { total: true, paymentStatus: true, paymentId: true } });
-    if (!orderForVerify) {
-      return NextResponse.json({ error: "Order not found" }, { status: 404 });
-    }
-    // Check amount from Razorpay order matches our order total (in paise)
-    const expectedPaise = Math.round(Number(orderForVerify.total) * 100);
-    // We cannot fetch from Razorpay here without API call, but we stored amount on Payment
-    const paymentRecord = await db.payment.findFirst({ where: { orderId }, select: { amount: true } });
-    if (paymentRecord && Math.round(Number(paymentRecord.amount) * 100) !== expectedPaise) {
-      return NextResponse.json({ error: "Payment amount mismatch" }, { status: 400 });
-    }
-    
-    // IDEMPOTENCY: Check if this order was already processed
-    if (orderForVerify.paymentStatus === "COMPLETED" && orderForVerify.paymentId) {
-      return NextResponse.json({
-        verified: true,
-        message: "Payment already verified",
-      });
-    }
-
-    // SECURITY: Use transaction for atomicity — prevents race condition
-    // where concurrent verify calls both decrement stock
-    const processedOrder = await db.$transaction(async (tx) => {
-      // Re-check paymentStatus inside transaction (optimistic lock)
-      const freshOrder = await tx.order.findUnique({ where: { id: orderId }, select: { paymentStatus: true, paymentId: true } });
-      if (freshOrder?.paymentStatus === "COMPLETED" && freshOrder.paymentId) {
-        return null; // Already processed
+      if (!freshOrder || freshOrder.userId !== userId) throw new Error("Forbidden");
+      if (freshOrder.paymentStatus === "COMPLETED" && freshOrder.paymentId) return null;
+      if (!freshOrder.payment || freshOrder.payment.razorpayOrderId !== razorpayOrderId) {
+        throw new Error("Payment record does not match Razorpay order");
       }
 
-      // Update order
+      for (const item of freshOrder.items) {
+        if (item.variantId) {
+          const result = await tx.productVariant.updateMany({
+            where: { id: item.variantId, isActive: true, stockQuantity: { gte: item.quantity } },
+            data: { stockQuantity: { decrement: item.quantity } },
+          });
+          if (result.count !== 1) {
+            throw new Error(`Insufficient stock for ${item.productName}${item.variantName ? ` (${item.variantName})` : ""}`);
+          }
+        } else {
+          const product = await tx.product.findUnique({
+            where: { id: item.productId },
+            select: { trackInventory: true, allowBackorder: true, isActive: true },
+          });
+          if (!product || !product.isActive) throw new Error(`Product ${item.productName} is no longer available`);
+          if (product.trackInventory && !product.allowBackorder) {
+            const result = await tx.product.updateMany({
+              where: { id: item.productId, stockQuantity: { gte: item.quantity } },
+              data: { stockQuantity: { decrement: item.quantity } },
+            });
+            if (result.count !== 1) throw new Error(`Insufficient stock for ${item.productName}`);
+          }
+        }
+      }
+
+      if (freshOrder.couponId && freshOrder.userId) {
+        const coupon = await tx.coupon.findUnique({ where: { id: freshOrder.couponId } });
+        if (!coupon || !coupon.isActive) throw new Error("Coupon is no longer available");
+
+        if (coupon.perCustomerLimit != null) {
+          const customerUsage = await tx.couponUsage.count({ where: { couponId: coupon.id, userId: freshOrder.userId } });
+          if (customerUsage >= coupon.perCustomerLimit) throw new Error("Coupon per-customer usage limit reached");
+        }
+
+        const couponUpdate = await tx.coupon.updateMany({
+          where: {
+            id: coupon.id,
+            isActive: true,
+            ...(coupon.usageLimit != null ? { usedCount: { lt: coupon.usageLimit } } : {}),
+          },
+          data: { usedCount: { increment: 1 } },
+        });
+        if (couponUpdate.count !== 1) throw new Error("Coupon usage limit reached");
+
+        await tx.couponUsage.create({
+          data: { couponId: coupon.id, userId: freshOrder.userId, orderId: freshOrder.id },
+        });
+      }
+
       await tx.order.update({
         where: { id: orderId },
         data: {
-          paymentId: razorpay_payment_id,
+          paymentId: razorpayPaymentId,
           paymentStatus: "COMPLETED",
           paymentVerified: true,
           status: "CONFIRMED",
           statusHistory: {
             create: {
               status: "CONFIRMED",
-              note: "Payment verified and order confirmed",
+              note: "Payment verified and captured; inventory and coupon usage committed atomically",
             },
           },
         },
       });
 
-      // Update payment record
-      await tx.payment.updateMany({
+      await tx.payment.update({
         where: { orderId },
         data: {
-          razorpayOrderId: razorpay_order_id,
-          razorpayPaymentId: razorpay_payment_id,
-          razorpaySignature: razorpay_signature,
+          razorpayOrderId,
+          razorpayPaymentId,
+          razorpaySignature,
           status: "COMPLETED",
+          method: rpPayment.method || undefined,
         },
       });
 
-      // Decrement stock atomically
-      const orderWithItems = await tx.order.findUnique({ where: { id: orderId }, include: { items: true } });
-      if (orderWithItems) {
-        for (const item of orderWithItems.items) {
-          if (item.variantId) {
-            await tx.productVariant.update({
-              where: { id: item.variantId },
-              data: { stockQuantity: { decrement: item.quantity } },
-            });
-          } else {
-            await tx.product.update({
-              where: { id: item.productId },
-              data: { stockQuantity: { decrement: item.quantity } },
-            });
-          }
-        }
+      return freshOrder;
+    },
+    {
+      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+      maxWait: 5000,
+      timeout: 10000,
+    },
+  );
+}
 
-        // Increment coupon usage atomically
-        if (orderWithItems.couponId) {
-          await tx.coupon.update({
-            where: { id: orderWithItems.couponId },
-            data: { usedCount: { increment: 1 } },
-          });
-          if (orderWithItems.userId) {
-            await tx.couponUsage.create({
-              data: { couponId: orderWithItems.couponId, userId: orderWithItems.userId, orderId: orderWithItems.id },
-            });
-          }
-        }
-      }
-      return orderWithItems;
+export async function POST(request: NextRequest) {
+  try {
+    const session = await requireAuth();
+    const body = await request.json();
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, orderId } = body;
+
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !orderId) {
+      return NextResponse.json({ error: "Missing payment verification fields" }, { status: 400 });
+    }
+
+    const existingOrder = await db.order.findUnique({
+      where: { id: orderId },
+      select: { userId: true, paymentStatus: true, paymentId: true },
     });
-
-    // If already processed, return success
-    if (!processedOrder) {
+    if (!existingOrder) return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    if (!existingOrder.userId || existingOrder.userId !== session.user.id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    if (existingOrder.paymentStatus === "COMPLETED" && existingOrder.paymentId === razorpay_payment_id) {
       return NextResponse.json({ verified: true, message: "Payment already verified" });
     }
 
-    // Post-transaction: low stock notifications (non-critical, outside transaction)
+    let processedOrder;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        processedOrder = await verifyPaymentOnce({
+          orderId,
+          razorpayOrderId: razorpay_order_id,
+          razorpayPaymentId: razorpay_payment_id,
+          razorpaySignature: razorpay_signature,
+          userId: session.user.id,
+        });
+        break;
+      } catch (error: any) {
+        if (error?.code === "P2034" && attempt < 2) continue;
+        throw error;
+      }
+    }
+
+    if (!processedOrder) return NextResponse.json({ verified: true, message: "Payment already verified" });
+
     for (const item of processedOrder.items) {
       try {
-        const product = await db.product.findUnique({ where: { id: item.productId } });
-        if (product && product.trackInventory && product.stockQuantity <= (product.lowStockThreshold || 5)) {
+        const product = await db.product.findUnique({
+          where: { id: item.productId },
+          select: { id: true, name: true, stockQuantity: true, trackInventory: true, lowStockThreshold: true },
+        });
+        if (product?.trackInventory && product.stockQuantity <= product.lowStockThreshold) {
           notifyLowStock(product.id, product.name, product.stockQuantity).catch(() => {});
         }
       } catch {}
     }
 
-    return NextResponse.json({
-      verified: true,
-      message: "Payment verified successfully",
-    });
+    return NextResponse.json({ verified: true, message: "Payment verified successfully" });
   } catch (error: any) {
     const msg = error?.message || "Unknown error";
-    if (msg.includes("Unauthorized")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (msg.includes("Unauthorized")) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (msg.includes("Forbidden")) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (/Insufficient stock|Coupon|Payment amount|currency|captured|does not match|not available|Payment signature/.test(msg)) {
+      return NextResponse.json({ error: msg }, { status: 400 });
     }
     console.error("Payment verification error:", msg);
-    return NextResponse.json(
-      { error: "Payment verification failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Payment verification failed" }, { status: 500 });
   }
 }
