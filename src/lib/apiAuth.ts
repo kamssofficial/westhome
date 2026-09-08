@@ -1,9 +1,11 @@
 import { auth } from "@/lib/auth";
+import db from "@/lib/db";
 import { NextResponse } from "next/server";
 
 /**
- * Verify the current user is authenticated and has the required role.
- * Returns the session or an error NextResponse.
+ * Verify the current user is authenticated, active, and has the required role.
+ * Role/active status is re-read from the database so deactivated users and role
+ * changes take effect immediately instead of waiting for JWT expiry.
  */
 export async function requireAuthRole(
   allowedRoles: string[]
@@ -12,26 +14,29 @@ export async function requireAuthRole(
   | { session?: never; error: NextResponse }
 > {
   const session = await auth();
-  if (!session?.user) {
-    return {
-      error: NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      ),
-    };
+  if (!session?.user?.id) {
+    return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
   }
 
-  const role = (session.user as any).role as string;
-  if (!allowedRoles.includes(role)) {
-    return {
-      error: NextResponse.json(
-        { error: "Forbidden" },
-        { status: 403 }
-      ),
-    };
+  const user = await db.user.findUnique({
+    where: { id: (session.user as any).id },
+    select: { id: true, email: true, name: true, role: true, permissions: true, isActive: true },
+  });
+
+  if (!user || user.isActive === false) {
+    return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
   }
 
-  return { session };
+  if (!allowedRoles.includes(user.role)) {
+    return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
+  }
+
+  return {
+    session: {
+      ...session,
+      user: { ...session.user, ...user },
+    },
+  };
 }
 
 /** Shorthand: require ADMIN role */
@@ -54,17 +59,20 @@ export async function requirePermission(permission: string): Promise<
   | { session: any; error?: never }
   | { session?: never; error: NextResponse }
 > {
-  const session = await auth();
-  if (!session?.user) {
-    return {
-      error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
-    };
-  }
+  const authResult = await requireAuthRole([
+    "ADMIN",
+    "MANAGER",
+    "ORDER_MANAGER",
+    "PRODUCT_MANAGER",
+    "CONTENT_MANAGER",
+    "STAFF",
+  ]);
+  if (authResult.error) return authResult;
 
-  const role = (session.user as any).role as string;
-  const permissionsStr = (session.user as any).permissions || "[]";
+  const session = authResult.session;
+  const role = session.user.role as string;
+  const permissionsStr = session.user.permissions || "[]";
 
-  // Admin and Manager have all permissions
   if (role === "ADMIN" || role === "MANAGER") {
     return { session };
   }
@@ -74,7 +82,9 @@ export async function requirePermission(permission: string): Promise<
     if (Array.isArray(permissions) && permissions.includes(permission)) {
       return { session };
     }
-  } catch {}
+  } catch {
+    // Invalid permission JSON is treated as no permissions.
+  }
 
   return {
     error: NextResponse.json({ error: "Forbidden: Missing permission" }, { status: 403 }),
@@ -83,5 +93,12 @@ export async function requirePermission(permission: string): Promise<
 
 /** Check if the user is staff (any non-customer role) */
 export async function requireStaff() {
-  return requireAuthRole(["ADMIN", "MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER", "STAFF"]);
+  return requireAuthRole([
+    "ADMIN",
+    "MANAGER",
+    "ORDER_MANAGER",
+    "PRODUCT_MANAGER",
+    "CONTENT_MANAGER",
+    "STAFF",
+  ]);
 }
