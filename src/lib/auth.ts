@@ -3,11 +3,6 @@ import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import db from "./db";
 
-// The Vercel project env historically points NEXTAUTH_URL at the *.vercel.app
-// deployment host. NextAuth uses that host for every redirect (login, register,
-// logout, errors), bouncing real users from www.westhome.in to a cookie-less
-// origin where their session doesn't exist. Pin the auth base to the production
-// domain on production deployments so redirects stay on the real site.
 const configuredAuthBase = (process.env.AUTH_URL || process.env.NEXTAUTH_URL || "").toLowerCase();
 if (
   (process.env.NODE_ENV === "production" || process.env.VERCEL_ENV === "production") &&
@@ -24,14 +19,14 @@ declare module "next-auth" {
       email: string;
       name: string;
       role: string;
+      permissions?: string;
     };
   }
   interface User {
     role: string;
+    permissions?: string;
   }
 }
-
-
 
 export const authOptions: NextAuthConfig = {
   providers: [
@@ -42,30 +37,18 @@ export const authOptions: NextAuthConfig = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          return null;
-        }
+        if (!credentials?.email || !credentials?.password) return null;
 
         const user = await db.user.findUnique({
           where: { email: credentials.email as string },
         });
-
-        if (!user) {
-          return null;
-        }
-        // isActive may be undefined if field wasn't migrated — treat undefined as true
-        if (user.isActive === false) {
-          return null;
-        }
+        if (!user || user.isActive === false) return null;
 
         const isValid = await bcrypt.compare(
           credentials.password as string,
           user.passwordHash
         );
-
-        if (!isValid) {
-          return null;
-        }
+        if (!isValid) return null;
 
         return {
           id: user.id,
@@ -79,7 +62,7 @@ export const authOptions: NextAuthConfig = {
   ],
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: 30 * 24 * 60 * 60,
   },
   callbacks: {
     async jwt({ token, user }) {
@@ -99,9 +82,7 @@ export const authOptions: NextAuthConfig = {
       return session;
     },
     async redirect({ url, baseUrl }) {
-      // Allow relative callback URLs
       if (url.startsWith("/")) return url;
-      // Allow redirects to the same origin
       try {
         const urlObj = new URL(url);
         if (urlObj.origin === baseUrl) return urlObj.pathname;
@@ -109,10 +90,7 @@ export const authOptions: NextAuthConfig = {
       return baseUrl;
     },
   },
-  pages: {
-    signIn: "/login",
-    error: "/login",
-  },
+  pages: { signIn: "/login", error: "/login" },
   cookies: {
     csrfToken: {
       name: "authjs.csrf-token",
@@ -133,37 +111,32 @@ export const authOptions: NextAuthConfig = {
 
 export const { handlers, signIn, signOut, auth } = NextAuth(authOptions);
 
-// Helper functions
 export async function getCurrentUser() {
   const session = await auth();
   if (!session?.user?.id) return null;
+  return db.user.findUnique({
+    where: { id: (session.user as any).id },
+    select: { id: true, email: true, name: true, role: true, phone: true, createdAt: true, isActive: true },
+  });
+}
+
+/** Require a current, active account. Role-sensitive endpoints should use apiAuth helpers. */
+export async function requireAuth() {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
 
   const user = await db.user.findUnique({
     where: { id: (session.user as any).id },
-    select: {
-      id: true,
-      email: true,
-      name: true,
-      role: true,
-      phone: true,
-      createdAt: true,
-    },
+    select: { id: true, email: true, name: true, role: true, permissions: true, isActive: true },
   });
+  if (!user || user.isActive === false) throw new Error("Unauthorized");
 
-  return user;
-}
-
-export async function requireAuth() {
-  const session = await auth();
-  if (!session?.user?.id) {
-    throw new Error("Unauthorized");
-  }
-  return session;
+  return { ...session, user: { ...session.user, ...user } };
 }
 
 export async function requireAdmin() {
-  const session = await auth();
-  if (!session?.user || (session.user as any).role !== "ADMIN") {
+  const session = await requireAuth();
+  if (session.user.role !== "ADMIN") {
     throw new Error("Unauthorized: Admin access required");
   }
   return session;
