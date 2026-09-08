@@ -43,7 +43,10 @@ const nextConfig: NextConfig = {
                   "img-src 'self' data: blob: https:",
                   "font-src 'self' data:",
                   "media-src 'self' data: blob: https:",
-                  "connect-src 'self' https://api.razorpay.com https://checkout.razorpay.com https://*.vercel-storage.com https://*.public.blob.vercel-storage.com",
+                  // R2 public base URL is added at build time when configured.
+                  `connect-src 'self' https://api.razorpay.com https://checkout.razorpay.com${
+                    process.env.R2_PUBLIC_BASE_URL ? " " + process.env.R2_PUBLIC_BASE_URL.replace(/\/+$/, "") : ""
+                  }`,
                   "frame-src 'self' https://checkout.razorpay.com",
                   "object-src 'none'",
                   "base-uri 'self'",

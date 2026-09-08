@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuthRole } from "@/lib/apiAuth";
 import db from "@/lib/db";
-import { put, del } from "@vercel/blob";
+import { isR2Configured, r2Put } from "@/lib/r2";
 
 const HERO_ACTIVE_KEY = "hero_active";
 const HERO_HISTORY_KEY = "hero_history";
+
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
 interface HeroImage {
   url: string;
@@ -42,6 +44,12 @@ export async function POST(request: NextRequest) {
   const authResult = await requireAuthRole(["ADMIN", "MANAGER", "CONTENT_MANAGER", "STAFF"]);
   if (authResult.error) return authResult.error;
 
+  // Reject oversized bodies before multipart parsing (see /api/upload).
+  const contentLength = Number(request.headers.get("content-length"));
+  if (Number.isFinite(contentLength) && contentLength > MAX_UPLOAD_BYTES) {
+    return NextResponse.json({ error: "Image must be under 10MB" }, { status: 413 });
+  }
+
   try {
     const userId = (authResult.session?.user as any)?.id || "unknown";
     const userName = (authResult.session?.user as any)?.name || "Staff";
@@ -61,7 +69,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate file size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
+    if (file.size > MAX_UPLOAD_BYTES) {
       return NextResponse.json({ error: "Image must be under 10MB" }, { status: 400 });
     }
 
@@ -95,13 +103,21 @@ export async function POST(request: NextRequest) {
     const filename = `hero-${Date.now()}.${ext}`;
     let imageUrl: string;
 
-    if (process.env.BLOB_READ_WRITE_TOKEN) {
-      const blob = await put(`banners/${filename}`, file, {
-        access: "public",
-        contentType: file.type,
-      });
-      imageUrl = blob.url;
+    if (isR2Configured()) {
+      try {
+        const buffer = Buffer.from(await file.arrayBuffer());
+        const uploaded = await r2Put(`banners/${filename}`, buffer, file.type);
+        imageUrl = uploaded.url;
+      } catch (r2Error) {
+        console.error("R2 upload failed:", r2Error instanceof Error ? r2Error.message : String(r2Error));
+        return NextResponse.json({ error: "Image upload failed. Please try again." }, { status: 503 });
+      }
     } else {
+      // Dev fallback — local development only. In production the filesystem is
+      // read-only, so refuse rather than 500.
+      if (process.env.NODE_ENV === "production") {
+        return NextResponse.json({ error: "Storage is not configured. Please try again later." }, { status: 503 });
+      }
       const bytes = await file.arrayBuffer();
       const fs = await import("fs");
       const path = await import("path");
@@ -150,7 +166,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Clean up old blob (best effort, keep history copies)
-    if (currentActive?.url?.includes("blob.vercel-storage.com") && currentActive.url !== imageUrl) {
+    if (currentActive?.url?.includes(".r2.dev") || currentActive?.url?.includes("images.westhome.in")) {
       // Don't delete — keep in history for restore
     }
 
