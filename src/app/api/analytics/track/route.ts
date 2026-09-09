@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { auth } from "@/lib/auth";
+import type { Prisma } from "@prisma/client";
 
 const ALLOWED_EVENTS = new Set([
   "PAGE_VIEW", "VIEW", "PRODUCT_VIEW", "SEARCH", "WISHLIST_ADD", "WISHLIST",
@@ -65,7 +66,7 @@ export async function POST(request: NextRequest) {
         productId: typeof productId === "string" ? productId : null,
         categoryId: typeof categoryId === "string" ? categoryId : null,
         subcategoryId: typeof subcategoryId === "string" ? subcategoryId : null,
-        metadata: Object.keys(enrichedMetadata).length > 0 ? enrichedMetadata : undefined,
+        metadata: Object.keys(enrichedMetadata).length > 0 ? (enrichedMetadata as Prisma.InputJsonValue) : undefined,
         userAgent: typeof userAgent === "string" ? userAgent.slice(0, 1000) : null,
         deviceType: typeof deviceType === "string" ? deviceType.slice(0, 30) : "desktop",
       },
