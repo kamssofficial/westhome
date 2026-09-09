@@ -73,13 +73,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Image must be under 10MB" }, { status: 400 });
     }
 
-    // Get image dimensions
+    // Read file buffer once, reuse for dimension parsing and upload.
+    const fileBuffer = Buffer.from(await file.arrayBuffer());
+
+    // Get image dimensions from the raw bytes.
     let width = 0;
     let height = 0;
     try {
-      const bytes = await file.arrayBuffer();
-      // Simple PNG/JPEG header dimension reading
-      const arr = new Uint8Array(bytes);
+      const arr = new Uint8Array(fileBuffer);
       if (arr[0] === 0x89 && arr[1] === 0x50) {
         // PNG
         width = (arr[16] << 24) | (arr[17] << 16) | (arr[18] << 8) | arr[19];
@@ -105,8 +106,7 @@ export async function POST(request: NextRequest) {
 
     if (isR2Configured()) {
       try {
-        const buffer = Buffer.from(await file.arrayBuffer());
-        const uploaded = await r2Put(`banners/${filename}`, buffer, file.type);
+        const uploaded = await r2Put(`banners/${filename}`, fileBuffer, file.type);
         imageUrl = uploaded.url;
       } catch (r2Error) {
         console.error("R2 upload failed:", r2Error instanceof Error ? r2Error.message : String(r2Error));
@@ -118,12 +118,11 @@ export async function POST(request: NextRequest) {
       if (process.env.NODE_ENV === "production") {
         return NextResponse.json({ error: "Storage is not configured. Please try again later." }, { status: 503 });
       }
-      const bytes = await file.arrayBuffer();
       const fs = await import("fs");
       const path = await import("path");
       const uploadDir = path.join(process.cwd(), "public", "images", "banners");
       if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-      fs.writeFileSync(path.join(uploadDir, filename), Buffer.from(bytes));
+      fs.writeFileSync(path.join(uploadDir, filename), fileBuffer);
       imageUrl = `/images/banners/${filename}`;
     }
 
