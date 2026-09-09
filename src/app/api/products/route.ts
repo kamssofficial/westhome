@@ -48,11 +48,36 @@ export async function GET(request: NextRequest) {
     const color = searchParams.get("color");
     const inStock = searchParams.get("inStock");
     const onSale = searchParams.get("onSale");
-    if (minPrice) where.regularPrice = { ...where.regularPrice, gte: parseFloat(minPrice) };
-    if (maxPrice) where.regularPrice = { ...where.regularPrice, lte: parseFloat(maxPrice) };
+    // Price filter: use effective price (salePrice when > 0, else regularPrice)
+    // 83 products have regularPrice=0 with salePrice>0 — filtering on regularPrice alone excludes them
+    if (minPrice || maxPrice) {
+      const priceAND: any[] = [];
+      if (minPrice) {
+        const minVal = parseFloat(minPrice);
+        priceAND.push({
+          OR: [
+            { salePrice: { not: null, gt: 0, gte: minVal } },
+            { AND: [{ OR: [{ salePrice: null }, { salePrice: 0 }] }, { regularPrice: { gte: minVal } }] },
+          ],
+        });
+      }
+      if (maxPrice) {
+        const maxVal = parseFloat(maxPrice);
+        priceAND.push({
+          OR: [
+            { salePrice: { not: null, gt: 0, lte: maxVal } },
+            { AND: [{ OR: [{ salePrice: null }, { salePrice: 0 }] }, { regularPrice: { lte: maxVal } }] },
+          ],
+        });
+      }
+      where.AND = [...(where.AND || []), ...priceAND];
+    }
     if (material) where.material = { contains: material, mode: "insensitive" };
     if (color) where.color = { contains: color, mode: "insensitive" };
-    if (inStock === "true") where.stockQuantity = { gt: 0 };
+    // Stock filter: also show products that don't track inventory (always in stock)
+    if (inStock === "true") {
+      where.AND = [...(where.AND || []), { OR: [{ stockQuantity: { gt: 0 } }, { trackInventory: false }] }];
+    }
     if (onSale === "true") where.salePrice = { not: null };
     
     // Extended filters
@@ -89,10 +114,10 @@ export async function GET(request: NextRequest) {
 
     let orderBy: any = { createdAt: "desc" };
     switch (sort) {
-      case "price_asc": orderBy = { regularPrice: "asc" }; break;
+      case "price_asc": orderBy = [{ salePrice: "asc" }, { regularPrice: "asc" }]; break;
       case "name_asc": orderBy = { name: "asc" }; break;
       case "name_desc": orderBy = { name: "desc" }; break;
-      case "price_desc": orderBy = { regularPrice: "desc" }; break;
+      case "price_desc": orderBy = [{ salePrice: "desc" }, { regularPrice: "desc" }]; break;
       case "bestselling": orderBy = { orderItems: { _count: "desc" } }; break;
       default: orderBy = [{ isFeatured: "desc" }, { createdAt: "desc" }]; break;
     }
@@ -169,9 +194,19 @@ export async function GET(request: NextRequest) {
     }));
     
     // Apply minRating filter post-fetch (rating is computed from reviews)
-    const filteredProducts = minRatingNum > 0
+    let filteredProducts = minRatingNum > 0
       ? transformed.filter((p) => p.rating !== null && p.rating >= minRatingNum)
       : transformed;
+
+    // Sort by effective price post-fetch (Prisma can't compute COALESCE(salePrice, regularPrice))
+    if (sort === "price_asc" || sort === "price_desc") {
+      const dir = sort === "price_asc" ? 1 : -1;
+      filteredProducts.sort((a, b) => {
+        const priceA = (a.salePrice && a.salePrice > 0) ? a.salePrice : a.regularPrice;
+        const priceB = (b.salePrice && b.salePrice > 0) ? b.salePrice : b.regularPrice;
+        return (priceA - priceB) * dir;
+      });
+    }
     return NextResponse.json({ products: filteredProducts, total: minRatingNum > 0 ? filteredProducts.length : total, page, totalPages: Math.ceil((minRatingNum > 0 ? filteredProducts.length : total) / limit) });
   } catch (error) {
     console.error("GET /api/products error:", error);
