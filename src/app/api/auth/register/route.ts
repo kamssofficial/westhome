@@ -31,13 +31,14 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { name, email, password, phone, consent } = body;
+    const { name, phone, email, password, consent } = body;
 
-    // Rate limit check (needs email early)
-    if (!email) {
-      return NextResponse.json({ error: "Email is required" }, { status: 400 });
+    // Phone is required; email is optional
+    if (!phone) {
+      return NextResponse.json({ error: "Phone number is required" }, { status: 400 });
     }
-    if (!checkRateLimit(email, ip)) {
+    // Rate limit check (uses phone as identifier)
+    if (!checkRateLimit(phone, ip)) {
       return NextResponse.json(
         { error: "Too many registration attempts. Please try again later." },
         { status: 429 }
@@ -54,7 +55,7 @@ export async function POST(request: NextRequest) {
 
     if (!name || !password) {
       return NextResponse.json(
-        { error: "Name, email, and password are required" },
+        { error: "Name and password are required" },
         { status: 400 }
       );
     }
@@ -66,16 +67,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user already exists
-    const existingUser = await db.user.findUnique({
-      where: { email: email.toLowerCase() },
-    });
-
-    if (existingUser) {
+    // Check if user already exists by phone or email
+    const normalizedPhone = phone.replace(/\s+/g, "").trim();
+    const existingByPhone = await db.user.findFirst({ where: { phone: normalizedPhone } });
+    if (existingByPhone) {
       return NextResponse.json(
-        { error: "An account with this email already exists" },
+        { error: "An account with this phone number already exists" },
         { status: 409 }
       );
+    }
+    if (email) {
+      const existingByEmail = await db.user.findUnique({ where: { email: email.toLowerCase() } });
+      if (existingByEmail) {
+        return NextResponse.json(
+          { error: "An account with this email already exists" },
+          { status: 409 }
+        );
+      }
     }
 
     // Create user
@@ -84,9 +92,9 @@ export async function POST(request: NextRequest) {
     const user = await db.user.create({
       data: {
         name,
-        email: email.toLowerCase(),
+        email: email ? email.toLowerCase() : null,
         passwordHash,
-        phone: phone || null,
+        phone: normalizedPhone,
         role: "CUSTOMER",
       },
       select: {

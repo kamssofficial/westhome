@@ -33,15 +33,29 @@ export const authOptions: NextAuthConfig = {
     Credentials({
       name: "credentials",
       credentials: {
-        email: { label: "Email", type: "email" },
+        phone: { label: "Phone", type: "text" },
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
+        if (!credentials?.phone || !credentials?.password) return null;
 
-        const user = await db.user.findUnique({
-          where: { email: credentials.email as string },
-        });
+        // Normalize phone: strip spaces and leading +91/91/0
+        const raw = (credentials.phone as string).trim();
+        const normalized = raw.replace(/^\+?91/, "").replace(/^0/, "").replace(/\s+/g, "");
+
+        // Try exact phone match, then normalized 10-digit match
+        let user = await db.user.findFirst({ where: { phone: raw } });
+        if (!user) {
+          user = await db.user.findFirst({ where: { phone: normalized } });
+        }
+        // Also try with +91 prefix
+        if (!user && normalized.length === 10) {
+          user = await db.user.findFirst({ where: { phone: "+91" + normalized } });
+        }
+        // Fallback: try email field (in case some users registered with email)
+        if (!user) {
+          user = await db.user.findFirst({ where: { email: credentials.phone as string } });
+        }
         if (!user || user.isActive === false) return null;
 
         const isValid = await bcrypt.compare(
