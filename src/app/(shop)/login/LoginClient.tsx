@@ -34,7 +34,7 @@ function LoginForm() {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({
           csrfToken,
-          email: phone,
+          phone: phone,
           password,
           callbackUrl,
           json: "true",
