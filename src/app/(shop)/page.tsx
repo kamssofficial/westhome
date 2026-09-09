@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import HomeClient from "./HomeClient";
 
 export const metadata: Metadata = {
-  title: "WESTHOME by BM Distributors | Premium Home & Lifestyle",
+  title: "Premium Home & Lifestyle",
   description:
     "Premium home décor — laundry baskets, frames, soap dispensers, cushions, and wall clocks at WESTHOME by BM Distributors. Curated in India.",
   alternates: { canonical: "/" },
