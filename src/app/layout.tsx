@@ -85,7 +85,7 @@ export default function RootLayout({
               image: "https://www.westhome.in/images/logo/westhome-logo-transparent.png",
               priceRange: "₹₹",
               telephone: "+919895071144",
-              email: "info@westhomebybmd.com",
+              email: "info@westhome.in",
               address: {
                 "@type": "PostalAddress",
                 streetAddress: "City Gate Building, near Press Club Junction, Karandakkad",

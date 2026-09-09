@@ -24,7 +24,7 @@ Data Protection:
 We implement appropriate security measures to protect your personal information. Payment data is processed securely through our payment partner.
 
 Contact Us:
-For privacy-related inquiries, please contact us at info@westhomebybmd.com.`,
+For privacy-related inquiries, please contact us at info@westhome.in.`,
   },
   terms: {
     title: "Terms of Service",
@@ -45,7 +45,7 @@ Liability:
 - Our liability is limited to the purchase price
 
 Contact:
-For questions about these terms, please contact us at info@westhomebybmd.com.`,
+For questions about these terms, please contact us at info@westhome.in.`,
   },
   shipping: {
     title: "Shipping Policy",
@@ -66,7 +66,7 @@ Store Pickup:
 Store pickup may be available at our location.
 
 Contact:
-For shipping inquiries, please WhatsApp us or email info@westhomebybmd.com.`,
+For shipping inquiries, please WhatsApp us or email info@westhome.in.`,
   },
   returns: {
     title: "Contact & Support",
@@ -82,7 +82,7 @@ If you receive a damaged or defective item, please contact us within
 the issue.
 
 How to Reach Us:
-- Email: info@westhomebybmd.com
+- Email: info@westhome.in
 - WhatsApp: https://wa.me/919895071144`,
   },
   cancellation: {
@@ -103,7 +103,7 @@ Refund for Cancellations:
 - Refund processed within 5-7 business days
 
 Contact:
-For cancellation requests, please contact info@westhomebybmd.com`,
+For cancellation requests, please contact info@westhome.in`,
   },
 };
 

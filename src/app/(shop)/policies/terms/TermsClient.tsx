@@ -39,7 +39,7 @@ export default function TermsOfServicePage() {
 
         <section>
           <h2 className="text-base font-semibold text-primary mb-2">7. Contact</h2>
-          <p>For questions about these Terms, contact us at <a href="mailto:info@westhomebybmd.com" className="text-accent hover:underline">info@westhomebybmd.com</a>.</p>
+          <p>For questions about these Terms, contact us at <a href="mailto:info@westhome.in" className="text-accent hover:underline">info@westhome.in</a>.</p>
         </section>
       </div>
     </div>
