@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { Star, ChevronLeft, ChevronRight, Quote } from "lucide-react";
 
 const GOOGLE_MAPS_URL =
-  "https://share.google/ODd8DypNkU7MrL9QE";
+  "https://share.google.com/ODd8DypNkU7MrL9QE";
 
 interface Review {
   id: string;

@@ -41,11 +41,12 @@ export const metadata: Metadata = {
     title: "WESTHOME by BM Distributors",
     description:
       "Premium home décor and lifestyle products curated for your comfort.",
-    images: [{ url: "/images/logo/westhome-logo-transparent.png", alt: "WESTHOME by BM Distributors" }],
+    url: "https://www.westhome.in/",
+    images: [{ url: "https://www.westhome.in/images/logo/westhome-logo-transparent.png", alt: "WESTHOME by BM Distributors", width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary_large_image",
-    images: ["/images/logo/westhome-logo-transparent.png"],
+    images: ["https://www.westhome.in/images/logo/westhome-logo-transparent.png"],
   },
   robots: {
     index: true,

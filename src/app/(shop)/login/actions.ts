@@ -3,12 +3,12 @@
 import { signIn } from "@/lib/auth";
 
 export async function loginAction(formData: FormData) {
-  const email = formData.get("email") as string;
+  const phone = formData.get("phone") as string;
   const password = formData.get("password") as string;
-  const callbackUrl = (formData.get("callbackUrl") as string) || "/admin/dashboard";
+  const callbackUrl = (formData.get("callbackUrl") as string) || "/account";
 
   await signIn("credentials", {
-    email,
+    phone,
     password,
     redirectTo: callbackUrl,
   });

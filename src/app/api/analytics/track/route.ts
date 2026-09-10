@@ -10,28 +10,11 @@ const ALLOWED_EVENTS = new Set([
 ]);
 const MAX_BODY_BYTES = 32_000;
 const MAX_METADATA_BYTES = 8_000;
-const RATE_LIMIT = 120;
-const RATE_WINDOW_MS = 60_000;
-const buckets = new Map<string, { count: number; resetAt: number }>();
-
-function isRateLimited(key: string) {
-  const now = Date.now();
-  const existing = buckets.get(key);
-  if (!existing || now >= existing.resetAt) {
-    buckets.set(key, { count: 1, resetAt: now + RATE_WINDOW_MS });
-    return false;
-  }
-  existing.count += 1;
-  return existing.count > RATE_LIMIT;
-}
 
 export async function POST(request: NextRequest) {
   try {
     const contentLength = Number(request.headers.get("content-length") || 0);
     if (contentLength > MAX_BODY_BYTES) return NextResponse.json({ ok: true });
-
-    const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-    if (isRateLimited(`analytics:${forwarded}`)) return NextResponse.json({ ok: true });
 
     const body = await request.json();
     const {
@@ -48,7 +31,7 @@ export async function POST(request: NextRequest) {
     if (serializedMetadata.length > MAX_METADATA_BYTES) return NextResponse.json({ ok: true });
 
     const session = await auth().catch(() => null);
-    const userId = (session?.user as any)?.id || null;
+    const userId = session?.user?.id || null;
     const enrichedMetadata: Record<string, unknown> = {
       ...(metadata && typeof metadata === "object" && !Array.isArray(metadata) ? metadata : {}),
     };
@@ -71,12 +54,6 @@ export async function POST(request: NextRequest) {
         deviceType: typeof deviceType === "string" ? deviceType.slice(0, 30) : "desktop",
       },
     });
-
-    // Keep the in-memory limiter bounded in long-lived Node runtimes.
-    if (buckets.size > 5000) {
-      const now = Date.now();
-      for (const [key, value] of buckets) if (value.resetAt < now) buckets.delete(key);
-    }
 
     return NextResponse.json({ ok: true });
   } catch {

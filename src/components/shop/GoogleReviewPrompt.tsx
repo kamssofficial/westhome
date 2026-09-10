@@ -12,7 +12,7 @@ import { Star, ExternalLink } from "lucide-react";
  * (search.google.com/local/writereview?placeid=...) once the Place ID is known.
  * The QR code is rendered via the free api.qrserver.com endpoint.
  */
-const GOOGLE_REVIEW_URL = "https://share.google/ODd8DypNkU7MrL9QE";
+const GOOGLE_REVIEW_URL = "https://share.google.com/ODd8DypNkU7MrL9QE";
 
 export default function GoogleReviewPrompt() {
   const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(GOOGLE_REVIEW_URL)}`;

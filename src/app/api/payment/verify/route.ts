@@ -5,12 +5,11 @@ import db from "@/lib/db";
 import { notifyLowStock } from "@/lib/notifications";
 import { requireAuth } from "@/lib/auth";
 
-const Razorpay = require("razorpay");
-
-function getRazorpay() {
+async function getRazorpay() {
   const keyId = process.env.RAZORPAY_KEY_ID;
   const keySecret = process.env.RAZORPAY_KEY_SECRET;
   if (!keyId || !keySecret) return null;
+  const { default: Razorpay } = await import("razorpay");
   return new Razorpay({ key_id: keyId, key_secret: keySecret });
 }
 
@@ -21,7 +20,7 @@ async function verifyPaymentOnce(params: { orderId: string; razorpayOrderId: str
   const expectedBuffer = Buffer.from(expectedSignature, "utf8");
   if (sigBuffer.length !== expectedBuffer.length || !crypto.timingSafeEqual(sigBuffer, expectedBuffer)) throw new Error("Payment signature verification failed");
 
-  const razorpay = getRazorpay();
+  const razorpay = await getRazorpay();
   if (!razorpay) throw new Error("Payment is not configured");
   const [rpOrder, rpPayment] = await Promise.all([razorpay.orders.fetch(razorpayOrderId), razorpay.payments.fetch(razorpayPaymentId)]);
 
@@ -93,8 +92,8 @@ export async function POST(request: NextRequest) {
       try {
         processedOrder = await verifyPaymentOnce({ orderId, razorpayOrderId: razorpay_order_id, razorpayPaymentId: razorpay_payment_id, razorpaySignature: razorpay_signature, userId: session.user.id });
         break;
-      } catch (error: any) {
-        if (error?.code === "P2034" && attempt < 2) continue;
+      } catch (error) {
+        if ((error as { code?: string } | null)?.code === "P2034" && attempt < 2) continue;
         throw error;
       }
     }
@@ -107,8 +106,8 @@ export async function POST(request: NextRequest) {
       } catch {}
     }
     return NextResponse.json({ verified: true, message: "Payment verified successfully" });
-  } catch (error: any) {
-    const msg = error?.message || "Unknown error";
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : "Unknown error";
     if (msg.includes("Unauthorized")) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     if (msg.includes("Forbidden")) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     if (/Insufficient stock|Coupon|Payment amount|currency|captured|does not match|not available|Payment signature/.test(msg)) return NextResponse.json({ error: msg }, { status: 400 });

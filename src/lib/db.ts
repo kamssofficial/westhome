@@ -14,11 +14,11 @@ function createPrismaClient() {
 
   const adapter = new PrismaPg({
     connectionString,
-    ssl: { rejectUnauthorized: false },
-  } as any);
+    ssl: { rejectUnauthorized: true },
+  });
 
   return new PrismaClient({
-    adapter: adapter as any,
+    adapter,
     log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
   });
 }

@@ -3,32 +3,18 @@ import bcrypt from "bcryptjs";
 import db from "@/lib/db";
 import { notifyNewCustomer } from "@/lib/notifications";
 
-// SECURITY: In-memory rate limiter tracking email+IP combinations.
-// Each email+IP pair gets its own counter, so different emails from the same IP
-// are not blocked, but repeated attempts with the same email are limited.
-const registrationAttempts = new Map<string, { count: number; resetAt: number }>();
-const MAX_REGISTRATION_ATTEMPTS = 5;
+// SECURITY: Registration throttling backed by the database so it holds up across
+// serverless instances. Per-phone uniqueness is enforced separately by the DB.
+const MAX_REGISTRATION_ATTEMPTS = 50;
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 
-function checkRateLimit(email: string, ip: string): boolean {
-  const now = Date.now();
-  const key = `${email.toLowerCase().trim()}:${ip}`;
-  const record = registrationAttempts.get(key);
-  if (!record || now > record.resetAt) {
-    registrationAttempts.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return true;
-  }
-  if (record.count >= MAX_REGISTRATION_ATTEMPTS) {
-    return false;
-  }
-  record.count++;
-  return true;
+async function checkRateLimit(): Promise<boolean> {
+  const since = new Date(Date.now() - RATE_LIMIT_WINDOW_MS);
+  const recent = await db.user.count({ where: { createdAt: { gte: since } } });
+  return recent < MAX_REGISTRATION_ATTEMPTS;
 }
 
 export async function POST(request: NextRequest) {
-  // SECURITY: Rate limit registration attempts per email+IP
-  const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
-
   try {
     const body = await request.json();
     const { name, phone, email, password, consent } = body;
@@ -37,8 +23,8 @@ export async function POST(request: NextRequest) {
     if (!phone) {
       return NextResponse.json({ error: "Phone number is required" }, { status: 400 });
     }
-    // Rate limit check (uses phone as identifier)
-    if (!checkRateLimit(phone, ip)) {
+    // Rate limit check
+    if (!(await checkRateLimit())) {
       return NextResponse.json(
         { error: "Too many registration attempts. Please try again later." },
         { status: 429 }

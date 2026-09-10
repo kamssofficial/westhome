@@ -2,12 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { requireAuth } from "@/lib/auth";
 
-const Razorpay = require("razorpay");
-
-function getRazorpay() {
+async function getRazorpay() {
   const keyId = process.env.RAZORPAY_KEY_ID;
   const keySecret = process.env.RAZORPAY_KEY_SECRET;
   if (!keyId || !keySecret) return null;
+  const { default: Razorpay } = await import("razorpay");
   return new Razorpay({ key_id: keyId, key_secret: keySecret });
 }
 
@@ -50,7 +49,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const razorpay = getRazorpay();
+    const razorpay = await getRazorpay();
     if (!razorpay) {
       return NextResponse.json({ error: "Payment is not configured. Please try again later." }, { status: 503 });
     }
@@ -90,8 +89,8 @@ export async function POST(request: NextRequest) {
       currency: razorpayOrder.currency,
       keyId: process.env.RAZORPAY_KEY_ID,
     });
-  } catch (error: any) {
-    const msg = error?.message || "Unknown error";
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : "Unknown error";
     if (msg.includes("Unauthorized")) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     console.error("Payment creation error:", msg);
     return NextResponse.json({ error: "Failed to create payment" }, { status: 500 });

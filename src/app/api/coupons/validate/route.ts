@@ -3,7 +3,7 @@ import db from "@/lib/db";
 
 export async function POST(request: NextRequest) {
   try {
-    const { code, subtotal } = await request.json();
+    const { code, subtotal, userId } = await request.json();
 
     if (!code) {
       return NextResponse.json({ error: "Coupon code is required" }, { status: 400 });
@@ -31,6 +31,13 @@ export async function POST(request: NextRequest) {
 
     if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) {
       return NextResponse.json({ error: "This coupon has reached its usage limit" }, { status: 400 });
+    }
+
+    if (typeof userId === "string" && userId && coupon.perCustomerLimit != null) {
+      const used = await db.couponUsage.count({ where: { couponId: coupon.id, userId } });
+      if (used >= coupon.perCustomerLimit) {
+        return NextResponse.json({ error: "You have already used this coupon" }, { status: 400 });
+      }
     }
 
     if (coupon.minOrderAmount && subtotal < Number(coupon.minOrderAmount)) {

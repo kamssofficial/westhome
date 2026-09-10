@@ -1,23 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
+import { UserRole } from "@prisma/client";
 import db from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { requireAdmin } from "@/lib/apiAuth";
 import { logAdminAction } from "@/lib/audit";
 
-const staffCreationAttempts = new Map<string, { count: number; resetAt: number }>();
 const MAX_STAFF_CREATION = 10;
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
 
-function checkStaffRateLimit(adminId: string): boolean {
-  const now = Date.now();
-  const record = staffCreationAttempts.get(adminId);
-  if (!record || now > record.resetAt) {
-    staffCreationAttempts.set(adminId, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return true;
-  }
-  if (record.count >= MAX_STAFF_CREATION) return false;
-  record.count++;
-  return true;
+async function checkStaffRateLimit(adminId: string): Promise<boolean> {
+  const since = new Date(Date.now() - RATE_LIMIT_WINDOW_MS);
+  const recent = await db.auditLog.count({
+    where: {
+      userId: adminId,
+      action: "CREATE",
+      entity: "USER",
+      createdAt: { gte: since },
+    },
+  });
+  return recent < MAX_STAFF_CREATION;
 }
 
 export async function GET(request: NextRequest) {
@@ -27,10 +29,10 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const query = (searchParams.get("q") || "").slice(0, 100);
     const role = searchParams.get("role") || "";
-    const STAFF_ROLES = ["ADMIN", "MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER", "STAFF"];
-    const where: any = { role: { in: STAFF_ROLES } };
+    const STAFF_ROLES: UserRole[] = ["ADMIN", "MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER", "STAFF"];
+    const where: Prisma.UserWhereInput = { role: { in: STAFF_ROLES } };
     if (query) where.OR = [{ name: { contains: query, mode: "insensitive" } }, { email: { contains: query, mode: "insensitive" } }];
-    if (role && STAFF_ROLES.includes(role)) where.role = role;
+    if (role && STAFF_ROLES.includes(role as UserRole)) where.role = role as UserRole;
 
     const staff = await db.user.findMany({
       where,
@@ -49,7 +51,7 @@ export async function POST(request: NextRequest) {
   if (authResult.error) return authResult.error;
 
   const adminId = authResult.session.user.id;
-  if (!checkStaffRateLimit(adminId)) {
+  if (!(await checkStaffRateLimit(adminId))) {
     return NextResponse.json({ error: "Too many staff creation attempts. Try again later." }, { status: 429 });
   }
 
