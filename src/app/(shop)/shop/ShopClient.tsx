@@ -58,6 +58,11 @@ export default function ShopPage() {
                       className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
                       sizes="(max-width: 640px) 50vw, 33vw"
                     />
+                  ) : cat.productCount === 0 ? (
+                    <div className="w-full h-full flex flex-col items-center justify-center gap-1.5 bg-[#f7f5f2]">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-[#b0aba6]">Coming Soon</span>
+                      <span className="text-sm font-medium text-text-muted">{cat.name}</span>
+                    </div>
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-text-muted text-sm font-medium bg-[#f7f5f2]">
                       {cat.name}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { SlidersHorizontal, ChevronDown, ArrowRight, ArrowLeft, Grid3X3, List } from "lucide-react";
 import ProductCard from "@/components/ui/ProductCard";
 import { ProductGridSkeleton } from "@/components/ui/Skeleton";
@@ -208,10 +209,32 @@ function CategoryContent({ category: initialCategory, initialProducts, initialTo
                 <Link
                   key={sub.id}
                   href={`/collections/${slug}/${sub.slug}`}
-                  className="group block bg-surface rounded-[1.35rem] border border-foreground/[.08] overflow-hidden shadow-sm hover:shadow-card transition-all"
+                  aria-disabled={sub.productCount === 0}
+                  className={cn(
+                    "group block bg-surface rounded-[1.35rem] border border-foreground/[.08] overflow-hidden shadow-sm hover:shadow-card transition-all",
+                    sub.productCount === 0 && "opacity-70 pointer-events-none"
+                  )}
                 >
                   <div className="relative aspect-[4/3] bg-surface-muted overflow-hidden flex items-center justify-center">
-                    <span className="text-sm font-medium text-text-muted">{sub.name}</span>
+                    {sub.image && sub.productCount > 0 ? (
+                      <Image
+                        src={sub.image}
+                        alt={sub.name}
+                        fill
+                        className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                        sizes="(max-width: 640px) 50vw, 33vw"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-[#f7f5f2]">
+                        <span className="text-[10px] font-semibold uppercase tracking-wider text-[#b0aba6]">Coming Soon</span>
+                        <span className="text-sm font-medium text-text-muted">{sub.name}</span>
+                      </div>
+                    )}
+                    {sub.productCount === 0 && (
+                      <span className="absolute top-2 right-2 rounded-full bg-white/90 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[#8a847e] shadow-sm">
+                        Coming Soon
+                      </span>
+                    )}
                   </div>
                   <div className="p-3 flex items-center justify-between">
                     <div>

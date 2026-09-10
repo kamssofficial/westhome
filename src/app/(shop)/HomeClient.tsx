@@ -183,6 +183,11 @@ export default function HomePage() {
                     fill
                     className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
                   />
+                ) : category.productCount === 0 ? (
+                  <div className="w-full h-full bg-[#f0ede8] flex flex-col items-center justify-center gap-1">
+                    <span className="text-[8px] font-semibold uppercase tracking-wider text-[#b0aba6]">Coming Soon</span>
+                    <span className="text-[10px] font-medium text-text-muted">{category.name}</span>
+                  </div>
                 ) : (
                   <div className="w-full h-full bg-[#f0ede8] flex items-center justify-center">
                     <span className="text-[10px] font-medium text-[#b0aba6]">View</span>
