@@ -138,9 +138,10 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
       if (res.ok) {
         toast.success("Product updated");
       } else {
-        toast.error("Failed to update");
+        const data = await res.json().catch(() => null);
+        toast.error(data?.error || "Failed to update product");
       }
-    } catch { toast.error("Failed to update"); } finally { setSaving(false); }
+    } catch { toast.error("Unable to reach the server. Please try again."); } finally { setSaving(false); }
   };
 
   const handleDelete = async () => {

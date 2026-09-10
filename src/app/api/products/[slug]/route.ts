@@ -97,6 +97,13 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const { slug } = await params;
     const body = await request.json();
 
+    if (typeof body.name !== "string" || !body.name.trim()) {
+      return NextResponse.json({ error: "Product name is required" }, { status: 400 });
+    }
+    if (typeof body.categoryId !== "string" || !body.categoryId) {
+      return NextResponse.json({ error: "Category is required" }, { status: 400 });
+    }
+
     // Find product by slug or ID
     let product = await db.product.findUnique({ where: { slug } });
     if (!product) product = await db.product.findUnique({ where: { id: slug } });
@@ -105,8 +112,11 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const updated = await db.product.update({
       where: { id: product.id },
       data: {
-        name: body.name,
-        sku: body.sku,
+        name: body.name.trim(),
+        // Empty SKU inputs must be stored as null. An empty string is a real
+        // value under a unique constraint and prevents multiple SKU-less
+        // products from being edited successfully.
+        sku: typeof body.sku === "string" && body.sku.trim() ? body.sku.trim() : null,
         description: body.description,
         shortDescription: body.shortDescription,
         regularPrice: body.regularPrice,
@@ -193,8 +203,11 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     notifyProductUpdated(updated.name, "updated").catch(() => {});
 
     return NextResponse.json({ product: updated });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Product update error:", error);
+    if (error?.code === "P2002" && error?.meta?.target?.includes?.("sku")) {
+      return NextResponse.json({ error: "This SKU is already used by another product" }, { status: 409 });
+    }
     return NextResponse.json({ error: "Failed to update product" }, { status: 500 });
   }
 }
