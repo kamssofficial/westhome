@@ -11,20 +11,35 @@ export async function GET() {
         subcategories: {
           where: { isActive: true },
           orderBy: { position: "asc" },
-          include: { _count: { select: { products: { where: { isActive: true, status: "ACTIVE" } } } } },
+          include: {
+            _count: { select: { products: { where: { isActive: true, status: "ACTIVE" } } } },
+            // First product photo, used as the subcategory thumbnail fallback.
+            products: {
+              where: { isActive: true, status: "ACTIVE" },
+              take: 1,
+              select: { images: { take: 1, orderBy: [{ isPrimary: "desc" as const }, { position: "asc" as const }], select: { url: true } } },
+            },
+          },
         },
         images: { orderBy: { position: "asc" } },
         _count: { select: { products: { where: { isActive: true, status: "ACTIVE" } } } },
+        products: {
+          where: { isActive: true, status: "ACTIVE" },
+          take: 1,
+          select: { images: { take: 1, orderBy: [{ isPrimary: "desc" as const }, { position: "asc" as const }], select: { url: true } } },
+        },
       },
       orderBy: { position: "asc" },
     });
+
+    const firstImage = (catOrSub: any) => catOrSub.products?.[0]?.images?.[0]?.url || null;
 
     const transformed = categories.map((cat: any) => ({
       id: cat.id,
       name: cat.name,
       slug: cat.slug,
       description: cat.description,
-      image: cat.image,
+      image: cat.image || firstImage(cat),
       position: cat.position,
       productCount: cat._count.products,
       images: cat.images || [],
@@ -33,7 +48,7 @@ export async function GET() {
         name: sub.name,
         slug: sub.slug,
         description: sub.description,
-        image: sub.image,
+        image: sub.image || firstImage(sub),
         position: sub.position,
         productCount: sub._count.products,
       })),

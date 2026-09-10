@@ -9,6 +9,44 @@ export const runtime = "nodejs";
 
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
+// Vercel Blob fallback. Mirrors the wire format of the official @vercel/blob
+// SDK (https://vercel.com/api/blob/put with the same headers + token parsing)
+// so this works without adding the dependency. Token format:
+//   vercel_blob_rw_<jwt>_<storeId>_<key>  (storeId is the 4th underscore part)
+const VERCELL_BLOB_API = "https://vercel.com/api/blob";
+
+function blobStoreIdFromToken(token: string): string {
+  return token.split("_")[3] || "";
+}
+
+async function vercelBlobPut(key: string, body: Buffer, contentType: string): Promise<string> {
+  const token = process.env.BLOB_READ_WRITE_TOKEN;
+  if (!token) throw new Error("BLOB_READ_WRITE_TOKEN not set");
+  const pathname = key.replace(/^\/+/, "");
+  const params = new URLSearchParams({ pathname });
+  const res = await fetch(`${VERCELL_BLOB_API}/put?${params.toString()}`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${token}`,
+      "x-vercel-blob-store-id": blobStoreIdFromToken(token),
+      "x-vercel-blob-access": "public",
+      "x-content-type": contentType,
+      "x-add-random-suffix": "0",
+      "x-api-version": "12",
+      "x-api-blob-request-id": `${blobStoreIdFromToken(token)}:${Date.now()}:${Math.random().toString(16).slice(2)}`,
+      "x-api-blob-request-attempt": "0",
+    },
+    body: new Uint8Array(body),
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new Error(`Vercel Blob upload failed: ${res.status} ${detail.slice(0, 200)}`);
+  }
+  const data = (await res.json()) as { url?: string };
+  if (!data.url) throw new Error("Vercel Blob upload returned no URL");
+  return data.url;
+}
+
 export async function POST(request: NextRequest) {
   const authResult = await requireAuthRole(["ADMIN", "MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER"]);
   if (authResult.error) return authResult.error;
@@ -50,25 +88,38 @@ export async function POST(request: NextRequest) {
     const filename = timestamp + "-" + random + "." + ext;
     const r2Key = folder + "/" + filename;
 
-    // Storage: R2 in production. Local filesystem fallback for local dev only —
-    // never on R2 failure (Vercel's filesystem is read-only, so a fallback
-    // there would 500 with a misleading log).
+    const buffer = Buffer.from(await file.arrayBuffer());
+
+    // Storage priority: R2 → Vercel Blob → Local filesystem
+    // 1. R2 (if configured)
     if (isR2Configured()) {
       try {
-        const buffer = Buffer.from(await file.arrayBuffer());
         const uploaded = await r2Put(r2Key, buffer, file.type);
         return NextResponse.json({ url: uploaded.url, pathname: r2Key }, { status: 201 });
-      } catch (r2Error: any) {
-        console.error("R2 upload failed:", r2Error.message);
-        return NextResponse.json({ error: "Image upload failed. Please try again." }, { status: 503 });
+      } catch (r2Error: unknown) {
+        console.error("R2 upload failed, trying Vercel Blob:", r2Error instanceof Error ? r2Error.message : r2Error);
+        // Fall through to next option
       }
     }
 
-    // Local filesystem fallback for local development only. In production this
-    // would hit Vercel's read-only filesystem, so refuse rather than 500.
+    // 2. Vercel Blob (if BLOB_READ_WRITE_TOKEN is set)
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      try {
+        const blobUrl = await vercelBlobPut(r2Key, buffer, file.type);
+        return NextResponse.json({ url: blobUrl, pathname: r2Key }, { status: 201 });
+      } catch (blobError: unknown) {
+        console.error("Vercel Blob upload failed, trying local filesystem:", blobError instanceof Error ? blobError.message : blobError);
+        // Fall through to next option
+      }
+    }
+
+    // 3. Local filesystem (development only — Vercel's filesystem is read-only)
     if (process.env.NODE_ENV === "production") {
-      console.error("R2 is not configured in production; rejecting upload");
-      return NextResponse.json({ error: "Storage is not configured. Please try again later." }, { status: 503 });
+      console.error("No cloud storage configured (R2 or Vercel Blob). Upload rejected.");
+      return NextResponse.json(
+        { error: "Storage not configured. Set R2_* or BLOB_READ_WRITE_TOKEN env vars." },
+        { status: 503 }
+      );
     }
 
     const publicDir = path.join(process.cwd(), "public", "images", folder);
@@ -76,7 +127,6 @@ export async function POST(request: NextRequest) {
       await mkdir(publicDir, { recursive: true });
     }
 
-    const buffer = Buffer.from(await file.arrayBuffer());
     const filePath = path.join(publicDir, filename);
     await writeFile(filePath, buffer);
 

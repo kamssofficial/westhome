@@ -106,7 +106,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       where: { id: product.id },
       data: {
         name: body.name,
-        sku: body.sku,
+        // Empty SKU → NULL so it never collides with the unique index (editing
+        // a SKU-less product used to write "" and 500 on the second one).
+        sku: body.sku ? String(body.sku).trim() : null,
         description: body.description,
         shortDescription: body.shortDescription,
         regularPrice: body.regularPrice,
@@ -115,7 +117,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         lowStockThreshold: body.lowStockThreshold,
         trackInventory: body.trackInventory,
         allowBackorder: body.allowBackorder,
-        categoryId: body.categoryId,
+        // undefined (not null) so an empty category keeps the existing one.
+        categoryId: body.categoryId || undefined,
         subcategoryId: body.subcategoryId || null,
         isFeatured: body.isFeatured,
         isBestseller: body.isBestseller,

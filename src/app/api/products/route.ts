@@ -232,7 +232,7 @@ export async function POST(request: NextRequest) {
       data: {
         name: body.name,
         slug,
-        sku: body.sku,
+        sku: body.sku ? String(body.sku).trim() : null,
         description: body.description,
         shortDescription: body.shortDescription,
         regularPrice: body.regularPrice,
@@ -285,6 +285,57 @@ export async function POST(request: NextRequest) {
         includedItems: body.includedItems,
       },
     });
+
+    // Handle images
+    if (body.images && Array.isArray(body.images)) {
+      for (const img of body.images) {
+        await db.productImage.create({
+          data: {
+            productId: product.id,
+            url: img.url,
+            alt: img.alt || "",
+            isPrimary: img.isPrimary ?? false,
+            position: img.position ?? 0,
+            imageType: img.imageType || "PRODUCT",
+          },
+        });
+      }
+    }
+
+    // Handle variants
+    if (body.variants && Array.isArray(body.variants)) {
+      for (let i = 0; i < body.variants.length; i++) {
+        const v = body.variants[i];
+        if (!v.name || !String(v.name).trim()) continue;
+        const variant = await db.productVariant.create({
+          data: {
+            productId: product.id,
+            name: v.name,
+            sku: v.sku || null,
+            price: v.price,
+            salePrice: v.salePrice || null,
+            stockQuantity: v.stockQuantity || 0,
+            isActive: v.isActive ?? true,
+            position: i,
+          },
+        });
+        // Handle variant images
+        if (v.images && Array.isArray(v.images)) {
+          for (const img of v.images) {
+            await db.variantImage.create({
+              data: {
+                variantId: variant.id,
+                url: img.url,
+                alt: img.alt || "",
+                isPrimary: img.isPrimary ?? false,
+                position: img.position ?? 0,
+              },
+            });
+          }
+        }
+      }
+    }
+
     // Log the action
     await logAdminAction({
       action: "CREATE",

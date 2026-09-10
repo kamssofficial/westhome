@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Upload, Plus, X } from "lucide-react";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
+import ImageUploader from "@/components/admin/ImageUploader";
 import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
 
@@ -82,6 +83,7 @@ export default function NewProductPage() {
     seoDescription: "",
   });
 
+  const [images, setImages] = useState<any[]>([]);
   const [variants, setVariants] = useState<any[]>([]);
 
   useEffect(() => {
@@ -102,9 +104,41 @@ export default function NewProductPage() {
         salePrice: "",
         stockQuantity: "0",
         isActive: true,
+        images: [],
         attributes: [],
       },
     ]);
+  };
+
+  const handleVariantImageUpload = async (index: number, file: File) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("folder", "products");
+    try {
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      if (res.ok) {
+        const data = await res.json();
+        const v = [...variants];
+        v[index].images = [
+          ...(v[index].images || []),
+          { url: data.url, alt: file.name.replace(/\.[^/.]+$/, ""), isPrimary: v[index].images?.length === 0, position: v[index].images?.length || 0 },
+        ];
+        setVariants(v);
+      } else {
+        toast.error("Image upload failed");
+      }
+    } catch {
+      toast.error("Image upload failed");
+    }
+  };
+
+  const removeVariantImage = (variantIndex: number, imageIndex: number) => {
+    const v = [...variants];
+    v[variantIndex].images = v[variantIndex].images.filter((_: any, i: number) => i !== imageIndex);
+    if (v[variantIndex].images.length > 0 && !v[variantIndex].images.some((img: any) => img.isPrimary)) {
+      v[variantIndex].images[0].isPrimary = true;
+    }
+    setVariants(v);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -142,6 +176,12 @@ export default function NewProductPage() {
           customSizeMaxHeight: form.customSizeMaxHeight ? parseFloat(form.customSizeMaxHeight) : null,
           // Packaging
           packagingWeight: form.packagingWeight ? parseFloat(form.packagingWeight) : null,
+          images: images.map((img, i) => ({
+            url: img.url,
+            alt: img.alt || "",
+            isPrimary: img.isPrimary ?? i === 0,
+            position: img.position ?? i,
+          })),
           variants: variants.map((v) => ({
             ...v,
             price: parseFloat(v.price || form.regularPrice),
@@ -473,6 +513,12 @@ export default function NewProductPage() {
           )}
         </div>
 
+        {/* Product images */}
+        <div className="bg-surface rounded-[1.35rem] border border-border p-5">
+          <h2 className="font-semibold mb-4">Product Images</h2>
+          <ImageUploader images={images} onChange={setImages} folder="products" />
+        </div>
+
         {/* Variants */}
         <div className="bg-surface rounded-[1.35rem] border border-border p-5">
           <div className="flex items-center justify-between mb-4">
@@ -498,6 +544,25 @@ export default function NewProductPage() {
                     <input type="text" placeholder="SKU" value={variant.sku} onChange={(e) => { const v = [...variants]; v[index].sku = e.target.value; setVariants(v); }} className={cn(inputClass, "text-xs")} />
                     <input type="number" placeholder="Price" value={variant.price} onChange={(e) => { const v = [...variants]; v[index].price = e.target.value; setVariants(v); }} className={cn(inputClass, "text-xs")} />
                     <input type="number" placeholder="Stock" value={variant.stockQuantity} onChange={(e) => { const v = [...variants]; v[index].stockQuantity = e.target.value; setVariants(v); }} className={cn(inputClass, "text-xs")} />
+                  </div>
+                  {/* Variant images */}
+                  <div className="mt-3">
+                    <label className="text-xs font-medium text-text-secondary mb-1 block">Variant Images</label>
+                    <div className="flex flex-wrap gap-2">
+                      {(variant.images || []).map((img: any, imgIdx: number) => (
+                        <div key={imgIdx} className="relative w-16 h-16 rounded-lg overflow-hidden border border-border">
+                          <img src={img.url} alt={img.alt || ""} className="w-full h-full object-cover" />
+                          {img.isPrimary && (
+                            <div className="absolute top-0.5 left-0.5 bg-amber-400 text-white text-[8px] px-1 rounded">Primary</div>
+                          )}
+                          <button type="button" onClick={() => removeVariantImage(index, imgIdx)} className="absolute top-0.5 right-0.5 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px]">×</button>
+                        </div>
+                      ))}
+                      <label className="w-16 h-16 rounded-lg border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-accent/50">
+                        <input type="file" accept="image/*" className="hidden" onChange={(e) => { if (e.target.files?.[0]) handleVariantImageUpload(index, e.target.files[0]); }} />
+                        <Plus size={16} className="text-text-muted" />
+                      </label>
+                    </div>
                   </div>
                 </div>
               ))}

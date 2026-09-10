@@ -104,6 +104,10 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
   const selectedCategory = categories.find((c) => c.id === form.categoryId);
 
   const handleSave = async () => {
+    if (!form.name.trim() || !form.regularPrice || !form.categoryId) {
+      toast.error("Name, price, and category are required");
+      return;
+    }
     setSaving(true);
     try {
       const res = await fetch(`/api/products/${id}`, {

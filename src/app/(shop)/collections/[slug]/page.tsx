@@ -20,9 +20,20 @@ async function getCategory(slug: string) {
           orderBy: { position: "asc" },
           include: {
             _count: { select: { products: { where: { isActive: true, status: "ACTIVE" } } } },
+            // First product photo as thumbnail fallback when no image is set.
+            products: {
+              where: { isActive: true, status: "ACTIVE" },
+              take: 1,
+              select: { images: { take: 1, orderBy: [{ isPrimary: "desc" as const }, { position: "asc" as const }], select: { url: true } } },
+            },
           },
         },
         _count: { select: { products: { where: { isActive: true, status: "ACTIVE" } } } },
+        products: {
+          where: { isActive: true, status: "ACTIVE" },
+          take: 1,
+          select: { images: { take: 1, orderBy: [{ isPrimary: "desc" as const }, { position: "asc" as const }], select: { url: true } } },
+        },
       },
     });
 
@@ -38,6 +49,11 @@ async function getCategory(slug: string) {
                 orderBy: { position: "asc" },
                 include: {
                   _count: { select: { products: { where: { isActive: true, status: "ACTIVE" } } } },
+                  products: {
+                    where: { isActive: true, status: "ACTIVE" },
+                    take: 1,
+                    select: { images: { take: 1, orderBy: [{ isPrimary: "desc" as const }, { position: "asc" as const }], select: { url: true } } },
+                  },
                 },
               },
               _count: { select: { products: { where: { isActive: true, status: "ACTIVE" } } } },
@@ -50,15 +66,16 @@ async function getCategory(slug: string) {
       if (subcategory) {
         // Return the parent category with all subcategories
         const parent = subcategory.category;
+        const firstImage = (catOrSub: any) => catOrSub.products?.[0]?.images?.[0]?.url || null;
         return {
           id: parent.id,
           name: parent.name,
           slug: parent.slug,
           description: parent.description,
-          image: parent.image,
+          image: parent.image || firstImage(parent),
           productCount: parent._count.products,
           subcategories: parent.subcategories.map((sub: any) => ({
-            id: sub.id, name: sub.name, slug: sub.slug, description: sub.description, image: sub.image,
+            id: sub.id, name: sub.name, slug: sub.slug, description: sub.description, image: sub.image || firstImage(sub),
             productCount: sub._count.products,
           })),
         };
@@ -66,15 +83,16 @@ async function getCategory(slug: string) {
       return null;
     }
 
+    const firstImage = (catOrSub: any) => catOrSub.products?.[0]?.images?.[0]?.url || null;
     return {
       id: category.id,
       name: category.name,
       slug: category.slug,
       description: category.description,
-      image: category.image,
+      image: category.image || firstImage(category),
       productCount: category._count.products,
       subcategories: category.subcategories.map((sub: any) => ({
-        id: sub.id, name: sub.name, slug: sub.slug, description: sub.description, image: sub.image,
+        id: sub.id, name: sub.name, slug: sub.slug, description: sub.description, image: sub.image || firstImage(sub),
         productCount: sub._count.products,
       })),
     };
