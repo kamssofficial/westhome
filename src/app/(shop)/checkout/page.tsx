@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft, ChevronRight, Shield, MapPin, CheckCircle, Loader2 } from "lucide-react";
 import { useCartStore } from "@/store/cart";
-import { formatPrice, cn } from "@/lib/utils";
+import { trackEvent } from "@/components/ui/AnalyticsTracker";
+import { useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
+import { formatPrice, cn } from "@/lib/utils";
 import GoogleReviewPrompt from "@/components/shop/GoogleReviewPrompt";
 
 const STEPS = ["Address", "Review", "Payment"];
@@ -102,6 +104,29 @@ export default function CheckoutPage() {
     }).catch(() => {}).finally(() => setLoadingAddresses(false));
     fetch("/api/auth/session").then((r) => r.json()).then((data) => { if (data?.user?.email) setUserEmail(data.user.email); }).catch(() => {});
   }, []);
+
+  // ── Express checkout (?express=1 from the Buy Now button) ──
+  // Skip the Address/Review steps when a saved address already exists:
+  // pre-select it and land directly on the Payment step. Without an address
+  // (or when arriving normally from /cart), the page opens on Address as before.
+  const searchParams = useSearchParams();
+  const expressRequested = useRef(false);
+  const [expressActive, setExpressActive] = useState(false);
+  useEffect(() => {
+    if (!mounted || !loadingAddresses || expressRequested.current) return;
+    const raw = searchParams.get("express");
+    if (raw !== "1" && raw !== "true") return;
+    expressRequested.current = true;
+    if (items.length === 0) return; // empty cart falls back to the empty-cart guard below
+    if (selectedAddress) {
+      trackEvent("CHECKOUT_STARTED", { metadata: { flow: "express_buy_now" } });
+      setStep(2);
+      setExpressActive(true);
+    } else {
+      // No saved address: stay on the Address step and tell the user why.
+      toast("Add a delivery address to complete your order.");
+    }
+  }, [mounted, loadingAddresses, items.length, selectedAddress, searchParams]);
 
 
 

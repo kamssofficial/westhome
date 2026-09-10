@@ -13,6 +13,7 @@ import ProductCard from "@/components/ui/ProductCard";
 import { cn, formatPrice, getWhatsAppUrl, generateProductWhatsAppMessage } from "@/lib/utils";
 import PriceDisplay from "@/components/ui/PriceDisplay";
 import { useCartStore } from "@/store/cart";
+import { trackEvent } from "@/components/ui/AnalyticsTracker";
 import { useWishlistStore } from "@/store/wishlist";
 import toast from "react-hot-toast";
 import type { ProductVariant } from "@/types";
@@ -343,12 +344,13 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
           {inStock ? `Add to Cart${selectedVariant ? ` - ${selectedVariant.name}` : ""}` : "Out of Stock"}
         </button>
 
-        {/* Buy Now */}
+        {/* Buy Now: adds to cart and jumps straight to the payment step */}
         <button
           onClick={() => {
             if (!inStock) return;
             handleAddToCart();
-            router.push("/checkout");
+            trackEvent("BUY_NOW", { productId: product.id, productName: product.name });
+            router.push("/checkout?express=1");
           }}
           disabled={!inStock}
           className={cn(
