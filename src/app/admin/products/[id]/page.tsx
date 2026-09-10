@@ -3,11 +3,22 @@
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Save, Trash2 } from "lucide-react";
+import { ArrowLeft, Save, Trash2, Plus, PackagePlus, X } from "lucide-react";
 import Button from "@/components/ui/Button";
 import ImageUploader from "@/components/admin/ImageUploader";
 import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
+
+interface VariantItem {
+  id: string;
+  name: string;
+  price: number;
+  salePrice: number | null;
+  stockQuantity: number;
+  position: number;
+  isActive: boolean;
+  attributes?: { id: string; value: string; variantAttribute: { id: string; name: string } }[];
+}
 
 export default function AdminProductEditPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -43,6 +54,30 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
   });
 
   const [images, setImages] = useState<any[]>([]);
+  const [variants, setVariants] = useState<VariantItem[]>([]);
+  const [loadingVariants, setLoadingVariants] = useState(true);
+  const [savingVariant, setSavingVariant] = useState(false);
+
+  const loadVariants = () => {
+    setLoadingVariants(true);
+    fetch(`/api/admin/products/${id}/variants`)
+      .then((r) => r.json())
+      .then((d) => {
+        setVariants(d.variants || []);
+        setLoadingVariants(false);
+      })
+      .catch(() => setLoadingVariants(false));
+  };
+
+  useEffect(() => {
+    fetch(`/api/admin/products/${id}/variants`)
+      .then((r) => r.json())
+      .then((d) => {
+        setVariants(d.variants || []);
+        setLoadingVariants(false);
+      })
+      .catch(() => setLoadingVariants(false));
+  }, [id]);
 
   useEffect(() => {
     Promise.all([
@@ -157,6 +192,88 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
     } catch { toast.error("Failed to delete"); }
   };
 
+  const handleAddDefaultSizes = async () => {
+    setSavingVariant(true);
+    try {
+      const res = await fetch("/api/admin/products/batch-size-variants", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productIds: [id] }),
+      });
+      const data = await res.json();
+      const result = data.results?.[0];
+      if (res.ok && result && !result.error) {
+        if (result.created > 0) {
+          toast.success(`Added ${result.created} size variants`);
+          loadVariants();
+        } else {
+          toast.success("Size variants already exist");
+        }
+      } else {
+        toast.error(result?.error || "Failed to add variants");
+      }
+    } catch { toast.error("Failed to add variants"); } finally { setSavingVariant(false); }
+  };
+
+  const handleUpdateVariant = async (
+    variantId: string,
+    data: { name?: string; price?: number; salePrice?: number | null; stockQuantity?: number }
+  ) => {
+    try {
+      const res = await fetch(`/api/admin/products/${id}/variants/${variantId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        toast.success("Variant updated");
+        loadVariants();
+      } else {
+        toast.error("Failed to update variant");
+      }
+    } catch { toast.error("Failed to update variant"); }
+  };
+
+  const handleDeleteVariant = async (variantId: string) => {
+    if (!confirm("Delete this variant? This cannot be undone.")) return;
+    try {
+      const res = await fetch(`/api/admin/products/${id}/variants/${variantId}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("Variant deleted");
+        loadVariants();
+      } else {
+        toast.error("Failed to delete variant");
+      }
+    } catch { toast.error("Failed to delete variant"); }
+  };
+
+  const handleAddVariant = async () => {
+    const name = prompt("Variant name (e.g. Small, Medium, XL):");
+    if (!name) return;
+    const priceStr = prompt("Variant price (₹):");
+    if (!priceStr) return;
+    const price = parseFloat(priceStr);
+    if (isNaN(price) || price <= 0) { toast.error("Invalid price"); return; }
+    setSavingVariant(true);
+    try {
+      const res = await fetch(`/api/admin/products/${id}/variants`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name, price,
+          attributes: [{ attributeName: "Size", value: name }],
+        }),
+      });
+      if (res.ok) {
+        toast.success("Variant created");
+        loadVariants();
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Failed to create variant");
+      }
+    } catch { toast.error("Failed to create variant"); } finally { setSavingVariant(false); }
+  };
+
   const inputClass = "w-full px-3 py-2.5 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30";
 
   if (loading) return <div className="py-8"><div className="animate-pulse h-64 bg-surface-muted rounded-xl" /></div>;
@@ -210,6 +327,68 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
             <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" checked={form.trackInventory} onChange={(e) => setForm({ ...form, trackInventory: e.target.checked })} className="accent-accent" /> Track inventory</label>
             <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" checked={form.allowBackorder} onChange={(e) => setForm({ ...form, allowBackorder: e.target.checked })} className="accent-accent" /> Allow backorder</label>
           </div>
+        </div>
+
+        {/* Variants */}
+        <div className="bg-surface rounded-[1.35rem] border border-border p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold">Size Variants</h2>
+            <div className="flex items-center gap-2">
+              <button onClick={handleAddVariant} disabled={savingVariant} className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium bg-surface-muted hover:bg-surface-muted/70 text-foreground rounded-lg transition-colors disabled:opacity-50">
+                <Plus size={14} /> Custom Variant
+              </button>
+              <button onClick={handleAddDefaultSizes} disabled={savingVariant} className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold bg-accent text-white hover:bg-accent/90 rounded-lg transition-colors disabled:opacity-50">
+                <PackagePlus size={14} /> Add S/M/L (₹499/₹699/₹899)
+              </button>
+            </div>
+          </div>
+
+          {loadingVariants ? (
+            <div className="animate-pulse h-24 bg-surface-muted rounded-lg" />
+          ) : variants.length === 0 ? (
+            <p className="text-sm text-text-secondary py-4 text-center border border-dashed border-border rounded-lg">
+              No variants yet. Click &quot;Add S/M/L&quot; to add Small, Medium and Large size options.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {variants.map((v) => (
+                <div key={v.id} className="flex items-center gap-3 p-3 bg-surface-muted/40 rounded-lg border border-border">
+                  <div className="w-28">
+                    <input
+                      defaultValue={v.name}
+                      onBlur={(e) => { if (e.target.value !== v.name) handleUpdateVariant(v.id, { name: e.target.value }); }}
+                      className="w-full px-2 py-1.5 bg-white border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
+                    />
+                    <p className="text-[10px] text-text-muted mt-0.5 px-1">
+                      {v.attributes?.map((a) => a.variantAttribute.name).join(", ") || "Size"}
+                    </p>
+                  </div>
+                  <input
+                    type="number"
+                    step="0.01"
+                    defaultValue={v.price}
+                    onBlur={(e) => { const p = parseFloat(e.target.value); if (!isNaN(p) && p !== v.price) handleUpdateVariant(v.id, { price: p }); }}
+                    className="w-28 px-2 py-1.5 bg-white border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
+                    placeholder="₹ price"
+                  />
+                  <input
+                    type="number"
+                    defaultValue={v.stockQuantity ?? 0}
+                    onBlur={(e) => { const s = parseInt(e.target.value) || 0; if (s !== v.stockQuantity) handleUpdateVariant(v.id, { stockQuantity: s }); }}
+                    className="w-20 px-2 py-1.5 bg-white border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
+                    placeholder="Stock"
+                  />
+                  <span className="text-xs text-text-muted flex-1">Price in ₹</span>
+                  <button onClick={() => handleDeleteVariant(v.id)} className="p-1.5 text-text-muted hover:text-error rounded-md transition-colors" title="Delete variant">
+                    <X size={15} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <p className="text-xs text-text-muted mt-3">
+            Storefront shows a size selector only when variants exist. Live price/stock defaults to the first active variant.
+          </p>
         </div>
 
         {/* Category */}
