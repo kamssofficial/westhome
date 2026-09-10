@@ -29,33 +29,35 @@ const nextConfig: NextConfig = {
         { key: "X-Content-Type-Options", value: "nosniff" },
         { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
         { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=(self)" },
-        { key: "X-XSS-Protection", value: "1; mode=block" },
-        // Strict CSP on production only (Next emits inline bootstrap scripts, and dev
-        // needs eval-based source maps). Razorpay's checkout iframe + API are allowed.
-        ...(process.env.NODE_ENV === "production"
-          ? [
-              {
-                key: "Content-Security-Policy",
-                value: [
-                  "default-src 'self'",
-                  "script-src 'self' 'unsafe-inline' https://checkout.razorpay.com",
-                  "style-src 'self' 'unsafe-inline'",
-                  "img-src 'self' data: blob: https:",
-                  "font-src 'self' data:",
-                  "media-src 'self' data: blob: https:",
-                  // R2 public base URL is added at build time when configured.
-                  `connect-src 'self' https://api.razorpay.com https://checkout.razorpay.com${
-                    process.env.R2_PUBLIC_BASE_URL ? " " + process.env.R2_PUBLIC_BASE_URL.replace(/\/+$/, "") : ""
-                  }`,
-                  "frame-src 'self' https://checkout.razorpay.com",
-                  "object-src 'none'",
-                  "base-uri 'self'",
-                  "form-action 'self' https://api.razorpay.com",
-                  "frame-ancestors 'none'",
-                ].join("; "),
-              },
-            ]
-          : []),
+        { key: "X-XSS-Protection", value: "1; mode=block" },                // Strict CSP on production only (Next emits inline bootstrap scripts, and dev
+                // needs eval-based source maps). Razorpay checkout is allowed across its
+                // subdomains: the modal's payment frame is served from api.razorpay.com (not
+                // just checkout.razorpay.com), and the SDK also talks to lumberjack/cdn
+                // subdomains — pinning individual hosts blocked the checkout modal entirely.
+                ...(process.env.NODE_ENV === "production"
+                  ? [
+                      {
+                        key: "Content-Security-Policy",
+                        value: [
+                          "default-src 'self'",
+                          "script-src 'self' 'unsafe-inline' https://*.razorpay.com",
+                          "style-src 'self' 'unsafe-inline'",
+                          "img-src 'self' data: blob: https:",
+                          "font-src 'self' data:",
+                          "media-src 'self' data: blob: https:",
+                          // R2 public base URL is added at build time when configured.
+                          `connect-src 'self' https://*.razorpay.com${
+                            process.env.R2_PUBLIC_BASE_URL ? " " + process.env.R2_PUBLIC_BASE_URL.replace(/\/+$/, "") : ""
+                          }`,
+                          "frame-src 'self' https://*.razorpay.com",
+                          "object-src 'none'",
+                          "base-uri 'self'",
+                          "form-action 'self' https://*.razorpay.com",
+                          "frame-ancestors 'none'",
+                        ].join("; "),
+                      },
+                    ]
+                  : []),
       ],
     },
     {
