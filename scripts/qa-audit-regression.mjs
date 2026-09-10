@@ -8,21 +8,21 @@ const requireText = (text, fragment, description) => {
   assert.ok(text.includes(fragment), `Missing invariant: ${description}`);
 };
 
-const register = await source("src/app/(shop)/register/page.tsx");
+const register = await source("src/app/(shop)/register/RegisterClient.tsx");
 requireText(register, 'href="/policies/privacy"', "Register links to the Privacy Policy");
 requireText(register, 'aria-label={showPassword ? "Hide password" : "Show password"}', "Register password control is named dynamically");
 requireText(register, 'aria-pressed={showPassword}', "Register password control exposes state");
 requireText(register, 'id="register-name"', "Register name field has an associated id");
 requireText(register, 'id="consent"', "Register consent has a stable id");
 
-const login = await source("src/app/(shop)/login/page.tsx");
-requireText(login, 'htmlFor="login-email"', "Login email label is associated");
+const login = await source("src/app/(shop)/login/LoginClient.tsx");
+requireText(login, 'htmlFor="login-phone"', "Login identifier label is associated");
 requireText(login, 'aria-label={showPassword ? "Hide password" : "Show password"}', "Login password control is named dynamically");
 
 const account = await source("src/app/(shop)/account/page.tsx");
 requireText(account, 'href: "/account/payment-methods"', "Account Payment Methods points to the dedicated route");
 
-const contact = await source("src/app/(shop)/contact/page.tsx");
+const contact = await source("src/app/(shop)/contact/ContactClient.tsx");
 requireText(contact, "{contactPhone}", "Contact phone display uses settings");
 requireText(contact, "{contactEmail}", "Contact email display uses settings");
 assert.ok(!contact.includes("+91 98950 71144"), "Contact must not retain the stale hardcoded phone");
@@ -48,7 +48,7 @@ requireText(header, 'aria-controls="mobile-collections-list"', "Mobile Collectio
 requireText(header, 'event.key === "Escape"', "Header handles Escape");
 requireText(header, 'ref={searchInputRef}', "Header focuses the search input through a stable ref");
 
-const search = await source("src/app/(shop)/search/page.tsx");
+const search = await source("src/app/(shop)/search/SearchClient.tsx");
 requireText(search, "const showCatalogControls = loading || total > 0 || filterCount > 0;", "Search can suppress controls for zero results");
 requireText(search, "{showCatalogControls && <div", "Search hides non-actionable controls for zero results");
 requireText(search, 'aria-label="Grid view"', "Search grid view is named");
@@ -70,7 +70,7 @@ requireText(collection, "End of collection.", "Collection end text is not a noti
 requireText(collection, 'aria-label="Grid view"', "Collection grid view is named");
 requireText(collection, 'aria-label="List view"', "Collection list view is named");
 
-const homepage = await source("src/app/(shop)/page.tsx");
+const homepage = await source("src/app/(shop)/HomeClient.tsx");
 assert.ok(!homepage.includes("HomepageRenderer"), "Customer homepage does not render the incomplete CMS text-card fallback");
 requireText(homepage, "hero-living-room.png", "Customer homepage renders the real hero asset on first load");
 
