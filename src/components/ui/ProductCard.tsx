@@ -10,6 +10,15 @@ import { useWishlistStore } from "@/store/wishlist";
 import toast from "react-hot-toast";
 import type { Product } from "@/types";
 
+// Swatch hex per palette name (mirrors scripts/add-palette-tags.mjs NAMED palette)
+const COLOR_HEX: Record<string, string> = {
+  Charcoal: "#282828", Black: "#141414", Grey: "#828282", Slate: "#5f6973",
+  Cream: "#ebe6da", Ivory: "#f0ece2", Blush: "#deb0a8", Rose: "#c88c8c",
+  Rust: "#aa5f37", Terracotta: "#b96e46", Amber: "#c89646", Gold: "#be9b50",
+  Tan: "#be966e", Beige: "#d7c3a5", Olive: "#787d50", Indigo: "#465282",
+  Navy: "#28325a", Maroon: "#782d32",
+};
+
 interface ProductCardProps {
   product: Product;
   priority?: boolean;
@@ -107,8 +116,20 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
           <h3 className="text-[13px] font-medium text-primary line-clamp-1 leading-snug">
             {product.name}
           </h3>
-          <div className="mt-1">
+          <div className="mt-1 flex items-center justify-between gap-2">
             <PriceDisplay regularPrice={product.regularPrice} salePrice={product.salePrice} size="md" />
+            {(product as any).palette?.length > 0 && (
+              <div className="flex items-center gap-1 shrink-0" title={(product as any).palette.join(" / ")}>
+                {(product as any).palette.slice(0, 4).map((c: string) => (
+                  <span
+                    key={c}
+                    className="w-3 h-3 rounded-full border border-black/10"
+                    style={{ backgroundColor: COLOR_HEX[c] || "#ddd" }}
+                    aria-label={`Available in ${c}`}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

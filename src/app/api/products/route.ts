@@ -135,6 +135,7 @@ export async function GET(request: NextRequest) {
               images: { orderBy: [{ isPrimary: "desc" }, { position: "asc" }], take: 1 },
               variants: { where: { isActive: true }, orderBy: { position: "asc" }, take: 1, include: { images: { orderBy: { position: "asc" }, take: 1 } } },
               reviews: { where: { status: "APPROVED" }, select: { rating: true } },
+              tags: { where: { tag: { startsWith: "color:" } } },
             }
           : {
               category: { select: { id: true, name: true, slug: true } },
@@ -155,6 +156,7 @@ export async function GET(request: NextRequest) {
       rating: product.reviews.length > 0 ? product.reviews.reduce((s, r) => s + r.rating, 0) / product.reviews.length : null,
       reviewCount: product.reviews.length,
       tags: (product as any).tags?.map((t: any) => t.tag) || [],
+      palette: (product as any).tags?.filter((t: any) => t.tag?.startsWith("color:")).map((t: any) => t.tag.slice(6)) || [],
       variants: product.variants.map((v) => ({ ...v, price: Number(v.price), salePrice: v.salePrice ? Number(v.salePrice) : null, attributes: (v as any).attributes?.map((a: any) => ({ attributeId: a.variantAttributeId, attributeName: a.variantAttribute?.name, value: a.value, colorCode: a.colorCode })) || [] })),
       // Physical attributes
       height: product.height ? Number(product.height) : null,
