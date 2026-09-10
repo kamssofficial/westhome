@@ -86,11 +86,11 @@ export default function AddStaffPage() {
     const e: FormErrors = {};
     if (!form.name.trim()) e.name = "Full name is required.";
     if (!form.email.trim()) e.email = "Email address is required.";
-    else if (!/^[^s@]+@[^s@]+.[^s@]+$/.test(form.email)) e.email = "Enter a valid email address.";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Enter a valid email address.";
     if (!form.password) e.password = "Password is required.";
     else if (form.password.length < 8) e.password = "Password must be at least 8 characters.";
     if (form.password !== form.confirmPassword) e.confirmPassword = "Passwords do not match.";
-    if (form.phone && !/^[+]?[ds()-]{7,15}$/.test(form.phone)) e.phone = "Enter a valid phone number.";
+    if (form.phone && !/^\+?[\d\s()-]{7,15}$/.test(form.phone)) e.phone = "Enter a valid phone number.";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
