@@ -74,6 +74,11 @@ export async function GET(request: NextRequest) {
     }
     if (material) where.material = { contains: material, mode: "insensitive" };
     if (color) where.color = { contains: color, mode: "insensitive" };
+    // Palette filter: match products tagged with color:<Name> (see scripts/add-palette-tags.mjs)
+    const colorTag = searchParams.get("colorTag");
+    if (colorTag) {
+      where.tags = { some: { tag: { equals: `color:${colorTag}`, mode: "insensitive" } } };
+    }
     // Stock filter: also show products that don't track inventory (always in stock)
     if (inStock === "true") {
       where.AND = [...(where.AND || []), { OR: [{ stockQuantity: { gt: 0 } }, { trackInventory: false }] }];

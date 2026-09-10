@@ -21,6 +21,22 @@ import { ProductGridSkeleton } from "@/components/ui/Skeleton";
 import type { Category, Product } from "@/types";
 import Testimonials from "@/components/ui/Testimonials";
 
+// Shop-by-Color swatches: hex mirrors COLOR_HEX in ProductCard and the palette
+// extracted by scripts/add-palette-tags.mjs. Each links to /search filtered by
+// the color:<Name> tag. Ordered by how many cushion covers carry each color.
+const SHOP_BY_COLOR = [
+  { name: "Tan", hex: "#be966e" },
+  { name: "Olive", hex: "#787d50" },
+  { name: "Charcoal", hex: "#282828" },
+  { name: "Beige", hex: "#d7c3a5" },
+  { name: "Grey", hex: "#828282" },
+  { name: "Maroon", hex: "#782d32" },
+  { name: "Black", hex: "#141414" },
+  { name: "Terracotta", hex: "#b96e46" },
+  { name: "Cream", hex: "#ebe6da" },
+  { name: "Blush", hex: "#deb0a8" },
+];
+
 export default function HomePage() {
   const { whatsappNumber } = useSettings();
   const [categories, setCategories] = useState<Category[]>([]);
@@ -199,6 +215,41 @@ export default function HomePage() {
                   {category.name}
                 </span>
               </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* SHOP BY COLOR — cushion covers, filtered by extracted palette tags */}
+      <section className="container-shop py-14 md:py-20">
+        <div className="mb-8 flex items-end justify-between md:mb-10">
+          <div>
+            <p className="font-label mb-3 text-[9px] text-accent">Cushion covers</p>
+            <h2 className="font-display text-3xl md:text-4xl">Shop by color.</h2>
+          </div>
+          <Link
+            href="/collections/cushion-covers"
+            className="group hidden items-center gap-2 text-sm font-semibold text-text-secondary hover:text-foreground sm:flex"
+          >
+            View all{" "}
+            <ArrowUpRight size={15} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+          </Link>
+        </div>
+        <div className="flex flex-wrap gap-3 md:gap-4">
+          {SHOP_BY_COLOR.map((c) => (
+            <Link
+              key={c.name}
+              href={`/search?colorTag=${encodeURIComponent(c.name)}&q=cushion`}
+              className="group flex flex-col items-center gap-2"
+              aria-label={`Shop ${c.name} cushion covers`}
+            >
+              <span
+                className="w-12 h-12 md:w-14 md:h-14 rounded-full border border-black/10 shadow-sm transition-transform duration-300 group-hover:scale-110 group-active:scale-95"
+                style={{ background: c.hex }}
+              />
+              <span className="text-[11px] font-medium text-text-secondary group-hover:text-foreground transition-colors">
+                {c.name}
+              </span>
             </Link>
           ))}
         </div>
