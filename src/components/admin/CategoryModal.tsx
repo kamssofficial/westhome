@@ -18,6 +18,7 @@ export default function CategoryModal({ mode, category, existingNames, onClose, 
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [nameError, setNameError] = useState("");
+  const [formError, setFormError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isEdit = mode === "edit";
 
@@ -52,15 +53,22 @@ export default function CategoryModal({ mode, category, existingNames, onClose, 
         setUploadingImage(true);
         const fd = new FormData(); fd.append("file", imageFile); fd.append("folder", "categories");
         const uploadRes = await fetch("/api/upload", { method: "POST", body: fd });
-        if (uploadRes.ok) { const data = await uploadRes.json(); imageUrl = data.url; } else { setSaving(false); setUploadingImage(false); return; }
+        if (!uploadRes.ok) {
+          const uploadData = await uploadRes.json().catch(() => null);
+          setFormError(uploadData?.error || "Image upload failed. Please try again.");
+          setSaving(false); setUploadingImage(false); return;
+        }
+        const data = await uploadRes.json(); imageUrl = data.url;
         setUploadingImage(false);
       } else if (imagePreview === null && category?.image) { imageUrl = null; }
       const url = isEdit ? `/api/categories/${category!.id}` : "/api/categories";
       const method = isEdit ? "PUT" : "POST";
       const body: Record<string, any> = { name: name.trim(), description: description.trim() || null, image: imageUrl, position: isEdit ? category!.position : position };
       const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      if (res.ok) { onSave(); }
-    } catch {} finally { setSaving(false); setUploadingImage(false); }
+      if (res.ok) { onSave(); return; }
+      const resData = await res.json().catch(() => null);
+      setFormError(resData?.error || (isEdit ? "Failed to save category." : "Failed to create category."));
+    } catch { setFormError("Something went wrong. Please try again."); } finally { setSaving(false); setUploadingImage(false); }
   };
 
   const ic = "w-full px-3 py-2.5 bg-white border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 transition-colors";
@@ -88,6 +96,7 @@ export default function CategoryModal({ mode, category, existingNames, onClose, 
             </div>):(<button type="button" onClick={()=>fileInputRef.current?.click()} className="w-full border-2 border-dashed border-border rounded-xl p-6 text-center hover:border-accent/50 hover:bg-surface-muted/50 transition-all cursor-pointer">
               <div className="flex flex-col items-center gap-2"><ImageIcon size={24} className="text-text-muted" /><p className="text-sm text-text-secondary">Click to upload</p><p className="text-[10px] text-text-muted">JPEG, PNG, WebP, Max 5MB</p></div></button>)}
             <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={handleImageSelect} className="hidden" /></div>
+          {formError&&<p className="text-xs text-error bg-error/5 border border-error/20 rounded-lg px-3 py-2">{formError}</p>}
           <div className="flex items-center gap-3 pt-2">
             <Button type="submit" size="lg" className="flex-1" loading={saving} disabled={saving}>{saving?(uploadingImage?"Uploading...":isEdit?"Saving...":"Creating..."):isEdit?"Save Changes":"Create Category"}</Button>
             <Button type="button" variant="ghost" size="lg" onClick={onClose} disabled={saving}>Cancel</Button>

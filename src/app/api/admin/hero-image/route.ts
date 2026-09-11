@@ -1,16 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuthRole } from "@/lib/apiAuth";
 import db from "@/lib/db";
-import { isR2Configured, r2Put } from "@/lib/r2";
+import { uploadMedia, deleteMedia } from "@/lib/media";
 
 const HERO_ACTIVE_KEY = "hero_active";
 const HERO_HISTORY_KEY = "hero_history";
 
-const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
-
 interface HeroImage {
   url: string;
-  filename: string;
+  filename?: string;
   position: string; // center, center-left, center-right, top, bottom
   uploadedBy: string;
   uploadedByName: string;
@@ -18,6 +16,7 @@ interface HeroImage {
   height?: number;
   size?: number;
   createdAt: string;
+  fileId?: string; // Drive file id for clean deletes
 }
 
 // GET — get active hero + history (requires auth)
@@ -44,15 +43,14 @@ export async function POST(request: NextRequest) {
   const authResult = await requireAuthRole(["ADMIN", "MANAGER", "CONTENT_MANAGER", "STAFF"]);
   if (authResult.error) return authResult.error;
 
-  // Reject oversized bodies before multipart parsing (see /api/upload).
-  const contentLength = Number(request.headers.get("content-length"));
-  if (Number.isFinite(contentLength) && contentLength > MAX_UPLOAD_BYTES) {
-    return NextResponse.json({ error: "Image must be under 10MB" }, { status: 413 });
-  }
-
   try {
     const userId = (authResult.session?.user as any)?.id || "unknown";
     const userName = (authResult.session?.user as any)?.name || "Staff";
+
+    const contentLength = Number(request.headers.get("content-length"));
+    if (Number.isFinite(contentLength) && contentLength > 10 * 1024 * 1024) {
+      return NextResponse.json({ error: "Image must be under 10MB" }, { status: 413 });
+    }
 
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
@@ -69,18 +67,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate file size (max 10MB)
-    if (file.size > MAX_UPLOAD_BYTES) {
+    if (file.size > 10 * 1024 * 1024) {
       return NextResponse.json({ error: "Image must be under 10MB" }, { status: 400 });
     }
 
-    // Read file buffer once, reuse for dimension parsing and upload.
-    const fileBuffer = Buffer.from(await file.arrayBuffer());
-
-    // Get image dimensions from the raw bytes.
+    // Get image dimensions
     let width = 0;
     let height = 0;
     try {
-      const arr = new Uint8Array(fileBuffer);
+      const bytes = await file.arrayBuffer();
+      // Simple PNG/JPEG header dimension reading
+      const arr = new Uint8Array(bytes);
       if (arr[0] === 0x89 && arr[1] === 0x50) {
         // PNG
         width = (arr[16] << 24) | (arr[17] << 16) | (arr[18] << 8) | arr[19];
@@ -99,31 +96,22 @@ export async function POST(request: NextRequest) {
       }
     } catch {}
 
-    // Upload to storage
+    // Upload to storage — Drive first, Vercel Blob fallback, local in dev only.
     const ext = file.name.split(".").pop() || "png";
     const filename = `hero-${Date.now()}.${ext}`;
     let imageUrl: string;
+    let fileId: string | undefined;
 
-    if (isR2Configured()) {
-      try {
-        const uploaded = await r2Put(`banners/${filename}`, fileBuffer, file.type);
-        imageUrl = uploaded.url;
-      } catch (r2Error) {
-        console.error("R2 upload failed:", r2Error instanceof Error ? r2Error.message : String(r2Error));
-        return NextResponse.json({ error: "Image upload failed. Please try again." }, { status: 503 });
-      }
-    } else {
-      // Dev fallback — local development only. In production the filesystem is
-      // read-only, so refuse rather than 500.
-      if (process.env.NODE_ENV === "production") {
-        return NextResponse.json({ error: "Storage is not configured. Please try again later." }, { status: 503 });
-      }
-      const fs = await import("fs");
-      const path = await import("path");
-      const uploadDir = path.join(process.cwd(), "public", "images", "banners");
-      if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-      fs.writeFileSync(path.join(uploadDir, filename), fileBuffer);
-      imageUrl = `/images/banners/${filename}`;
+    try {
+      const media = await uploadMedia("banners", file, filename);
+      imageUrl = media.url;
+      fileId = media.fileId;
+    } catch (uploadErr: any) {
+      console.error("Hero upload failed:", uploadErr?.message || uploadErr);
+      const message = uploadErr?.message?.includes("Storage is not configured")
+        ? "Storage is not configured. Please try again later."
+        : "Image upload failed. Please try again.";
+      return NextResponse.json({ error: message }, { status: 503 });
     }
 
     // Build new hero image record
@@ -137,6 +125,7 @@ export async function POST(request: NextRequest) {
       height,
       size: file.size,
       createdAt: new Date().toISOString(),
+      fileId,
     };
 
     // Get current active and history
@@ -163,11 +152,6 @@ export async function POST(request: NextRequest) {
       update: { value: { images: updatedHistory as any } },
       create: { key: HERO_HISTORY_KEY, value: { images: updatedHistory as any }, group: "hero" },
     });
-
-    // Clean up old blob (best effort, keep history copies)
-    if (currentActive?.url?.includes(".r2.dev") || currentActive?.url?.includes("images.westhome.in")) {
-      // Don't delete — keep in history for restore
-    }
 
     return NextResponse.json({ active: newHero, success: true });
   } catch (error) {
@@ -243,6 +227,9 @@ export async function DELETE() {
   try {
     const activeSetting = await db.siteSetting.findUnique({ where: { key: HERO_ACTIVE_KEY } });
     const active: HeroImage | null = activeSetting ? (activeSetting.value as any) : null;
+
+    // Best-effort storage cleanup (Drive file id or legacy Blob object URL).
+    await deleteMedia({ fileId: active?.fileId, url: active?.url });
 
     if (active) {
       const historySetting = await db.siteSetting.findUnique({ where: { key: HERO_HISTORY_KEY } });
