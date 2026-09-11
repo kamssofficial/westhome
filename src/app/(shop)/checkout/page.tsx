@@ -75,12 +75,12 @@ export default function CheckoutPage() {
       .then((data) => {
         const pending = data.orders?.[0];
         if (pending?.id && pending?.orderNumber && pending?.items) {
-          // Compare order items with current cart items by productId+variantId
+          // Compare order items with current cart items by productId+variantId+quantity
           const orderItemKeys = new Set<string>(
-            (pending.items as any[]).map((i: any) => `${i.productId}:${i.variantId || ""}`)
+            (pending.items as any[]).map((i: any) => `${i.productId}:${i.variantId || ""}:${i.quantity}`)
           );
           const cartItemKeys = new Set<string>(
-            items.map((i) => `${i.productId}:${i.variantId || ""}`)
+            items.map((i) => `${i.productId}:${i.variantId || ""}:${i.quantity}`)
           );
           const matches =
             orderItemKeys.size === cartItemKeys.size &&

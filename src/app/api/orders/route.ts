@@ -60,7 +60,6 @@ export async function POST(request: NextRequest) {
       subtotal,
       discount,
       deliveryCharge,
-      tax,
       total,
       paymentMethod,
       deliveryMethod,
@@ -89,7 +88,7 @@ export async function POST(request: NextRequest) {
       }),
       variantIds.length > 0 ? db.productVariant.findMany({
         where: { id: { in: variantIds }, isActive: true },
-        select: { id: true, productId: true, price: true, stockQuantity: true },
+        select: { id: true, productId: true, price: true, salePrice: true, stockQuantity: true },
       }) : Promise.resolve([]),
     ]);
     
@@ -111,7 +110,13 @@ export async function POST(request: NextRequest) {
       if (item.variantId) {
         const variant = variantMap.get(item.variantId);
         if (!variant) throw new Error(`Variant ${item.variantId} not found`);
+        // SECURITY: a variant must belong to the claimed product to prevent paying
+        // variant B's price and decrementing variant B's stock while ordering product A.
+        if (variant.productId !== item.productId) {
+          throw new Error(`Variant ${item.variantId} does not belong to product ${item.productId}`);
+        }
         regularPrice = Number(variant.price);
+        salePrice = variant.salePrice != null && Number(variant.salePrice) > 0 ? Number(variant.salePrice) : null;
         if (product.trackInventory && variant.stockQuantity < item.quantity) {
           throw new Error(`Insufficient stock for ${item.productName} (variant)`);
         }
@@ -178,7 +183,9 @@ export async function POST(request: NextRequest) {
     const finalDeliveryCharge = serverDeliveryCharge;
     const finalSubtotal = serverSubtotal;
     const finalDiscount = serverDiscount; // Server-validated coupon discount only
-    const finalTax = Number(tax) || 0;
+    // No tax is ever applied at order time — always compute as 0 server-side rather
+    // than trusting a client-supplied (possibly negative) tax value.
+    const finalTax = 0;
     const finalTotal = finalSubtotal - finalDiscount + finalDeliveryCharge + finalTax;
 
     // Generate collision-safe order number with retry

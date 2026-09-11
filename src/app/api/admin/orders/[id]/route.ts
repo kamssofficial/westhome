@@ -1,4 +1,5 @@
 import { notifyOrderStatusChange } from "@/lib/notifications";
+import { restoreOrderStock } from "@/lib/inventory";
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { requireOrderManager } from "@/lib/apiAuth";
@@ -149,6 +150,16 @@ export async function PUT(
       data: updates,
     });
 
+    // Return stock to inventory when a paid order is cancelled or refunded,
+    // matching the decrement done at payment verification.
+    if (body.status === "CANCELLED" || body.status === "REFUNDED") {
+      try {
+        await restoreOrderStock(id);
+      } catch (error) {
+        console.error("Failed to restore stock for order", id, error);
+      }
+    }
+
     await logAdminAction({
       action: "UPDATE",
       entity: "ORDER",
@@ -294,6 +305,11 @@ export async function PATCH(
       await db.orderStatusHistory.create({
         data: { orderId: id, status: "CANCELLED", note: body.note || "Cancelled by staff" },
       });
+      try {
+        await restoreOrderStock(id);
+      } catch (error) {
+        console.error("Failed to restore stock for order", id, error);
+      }
       { const o = await db.order.findUnique({ where: { id }, select: { orderNumber: true } }); if (o) notifyOrderStatusChange(id, o.orderNumber, "CANCELLED").catch(() => {}); }
       await logAdminAction({ action: "CANCEL", entity: "ORDER", entityId: id, details: { note: body.note || null }, request });
 
