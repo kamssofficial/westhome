@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { requireAuthRole } from "@/lib/apiAuth";
 import { logAdminAction } from "@/lib/audit";
+import { deleteMedia } from "@/lib/media";
 
 export async function POST(request: NextRequest) {
   const authResult = await requireAuthRole(["ADMIN", "MANAGER", "PRODUCT_MANAGER"]);
@@ -16,8 +17,17 @@ export async function POST(request: NextRequest) {
 
   if (action === "delete") {
     for (const id of ids) {
-      const p = await db.product.findUnique({ where: { id }, include: { _count: { select: { orderItems: true } } } });
+      const p = await db.product.findUnique({
+        where: { id },
+        include: {
+          images: true,
+          variants: { include: { images: true } },
+          _count: { select: { orderItems: true } },
+        },
+      });
       if (!p || p._count.orderItems > 0) { failCount++; continue; }
+      const files = [...p.images, ...p.variants.flatMap((v) => v.images)].filter((i) => i.url);
+      await Promise.allSettled(files.map((i) => deleteMedia({ url: i.url })));
       await db.productImage.deleteMany({ where: { productId: id } });
       await db.productTag.deleteMany({ where: { productId: id } });
       await db.wishlist.deleteMany({ where: { productId: id } });

@@ -4,6 +4,7 @@ import db from "@/lib/db";
 import { requireAuthRole } from "@/lib/apiAuth";
 import { auth } from "@/lib/auth";
 import { logAdminAction } from "@/lib/audit";
+import { deleteMedia } from "@/lib/media";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   try {
@@ -109,10 +110,17 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     if (!product) product = await db.product.findUnique({ where: { id: slug } });
     if (!product) return NextResponse.json({ error: "Product not found" }, { status: 404 });
 
+    // Recompute slug when the name changes (same normalization as create)
+    const nextSlug = body.name.trim().toLowerCase().replace(/[^\w\s-]/g, "").replace(/[\s_-]+/g, "-").replace(/^-+|-+$/g, "");
+
     const updated = await db.product.update({
       where: { id: product.id },
       data: {
         name: body.name.trim(),
+        slug: nextSlug && nextSlug !== product.slug ? nextSlug : undefined,
+        // Keep isActive in sync with status: archived/inactive products must not
+        // be visible on the storefront, and reactivating one must re-show it.
+        isActive: body.status ? body.status !== "ARCHIVED" && body.status !== "INACTIVE" : undefined,
         // Empty SKU inputs must be stored as null. An empty string is a real
         // value under a unique constraint and prevents multiple SKU-less
         // products from being edited successfully.
@@ -175,6 +183,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     // Handle images update if provided (atomic transaction)
     if (body.images && Array.isArray(body.images)) {
+      const oldImages = await db.productImage.findMany({ where: { productId: product.id } });
+      const newUrls = new Set(body.images.map((img: any) => img.url as string));
       await db.$transaction(async (tx) => {
         await tx.productImage.deleteMany({ where: { productId: product.id } });
         for (const img of body.images) {
@@ -190,6 +200,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
           });
         }
       });
+      // Clean up storage files for images that were removed
+      const removed = oldImages.filter((img) => !newUrls.has(img.url));
+      await Promise.allSettled(removed.map((img) => deleteMedia({ url: img.url })));
     }
 
     // Log the action
@@ -203,10 +216,16 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     notifyProductUpdated(updated.name, "updated").catch(() => {});
 
     return NextResponse.json({ product: updated });
-  } catch (error: any) {
+} catch (error: any) {
     console.error("Product update error:", error);
-    if (error?.code === "P2002" && error?.meta?.target?.includes?.("sku")) {
-      return NextResponse.json({ error: "This SKU is already used by another product" }, { status: 409 });
+    if (error?.code === "P2002") {
+      const target = error?.meta?.target;
+      if (target?.includes?.("slug")) {
+        return NextResponse.json({ error: "A product with this name already exists. Rename it to continue." }, { status: 409 });
+      }
+      if (target?.includes?.("sku")) {
+        return NextResponse.json({ error: "This SKU is already used by another product" }, { status: 409 });
+      }
     }
     return NextResponse.json({ error: "Failed to update product" }, { status: 500 });
   }
@@ -230,6 +249,19 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       details: { name: product.name, slug: product.slug },
       request,
     });
+
+    // Clean up stored media before deleting the row (DB rows cascade)
+    const full = await db.product.findUnique({
+      where: { id: product.id },
+      include: { images: true, variants: { include: { images: true } } },
+    });
+    const files = [
+      ...(full?.images?.map((i) => ({ url: i.url })) || []),
+      ...(full?.variants?.flatMap((v) => v.images.map((i) => ({ url: i.url }))) || []),
+    ];
+    await Promise.allSettled(
+      files.filter((f) => f.url).map((f) => deleteMedia(f))
+    );
 
     await db.product.delete({ where: { id: product.id } });
     return NextResponse.json({ success: true });

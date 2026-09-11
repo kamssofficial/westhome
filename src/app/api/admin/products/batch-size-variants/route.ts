@@ -4,9 +4,9 @@ import { requireAuthRole } from "@/lib/apiAuth";
 import { logAdminAction } from "@/lib/audit";
 
 const SIZE_VARIANTS = [
-  { name: "Small", price: 499 },
-  { name: "Medium", price: 699 },
-  { name: "Large", price: 899 },
+  { name: "Small", price: 499, salePrice: 449 },
+  { name: "Medium", price: 699, salePrice: 629 },
+  { name: "Large", price: 899, salePrice: 809 },
 ];
 
 export async function POST(request: NextRequest) {
@@ -58,6 +58,7 @@ export async function POST(request: NextRequest) {
             productId,
             name: sv.name,
             price: sv.price,
+            salePrice: sv.salePrice,
             position: pos++,
           },
         });

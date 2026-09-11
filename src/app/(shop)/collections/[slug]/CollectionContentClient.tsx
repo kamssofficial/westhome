@@ -8,6 +8,7 @@ import ProductCard from "@/components/ui/ProductCard";
 import { ProductGridSkeleton } from "@/components/ui/Skeleton";
 import EmptyState from "@/components/ui/EmptyState";
 import { cn } from "@/lib/utils";
+import { subcategoryImage } from "@/lib/subcategoryImage";
 
 const SORT_OPTIONS = [
   { value: "recommended", label: "Recommended" },
@@ -216,9 +217,9 @@ function CategoryContent({ category: initialCategory, initialProducts, initialTo
                   )}
                 >
                   <div className="relative aspect-[4/3] bg-surface-muted overflow-hidden flex items-center justify-center">
-                    {sub.image && sub.productCount > 0 ? (
+                    {sub.productCount > 0 ? (
                       <Image
-                        src={sub.image}
+                        src={subcategoryImage(sub) || ""}
                         alt={sub.name}
                         fill
                         className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"

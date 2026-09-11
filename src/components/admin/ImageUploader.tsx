@@ -67,10 +67,12 @@ export default function ImageUploader({
               imageType: "PRODUCT",
             });
           } else {
-            toast.error(`Failed to upload ${file.name}`);
+            const data = await res.json().catch(() => null);
+            const msg = data?.error || "Upload failed (storage not configured)";
+            toast.error(`${file.name}: ${msg}`);
           }
         } catch {
-          toast.error(`Failed to upload ${file.name}`);
+          toast.error(`Upload error — server may be unreachable`);
         }
       }
 

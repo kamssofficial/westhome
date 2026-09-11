@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import { Camera, ChevronDown, ImageIcon, Loader2, FolderTree } from "lucide-react";
 import { cn } from "@/lib/utils";
+import toast from "react-hot-toast";
 
 interface CategoryImage { id: string; url: string; alt?: string | null; position: number; isPrimary: boolean; }
 interface SubCategory { id: string; name: string; slug: string; description?: string; image?: string | null; position: number; productCount: number; }
@@ -51,8 +52,15 @@ export default function StaffCategoriesPage() {
           });
         }
         fetchCategories();
+        setUploadSuccess(categoryId);
+        toast.success("Image uploaded");
+      } else {
+        setUploadSuccess(null);
+        let msg = "Failed to upload image";
+        try { const err = await uploadRes.json(); if (err?.error) msg = err.error; } catch {}
+        toast.error(msg);
       }
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error(e); setUploadSuccess(null); toast.error("Upload failed"); }
     finally { setUploadingImage(null); }
   };
 

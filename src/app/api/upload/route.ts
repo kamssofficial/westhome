@@ -8,6 +8,31 @@ const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 const ALLOWED_FOLDERS = ["products", "categories", "banners", "avatars", "homepage", "staff"];
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
+export async function GET() {
+  const r2Configured = !!(
+    process.env.R2_ACCOUNT_ID &&
+    process.env.R2_ACCESS_KEY_ID &&
+    process.env.R2_SECRET_ACCESS_KEY &&
+    process.env.R2_BUCKET &&
+    process.env.R2_PUBLIC_BASE_URL
+  );
+  const blobConfigured = !!process.env.BLOB_READ_WRITE_TOKEN;
+  const driveConfigured = !!(process.env.GOOGLE_CREDENTIALS_PATH || process.env.GOOGLE_CREDENTIALS_JSON);
+  const anyConfigured = r2Configured || blobConfigured || driveConfigured;
+  return NextResponse.json({
+    storage: {
+      r2: { configured: r2Configured },
+      blob: { configured: blobConfigured },
+      drive: { configured: driveConfigured },
+      mode: process.env.NODE_ENV,
+      recommendation:
+        !anyConfigured
+          ? "No storage backend configured. Recommended: set R2_* vars (Cloudflare R2). Also available: BLOB_READ_WRITE_TOKEN or GOOGLE_CREDENTIALS_*. See .env.example."
+          : null,
+    },
+  });
+}
+
 export async function POST(request: NextRequest) {
   const authResult = await requireAuthRole(["ADMIN", "MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER"]);
   if (authResult.error) return authResult.error;
@@ -63,7 +88,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error("Upload error:", error);
     const message = error?.message?.includes("Storage is not configured")
-      ? "Storage is not configured. Please contact support."
+      ? error.message
       : "Upload failed. Please try again.";
     return NextResponse.json({ error: message }, { status: 503 });
   }

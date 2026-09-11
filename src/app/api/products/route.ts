@@ -257,7 +257,12 @@ export async function POST(request: NextRequest) {
         isFeatured: body.isFeatured ?? false,
         isBestseller: body.isBestseller ?? false,
         isNewArrival: body.isNewArrival ?? false,
+        isComingSoon: body.isComingSoon ?? false,
         status: body.status || "DRAFT",
+        // Archived/inactive products must not surface on the storefront
+        isActive: body.status ? body.status !== "ARCHIVED" && body.status !== "INACTIVE" : true,
+        seoTitle: body.seoTitle,
+        seoDescription: body.seoDescription,
         // Physical attributes
         height: body.height,
         width: body.width,
@@ -347,7 +352,17 @@ export async function POST(request: NextRequest) {
     notifyProductUpdated(product.name, "added").catch(() => {});
 
     return NextResponse.json({ product }, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
+    console.error("Create product error:", error);
+    if (error?.code === "P2002") {
+      const target = error?.meta?.target;
+      if (target?.includes?.("slug")) {
+        return NextResponse.json({ error: "A product with this name already exists. Rename it to continue." }, { status: 409 });
+      }
+      if (target?.includes?.("sku")) {
+        return NextResponse.json({ error: "This SKU is already used by another product" }, { status: 409 });
+      }
+    }
     return NextResponse.json({ error: "Failed to create product" }, { status: 500 });
   }
 }

@@ -250,17 +250,20 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
   const handleAddVariant = async () => {
     const name = prompt("Variant name (e.g. Small, Medium, XL):");
     if (!name) return;
-    const priceStr = prompt("Variant price (₹):");
+    const priceStr = prompt("Regular price (₹):");
     if (!priceStr) return;
     const price = parseFloat(priceStr);
     if (isNaN(price) || price <= 0) { toast.error("Invalid price"); return; }
+    const saleStr = prompt("Sale price (₹) — leave blank for no sale:");
+    const salePrice = saleStr && saleStr.trim() !== "" ? parseFloat(saleStr) : null;
+    if (saleStr && saleStr.trim() !== "" && (isNaN(salePrice as number) || (salePrice as number) <= 0)) { toast.error("Invalid sale price"); return; }
     setSavingVariant(true);
     try {
       const res = await fetch(`/api/admin/products/${id}/variants`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name, price,
+          name, price, salePrice,
           attributes: [{ attributeName: "Size", value: name }],
         }),
       });
@@ -370,6 +373,16 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
                     onBlur={(e) => { const p = parseFloat(e.target.value); if (!isNaN(p) && p !== v.price) handleUpdateVariant(v.id, { price: p }); }}
                     className="w-28 px-2 py-1.5 bg-white border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
                     placeholder="₹ price"
+                    title="Regular price"
+                  />
+                  <input
+                    type="number"
+                    step="0.01"
+                    defaultValue={v.salePrice ?? ""}
+                    onBlur={(e) => { const s = e.target.value.trim() === "" ? null : parseFloat(e.target.value); if (s !== v.salePrice) handleUpdateVariant(v.id, { salePrice: (s && !isNaN(s)) ? s : null }); }}
+                    className="w-28 px-2 py-1.5 bg-white border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
+                    placeholder="₹ sale"
+                    title="Sale price (optional)"
                   />
                   <input
                     type="number"
@@ -378,7 +391,7 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
                     className="w-20 px-2 py-1.5 bg-white border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
                     placeholder="Stock"
                   />
-                  <span className="text-xs text-text-muted flex-1">Price in ₹</span>
+                  <span className="text-xs text-text-muted flex-1">Regular / Sale / Stock</span>
                   <button onClick={() => handleDeleteVariant(v.id)} className="p-1.5 text-text-muted hover:text-error rounded-md transition-colors" title="Delete variant">
                     <X size={15} />
                   </button>

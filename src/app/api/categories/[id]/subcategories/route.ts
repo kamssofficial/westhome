@@ -26,6 +26,7 @@ export async function POST(
         name: body.name,
         slug,
         description: body.description,
+        image: body.image ?? null,
         position: subcategoryCount,
       },
     });

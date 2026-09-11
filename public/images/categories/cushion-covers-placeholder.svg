@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#EBE7DF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#F5F3EF;stop-opacity:1" />
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="45%" r="35%">
+      <stop offset="0%" style="stop-color:#B56C45;stop-opacity:0.15" />
+      <stop offset="100%" style="stop-color:#B56C45;stop-opacity:0" />
+    </radialGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)" rx="16"/>
+  <circle cx="400" cy="270" r="200" fill="url(#glow)"/>
+  <!-- Cushion silhouette -->
+  <g opacity="0.15" fill="#1F211F">
+    <rect x="280" y="190" width="240" height="200" rx="28"/>
+    <rect x="255" y="165" width="290" height="250" rx="30" stroke="#1F211F" stroke-width="3" fill="none"/>
+  </g>
+  <!-- Label -->
+  <text x="400" y="520" text-anchor="middle" font-family="Georgia, serif" font-size="18" fill="#1F211F" letter-spacing="0.16em" opacity="0.5">CUSHION COVERS</text>
+</svg>

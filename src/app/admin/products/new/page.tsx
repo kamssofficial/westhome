@@ -37,6 +37,7 @@ export default function NewProductPage() {
     isFeatured: false,
     isBestseller: false,
     isNewArrival: false,
+    isComingSoon: false,
     status: "DRAFT",
     purchaseMethod: "BOTH",
     // Physical dimensions
@@ -125,10 +126,11 @@ export default function NewProductPage() {
         ];
         setVariants(v);
       } else {
-        toast.error("Image upload failed");
+        const data = await res.json().catch(() => null);
+        toast.error(data?.error || "Image upload failed (storage not configured)");
       }
     } catch {
-      toast.error("Image upload failed");
+      toast.error("Image upload error — server may be unreachable");
     }
   };
 
@@ -328,6 +330,10 @@ export default function NewProductPage() {
             <label className="flex items-center gap-2 text-sm cursor-pointer">
               <input type="checkbox" checked={form.isNewArrival} onChange={(e) => setForm({ ...form, isNewArrival: e.target.checked })} className="accent-accent" />
               New Arrival
+            </label>
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="checkbox" checked={form.isComingSoon} onChange={(e) => setForm({ ...form, isComingSoon: e.target.checked })} className="accent-accent" />
+              Coming Soon
             </label>
           </div>
         </div>
@@ -543,6 +549,7 @@ export default function NewProductPage() {
                     <input type="text" placeholder="Name (e.g. Blue / Large)" value={variant.name} onChange={(e) => { const v = [...variants]; v[index].name = e.target.value; setVariants(v); }} className={cn(inputClass, "text-xs")} />
                     <input type="text" placeholder="SKU" value={variant.sku} onChange={(e) => { const v = [...variants]; v[index].sku = e.target.value; setVariants(v); }} className={cn(inputClass, "text-xs")} />
                     <input type="number" placeholder="Price" value={variant.price} onChange={(e) => { const v = [...variants]; v[index].price = e.target.value; setVariants(v); }} className={cn(inputClass, "text-xs")} />
+                    <input type="number" placeholder="Sale Price" value={variant.salePrice} onChange={(e) => { const v = [...variants]; v[index].salePrice = e.target.value; setVariants(v); }} className={cn(inputClass, "text-xs")} />
                     <input type="number" placeholder="Stock" value={variant.stockQuantity} onChange={(e) => { const v = [...variants]; v[index].stockQuantity = e.target.value; setVariants(v); }} className={cn(inputClass, "text-xs")} />
                   </div>
                   {/* Variant images */}

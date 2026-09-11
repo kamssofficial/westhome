@@ -33,6 +33,37 @@ export async function PUT(
   }
 }
 
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const authResult = await requireAuthRole(["ADMIN", "MANAGER", "CONTENT_MANAGER"]);
+  if (authResult.error) return authResult.error;
+
+  try {
+    const { id } = await params;
+    const body = await request.json();
+
+    const category = await db.category.update({
+      where: { id },
+      data: {
+        ...(body.isActive !== undefined && { isActive: body.isActive }),
+        ...(body.name !== undefined && { name: body.name }),
+        ...(body.description !== undefined && { description: body.description }),
+        ...(body.image !== undefined && { image: body.image }),
+        ...(body.position !== undefined && { position: body.position }),
+      },
+    });
+
+    await logAdminAction({ action: "UPDATE", entity: "CATEGORY", entityId: id, details: { name: body.name ?? category.name, isActive: body.isActive }, request });
+
+    return NextResponse.json({ category });
+  } catch (error) {
+    console.error("PATCH category error:", error);
+    return NextResponse.json({ error: "Failed to update category" }, { status: 500 });
+  }
+}
+
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

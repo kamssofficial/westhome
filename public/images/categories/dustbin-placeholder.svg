@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#EBE7DF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#F5F3EF;stop-opacity:1" />
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="45%" r="35%">
+      <stop offset="0%" style="stop-color:#B56C45;stop-opacity:0.15" />
+      <stop offset="100%" style="stop-color:#B56C45;stop-opacity:0" />
+    </radialGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)" rx="16"/>
+  <circle cx="400" cy="270" r="200" fill="url(#glow)"/>
+  <!-- Dustbin silhouette -->
+  <g opacity="0.15" fill="#1F211F">
+    <path d="M330 300 Q 335 440 370 450 L 430 450 Q 465 440 470 300 Z"/>
+    <rect x="310" y="280" width="180" height="22" rx="8"/>
+    <rect x="470" y="230" width="12" height="24" rx="4" transform="rotate(35 476 242)"/>
+  </g>
+  <!-- Label -->
+  <text x="400" y="520" text-anchor="middle" font-family="Georgia, serif" font-size="18" fill="#1F211F" letter-spacing="0.16em" opacity="0.5">DUSTBIN</text>
+</svg>

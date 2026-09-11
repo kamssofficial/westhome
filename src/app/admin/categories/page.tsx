@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import { Pencil, Camera, ChevronDown, Trash2, GripVertical, Plus, X, ImageIcon, Loader2, FolderTree } from "lucide-react";
 import { cn } from "@/lib/utils";
+import toast from "react-hot-toast";
 import CategoryModal from "@/components/admin/CategoryModal";
 import CategoryDeleteModal from "@/components/admin/CategoryDeleteModal";
 
@@ -25,10 +26,17 @@ export default function AdminCategoriesPage() {
   const [uploadingImage, setUploadingImage] = useState<string | null>(null);
   const [addSubName, setAddSubName] = useState("");
   const [addingSubTo, setAddingSubTo] = useState<string | null>(null);
+  const [editSub, setEditSub] = useState<SubCategory | null>(null);
+  const [editSubName, setEditSubName] = useState("");
+  const [editSubDesc, setEditSubDesc] = useState("");
+  const [editingSubTo, setEditingSubTo] = useState<string | null>(null);
   const dragItem = useRef<number>(null);
   const dragOverItem = useRef<number>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const subImageInputRef = useRef<HTMLInputElement>(null);
   const [uploadTarget, setUploadTarget] = useState<string | null>(null);
+  const [subUploadTarget, setSubUploadTarget] = useState<{ categoryId: string; subId: string } | null>(null);
+  const [uploadingSubImage, setUploadingSubImage] = useState<string | null>(null);
 
   const fetchCategories = useCallback(async () => {
     try {
@@ -87,8 +95,13 @@ export default function AdminCategoriesPage() {
           });
         }
         fetchCategories();
+        toast.success("Image uploaded");
+      } else {
+        let msg = "Failed to upload image";
+        try { const err = await uploadRes.json(); if (err?.error) msg = err.error; } catch {}
+        toast.error(msg);
       }
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error(e); toast.error("Upload failed"); }
     finally { setUploadingImage(null); }
   };
 
@@ -123,15 +136,81 @@ export default function AdminCategoriesPage() {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: addSubName.trim() }),
       });
-      if (res.ok) { setAddSubName(""); setAddingSubTo(null); fetchCategories(); }
-    } catch (e) { console.error(e); }
+      if (res.ok) {
+        setAddSubName(""); setAddingSubTo(null); fetchCategories();
+        toast.success("Subcategory added");
+      } else {
+        const err = await res.json().catch(() => null);
+        toast.error(err?.error || "Failed to add subcategory");
+      }
+    } catch (e) { console.error(e); toast.error("Failed to add subcategory"); }
+  };
+
+  const handleUpdateSubcategory = async (categoryId: string, subId: string) => {
+    if (!editSubName.trim()) { toast.error("Name is required"); return; }
+    try {
+      const res = await fetch("/api/categories/" + categoryId + "/subcategories/" + subId, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: editSubName.trim(), description: editSubDesc.trim() || null }),
+      });
+      if (res.ok) {
+        setEditSub(null); setEditingSubTo(null); fetchCategories();
+        toast.success("Subcategory updated");
+      } else {
+        const err = await res.json().catch(() => null);
+        toast.error(err?.error || "Failed to update subcategory");
+      }
+    } catch (e) { console.error(e); toast.error("Failed to update subcategory"); }
   };
 
   const handleDeleteSubcategory = async (categoryId: string, subId: string) => {
     try {
-      await fetch("/api/categories/" + categoryId + "/subcategories/" + subId, { method: "DELETE" });
-      fetchCategories();
-    } catch (e) { console.error(e); }
+      const res = await fetch("/api/categories/" + categoryId + "/subcategories/" + subId, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("Subcategory deleted");
+        fetchCategories();
+      } else {
+        const err = await res.json().catch(() => null);
+        toast.error(err?.error || "Failed to delete subcategory");
+      }
+    } catch (e) { console.error(e); toast.error("Failed to delete subcategory"); }
+  };
+
+  const handleSubImageUpload = async (categoryId: string, subId: string, file: File) => {
+    setUploadingSubImage(subId);
+    try {
+      const fd = new FormData(); fd.append("file", file); fd.append("folder", "categories");
+      const uploadRes = await fetch("/api/upload", { method: "POST", body: fd });
+      if (uploadRes.ok) {
+        const { url } = await uploadRes.json();
+        const res = await fetch("/api/categories/" + categoryId + "/subcategories/" + subId, {
+          method: "PATCH", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ image: url }),
+        });
+        if (res.ok) {
+          fetchCategories();
+          toast.success("Subcategory image uploaded");
+        } else {
+          toast.error("Failed to save subcategory image");
+        }
+      } else {
+        let msg = "Failed to upload image";
+        try { const err = await uploadRes.json(); if (err?.error) msg = err.error; } catch {}
+        toast.error(msg);
+      }
+    } catch (e) { console.error(e); toast.error("Upload failed"); }
+    finally { setUploadingSubImage(null); }
+  };
+
+  const triggerSubImageUpload = (categoryId: string, subId: string) => {
+    setSubUploadTarget({ categoryId, subId });
+    subImageInputRef.current?.click();
+  };
+
+  const handleSubFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && subUploadTarget) { handleSubImageUpload(subUploadTarget.categoryId, subUploadTarget.subId, file); }
+    if (subImageInputRef.current) subImageInputRef.current.value = "";
   };
 
   const triggerImageUpload = (categoryId: string) => {
@@ -150,6 +229,7 @@ export default function AdminCategoriesPage() {
   return (
     <div className="space-y-5">
       <input ref={imageInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFileChange} className="hidden" />
+      <input ref={subImageInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleSubFileChange} className="hidden" />
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -208,7 +288,7 @@ export default function AdminCategoriesPage() {
           {currentList.map((cat, idx) => {
             const isExpanded = expandedId === cat.id;
             const isUploading = uploadingImage === cat.id;
-            const primaryImage = cat.images?.find(img => img.isPrimary) || cat.images?.[0] || null;
+            const primaryImage = cat.images?.find(img => img.isPrimary) || cat.images?.[0] || (cat.image ? { url: cat.image, alt: cat.name } : null);
             const imgCount = cat.images?.length || 0;
 
             return (
@@ -301,27 +381,71 @@ export default function AdminCategoriesPage() {
                     {cat.subcategories.length > 0 ? (
                       <div className="space-y-0.5">
                         {cat.subcategories.map((sub) => (
-                          <div key={sub.id} className="flex items-center justify-between py-2 px-3 rounded-xl hover:bg-white transition-colors group">
-                            <div className="flex items-center gap-3 min-w-0">
-                              <div className="w-8 h-8 rounded-lg bg-white border border-black/[.04] overflow-hidden flex-shrink-0 flex items-center justify-center">
-                                {sub.image ? (
-                                  <Image src={sub.image} alt={sub.name} width={32} height={32} className="w-full h-full object-cover" />
-                                ) : (
-                                  <ImageIcon size={14} className="text-[#d1ccc6]" />
-                                )}
+                          <div key={sub.id}>
+                            {editingSubTo === sub.id ? (
+                              <div className="flex flex-col gap-2 py-2 px-3 rounded-xl bg-white border border-black/[.06]">
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="text"
+                                    value={editSubName}
+                                    onChange={(e) => setEditSubName(e.target.value)}
+                                    onKeyDown={(e) => { if (e.key === "Enter") handleUpdateSubcategory(cat.id, sub.id); if (e.key === "Escape") { setEditingSubTo(null); setEditSub(null); } }}
+                                    placeholder="Subcategory name"
+                                    className="flex-1 px-3 py-1.5 text-sm bg-[#faf8f5] focus:outline-none focus:ring-2 focus:ring-[#d4a574]/30 rounded-lg"
+                                    autoFocus
+                                  />
+                                  <button onClick={() => handleUpdateSubcategory(cat.id, sub.id)} className="px-3 py-1.5 text-xs font-medium text-white bg-[#1a1917] rounded-lg hover:bg-stone-800 transition-colors">Save</button>
+                                  <button onClick={() => { setEditingSubTo(null); setEditSub(null); }} className="p-1.5 text-[#8a857f] hover:text-[#1a1917] transition-colors rounded-lg hover:bg-[#f7f5f2]">
+                                    <X size={14} />
+                                  </button>
+                                </div>
+                                <input
+                                  type="text"
+                                  value={editSubDesc}
+                                  onChange={(e) => setEditSubDesc(e.target.value)}
+                                  placeholder="Description (optional)"
+                                  className="px-3 py-1.5 text-xs bg-[#faf8f5] focus:outline-none focus:ring-2 focus:ring-[#d4a574]/30 rounded-lg"
+                                />
                               </div>
-                              <div className="min-w-0">
-                                <p className="text-sm font-medium text-[#1a1917] truncate">{sub.name}</p>
-                                <p className="text-xs text-[#8a857f]">
-                                  {sub.productCount + " product" + (sub.productCount !== 1 ? "s" : "")}
-                                </p>
+                            ) : (
+                              <div className="flex items-center justify-between py-2 px-3 rounded-xl hover:bg-white transition-colors group">
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div className="w-8 h-8 rounded-lg bg-white border border-black/[.04] overflow-hidden flex-shrink-0 flex items-center justify-center relative">
+                                    {sub.image ? (
+                                      <Image src={sub.image} alt={sub.name} width={32} height={32} className="w-full h-full object-cover" />
+                                    ) : (
+                                      <ImageIcon size={14} className="text-[#d1ccc6]" />
+                                    )}
+                                    {uploadingSubImage === sub.id && (
+                                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                                        <Loader2 size={12} className="text-white animate-spin" />
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-medium text-[#1a1917] truncate">{sub.name}</p>
+                                    <p className="text-xs text-[#8a857f]">
+                                      {sub.productCount + " product" + (sub.productCount !== 1 ? "s" : "")}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-0.5">
+                                  <button onClick={() => triggerSubImageUpload(cat.id, sub.id)} title="Change subcategory image" aria-label={"Change image for " + sub.name} disabled={uploadingSubImage === sub.id}
+                                    className="w-8 h-8 flex items-center justify-center rounded-lg text-[#b0aba6] hover:text-[#6b6560] hover:bg-[#f7f5f2] transition-all duration-150 disabled:opacity-40">
+                                    <Camera size={14} strokeWidth={1.8} />
+                                  </button>
+                                  <button onClick={() => { setEditingSubTo(sub.id); setEditSub(sub); setEditSubName(sub.name); setEditSubDesc(sub.description || ""); }} title="Edit subcategory" aria-label={"Edit " + sub.name}
+                                    className="w-8 h-8 flex items-center justify-center rounded-lg text-[#b0aba6] hover:text-[#1a1917] hover:bg-[#f7f5f2] transition-all duration-150">
+                                    <Pencil size={14} strokeWidth={1.8} />
+                                  </button>
+                                  <button onClick={() => handleDeleteSubcategory(cat.id, sub.id)} title="Delete subcategory"
+                                    aria-label={"Delete " + sub.name}
+                                    className="w-8 h-8 flex items-center justify-center rounded-lg text-[#b0aba6] hover:text-red-600 hover:bg-red-50 transition-all duration-150">
+                                    <Trash2 size={14} strokeWidth={1.8} />
+                                  </button>
+                                </div>
                               </div>
-                            </div>
-                            <button onClick={() => handleDeleteSubcategory(cat.id, sub.id)} title="Delete subcategory"
-                              aria-label={"Delete " + sub.name}
-                              className="w-8 h-8 flex items-center justify-center rounded-lg text-[#b0aba6] hover:text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all duration-150">
-                              <Trash2 size={14} strokeWidth={1.8} />
-                            </button>
+                            )}
                           </div>
                         ))}
                       </div>
