@@ -5,8 +5,18 @@ import { requireAuthRole } from "@/lib/apiAuth";
 
 const PLACEHOLDER_RE = /placeholder\.svg$/;
 
+// Real tile images served from /public/collections/<category>/
+// used when the DB has no usable image for the category itself.
+const STATIC_CATEGORY_IMAGES: Record<string, string> = {
+  comforters: "/collections/comforters/comforter-set.png",
+  lamps: "/collections/lamps/modern-lamp.png",
+  carpets: "/collections/carpets/gray-distressed-rug.png",
+  clocks: "/collections/clocks/dark-roman-numeral-clock.png",
+};
+
 interface CategoryTileSource {
   id: string;
+  slug?: string;
   image: string | null;
   images?: Array<{ url: string; isPrimary?: boolean }>;
 }
@@ -23,6 +33,7 @@ async function resolveCategoryImage(cat: CategoryTileSource): Promise<string | n
   });
   const productImage = product?.images?.[0]?.url;
   if (productImage) return productImage;
+  if (cat.slug && STATIC_CATEGORY_IMAGES[cat.slug]) return STATIC_CATEGORY_IMAGES[cat.slug];
   return cat.image || primaryImage?.url || null;
 }
 

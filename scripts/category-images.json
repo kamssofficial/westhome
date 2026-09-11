@@ -4,10 +4,10 @@
   "images": [
     { "category": "Wall Decor", "image": "/collections/frames/frame-botanical-leaf-gold-frame.png" },
     { "category": "Laundry", "image": "/collections/basket/basket-cream-woven-set-3-sizes.png" },
-    { "category": "Comforters", "image": "/images/categories/comforters-placeholder.svg" },
-    { "category": "Lamps", "image": "/images/categories/lamps-placeholder.svg" },
-    { "category": "Carpets", "image": "/images/categories/carpets-placeholder.svg" },
-    { "category": "Clocks", "image": "/images/categories/clocks-placeholder.svg" },
+    { "category": "Comforters", "image": "/collections/comforters/comforter-set.png" },
+    { "category": "Lamps", "image": "/collections/lamps/modern-lamp.png" },
+    { "category": "Carpets", "image": "/collections/carpets/gray-distressed-rug.png" },
+    { "category": "Clocks", "image": "/collections/clocks/dark-roman-numeral-clock.png" },
     { "category": "Accessories", "image": "/collections/soap-dispensers/set/soap-dispenser-cream-white-collection.png" }
   ]
 }
