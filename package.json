@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && node scripts/apply-production-schema.mjs && node scripts/seed-size-variants.mjs && next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
     "qa:regression": "node scripts/qa-audit-regression.mjs",
@@ -14,6 +14,8 @@
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset",
+    "db:production-schema": "node scripts/apply-production-schema.mjs",
+    "db:seed-size-variants": "node scripts/seed-size-variants.mjs",
     "postinstall": "prisma generate"
   },
   "prisma": {
@@ -68,9 +70,7 @@
     "dotenv": "^17.4.2",
     "eslint": "^9",
     "eslint-config-next": "16.3.1",
-    "prisma": "^7.9.1",
     "tailwindcss": "^4",
-    "ts-node": "^10.9.2",
     "typescript": "^5"
   }
 }
