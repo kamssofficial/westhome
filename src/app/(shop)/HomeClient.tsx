@@ -21,6 +21,19 @@ import { ProductGridSkeleton } from "@/components/ui/Skeleton";
 import type { Category, Product } from "@/types";
 import Testimonials from "@/components/ui/Testimonials";
 
+const CATEGORY_DRIVE_IMAGES: Record<string, string> = {
+  carpets: "/images/categories/drive-replacements/carpets.png",
+  clocks: "/images/categories/drive-replacements/clocks.png",
+  comforters: "/images/categories/drive-replacements/comforters.png",
+  lamps: "/images/categories/drive-replacements/lamps.png",
+  "wall-decor": "/images/categories/drive-replacements/wall-decor.png",
+};
+
+function categoryImage(category: Category): string | null {
+  if (category.image) return category.image;
+  return CATEGORY_DRIVE_IMAGES[category.slug] || null;
+}
+
 export default function HomePage() {
   const { whatsappNumber } = useSettings();
   const [categories, setCategories] = useState<Category[]>([]);
@@ -176,9 +189,9 @@ export default function HomePage() {
               className="group min-w-[145px] snap-start md:min-w-0"
             >
               <div className="relative aspect-[.82] overflow-hidden rounded-[1.35rem] bg-surface-muted">
-                {category.productCount > 0 && category.image ? (
+                {categoryImage(category) ? (
                   <Image
-                    src={category.image}
+                    src={categoryImage(category) as string}
                     alt={category.name}
                     fill
                     className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
