@@ -58,7 +58,7 @@ async function githubDelete(config: { token: string; repository: string; branch:
 
 function b2Config() {
   const keyId = process.env.B2_KEY_ID || process.env.B2_APPLICATION_KEY_ID;
-  const applicationKey = process.env.B2_APPLICATION_KEY || process.env.B2_APPLICATION_KEY_SECRET;
+  const applicationKey = process.env.B2_APPLICATION_KEY || process.env.B2_APPLICATION_KEY_SECRET || process.env.B2_KEY_SECRET;
   const bucket = process.env.B2_BUCKET;
   const endpoint = process.env.B2_ENDPOINT || process.env.B2_S3_ENDPOINT;
   // B2 public buckets can be addressed through the S3 endpoint directly.
