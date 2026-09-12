@@ -186,7 +186,7 @@ export default function AdminShell({
           <div className="flex items-center gap-2">
             <NotificationBell accentRing={accentRing} />
             <div className="w-px h-6 bg-black/[.08] mx-1" />
-            <ProfileMenu userName={userName} userRole={userRole} userInitials={initials} basePath={breadcrumbRoot.toLowerCase()} accentRing={accentRing} />
+            <ProfileMenu userName={userName} userRole={userRole} userInitials={initials} basePath={`/${breadcrumbRoot.toLowerCase()}`} accentRing={accentRing} />
           </div>
         </header>
 

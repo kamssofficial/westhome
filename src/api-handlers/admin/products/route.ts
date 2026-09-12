@@ -10,6 +10,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const query = searchParams.get("q") || "";
   const status = searchParams.get("status") || "";
+  const sort = searchParams.get("sort") || "newest";
   const page = parseInt(searchParams.get("page") || "1");
   const limit = parseInt(searchParams.get("limit") || "50");
 
@@ -25,6 +26,17 @@ export async function GET(request: NextRequest) {
   if (status) {
     where.status = status;
   }
+  const orderBy = sort === "updated"
+    ? { updatedAt: "desc" as const }
+    : sort === "name_asc"
+      ? { name: "asc" as const }
+      : sort === "name_desc"
+        ? { name: "desc" as const }
+        : sort === "price_asc"
+          ? { regularPrice: "asc" as const }
+          : sort === "price_desc"
+            ? { regularPrice: "desc" as const }
+            : { createdAt: "desc" as const };
 
   const [products, total] = await Promise.all([
     db.product.findMany({
@@ -35,7 +47,7 @@ export async function GET(request: NextRequest) {
         images: { where: { isPrimary: true }, take: 1 },
         _count: { select: { orderItems: true } },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy,
       skip: (page - 1) * limit,
       take: limit,
     }),

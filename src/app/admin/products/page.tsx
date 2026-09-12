@@ -128,6 +128,7 @@ export default function AdminProductsPage() {
       const params = new URLSearchParams();
       if (debouncedSearch) params.set("q", debouncedSearch);
       if (statusFilter) params.set("status", statusFilter);
+      params.set("sort", sort);
       params.set("page", String(page));
       params.set("limit", "25");
       const res = await fetch("/api/admin/products?" + params.toString());
@@ -138,7 +139,7 @@ export default function AdminProductsPage() {
       if (res.ok) { const d = await res.json(); setProducts(d.products); setTotal(d.total); }
       else { setLoadError("Failed to load products."); setProducts([]); }
     } catch { setLoadError("Failed to load products."); setProducts([]); } finally { setLoading(false); }
-  }, [debouncedSearch, statusFilter, page]);
+  }, [debouncedSearch, statusFilter, sort, page]);
 
   useEffect(() => { fetchProducts(); setSelectedIds(new Set()); }, [fetchProducts]);
 
