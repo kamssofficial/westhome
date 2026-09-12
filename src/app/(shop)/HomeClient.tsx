@@ -30,8 +30,9 @@ const CATEGORY_DRIVE_IMAGES: Record<string, string> = {
 };
 
 function categoryImage(category: Category): string | null {
-  if (category.image) return category.image;
-  return CATEGORY_DRIVE_IMAGES[category.slug] || null;
+  // These categories still have legacy placeholder paths in the database.
+  // Prefer the curated Drive image whenever one is available.
+  return CATEGORY_DRIVE_IMAGES[category.slug] || category.image || null;
 }
 
 export default function HomePage() {
