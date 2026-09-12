@@ -4,6 +4,7 @@ import { join } from "node:path";
 
 const root = process.cwd();
 const source = async (relativePath) => readFile(join(root, relativePath), "utf8");
+const apiSource = (relativePath) => source(relativePath.replace(/^src\/app\/api\//, "src\/api-handlers\/"));
 const requireText = (text, fragment, description) => {
   assert.ok(text.includes(fragment), `Missing invariant: ${description}`);
 };
@@ -59,7 +60,7 @@ requireText(productCard, 'aria-label={isInWishlist ? "Remove from wishlist" : "A
 requireText(productCard, "aria-pressed={isInWishlist}", "Wishlist exposes pressed state");
 assert.ok(!productCard.includes("line-through"), "Customer product cards do not render a regular-price compare-at value");
 
-const ordersApi = await source("src/app/api/orders/route.ts");
+const ordersApi = await apiSource("src/app/api/orders/route.ts");
 requireText(ordersApi, "const effectivePrice = salePrice !== null && salePrice > 0 ? salePrice : regularPrice;", "Orders use sale price as the effective customer price");
 requireText(ordersApi, "unitPrice: effectivePrice", "Orders persist the effective sale price as unit price");
 
@@ -84,7 +85,7 @@ assert.ok(checkout.indexOf("clearCart()") > checkout.indexOf("if (res.ok)"), "Ca
 requireText(checkout, "paymentAcknowledged", "UPI order creation requires an explicit acknowledgement");
 requireText(checkout, 'Place Order — ${formatPrice(total)} (Payment Pending)', "UPI order action is labelled pending, not as a fake payment success");
 
-const dashboardApi = await source("src/app/api/admin/dashboard/route.ts");
+const dashboardApi = await apiSource("src/app/api/admin/dashboard/route.ts");
 requireText(dashboardApi, 'status: "ACTIVE"', "Dashboard products use published active status");
 requireText(dashboardApi, 'role: "CUSTOMER", isActive: true', "Dashboard customers use active customer semantics");
 requireText(dashboardApi, "ordersToday", "Dashboard exposes an authoritative today count");
@@ -94,12 +95,12 @@ const staffDashboard = await source("src/app/staff/dashboard/page.tsx");
 requireText(staffDashboard, 'fetch("/api/admin/dashboard")', "Staff dashboard uses the authoritative dashboard endpoint");
 assert.ok(!staffDashboard.includes('fetch("/api/products?limit=1")'), "Staff dashboard no longer derives KPIs from limited product fetches");
 
-const addressesApi = await source("src/app/api/addresses/route.ts");
+const addressesApi = await apiSource("src/app/api/addresses/route.ts");
 requireText(addressesApi, "requiredFields", "Address creation validates required fields server-side");
 requireText(addressesApi, "normalizedPhone", "Address creation normalizes and validates phone numbers");
 requireText(addressesApi, 'export async function POST', "Address creation uses POST");
 
-const productApi = await source("src/app/api/products/[slug]/route.ts");
+const productApi = await apiSource("src/app/api/products/[slug]/route.ts");
 assert.ok(!productApi.includes('"CONTENT_MANAGER"'), "Content managers do not receive broad product write access");
 
 console.log("QA audit regression checks passed.");

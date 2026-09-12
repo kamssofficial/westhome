@@ -3,19 +3,18 @@ import { join } from "node:path";
 
 const root = process.cwd();
 const files = [
-  "src/app/api/categories/route.ts",
-  "src/app/api/categories/[id]/route.ts",
+  "src/api-handlers/categories/route.ts",
   "src/lib/auth.ts",
   "src/lib/apiAuth.ts",
   "src/middleware.ts",
-  "src/app/api/orders/route.ts",
-  "src/app/api/admin/dashboard/route.ts",
+  "src/api-handlers/orders/route.ts",
+  "src/api-handlers/admin/dashboard/route.ts",
 ];
 
 const source = {};
 for (const file of files) source[file] = await readFile(join(root, file), "utf8");
 
-const categories = source["src/app/api/categories/route.ts"];
+const categories = source["src/api-handlers/categories/route.ts"];
 if (categories.includes("/[^ws-]/g")) throw new Error("Category slug regex is corrupted; expected a real word-character class");
 if (categories.includes("/[s_-]+/g")) throw new Error("Category slug whitespace regex is corrupted; expected a real whitespace class");
 
@@ -42,7 +41,7 @@ if (!apiAuth.includes("getLiveSession") && !apiAuth.includes("requireAuthRole"))
   throw new Error("API authorization must validate a live database user");
 }
 
-const orders = source["src/app/api/orders/route.ts"];
+const orders = source["src/api-handlers/orders/route.ts"];
 if (!orders.includes("Server-side price validation")) throw new Error("Order price validation missing");
 if (!orders.includes("const finalDeliveryCharge = serverDeliveryCharge")) throw new Error("Delivery charge validation missing");
 
