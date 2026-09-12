@@ -46,6 +46,14 @@ export default function ImageUploader({
 
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
+        if (!file.type.startsWith("image/")) {
+          toast.error(`${file.name}: Please choose an image file`);
+          continue;
+        }
+        if (file.size > 10 * 1024 * 1024) {
+          toast.error(`${file.name}: Maximum file size is 10 MB`);
+          continue;
+        }
         try {
           const formData = new FormData();
           formData.append("file", file);
@@ -182,7 +190,7 @@ export default function ImageUploader({
               : "Drag images here or click to browse"}
           </p>
           <p className="text-xs text-text-muted">
-            JPEG, PNG, WebP • Max 5MB • Up to {maxImages} images
+            JPEG, PNG, WebP, GIF • Max 10MB • Up to {maxImages} images
           </p>
         </div>
       </div>

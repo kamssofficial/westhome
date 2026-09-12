@@ -79,21 +79,11 @@ export default function AdminCategoriesPage() {
       const uploadRes = await fetch("/api/upload", { method: "POST", body: fd });
       if (uploadRes.ok) {
         const { url } = await uploadRes.json();
-        // Try CategoryImage API first, fall back to updating category image field
-        let saved = false;
-        try {
-          const imgRes = await fetch("/api/categories/" + categoryId + "/images", {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ url, isPrimary: true, alt: file.name }),
-          });
-          saved = imgRes.ok;
-        } catch {}
-        if (!saved) {
-          await fetch("/api/categories/" + categoryId, {
-            method: "PUT", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ image: url }),
-          });
-        }
+        const saveRes = await fetch("/api/categories/" + categoryId, {
+          method: "PUT", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ image: url }),
+        });
+        if (!saveRes.ok) throw new Error("Failed to save category image");
         fetchCategories();
         toast.success("Image uploaded");
       } else {

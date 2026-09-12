@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { requireAuthRole } from "@/lib/apiAuth";
 import { logAdminAction } from "@/lib/audit";
+import { deleteMedia } from "@/lib/media";
 
 export async function PUT(
   request: NextRequest,
@@ -13,6 +14,9 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
+    const existingImages = body.image !== undefined
+      ? await db.categoryImage.findMany({ where: { categoryId: id } })
+      : [];
 
     const category = await db.category.update({
       where: { id },
@@ -25,10 +29,34 @@ export async function PUT(
       },
     });
 
+    // The category modal edits the legacy image field. Keep normalized
+    // category-image records synchronized so stale gallery rows cannot
+    // overwrite the newly saved image on the next category fetch.
+    if (body.image !== undefined) {
+      await db.categoryImage.deleteMany({ where: { categoryId: id } });
+      if (body.image) {
+        await db.categoryImage.create({
+          data: {
+            categoryId: id,
+            url: body.image,
+            alt: body.name || category.name,
+            position: 0,
+            isPrimary: true,
+          },
+        });
+      }
+      await Promise.allSettled(
+        existingImages
+          .filter((image) => image.url !== body.image)
+          .map((image) => deleteMedia({ url: image.url }))
+      );
+    }
+
     await logAdminAction({ action: "UPDATE", entity: "CATEGORY", entityId: id, details: { name: body.name }, request });
 
     return NextResponse.json({ category });
   } catch (error) {
+    console.error("PUT category error:", error);
     return NextResponse.json({ error: "Failed to update category" }, { status: 500 });
   }
 }
@@ -74,7 +102,6 @@ export async function DELETE(
   try {
     const { id } = await params;
 
-    // Check for attached products and subcategories before deleting
     const productCount = await db.product.count({
       where: { categoryId: id, isActive: true },
     });
