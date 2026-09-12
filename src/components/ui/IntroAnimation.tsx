@@ -18,7 +18,6 @@ export default function IntroAnimation({ children }: { children: React.ReactNode
   const [phase, setPhase] = useState<"idle" | "logo" | "line" | "tagline" | "wipe" | "done">("idle");
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const started = useRef(false);
-  const hasPlayed = typeof window !== "undefined" && sessionStorage.getItem("westhome-intro-played");
 
   const skip = useCallback(() => {
     timers.current.forEach(clearTimeout);
@@ -28,9 +27,8 @@ export default function IntroAnimation({ children }: { children: React.ReactNode
   }, []);
 
   useEffect(() => {
-    if (started.current || hasPlayed) { setPhase("done"); return; }
+    if (started.current) { setPhase("done"); return; }
     started.current = true;
-    sessionStorage.setItem("westhome-intro-played", "1");
 
     const at = (fn: () => void, ms: number) => {
       timers.current.push(setTimeout(fn, ms));
