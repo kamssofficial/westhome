@@ -131,7 +131,7 @@ export default function AdminProductsPage() {
       params.set("sort", sort);
       params.set("page", String(page));
       params.set("limit", "25");
-      const res = await fetch("/api/admin/products?" + params.toString());
+      const res = await fetch("/api/admin/products?" + params.toString(), { cache: "no-store" });
       if (res.status === 401 || res.status === 403) {
         window.location.href = "/login";
         return;

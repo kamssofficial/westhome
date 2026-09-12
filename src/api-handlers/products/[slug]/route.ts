@@ -1,10 +1,14 @@
 import { notifyProductUpdated } from "@/lib/notifications";
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import db from "@/lib/db";
 import { requireAuthRole } from "@/lib/apiAuth";
 import { auth } from "@/lib/auth";
 import { logAdminAction } from "@/lib/audit";
 import { deleteMedia } from "@/lib/media";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   try {
@@ -84,7 +88,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         })),
       })),
     };
-    return NextResponse.json({ product: transformed });
+    return NextResponse.json(
+      { product: transformed },
+      { headers: { "Cache-Control": "no-store, max-age=0" } }
+    );
   } catch (error) {
     return NextResponse.json({ error: "Product not found" }, { status: 404 });
   }
@@ -214,6 +221,10 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       request,
     });
     notifyProductUpdated(updated.name, "updated").catch(() => {});
+    revalidatePath(`/products/${updated.slug}`);
+    revalidatePath("/products/[slug]", "page");
+    revalidatePath("/", "page");
+    revalidatePath("/collections/[slug]", "page");
 
     return NextResponse.json({ product: updated });
 } catch (error: any) {

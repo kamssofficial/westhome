@@ -81,8 +81,8 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
 
   useEffect(() => {
     Promise.all([
-      fetch(`/api/products/${id}`).then((r) => r.json()),
-      fetch("/api/categories").then((r) => r.json()),
+      fetch(`/api/products/${id}`, { cache: "no-store" }).then((r) => r.json()),
+      fetch("/api/categories", { cache: "no-store" }).then((r) => r.json()),
     ]).then(([prodData, catData]) => {
       if (prodData.product) {
         const p = prodData.product;
@@ -147,6 +147,7 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
     try {
       const res = await fetch(`/api/products/${id}`, {
         method: "PUT",
+        cache: "no-store",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
