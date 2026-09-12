@@ -3,7 +3,6 @@ import db from "@/lib/db";
 import { requireAuthRole } from "@/lib/apiAuth";
 import { logAdminAction } from "@/lib/audit";
 
-// GET - List all products for admin
 export async function GET(request: NextRequest) {
   const authResult = await requireAuthRole(["ADMIN", "MANAGER", "PRODUCT_MANAGER"]);
   if (authResult.error) return authResult.error;
@@ -25,12 +24,9 @@ export async function GET(request: NextRequest) {
       { subcategory: { name: { contains: query, mode: "insensitive" } } },
     ];
   }
-  if (status) {
-    where.status = status;
-  }
-  if (categoryId) {
-    where.categoryId = categoryId;
-  }
+  if (status) where.status = status;
+  if (categoryId) where.categoryId = categoryId;
+
   const orderBy = sort === "updated"
     ? { updatedAt: "desc" as const }
     : sort === "name_asc"
@@ -49,7 +45,9 @@ export async function GET(request: NextRequest) {
       include: {
         category: { select: { id: true, name: true, slug: true } },
         subcategory: { select: { id: true, name: true, slug: true } },
-        images: { where: { isPrimary: true }, take: 1 },
+        // Some imported galleries have images but no primary flag. Always expose
+        // the best available image to the admin list.
+        images: { orderBy: [{ isPrimary: "desc" }, { position: "asc" }], take: 1 },
         _count: { select: { orderItems: true } },
       },
       orderBy,
@@ -62,9 +60,6 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ products, total, page, limit });
 }
 
-// POST - Import products and Drive-backed images from an idempotent manifest.
-// Existing products are matched by slug; their image gallery is replaced by the
-// manifest gallery, while existing product details and order history are kept.
 export async function POST(request: NextRequest) {
   const authResult = await requireAuthRole(["ADMIN", "MANAGER", "PRODUCT_MANAGER"]);
   if (authResult.error) return authResult.error;
