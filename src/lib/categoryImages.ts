@@ -21,7 +21,34 @@ export function resolveCategoryImage(slug?: string | null, image?: string | null
 export function resolveProductImage(
   categorySlug?: string | null,
   image?: string | null,
+  productSlug?: string | null,
 ): string | null {
-  if (isPlaceholderImage(image)) return categoryFallbackImage(categorySlug) || image || null;
-  return image || categoryFallbackImage(categorySlug) || null;
+  const localFallback = productLocalFallback(productSlug);
+
+  // The catalog import historically stored Google Drive proxy URLs. Those
+  // IDs are no longer resolvable in production, while the corresponding
+  // catalog images are committed under /public/collections. Prefer the local
+  // asset for that legacy shape so cards never render a broken image.
+  if (image?.startsWith("/api/images/") && localFallback) return localFallback;
+  if (isPlaceholderImage(image)) return localFallback || categoryFallbackImage(categorySlug) || image || null;
+  if (image) return image;
+  return localFallback || categoryFallbackImage(categorySlug) || null;
+}
+
+function productLocalFallback(
+  productSlug?: string | null,
+): string | null {
+  if (!productSlug) return null;
+
+  // Cushion-cover catalog assets use the stable product code in their slug.
+  // This covers both the older "cushion-cover-*" records and the imported
+  // "cushion-cover-design-*" records.
+  if (productSlug.startsWith("cushion-cover")) {
+    const code = productSlug
+      .replace(/^cushion-cover-design-/, "")
+      .replace(/^cushion-cover-/, "");
+    if (code) return `/collections/cushion-covers/cushion-cover-${code}-1.png`;
+  }
+
+  return null;
 }

@@ -31,7 +31,12 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
   const isInWishlist = useWishlistStore((s) => s.isInWishlist(product.id));
 
   const primaryImage = product.images.find((i) => i.isPrimary) || product.images[0];
-  const displayImage = resolveProductImage(product.category?.slug, primaryImage?.url);
+  const variantImage = product.variants?.[0]?.images?.[0];
+  const displayImage = resolveProductImage(
+    product.category?.slug,
+    primaryImage?.url || variantImage?.url,
+    product.slug,
+  );
   const discount = calculateDiscount(product.regularPrice, product.salePrice || 0);
   const inStock = product.trackInventory ? product.stockQuantity > 0 : true;
 
@@ -61,7 +66,7 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
           {displayImage && !imageError ? (
             <Image
               src={displayImage}
-              alt={primaryImage.alt || product.name}
+              alt={primaryImage?.alt || variantImage?.alt || product.name}
               fill
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
               className="object-cover group-hover:scale-105 transition-transform duration-500"

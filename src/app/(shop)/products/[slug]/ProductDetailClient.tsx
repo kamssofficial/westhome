@@ -17,6 +17,7 @@ import { trackEvent } from "@/components/ui/AnalyticsTracker";
 import { useWishlistStore } from "@/store/wishlist";
 import toast from "react-hot-toast";
 import type { ProductVariant } from "@/types";
+import { resolveProductImage } from "@/lib/categoryImages";
 
 
 interface ProductDetailProps {
@@ -119,7 +120,11 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
 
   // Use variant images if available, otherwise fall back to product images
   const variantImages = selectedVariant?.images?.length ? selectedVariant.images : [];
-  const images = variantImages.length > 0 ? variantImages : (product.images?.length ? product.images : []);
+  const rawImages = variantImages.length > 0 ? variantImages : (product.images?.length ? product.images : []);
+  const images = rawImages.map((image: any) => ({
+    ...image,
+    url: resolveProductImage(product.category?.slug, image.url, product.slug) || image.url,
+  }));
   const currentPrice = (selectedVariant?.salePrice != null && selectedVariant.salePrice > 0 ? selectedVariant.salePrice : selectedVariant?.price) ?? (product.salePrice != null && product.salePrice > 0 ? product.salePrice : product.regularPrice);
   const originalPrice = product.regularPrice;
   const inStock = product.trackInventory ? (selectedVariant?.stockQuantity ?? product.stockQuantity) > 0 : true;

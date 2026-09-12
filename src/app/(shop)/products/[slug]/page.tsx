@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import db from "@/lib/db";
 import ProductDetailClient from "./ProductDetailClient";
+import { resolveProductImage } from "@/lib/categoryImages";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -161,7 +162,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!product) return { title: "Product Not Found" };
 
   const images = product.images?.length
-    ? product.images.map((img: any) => ({ url: img.url, alt: img.alt || product.name }))
+    ? product.images.map((img: any) => ({
+        url: resolveProductImage(product.category?.slug, img.url, product.slug) || img.url,
+        alt: img.alt || product.name,
+      }))
     : [];
 
   const canonical = `/products/${product.slug}`;
@@ -220,7 +224,9 @@ export default async function ProductPage({ params }: PageProps) {
       product.shortDescription ||
       product.description?.substring(0, 160) ||
       product.name,
-    image: product.images?.length ? product.images.map((img: any) => img.url) : undefined,
+    image: product.images?.length
+      ? product.images.map((img: any) => resolveProductImage(product.category?.slug, img.url, product.slug) || img.url)
+      : undefined,
     sku: product.sku || undefined,
     brand: {
       "@type": "Brand",
