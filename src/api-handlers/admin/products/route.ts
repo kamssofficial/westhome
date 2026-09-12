@@ -11,6 +11,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const query = searchParams.get("q") || "";
   const status = searchParams.get("status") || "";
+  const categoryId = searchParams.get("categoryId") || "";
   const sort = searchParams.get("sort") || "newest";
   const page = parseInt(searchParams.get("page") || "1");
   const limit = parseInt(searchParams.get("limit") || "50");
@@ -26,6 +27,9 @@ export async function GET(request: NextRequest) {
   }
   if (status) {
     where.status = status;
+  }
+  if (categoryId) {
+    where.categoryId = categoryId;
   }
   const orderBy = sort === "updated"
     ? { updatedAt: "desc" as const }

@@ -107,6 +107,8 @@ export default function AdminProductsPage() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [sort, setSort] = useState("newest");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -121,6 +123,13 @@ export default function AdminProductsPage() {
     return () => clearTimeout(t);
   }, [search]);
 
+  useEffect(() => {
+    fetch("/api/categories", { cache: "no-store" })
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => setCategories((data?.categories || []).map((category: any) => ({ id: category.id, name: category.name }))))
+      .catch(() => setCategories([]));
+  }, []);
+
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
@@ -128,6 +137,7 @@ export default function AdminProductsPage() {
       const params = new URLSearchParams();
       if (debouncedSearch) params.set("q", debouncedSearch);
       if (statusFilter) params.set("status", statusFilter);
+      if (categoryFilter) params.set("categoryId", categoryFilter);
       params.set("sort", sort);
       params.set("page", String(page));
       params.set("limit", "25");
@@ -139,7 +149,7 @@ export default function AdminProductsPage() {
       if (res.ok) { const d = await res.json(); setProducts(d.products); setTotal(d.total); }
       else { setLoadError("Failed to load products."); setProducts([]); }
     } catch { setLoadError("Failed to load products."); setProducts([]); } finally { setLoading(false); }
-  }, [debouncedSearch, statusFilter, sort, page]);
+  }, [debouncedSearch, statusFilter, categoryFilter, sort, page]);
 
   useEffect(() => { fetchProducts(); setSelectedIds(new Set()); }, [fetchProducts]);
 
@@ -217,6 +227,15 @@ export default function AdminProductsPage() {
             {o.label}
           </button>
         ))}
+        <select
+          value={categoryFilter}
+          onChange={(e) => { setCategoryFilter(e.target.value); setPage(1); }}
+          aria-label="Filter by category"
+          className="px-3 py-1.5 rounded-full text-[11px] font-medium whitespace-nowrap bg-white border border-black/[.06] text-secondary hover:bg-surface-muted focus:outline-none focus:ring-2 focus:ring-accent/30 shrink-0"
+        >
+          <option value="">All Categories</option>
+          {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+        </select>
         <button onClick={() => setShowFilters(!showFilters)} className={cn("px-3 py-1.5 rounded-full text-[11px] font-medium whitespace-nowrap transition-colors shrink-0 flex items-center gap-1",
           showFilters ? "bg-primary text-white" : "bg-white border border-black/[.06] text-secondary hover:bg-surface-muted")}>
           <ArrowUpDown size={11} /> Sort
