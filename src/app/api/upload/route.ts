@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuthRole } from "@/lib/apiAuth";
-import { uploadMedia } from "@/lib/media";
+import { storageStatus, uploadMedia } from "@/lib/media";
 
 export const runtime = "nodejs";
 
@@ -9,26 +9,14 @@ const ALLOWED_FOLDERS = ["products", "categories", "banners", "avatars", "homepa
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
 export async function GET() {
-  const r2Configured = !!(
-    process.env.R2_ACCOUNT_ID &&
-    process.env.R2_ACCESS_KEY_ID &&
-    process.env.R2_SECRET_ACCESS_KEY &&
-    process.env.R2_BUCKET &&
-    process.env.R2_PUBLIC_BASE_URL
-  );
-  const blobConfigured = !!process.env.BLOB_READ_WRITE_TOKEN;
-  const driveConfigured = !!(process.env.GOOGLE_CREDENTIALS_PATH || process.env.GOOGLE_CREDENTIALS_JSON);
-  const anyConfigured = r2Configured || blobConfigured || driveConfigured;
+  const status = storageStatus();
   return NextResponse.json({
     storage: {
-      r2: { configured: r2Configured },
-      blob: { configured: blobConfigured },
-      drive: { configured: driveConfigured },
+      ...status,
       mode: process.env.NODE_ENV,
-      recommendation:
-        !anyConfigured
-          ? "No storage backend configured. Recommended: set R2_* vars (Cloudflare R2). Also available: BLOB_READ_WRITE_TOKEN or GOOGLE_CREDENTIALS_*. See .env.example."
-          : null,
+      recommendation: status.anyConfigured
+        ? null
+        : "No storage backend configured. Set B2_* (recommended), R2_*, BLOB_READ_WRITE_TOKEN, or GOOGLE_CREDENTIALS_* in Vercel.",
     },
   });
 }

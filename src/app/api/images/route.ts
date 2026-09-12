@@ -6,6 +6,31 @@ import { driveDownload } from "@/lib/gdrive";
 const PROJECT_ROOT = process.cwd();
 const PUBLIC_IMAGES_DIR = path.join(PROJECT_ROOT, "public", "images");
 
+async function serveGitHub(filePath: string): Promise<NextResponse | null> {
+  const token = process.env.GITHUB_STORAGE_TOKEN || process.env.GITHUB_TOKEN;
+  if (!token) return null;
+  const repository = process.env.GITHUB_STORAGE_REPO || "salmansahil2005/westhome";
+  const branch = process.env.GITHUB_STORAGE_BRANCH || "main";
+  const apiPath = filePath.replace(/^github\//, "");
+  const response = await fetch(
+    `https://api.github.com/repos/${repository}/contents/${apiPath}?ref=${encodeURIComponent(branch)}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github.raw+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "User-Agent": "westhome-image-proxy",
+      },
+      next: { revalidate: 3600 },
+    },
+  );
+  if (!response.ok) return null;
+  const data = Buffer.from(await response.arrayBuffer());
+  const ext = path.extname(apiPath).toLowerCase();
+  const mimeType = ext === ".png" ? "image/png" : ext === ".webp" ? "image/webp" : ext === ".gif" ? "image/gif" : "image/jpeg";
+  return binaryResponse(data, mimeType);
+}
+
 // Bounded in-memory cache for Drive downloads so repeated image views don't
 // hammer the Drive API quota. FIFO eviction when the byte budget is exceeded.
 const BINARY_CACHE = new Map<
@@ -73,6 +98,11 @@ export async function GET(req: NextRequest) {
     const fileId = resolveFilePath(req);
     if (!fileId) {
       return NextResponse.json({ error: "Invalid image path" }, { status: 400 });
+    }
+
+    if (fileId.startsWith("github/")) {
+      const githubResp = await serveGitHub(fileId);
+      if (githubResp) return githubResp;
     }
 
     // Drive files are served via the authenticated API (no slash in the id).
