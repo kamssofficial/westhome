@@ -231,7 +231,12 @@ export default function AdminProductsPage() {
           value={categoryFilter}
           onChange={(e) => { setCategoryFilter(e.target.value); setPage(1); }}
           aria-label="Filter by category"
-          className="px-3 py-1.5 rounded-full text-[11px] font-medium whitespace-nowrap bg-white border border-black/[.06] text-secondary hover:bg-surface-muted focus:outline-none focus:ring-2 focus:ring-accent/30 shrink-0"
+          className={cn(
+            "px-3 py-1.5 rounded-full text-[11px] font-medium whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-accent/30 shrink-0 transition-colors",
+            categoryFilter
+              ? "bg-primary text-white border border-primary"
+              : "bg-white border border-black/[.06] text-secondary hover:bg-surface-muted"
+          )}
         >
           <option value="">All Categories</option>
           {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
