@@ -221,7 +221,6 @@ export default function AdminCategoriesPage() {
       <input ref={imageInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFileChange} className="hidden" />
       <input ref={subImageInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleSubFileChange} className="hidden" />
 
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-[#1a1917]">Categories</h1>
@@ -319,14 +318,14 @@ export default function AdminCategoriesPage() {
                       </div>
                     )}
                   </div>
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0 flex-1 basis-0 sm:basis-auto">
                     <h3 className="font-medium text-[#1a1917] text-sm sm:text-base break-words line-clamp-2">{cat.name}</h3>
                     <p className="text-xs text-[#8a857f] mt-0.5">
                       {cat.productCount + " product" + (cat.productCount !== 1 ? "s" : "")}
                       {" \u00b7 " + cat.subcategories.length + " subcategor" + (cat.subcategories.length !== 1 ? "ies" : "y")}
                     </p>
                   </div>
-                  <div className="flex w-full items-center justify-end gap-0.5 border-t border-black/[.05] pt-2 sm:w-auto sm:gap-1 sm:border-t-0 sm:pt-0">
+                  <div className="flex w-full flex-none basis-full items-center justify-end gap-0.5 border-t border-black/[.05] pt-2 sm:w-auto sm:basis-auto sm:gap-1 sm:border-t-0 sm:pt-0">
                     <button onClick={() => setEditCategory(cat)} title="Edit category" aria-label="Edit category"
                       className="w-10 h-10 flex items-center justify-center rounded-xl text-[#6b6560] hover:text-[#1a1917] hover:bg-[#f7f5f2] active:bg-[#ece8e1] transition-all duration-150">
                       <Pencil size={17} strokeWidth={1.8} />
