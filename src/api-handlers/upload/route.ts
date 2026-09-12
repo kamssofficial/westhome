@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
 import { requireAuthRole } from "@/lib/apiAuth";
 import { storageStatus, uploadMedia } from "@/lib/media";
 
