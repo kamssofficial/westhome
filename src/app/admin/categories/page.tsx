@@ -289,7 +289,7 @@ export default function AdminCategoriesPage() {
                 onDragOver={(e) => e.preventDefault()}
                 onDragEnd={handleDragEnd}
               >
-                <div className="flex items-center gap-3 p-3 sm:p-4">
+                <div className="flex flex-wrap items-center gap-3 p-3 sm:flex-nowrap sm:p-4">
                   {reorderMode && (
                     <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-[#f7f5f2] cursor-grab active:cursor-grabbing">
                       <GripVertical size={16} className="text-[#b0aba6]" />
@@ -319,14 +319,14 @@ export default function AdminCategoriesPage() {
                       </div>
                     )}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-[#1a1917] text-sm sm:text-base truncate">{cat.name}</h3>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-medium text-[#1a1917] text-sm sm:text-base break-words line-clamp-2">{cat.name}</h3>
                     <p className="text-xs text-[#8a857f] mt-0.5">
                       {cat.productCount + " product" + (cat.productCount !== 1 ? "s" : "")}
                       {" \u00b7 " + cat.subcategories.length + " subcategor" + (cat.subcategories.length !== 1 ? "ies" : "y")}
                     </p>
                   </div>
-                  <div className="flex items-center gap-0.5 sm:gap-1">
+                  <div className="flex w-full items-center justify-end gap-0.5 border-t border-black/[.05] pt-2 sm:w-auto sm:gap-1 sm:border-t-0 sm:pt-0">
                     <button onClick={() => setEditCategory(cat)} title="Edit category" aria-label="Edit category"
                       className="w-10 h-10 flex items-center justify-center rounded-xl text-[#6b6560] hover:text-[#1a1917] hover:bg-[#f7f5f2] active:bg-[#ece8e1] transition-all duration-150">
                       <Pencil size={17} strokeWidth={1.8} />
