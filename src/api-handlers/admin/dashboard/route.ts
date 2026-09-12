@@ -131,10 +131,6 @@ export async function GET(request: NextRequest) {
     const events: Record<string, number> = {};
     eventCounts.forEach(e => { events[e.eventType] = e._count.id; });
 
-    const prevEventCounts = await db.analyticsEvent.groupBy({ by: ["eventType"], _count: { id: true }, where: { createdAt: { gte: prevStart, lte: prevEnd } } });
-    const prevEvents: Record<string, number> = {};
-    prevEventCounts.forEach(e => { prevEvents[e.eventType] = e._count.id; });
-
     // ── Sales Funnel ──
     const funnel = {
       pageViews: events["PAGE_VIEW"] || events["VIEW"] || 0,
@@ -187,34 +183,61 @@ export async function GET(request: NextRequest) {
       items.map(t => ({ ...t, product: pMap[t.productId || ""] || null, [valueField]: Number(t._sum?.[valueField] || 0), orders: t[countField]?.id || 0 }));
 
     // ── Revenue Over Time ──
-    const revenueOverTime: { date: string; revenue: number; orders: number }[] = [];
     const days = range === "today" ? 1 : range === "7d" ? 7 : range === "90d" ? 90 : 30;
+    const chartStart = new Date(now.getTime() - (days - 1) * 24 * 60 * 60 * 1000);
+    chartStart.setHours(0, 0, 0, 0);
+    const chartOrders = await db.order.findMany({
+      where: { paymentStatus: "COMPLETED", createdAt: { gte: chartStart, lte: now } },
+      select: { total: true, createdAt: true },
+    });
+    const dayKey = (date: Date) => `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+    const dailyTotals = new Map<string, { revenue: number; orders: number }>();
+    chartOrders.forEach((order) => {
+      const key = dayKey(new Date(order.createdAt));
+      const current = dailyTotals.get(key) || { revenue: 0, orders: 0 };
+      current.revenue += Number(order.total || 0);
+      current.orders += 1;
+      dailyTotals.set(key, current);
+    });
+    const revenueOverTime: { date: string; revenue: number; orders: number }[] = [];
     for (let i = days - 1; i >= 0; i--) {
       const day = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-      const dayStart = new Date(day); dayStart.setHours(0, 0, 0, 0);
-      const dayEnd = new Date(day); dayEnd.setHours(23, 59, 59, 999);
-      const [dayRevenue, dayOrders] = await Promise.all([
-        db.order.aggregate({ _sum: { total: true }, where: { paymentStatus: "COMPLETED", createdAt: { gte: dayStart, lte: dayEnd } } }),
-        db.order.count({ where: { paymentStatus: "COMPLETED", createdAt: { gte: dayStart, lte: dayEnd } } }),
-      ]);
-      revenueOverTime.push({
-        date: day.toLocaleDateString("en-IN", { day: "numeric", month: "short" }),
-        revenue: Number(dayRevenue._sum.total || 0),
-        orders: dayOrders,
-      });
+      const key = dayKey(day);
+      const totals = dailyTotals.get(key) || { revenue: 0, orders: 0 };
+      revenueOverTime.push({ date: day.toLocaleDateString("en-IN", { day: "numeric", month: "short" }), ...totals });
     }
 
     // ── Category Analytics ──
     const categories = await db.category.findMany({ select: { id: true, name: true, slug: true } });
-    const categoryAnalytics = await Promise.all(categories.map(async (cat) => {
-      const [catOrders, catRevenue, catUnits] = await Promise.all([
-        db.orderItem.count({ where: { product: { categoryId: cat.id }, order: { createdAt: { gte: since }, paymentStatus: "COMPLETED" } } }),
-        db.orderItem.aggregate({ _sum: { totalPrice: true }, where: { product: { categoryId: cat.id }, order: { createdAt: { gte: since }, paymentStatus: "COMPLETED" } } }),
-        db.orderItem.aggregate({ _sum: { quantity: true }, where: { product: { categoryId: cat.id }, order: { createdAt: { gte: since }, paymentStatus: "COMPLETED" } } }),
-      ]);
-      const catProducts = await db.product.count({ where: { categoryId: cat.id } });
-      return { ...cat, products: catProducts, orders: catOrders, revenue: Number((catRevenue._sum as any).totalPrice || 0), units: Number(catUnits._sum.quantity || 0) };
-    }));
+    const [categorySales, categoryProductCounts] = await Promise.all([
+      db.orderItem.groupBy({
+        by: ["productId"],
+        _count: { id: true },
+        _sum: { totalPrice: true, quantity: true },
+        where: { order: { createdAt: { gte: since }, paymentStatus: "COMPLETED" } },
+      }),
+      db.product.groupBy({ by: ["categoryId"], _count: { id: true } }),
+    ]);
+    const categorySaleProductIds = categorySales.map((sale) => sale.productId);
+    const categoryProducts = categorySaleProductIds.length > 0
+      ? await db.product.findMany({ where: { id: { in: categorySaleProductIds } }, select: { id: true, categoryId: true } })
+      : [];
+    const categoryByProduct = Object.fromEntries(categoryProducts.map((product) => [product.id, product.categoryId]));
+    const categorySalesById = new Map<string, { orders: number; revenue: number; units: number }>();
+    categorySales.forEach((sale) => {
+      const categoryId = categoryByProduct[sale.productId];
+      if (!categoryId) return;
+      const current = categorySalesById.get(categoryId) || { orders: 0, revenue: 0, units: 0 };
+      current.orders += sale._count.id;
+      current.revenue += Number(sale._sum.totalPrice || 0);
+      current.units += Number(sale._sum.quantity || 0);
+      categorySalesById.set(categoryId, current);
+    });
+    const categoryAnalytics = categories.map((cat) => {
+      const sales = categorySalesById.get(cat.id) || { orders: 0, revenue: 0, units: 0 };
+      const productCount = categoryProductCounts.find((entry) => entry.categoryId === cat.id)?._count.id || 0;
+      return { ...cat, products: productCount, ...sales };
+    });
 
     // ── Customer List (top) ──
     const customerOrders = await db.order.groupBy({
