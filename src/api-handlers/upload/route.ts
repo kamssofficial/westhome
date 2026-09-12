@@ -16,7 +16,7 @@ export async function GET() {
       mode: process.env.NODE_ENV,
       recommendation: status.anyConfigured
         ? null
-        : "No storage backend configured. Set B2_* (recommended), R2_*, BLOB_READ_WRITE_TOKEN, or GOOGLE_CREDENTIALS_* in Vercel.",
+        : "Configure GITHUB_STORAGE_TOKEN, B2_*, R2_*, or BLOB_READ_WRITE_TOKEN in Vercel Production.",
     },
   });
 }
@@ -25,58 +25,34 @@ export async function POST(request: NextRequest) {
   const authResult = await requireAuthRole(["ADMIN", "MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER"]);
   if (authResult.error) return authResult.error;
 
-  const contentLength = Number(request.headers.get("content-length"));
-  if (Number.isFinite(contentLength) && contentLength > MAX_UPLOAD_BYTES) {
-    const maxMB = Math.round(MAX_UPLOAD_BYTES / (1024 * 1024));
-    return NextResponse.json(
-      { error: `Image is too large. Maximum size is ${maxMB} MB.` },
-      { status: 413 }
-    );
-  }
-
   try {
+    const contentLength = Number(request.headers.get("content-length"));
+    if (Number.isFinite(contentLength) && contentLength > MAX_UPLOAD_BYTES) {
+      return NextResponse.json({ error: "Image is too large. Maximum size is 10 MB." }, { status: 413 });
+    }
+
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
-    const rawFolder = (formData.get("folder") as string) || "products";
+    const rawFolder = String(formData.get("folder") || "products");
     const folder = ALLOWED_FOLDERS.includes(rawFolder) ? rawFolder : "products";
 
-    if (!file) {
-      return NextResponse.json({ error: "No file provided" }, { status: 400 });
-    }
-
+    if (!file) return NextResponse.json({ error: "No file provided" }, { status: 400 });
     if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json(
-        { error: "Unsupported image format. Please upload JPG, PNG, WebP, or GIF." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Unsupported image format. Please upload JPG, PNG, WebP, or GIF." }, { status: 400 });
     }
-
     if (file.size > MAX_UPLOAD_BYTES) {
-      const maxMB = Math.round(MAX_UPLOAD_BYTES / (1024 * 1024));
-      return NextResponse.json({ error: `Image is too large. Maximum size is ${maxMB} MB.` }, { status: 400 });
+      return NextResponse.json({ error: "Image is too large. Maximum size is 10 MB." }, { status: 413 });
     }
 
     const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-    const timestamp = Date.now();
-    const random = Math.random().toString(36).substring(2, 8);
-    const filename = timestamp + "-" + random + "." + ext;
-
+    const filename = `${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
     const media = await uploadMedia(folder, file, filename);
 
-    return NextResponse.json(
-      {
-        url: media.url,
-        pathname: media.pathname,
-        fileId: media.fileId ?? undefined,
-        folder,
-        provider: media.provider,
-      },
-      { status: 201 }
-    );
+    return NextResponse.json({ url: media.url, pathname: media.pathname, fileId: media.fileId ?? undefined, folder, provider: media.provider }, { status: 201 });
   } catch (error: any) {
     console.error("Upload error:", error);
     const message = error?.message?.includes("Storage is not configured")
-      ? error.message
+      ? "Image storage is not configured. Add GITHUB_STORAGE_TOKEN, B2_*, R2_*, or BLOB_READ_WRITE_TOKEN to Vercel Production."
       : "Upload failed. Please try again.";
     return NextResponse.json({ error: message }, { status: 503 });
   }
