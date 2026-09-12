@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && node scripts/apply-production-schema.mjs && node scripts/seed-size-variants.mjs && next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
     "qa:static": "node scripts/qa-static-check.mjs",
