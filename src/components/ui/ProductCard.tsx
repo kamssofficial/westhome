@@ -9,6 +9,7 @@ import PriceDisplay from "@/components/ui/PriceDisplay";
 import { useWishlistStore } from "@/store/wishlist";
 import toast from "react-hot-toast";
 import type { Product } from "@/types";
+import { resolveProductImage } from "@/lib/categoryImages";
 
 // Swatch hex per palette name (mirrors scripts/add-palette-tags.mjs NAMED palette)
 const COLOR_HEX: Record<string, string> = {
@@ -30,6 +31,7 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
   const isInWishlist = useWishlistStore((s) => s.isInWishlist(product.id));
 
   const primaryImage = product.images.find((i) => i.isPrimary) || product.images[0];
+  const displayImage = resolveProductImage(product.category?.slug, primaryImage?.url);
   const discount = calculateDiscount(product.regularPrice, product.salePrice || 0);
   const inStock = product.trackInventory ? product.stockQuantity > 0 : true;
 
@@ -43,7 +45,7 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
       slug: product.slug,
       price: Number(product.regularPrice),
       salePrice: product.salePrice ? Number(product.salePrice) : undefined,
-      image: primaryImage?.url,
+      image: displayImage || undefined,
     });
     toast.success(isInWishlist ? "Removed from wishlist" : "Added to wishlist");
   };
@@ -56,9 +58,9 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
       <div className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-card-hover transition-all duration-300">
         {/* Image */}
         <div className="relative aspect-square bg-surface-muted overflow-hidden">
-          {primaryImage && !imageError ? (
+          {displayImage && !imageError ? (
             <Image
-              src={primaryImage.url}
+              src={displayImage}
               alt={primaryImage.alt || product.name}
               fill
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"

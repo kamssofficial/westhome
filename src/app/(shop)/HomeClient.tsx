@@ -20,20 +20,7 @@ import Button from "@/components/ui/Button";
 import { ProductGridSkeleton } from "@/components/ui/Skeleton";
 import type { Category, Product } from "@/types";
 import Testimonials from "@/components/ui/Testimonials";
-
-const CATEGORY_DRIVE_IMAGES: Record<string, string> = {
-  carpets: "/images/categories/drive-replacements/carpets.png",
-  clocks: "/images/categories/drive-replacements/clocks.png",
-  comforters: "/images/categories/drive-replacements/comforters.png",
-  lamps: "/images/categories/drive-replacements/lamps.png",
-  "wall-decor": "/images/categories/drive-replacements/wall-decor.png",
-};
-
-function categoryImage(category: Category): string | null {
-  // These categories still have legacy placeholder paths in the database.
-  // Prefer the curated Drive image whenever one is available.
-  return CATEGORY_DRIVE_IMAGES[category.slug] || category.image || null;
-}
+import { resolveCategoryImage } from "@/lib/categoryImages";
 
 export default function HomePage() {
   const { whatsappNumber } = useSettings();
@@ -190,9 +177,9 @@ export default function HomePage() {
               className="group min-w-[145px] snap-start md:min-w-0"
             >
               <div className="relative aspect-[.82] overflow-hidden rounded-[1.35rem] bg-surface-muted">
-                {categoryImage(category) ? (
+                {resolveCategoryImage(category.slug, category.image) ? (
                   <Image
-                    src={categoryImage(category) as string}
+                    src={resolveCategoryImage(category.slug, category.image) as string}
                     alt={category.name}
                     fill
                     className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
