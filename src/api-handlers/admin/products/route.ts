@@ -45,9 +45,18 @@ export async function GET(request: NextRequest) {
       include: {
         category: { select: { id: true, name: true, slug: true } },
         subcategory: { select: { id: true, name: true, slug: true } },
-        // Some imported galleries have images but no primary flag. Always expose
-        // the best available image to the admin list.
+        // Prefer a real product image, but imported catalog products often store
+        // their gallery on variants (especially color variants). Fall back to the
+        // first variant image so the admin list never shows an empty placeholder
+        // when an actual product image exists.
         images: { orderBy: [{ isPrimary: "desc" }, { position: "asc" }], take: 1 },
+        variants: {
+          orderBy: { position: "asc" },
+          take: 1,
+          include: {
+            images: { orderBy: [{ isPrimary: "desc" }, { position: "asc" }], take: 1 },
+          },
+        },
         _count: { select: { orderItems: true } },
       },
       orderBy,
@@ -57,7 +66,14 @@ export async function GET(request: NextRequest) {
     db.product.count({ where }),
   ]);
 
-  return NextResponse.json({ products, total, page, limit });
+  const normalizedProducts = products.map(({ variants, ...product }) => ({
+    ...product,
+    images: product.images.length > 0
+      ? product.images
+      : (variants[0]?.images || []),
+  }));
+
+  return NextResponse.json({ products: normalizedProducts, total, page, limit });
 }
 
 export async function POST(request: NextRequest) {
