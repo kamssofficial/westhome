@@ -58,9 +58,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       contentMarginClass="lg:ml-[260px]"
       headerBgClass="bg-[#f7f5f2]/80"
       brandDotClass="bg-emerald-500"
-      redirectForRole={(role) => (role === "MANAGER" ? "/staff/dashboard" : null)}
     >
       {children}
     </AdminShell>
   );
-}
+}
