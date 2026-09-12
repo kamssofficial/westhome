@@ -150,10 +150,11 @@ export default async function CollectionPage({ params }: PageProps) {
   let staticImages: string[] = [];
   if (total === 0) {
     try {
-      const dirName = slug.charAt(0).toUpperCase() + slug.slice(1);
+      // Collection assets are stored under lowercase slugs.
+      const dirName = slug.toLowerCase();
       const dirPath = path.join(process.cwd(), "public", "collections", dirName);
       if (fs.existsSync(dirPath)) {
-        const files = fs.readdirSync(dirPath).filter(f => f.endsWith(".webp") || f.endsWith(".png"));
+        const files = fs.readdirSync(dirPath).filter(f => /\.(webp|png|jpe?g)$/i.test(f));
         staticImages = files.map(f => `/collections/${dirName}/${f}`);
       }
     } catch {}

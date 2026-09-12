@@ -663,7 +663,11 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
             <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4">
               {product.images
                 .filter((img: any) => img.imageType === "LIFESTYLE")
-                .map((img) => (
+                .map((img: any) => ({
+                  ...img,
+                  url: resolveProductImage(product.category?.slug, img.url, product.slug) || img.url,
+                }))
+                .map((img: any) => (
                   <div key={img.id} className="flex-shrink-0 w-[280px] rounded-[1.35rem] overflow-hidden bg-surface-muted">
                     <div className="relative aspect-[4/3]">
                       <Image
