@@ -1,7 +1,6 @@
 import { uploadToDrive, deleteFromDrive } from "@/lib/gdrive";
 import { AwsClient } from "aws4fetch";
-
-const VERCEL_BLOB_API = "https://vercel.com/api/blob";
+import { del as deleteBlob, put as putBlob } from "@vercel/blob";
 
 export interface UploadedMedia {
   url: string;
@@ -124,52 +123,23 @@ async function s3Delete(
 /*  Vercel Blob                                                        */
 /* ------------------------------------------------------------------ */
 
-function blobStoreIdFromToken(token: string): string {
-  return token.split("_")[3] || "";
-}
-
 async function vercelBlobPut(key: string, body: Buffer, contentType: string): Promise<string> {
   const token = process.env.BLOB_READ_WRITE_TOKEN;
   if (!token) throw new Error("BLOB_READ_WRITE_TOKEN is not set");
-  const storeId = blobStoreIdFromToken(token);
   const pathname = key.replace(/^\/+/, "");
-  const params = new URLSearchParams({ pathname });
-  const res = await fetch(`${VERCEL_BLOB_API}/put?${params.toString()}`, {
-    method: "POST",
-    headers: {
-      authorization: `Bearer ${token}`,
-      "x-vercel-blob-store-id": storeId,
-      "x-vercel-blob-access": "public",
-      "x-content-type": contentType || "application/octet-stream",
-      "x-add-random-suffix": "0",
-      "x-api-version": "12",
-      "x-api-blob-request-id": `${storeId}:${Date.now()}:${Math.random().toString(16).slice(2)}`,
-      "x-api-blob-request-attempt": "0",
-    },
-    body: new Uint8Array(body),
+  const result = await putBlob(pathname, body, {
+    access: "public",
+    addRandomSuffix: false,
+    contentType: contentType || "application/octet-stream",
+    token,
   });
-  if (!res.ok) {
-    const detail = await res.text().catch(() => "");
-    throw new Error(`Vercel Blob upload failed (${res.status}): ${detail.slice(0, 200)}`);
-  }
-  const data = (await res.json()) as { url?: string };
-  if (!data.url) throw new Error("Vercel Blob upload returned no URL");
-  return data.url;
+  return result.url;
 }
 
 async function vercelBlobDel(url: string): Promise<void> {
   const token = process.env.BLOB_READ_WRITE_TOKEN;
   if (!token) return;
-  const storeId = blobStoreIdFromToken(token);
-  const res = await fetch(`${VERCEL_BLOB_API}?id=${encodeURIComponent(storeId)}`, {
-    method: "DELETE",
-    headers: { authorization: `Bearer ${token}`, "content-type": "application/json", "x-vercel-blob-store-id": storeId, "x-api-version": "12" },
-    body: JSON.stringify({ url }),
-  });
-  if (!res.ok) {
-    const detail = await res.text().catch(() => "");
-    throw new Error(`Vercel Blob delete failed (${res.status}): ${detail.slice(0, 200)}`);
-  }
+  await deleteBlob(url, { token });
 }
 
 export function storageStatus() {
