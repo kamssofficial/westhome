@@ -32,7 +32,19 @@ export default function ImageUploader({
 }: ImageUploaderProps) {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [draggedId, setDraggedId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const reorderImages = (fromId: string, toId: string) => {
+    if (fromId === toId) return;
+    const fromIndex = images.findIndex((image) => image.id === fromId);
+    const toIndex = images.findIndex((image) => image.id === toId);
+    if (fromIndex < 0 || toIndex < 0) return;
+    const next = [...images];
+    const [moved] = next.splice(fromIndex, 1);
+    next.splice(toIndex, 0, moved);
+    onChange(next.map((image, position) => ({ ...image, position })));
+  };
 
   const handleUpload = useCallback(
     async (files: FileList) => {
@@ -201,10 +213,27 @@ export default function ImageUploader({
           {images.map((image, index) => (
             <div
               key={image.id}
-              className="flex items-center gap-3 bg-white border border-border-light rounded-lg p-3"
+              draggable
+              onDragStart={() => setDraggedId(image.id)}
+              onDragEnd={() => setDraggedId(null)}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                if (draggedId) reorderImages(draggedId, image.id);
+                setDraggedId(null);
+              }}
+              className={cn(
+                "flex items-center gap-3 bg-white border border-border-light rounded-lg p-3 transition-all",
+                draggedId === image.id && "opacity-50",
+                draggedId && draggedId !== image.id && "border-accent/40"
+              )}
             >
               {/* Drag handle */}
-              <div className="text-text-muted cursor-grab">
+              <div
+                className="text-text-muted cursor-grab active:cursor-grabbing"
+                title="Drag to reorder"
+                aria-label={`Drag ${image.alt || `image ${index + 1}`} to reorder`}
+              >
                 <GripVertical size={16} />
               </div>
 
