@@ -12,8 +12,8 @@ export async function GET(request: NextRequest) {
   const status = searchParams.get("status") || "";
   const categoryId = searchParams.get("categoryId") || "";
   const sort = searchParams.get("sort") || "newest";
-  const page = parseInt(searchParams.get("page") || "1");
-  const limit = parseInt(searchParams.get("limit") || "50");
+  const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "50", 10) || 50));
 
   const where: any = {};
   if (query) {
@@ -45,10 +45,6 @@ export async function GET(request: NextRequest) {
       include: {
         category: { select: { id: true, name: true, slug: true } },
         subcategory: { select: { id: true, name: true, slug: true } },
-        // Prefer a real product image, but imported catalog products often store
-        // their gallery on variants (especially color variants). Fall back to the
-        // first variant image so the admin list never shows an empty placeholder
-        // when an actual product image exists.
         images: { orderBy: [{ isPrimary: "desc" }, { position: "asc" }], take: 1 },
         variants: {
           orderBy: { position: "asc" },
@@ -68,9 +64,7 @@ export async function GET(request: NextRequest) {
 
   const normalizedProducts = products.map(({ variants, ...product }) => ({
     ...product,
-    images: product.images.length > 0
-      ? product.images
-      : (variants[0]?.images || []),
+    images: product.images.length > 0 ? product.images : (variants[0]?.images || []),
   }));
 
   return NextResponse.json({ products: normalizedProducts, total, page, limit });
@@ -89,6 +83,48 @@ export async function POST(request: NextRequest) {
     const categories = await db.category.findMany({ include: { subcategories: true } });
     const categoryBySlug = new Map(categories.map((category) => [category.slug, category]));
     const results: { slug: string; action: string; images: number; variants: number; error?: string }[] = [];
+
+    // Preflight variant SKUs before changing any product data. This prevents a
+    // unique-SKU failure halfway through an import from leaving a partially
+    // updated product (for example, after its old gallery was deleted).
+    const requestSkus: string[] = [];
+    const requestSkuOwners = new Map<string, string>();
+    for (const item of items) {
+      if (!Array.isArray(item?.variants)) continue;
+      for (const variant of item.variants) {
+        const sku = typeof variant?.sku === "string" ? variant.sku.trim() : "";
+        if (!sku) continue;
+        const owner = `${item.slug || "unknown"}::${variant.name || "unknown"}`;
+        if (requestSkuOwners.has(sku)) {
+          return NextResponse.json({
+            error: "Duplicate variant SKU in import",
+            conflicts: [{ sku, source: requestSkuOwners.get(sku), duplicate: owner }],
+          }, { status: 409 });
+        }
+        requestSkuOwners.set(sku, owner);
+        requestSkus.push(sku);
+      }
+    }
+
+    if (requestSkus.length) {
+      const existingSkuRows = await db.productVariant.findMany({
+        where: { sku: { in: requestSkus } },
+        select: { sku: true, id: true, productId: true, name: true },
+      });
+      if (existingSkuRows.length) {
+        const conflicts = existingSkuRows.map((row) => ({
+          sku: row.sku,
+          existingVariantId: row.id,
+          existingProductId: row.productId,
+          existingVariantName: row.name,
+          importSource: requestSkuOwners.get(row.sku || ""),
+        }));
+        return NextResponse.json({
+          error: "One or more variant SKUs already belong to another variant",
+          conflicts,
+        }, { status: 409 });
+      }
+    }
 
     for (const item of items) {
       if (!item?.slug || !item?.name || !item?.category) {
