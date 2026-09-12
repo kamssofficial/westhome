@@ -61,9 +61,6 @@ function b2Config() {
   const applicationKey = process.env.B2_APPLICATION_KEY || process.env.B2_APPLICATION_KEY_SECRET || process.env.B2_KEY_SECRET;
   const bucket = process.env.B2_BUCKET;
   const endpoint = process.env.B2_ENDPOINT || process.env.B2_S3_ENDPOINT;
-  // B2 public buckets can be addressed through the S3 endpoint directly.
-  // This fallback keeps uploads working when only the existing five B2
-  // credentials are configured in Vercel.
   const publicBaseUrl = process.env.B2_PUBLIC_BASE_URL || process.env.B2_PUBLIC_URL || `${endpoint}/${bucket}`;
   return keyId && applicationKey && bucket && endpoint && publicBaseUrl
     ? { keyId, applicationKey, bucket, endpoint: endpoint.replace(/\/+$/, ""), publicBaseUrl: publicBaseUrl.replace(/\/+$/, "") }
@@ -99,7 +96,10 @@ async function s3Put(
   const response = await client.fetch(`${config.endpoint}/${config.bucket}/${key}`, {
     method: "PUT",
     body: new Uint8Array(body),
-    headers: { "Content-Type": contentType || "application/octet-stream" },
+    headers: {
+      "Content-Type": contentType || "application/octet-stream",
+      "Content-Length": String(body.byteLength),
+    },
   });
   if (!response.ok) {
     const detail = await response.text().catch(() => "");
