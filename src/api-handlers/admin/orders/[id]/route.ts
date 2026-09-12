@@ -145,6 +145,24 @@ export async function PUT(
       updates.deliveredAt = new Date(body.deliveredAt);
     }
 
+    // Editable customer/shipping fields so admins can correct details on any
+    // order without being blocked by the strict status state machine.
+    const EDITABLE_FIELDS = [
+      "customerName",
+      "customerEmail",
+      "customerPhone",
+      "addressLine1",
+      "addressLine2",
+      "city",
+      "state",
+      "pinCode",
+    ] as const;
+    for (const field of EDITABLE_FIELDS) {
+      if (body[field] !== undefined) {
+        (updates as any)[field] = body[field] || null;
+      }
+    }
+
     const order = await db.order.update({
       where: { id },
       data: updates,
@@ -320,5 +338,63 @@ export async function PATCH(
   } catch (error) {
     console.error("Admin order quick action error:", error);
     return NextResponse.json({ error: "Failed to perform action" }, { status: 500 });
+  }
+}
+
+// DELETE — permanently remove any order, regardless of status.
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const authResult = await requireOrderManager();
+  if (authResult.error) return authResult.error;
+
+  try {
+    const { id } = await params;
+
+    const order = await db.order.findUnique({
+      where: { id },
+      select: {
+        orderNumber: true,
+        paymentStatus: true,
+      },
+    });
+    if (!order) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
+
+    // Give inventory back if the deleted order had taken stock. Must run
+    // BEFORE the order row is removed (restoreOrderStock reads the order).
+    try {
+      await restoreOrderStock(id);
+    } catch (error) {
+      console.error("Failed to restore stock for deleted order", id, error);
+    }
+
+    await db.$transaction(async (tx) => {
+      // Payment has no onDelete cascade in the schema, so it must be removed
+      // explicitly. OrderItem and OrderStatusHistory cascade with the order.
+      await tx.payment.deleteMany({ where: { orderId: id } });
+      await tx.order.delete({ where: { id } });
+    });
+
+    // Best-effort: null out notifications that reference this order.
+    await db.notification.updateMany({
+      where: { orderId: id },
+      data: { orderId: null },
+    });
+
+    await logAdminAction({
+      action: "DELETE",
+      entity: "ORDER",
+      entityId: id,
+      details: { orderNumber: order.orderNumber },
+      request,
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Admin order delete error:", error);
+    return NextResponse.json({ error: "Failed to delete order" }, { status: 500 });
   }
 }

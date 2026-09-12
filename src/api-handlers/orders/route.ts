@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { auth } from "@/lib/auth";
+import { requireAdmin } from "@/lib/apiAuth";
+import { logAdminAction } from "@/lib/audit";
+import { restoreOrderStock } from "@/lib/inventory";
 
 export async function GET(request: NextRequest) {
   try {
@@ -289,5 +292,57 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Order creation error:", error);
     return NextResponse.json({ error: "Failed to create order" }, { status: 500 });
+  }
+}
+
+// DELETE — clear the entire order history (all orders). Admin only.
+export async function DELETE(request: NextRequest) {
+  const authResult = await requireAdmin();
+  if (authResult.error) return authResult.error;
+
+  try {
+    // Restore stock for every paid order BEFORE removing the rows, since
+    // restoreOrderStock reads those rows.
+    const paidOrders = await db.order.findMany({
+      where: { paymentStatus: "COMPLETED" },
+      select: { id: true },
+    });
+    for (const o of paidOrders) {
+      try {
+        await restoreOrderStock(o.id);
+      } catch (error) {
+        console.error("Failed to restore stock for order", o.id, error);
+      }
+    }
+
+    const result = await db.$transaction(async (tx) => {
+      // Notification.orderId is a plain scalar, not a relation — null them out
+      // so notifications survive while their orders are removed.
+      await tx.notification.updateMany({
+        where: { orderId: { not: null } },
+        data: { orderId: null },
+      });
+      // Payment must be deleted explicitly — no cascade in the schema.
+      const payments = await tx.payment.deleteMany({});
+      // OrderItem and OrderStatusHistory cascade with the order.
+      const orders = await tx.order.deleteMany({});
+      return { orders: orders.count, payments: payments.count };
+    });
+
+    await logAdminAction({
+      action: "CLEAR_HISTORY",
+      entity: "ORDER",
+      details: { deletedOrders: result.orders, deletedPayments: result.payments },
+      request,
+    });
+
+    return NextResponse.json({
+      success: true,
+      deletedOrders: result.orders,
+      deletedPayments: result.payments,
+    });
+  } catch (error) {
+    console.error("Admin clear orders error:", error);
+    return NextResponse.json({ error: "Failed to clear order history" }, { status: 500 });
   }
 }

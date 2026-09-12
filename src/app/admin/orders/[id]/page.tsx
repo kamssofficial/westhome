@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, use } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Package, Truck, Save, CheckCircle, CreditCard, XCircle, Clock, User, MapPin, FileText, ChevronDown, Eye, ShoppingCart, Phone, Mail } from "lucide-react";
+import { ArrowLeft, Package, Truck, Save, CheckCircle, CreditCard, XCircle, Clock, User, MapPin, FileText, ChevronDown, Eye, ShoppingCart, Phone, Mail, Trash2 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { formatPrice, formatDate, getStatusColor, cn } from "@/lib/utils";
@@ -56,10 +57,12 @@ const STATUS_FLOW: Record<string, { next: string; label: string; icon: any }[]> 
 
 export default function AdminOrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const router = useRouter();
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [customerOrders, setCustomerOrders] = useState<CustomerOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [newStatus, setNewStatus] = useState("");
   const [statusNote, setStatusNote] = useState("");
   const [trackingNumber, setTrackingNumber] = useState("");
@@ -122,6 +125,22 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
     finally { setUpdating(false); }
   };
 
+  const handleDelete = async () => {
+    if (!window.confirm("Delete this order permanently? This cannot be undone.")) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/admin/orders/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("Order deleted");
+        router.push("/admin/orders");
+      } else {
+        const err = await res.json();
+        toast.error(err.error || "Failed to delete order");
+      }
+    } catch { toast.error("Failed to delete order"); }
+    finally { setDeleting(false); }
+  };
+
   if (loading) return (
     <div className="space-y-4">
       <Skeleton className="h-8 w-48" />
@@ -153,6 +172,9 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
           )}>
             {order.paymentStatus === "COMPLETED" ? "Paid" : "Unpaid"}
           </span>
+          <Button variant="outline" size="sm" onClick={handleDelete} loading={deleting}>
+            <Trash2 size={14} /> Delete
+          </Button>
         </div>
       </div>
 

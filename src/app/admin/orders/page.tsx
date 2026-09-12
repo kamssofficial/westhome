@@ -3,10 +3,11 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Search, Eye, ChevronDown } from "lucide-react";
+import { Search, Eye, ChevronDown, Trash2 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { formatPrice, formatDate, getStatusColor, cn } from "@/lib/utils";
+import toast from "react-hot-toast";
 
 interface Order {
   id: string;
@@ -36,6 +37,25 @@ function AdminOrdersPageContent() {
   const [statusFilter, setStatusFilter] = useState(searchParams.get("status") || "");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [clearing, setClearing] = useState(false);
+
+  const clearOrderHistory = async () => {
+    if (!window.confirm("Clear the entire order history permanently? This deletes ALL orders and cannot be undone.")) return;
+    setClearing(true);
+    try {
+      const res = await fetch(`/api/orders`, { method: "DELETE" });
+      if (res.ok) {
+        const data = await res.json();
+        toast.success(`Cleared ${data.deletedOrders || 0} orders from history`);
+        setOrders([]);
+        setTotal(0);
+      } else {
+        const err = await res.json();
+        toast.error(err.error || "Failed to clear order history");
+      }
+    } catch { toast.error("Failed to clear order history"); }
+    finally { setClearing(false); }
+  };
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -64,7 +84,12 @@ function AdminOrdersPageContent() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold">Orders</h1>
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <h1 className="text-xl font-semibold">Orders</h1>
+        <Button variant="outline" size="sm" onClick={clearOrderHistory} loading={clearing}>
+          <Trash2 size={14} /> Clear Order History
+        </Button>
+      </div>
 
       {/* Filters */}
       <div className="flex flex-wrap gap-2">
