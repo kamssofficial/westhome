@@ -19,19 +19,27 @@ function getDateRange(range: string): Date {
 function getPreviousEnd(range: string): Date {
   const now = new Date();
   switch (range) {
-    case "today": { const d = new Date(now); d.setHours(0, 0, 0, 0); return d; }
+    case "today": { const d = new Date(now); d.setDate(d.getDate() - 1); d.setHours(23, 59, 59, 999); return d; }
     case "yesterday": { const d = new Date(now); d.setDate(d.getDate() - 2); d.setHours(23, 59, 59, 999); return d; }
     case "7d": return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     case "30d": return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     case "90d": return new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-    case "thisMonth": return new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
-    case "lastMonth": return new Date(now.getFullYear(), now.getMonth() - 1, 0, 23, 59, 59);
+    case "thisMonth": return new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+    case "lastMonth": return new Date(now.getFullYear(), now.getMonth() - 1, 0, 23, 59, 59, 999);
     default: return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   }
 }
 
 function getPreviousStart(range: string): Date {
   const now = new Date();
+  if (range === "today") {
+    const d = new Date(now);
+    d.setDate(d.getDate() - 1);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+  if (range === "thisMonth") return new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  if (range === "lastMonth") return new Date(now.getFullYear(), now.getMonth() - 2, 1);
   const end = getPreviousEnd(range);
   const diff = now.getTime() - end.getTime();
   return new Date(end.getTime() - diff);

@@ -75,7 +75,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
 
-    const staffRoles = ["ADMIN", "MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER"];
+    const staffRoles = ["ADMIN", "MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER", "STAFF"];
     if (!staffRoles.includes(role)) {
       return NextResponse.redirect(new URL("/account", request.url));
     }
@@ -95,7 +95,7 @@ export async function middleware(request: NextRequest) {
     if (role === "ADMIN") {
       return NextResponse.redirect(new URL("/admin/dashboard", request.url));
     }
-    const staffRoles = ["MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER"];
+    const staffRoles = ["MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER", "STAFF"];
     if (staffRoles.includes(role)) {
       return NextResponse.redirect(new URL("/staff/dashboard", request.url));
     }
