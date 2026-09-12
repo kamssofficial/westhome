@@ -6,6 +6,7 @@ import Image from "next/image";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
 import { ProductGridSkeleton } from "@/components/ui/Skeleton";
 import type { Category } from "@/types";
+import { resolveCategoryImage } from "@/lib/categoryImages";
 
 export default function ShopPage() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -50,9 +51,9 @@ export default function ShopPage() {
                 className="group block"
               >
                 <div className="relative aspect-[.82] overflow-hidden rounded-[1.35rem] bg-surface-muted border border-foreground/[.08] transition-[transform,box-shadow,border-color] duration-500 ease-out group-hover:-translate-y-1 group-hover:border-foreground/[.16] group-hover:shadow-card-hover">
-                  {cat.image && cat.productCount > 0 ? (
+                  {resolveCategoryImage(cat.slug, cat.image) ? (
                     <Image
-                      src={cat.image}
+                      src={resolveCategoryImage(cat.slug, cat.image) as string}
                       alt={cat.name}
                       fill
                       className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
