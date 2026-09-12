@@ -117,7 +117,6 @@ export default function AdminProductsPage() {
   const [confirmDlg, setConfirmDlg] = useState<{ title: string; message: string; confirmLabel: string; danger?: boolean; onConfirm: () => void } | null>(null);
   const [showFilters, setShowFilters] = useState(false);
 
-  // Debounce search
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search), 300);
     return () => clearTimeout(t);
@@ -194,11 +193,12 @@ export default function AdminProductsPage() {
 
   const totalPages = Math.ceil(total / 25);
 
+  const isCategoryActive = Boolean(categoryFilter);
+
   return (
     <div className="space-y-4">
       {confirmDlg && <ConfirmDialog {...confirmDlg} onCancel={() => setConfirmDlg(null)} />}
 
-      {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-primary">Products</h1>
@@ -209,7 +209,6 @@ export default function AdminProductsPage() {
         </Link>
       </div>
 
-      {/* Search */}
       <div className="relative">
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
         <input type="text" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}
@@ -218,12 +217,13 @@ export default function AdminProductsPage() {
         {search && <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2"><X size={14} className="text-text-muted" /></button>}
       </div>
 
-      {/* Filter chips */}
       <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1">
         {STATUS_OPTIONS.map(o => (
           <button key={o.value} onClick={() => { setStatusFilter(o.value); setPage(1); }}
-            className={cn("px-3 py-1.5 rounded-full text-[11px] font-medium whitespace-nowrap transition-colors shrink-0",
-              statusFilter === o.value ? "bg-primary text-white" : "bg-white border border-black/[.06] text-secondary hover:bg-surface-muted")}>
+            className={cn("px-3 py-1.5 rounded-full text-[11px] font-medium whitespace-nowrap transition-all shrink-0 border",
+              statusFilter === o.value
+                ? "bg-primary text-white border-primary shadow-sm"
+                : "bg-white border-black/[.06] text-secondary hover:bg-surface-muted")}>
             {o.label}
           </button>
         ))}
@@ -232,22 +232,22 @@ export default function AdminProductsPage() {
           onChange={(e) => { setCategoryFilter(e.target.value); setPage(1); }}
           aria-label="Filter by category"
           className={cn(
-            "px-3 py-1.5 rounded-full text-[11px] font-medium whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-accent/30 shrink-0 transition-colors",
-            categoryFilter
-              ? "bg-primary text-white border border-primary"
-              : "bg-white border border-black/[.06] text-secondary hover:bg-surface-muted"
+            "appearance-none px-3 py-1.5 pr-8 rounded-full text-[11px] font-medium whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-accent/30 shrink-0 transition-all border bg-no-repeat",
+            isCategoryActive
+              ? "bg-primary text-white border-primary shadow-sm"
+              : "bg-white border-black/[.06] text-secondary hover:bg-surface-muted"
           )}
+          style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")", backgroundPosition: "calc(100% - 10px) 50%", backgroundSize: "12px 12px" }}
         >
           <option value="">All Categories</option>
           {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
         </select>
-        <button onClick={() => setShowFilters(!showFilters)} className={cn("px-3 py-1.5 rounded-full text-[11px] font-medium whitespace-nowrap transition-colors shrink-0 flex items-center gap-1",
-          showFilters ? "bg-primary text-white" : "bg-white border border-black/[.06] text-secondary hover:bg-surface-muted")}>
+        <button onClick={() => setShowFilters(!showFilters)} className={cn("px-3 py-1.5 rounded-full text-[11px] font-medium whitespace-nowrap transition-colors shrink-0 flex items-center gap-1 border",
+          showFilters ? "bg-primary text-white border-primary" : "bg-white border-black/[.06] text-secondary hover:bg-surface-muted")}>
           <ArrowUpDown size={11} /> Sort
         </button>
       </div>
 
-      {/* Sort dropdown */}
       {showFilters && (
         <div className="bg-white rounded-xl border border-black/[.06] p-3">
           <p className="text-[10px] text-text-muted uppercase tracking-wider mb-2 font-medium">Sort by</p>
@@ -263,7 +263,6 @@ export default function AdminProductsPage() {
         </div>
       )}
 
-      {/* Bulk actions */}
       {selectedIds.size > 0 && (
         <div className="sticky top-14 z-20 flex items-center gap-2 bg-accent/5 border border-accent/20 rounded-xl px-4 py-2.5">
           <span className="text-xs font-semibold text-accent">{selectedIds.size} selected</span>
@@ -277,7 +276,6 @@ export default function AdminProductsPage() {
         </div>
       )}
 
-      {/* MOBILE: Card layout */}
       <div className="md:hidden space-y-2">
         {loading ? Array.from({ length: 5 }).map((_, i) => (
           <div key={i} className="bg-white rounded-xl border border-black/[.06] p-3 flex gap-3 animate-pulse">
@@ -286,118 +284,43 @@ export default function AdminProductsPage() {
           </div>
         )) : products.length > 0 ? products.map(p => (
           <div key={p.id} className={cn("bg-white rounded-xl border border-black/[.06] p-3 flex gap-3 transition-colors", selectedIds.has(p.id) && "border-accent bg-accent/[.03]")}>
-            {/* Checkbox */}
-            <button onClick={() => toggleOne(p.id)} className="pt-0.5 shrink-0">
-              {selectedIds.has(p.id) ? <CheckSquare size={18} className="text-accent" /> : <Square size={18} className="text-text-muted" />}
-            </button>
-            {/* Image */}
-            <Link href={`/admin/products/${p.id}`} className="w-14 h-14 rounded-lg overflow-hidden bg-surface-muted shrink-0 block">
-              {p.images[0] ? <img src={p.images[0].url} alt={p.name} className="w-full h-full object-cover" /> : <Package size={18} className="text-text-muted m-auto mt-3" />}
-            </Link>
-            {/* Info */}
+            <button onClick={() => toggleOne(p.id)} className="pt-0.5 shrink-0">{selectedIds.has(p.id) ? <CheckSquare size={18} className="text-accent" /> : <Square size={18} className="text-text-muted" />}</button>
+            <Link href={`/admin/products/${p.id}`} className="w-14 h-14 rounded-lg overflow-hidden bg-surface-muted shrink-0 block">{p.images[0] ? <img src={p.images[0].url} alt={p.name} className="w-full h-full object-cover" /> : <Package size={18} className="text-text-muted m-auto mt-3" />}</Link>
             <div className="flex-1 min-w-0">
-              <Link href={`/admin/products/${p.id}`}>
-                <p className="text-sm font-medium text-primary line-clamp-2 leading-snug">{p.name}</p>
-              </Link>
+              <Link href={`/admin/products/${p.id}`}><p className="text-sm font-medium text-primary line-clamp-2 leading-snug">{p.name}</p></Link>
               <p className="text-[10px] text-text-muted mt-0.5">{p.subcategory?.name || p.category?.name || "Uncategorized"}</p>
-              <div className="flex items-center gap-2 mt-1.5">
-                <PriceDisplay regularPrice={p.regularPrice} salePrice={p.salePrice} size="sm" />
-                <span className="text-[10px] text-text-muted">·</span>
-                <StockBadge product={p} />
-              </div>
+              <div className="flex items-center gap-2 mt-1.5"><PriceDisplay regularPrice={p.regularPrice} salePrice={p.salePrice} size="sm" /><span className="text-[10px] text-text-muted">·</span><StockBadge product={p} /></div>
             </div>
-            {/* Status + Actions */}
             <div className="flex flex-col items-end justify-between shrink-0">
-              <span className={cn("px-2 py-0.5 rounded-full text-[9px] font-semibold", STATUS_COLORS[p.status] || "bg-gray-100 text-gray-600")}>
-                {p.status.charAt(0) + p.status.slice(1).toLowerCase()}
-              </span>
-              <div className="relative">
-                <button onClick={() => setOpenMenuId(openMenuId === p.id ? null : p.id)} className="p-1.5 hover:bg-surface-muted rounded-lg">
-                  <MoreVertical size={14} className="text-text-muted" />
-                </button>
-                {openMenuId === p.id && <ActionMenu product={p} onAction={handleAction} onClose={() => setOpenMenuId(null)} />}
-              </div>
+              <span className={cn("px-2 py-0.5 rounded-full text-[9px] font-semibold", STATUS_COLORS[p.status] || "bg-gray-100 text-gray-600")}>{p.status.charAt(0) + p.status.slice(1).toLowerCase()}</span>
+              <div className="relative"><button onClick={() => setOpenMenuId(openMenuId === p.id ? null : p.id)} className="p-1.5 hover:bg-surface-muted rounded-lg"><MoreVertical size={14} className="text-text-muted" /></button>{openMenuId === p.id && <ActionMenu product={p} onAction={handleAction} onClose={() => setOpenMenuId(null)} />}</div>
             </div>
           </div>
         )) : (
-          <div className="bg-white rounded-xl border border-black/[.06] py-12 text-center">
-            <Package size={32} className="text-text-muted mx-auto mb-2" />
-            <p className="text-sm font-medium text-primary">No products found</p>
-            <p className="text-xs text-text-muted mt-1">Try changing your search or filters.</p>
-          </div>
+          <div className="bg-white rounded-xl border border-black/[.06] py-12 text-center"><Package size={32} className="text-text-muted mx-auto mb-2" /><p className="text-sm font-medium text-primary">No products found</p><p className="text-xs text-text-muted mt-1">Try changing your search or filters.</p></div>
         )}
       </div>
 
-      {/* DESKTOP: Table layout */}
       <div className="hidden md:block bg-white rounded-2xl border border-black/[.06] overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-black/[.06] bg-surface-muted/50">
-                <th className="w-10 px-4 py-3"><button onClick={toggleAll} className="text-text-muted hover:text-primary">{selectedIds.size === products.length && products.length > 0 ? <CheckSquare size={16} className="text-accent" /> : <Square size={16} />}</button></th>
-                <th className="text-left px-4 py-3 font-medium text-text-muted text-[11px] uppercase tracking-wider">Product</th>
-                <th className="text-left px-4 py-3 font-medium text-text-muted text-[11px] uppercase tracking-wider">SKU</th>
-                <th className="text-left px-4 py-3 font-medium text-text-muted text-[11px] uppercase tracking-wider">Category</th>
-                <th className="text-right px-4 py-3 font-medium text-text-muted text-[11px] uppercase tracking-wider">Price</th>
-                <th className="text-center px-4 py-3 font-medium text-text-muted text-[11px] uppercase tracking-wider">Stock</th>
-                <th className="text-center px-4 py-3 font-medium text-text-muted text-[11px] uppercase tracking-wider">Status</th>
-                <th className="w-12 px-4 py-3"></th>
-              </tr>
-            </thead>
+            <thead><tr className="border-b border-black/[.06] bg-surface-muted/50">
+              <th className="w-10 px-4 py-3"><button onClick={toggleAll} className="text-text-muted hover:text-primary">{selectedIds.size === products.length && products.length > 0 ? <CheckSquare size={16} className="text-accent" /> : <Square size={16} />}</button></th>
+              <th className="text-left px-4 py-3 font-medium text-text-muted text-[11px] uppercase tracking-wider">Product</th><th className="text-left px-4 py-3 font-medium text-text-muted text-[11px] uppercase tracking-wider">SKU</th><th className="text-left px-4 py-3 font-medium text-text-muted text-[11px] uppercase tracking-wider">Category</th><th className="text-right px-4 py-3 font-medium text-text-muted text-[11px] uppercase tracking-wider">Price</th><th className="text-center px-4 py-3 font-medium text-text-muted text-[11px] uppercase tracking-wider">Stock</th><th className="text-center px-4 py-3 font-medium text-text-muted text-[11px] uppercase tracking-wider">Status</th><th className="w-12 px-4 py-3"></th>
+            </tr></thead>
             <tbody>
-              {loading ? Array.from({ length: 5 }).map((_, i) => (
-                <tr key={i} className="border-b border-black/[.06]">
-                  <td className="px-4 py-3"><div className="h-4 w-4 bg-surface-muted rounded animate-pulse" /></td>
-                  <td className="px-4 py-3"><div className="flex items-center gap-3"><div className="h-10 w-10 bg-surface-muted rounded-lg animate-pulse" /><div className="h-4 w-40 bg-surface-muted rounded animate-pulse" /></div></td>
-                  <td className="px-4 py-3"><div className="h-4 w-16 bg-surface-muted rounded animate-pulse" /></td>
-                  <td className="px-4 py-3"><div className="h-4 w-20 bg-surface-muted rounded animate-pulse" /></td>
-                  <td className="px-4 py-3"><div className="h-4 w-16 bg-surface-muted rounded animate-pulse ml-auto" /></td>
-                  <td className="px-4 py-3"><div className="h-4 w-12 bg-surface-muted rounded animate-pulse mx-auto" /></td>
-                  <td className="px-4 py-3"><div className="h-5 w-16 bg-surface-muted rounded-full animate-pulse mx-auto" /></td>
-                  <td className="px-4 py-3"><div className="h-5 w-5 bg-surface-muted rounded animate-pulse ml-auto" /></td>
-                </tr>
-              )) : products.length > 0 ? products.map(p => (
-                <tr key={p.id} className={cn("border-b border-black/[.06] last:border-0 hover:bg-surface-muted/30 transition-colors", selectedIds.has(p.id) && "bg-accent/[.03]")}>
-                  <td className="px-4 py-3"><button onClick={() => toggleOne(p.id)} className="text-text-muted hover:text-primary">{selectedIds.has(p.id) ? <CheckSquare size={16} className="text-accent" /> : <Square size={16} />}</button></td>
-                  <td className="px-4 py-3">
-                    <Link href={`/admin/products/${p.id}`} className="flex items-center gap-3 group">
-                      <div className="w-10 h-10 rounded-lg overflow-hidden bg-surface-muted shrink-0">{p.images[0] ? <img src={p.images[0].url} alt={p.name} className="w-full h-full object-cover" /> : <Package size={14} className="text-text-muted m-auto mt-2" />}</div>
-                      <p className="font-medium text-primary truncate max-w-[250px] group-hover:text-accent transition-colors">{p.name}</p>
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3 text-xs text-text-muted">{p.sku || "—"}</td>
-                  <td className="px-4 py-3 text-xs text-secondary">{p.subcategory?.name || p.category?.name || "—"}</td>
-                  <td className="px-4 py-3 text-right"><PriceDisplay regularPrice={p.regularPrice} salePrice={p.salePrice} size="sm" /></td>
-                  <td className="px-4 py-3 text-center"><StockBadge product={p} /></td>
-                  <td className="px-4 py-3 text-center"><span className={cn("px-2.5 py-1 rounded-full text-[10px] font-semibold", STATUS_COLORS[p.status] || "bg-gray-100 text-gray-600")}>{p.status.charAt(0) + p.status.slice(1).toLowerCase()}</span></td>
-                  <td className="px-4 py-3">
-                    <div className="relative flex items-center gap-1">
-                      <Link href={`/admin/products/${p.id}`} className="p-1.5 hover:bg-surface-muted rounded-lg"><Edit size={14} className="text-text-muted" /></Link>
-                      <button onClick={() => setOpenMenuId(openMenuId === p.id ? null : p.id)} className="p-1.5 hover:bg-surface-muted rounded-lg"><MoreVertical size={14} className="text-text-muted" /></button>
-                      {openMenuId === p.id && <ActionMenu product={p} onAction={handleAction} onClose={() => setOpenMenuId(null)} />}
-                    </div>
-                  </td>
-                </tr>
-              )) : (
-                loadError ? <tr><td colSpan={8} className="px-4 py-12 text-center"><Package size={32} className="text-text-muted mx-auto mb-2" /><p className="text-sm font-medium text-red-500">{loadError}</p><button onClick={() => fetchProducts()} className="mt-2 text-xs font-medium text-accent underline">Retry</button></td></tr>
-                : <tr><td colSpan={8} className="px-4 py-12 text-center"><Package size={32} className="text-text-muted mx-auto mb-2" /><p className="text-sm font-medium text-primary">No products found</p><p className="text-xs text-text-muted mt-1">Try changing your search or filters.</p></td></tr>
-              )}
+              {loading ? Array.from({ length: 5 }).map((_, i) => <tr key={i} className="border-b border-black/[.06]"><td className="px-4 py-3"><div className="h-4 w-4 bg-surface-muted rounded animate-pulse" /></td><td className="px-4 py-3"><div className="flex items-center gap-3"><div className="h-10 w-10 bg-surface-muted rounded-lg animate-pulse" /><div className="h-4 w-40 bg-surface-muted rounded animate-pulse" /></div></td><td className="px-4 py-3"><div className="h-4 w-16 bg-surface-muted rounded animate-pulse" /></td><td className="px-4 py-3"><div className="h-4 w-20 bg-surface-muted rounded animate-pulse" /></td><td className="px-4 py-3"><div className="h-4 w-16 bg-surface-muted rounded animate-pulse ml-auto" /></td><td className="px-4 py-3"><div className="h-4 w-12 bg-surface-muted rounded animate-pulse mx-auto" /></td><td className="px-4 py-3"><div className="h-5 w-16 bg-surface-muted rounded-full animate-pulse mx-auto" /></td><td className="px-4 py-3"><div className="h-5 w-5 bg-surface-muted rounded animate-pulse ml-auto" /></td></tr>) : products.length > 0 ? products.map(p => <tr key={p.id} className={cn("border-b border-black/[.06] last:border-0 hover:bg-surface-muted/30 transition-colors", selectedIds.has(p.id) && "bg-accent/[.03]")}>
+                <td className="px-4 py-3"><button onClick={() => toggleOne(p.id)} className="text-text-muted hover:text-primary">{selectedIds.has(p.id) ? <CheckSquare size={16} className="text-accent" /> : <Square size={16} />}</button></td>
+                <td className="px-4 py-3"><Link href={`/admin/products/${p.id}`} className="flex items-center gap-3 group"><div className="w-10 h-10 rounded-lg overflow-hidden bg-surface-muted shrink-0">{p.images[0] ? <img src={p.images[0].url} alt={p.name} className="w-full h-full object-cover" /> : <Package size={14} className="text-text-muted m-auto mt-2" />}</div><p className="font-medium text-primary truncate max-w-[250px] group-hover:text-accent transition-colors">{p.name}</p></Link></td>
+                <td className="px-4 py-3 text-xs text-text-muted">{p.sku || "—"}</td><td className="px-4 py-3 text-xs text-secondary">{p.subcategory?.name || p.category?.name || "—"}</td><td className="px-4 py-3 text-right"><PriceDisplay regularPrice={p.regularPrice} salePrice={p.salePrice} size="sm" /></td><td className="px-4 py-3 text-center"><StockBadge product={p} /></td><td className="px-4 py-3 text-center"><span className={cn("px-2.5 py-1 rounded-full text-[10px] font-semibold", STATUS_COLORS[p.status] || "bg-gray-100 text-gray-600")}>{p.status.charAt(0) + p.status.slice(1).toLowerCase()}</span></td>
+                <td className="px-4 py-3"><div className="relative flex items-center gap-1"><Link href={`/admin/products/${p.id}`} className="p-1.5 hover:bg-surface-muted rounded-lg"><Edit size={14} className="text-text-muted" /></Link><button onClick={() => setOpenMenuId(openMenuId === p.id ? null : p.id)} className="p-1.5 hover:bg-surface-muted rounded-lg"><MoreVertical size={14} className="text-text-muted" /></button>{openMenuId === p.id && <ActionMenu product={p} onAction={handleAction} onClose={() => setOpenMenuId(null)} />}</div></td>
+              </tr>) : (loadError ? <tr><td colSpan={8} className="px-4 py-12 text-center"><Package size={32} className="text-text-muted mx-auto mb-2" /><p className="text-sm font-medium text-red-500">{loadError}</p><button onClick={() => fetchProducts()} className="mt-2 text-xs font-medium text-accent underline">Retry</button></td></tr> : <tr><td colSpan={8} className="px-4 py-12 text-center"><Package size={32} className="text-text-muted mx-auto mb-2" /><p className="text-sm font-medium text-primary">No products found</p><p className="text-xs text-text-muted mt-1">Try changing your search or filters.</p></td></tr>)}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-xs text-text-muted">Showing {(page - 1) * 25 + 1}–{Math.min(page * 25, total)} of {total}</p>
-          <div className="flex items-center gap-2">
-            <button onClick={() => setPage(p => p - 1)} disabled={page <= 1} className="px-3 py-1.5 text-xs font-medium border border-black/[.06] rounded-lg hover:bg-surface-muted disabled:opacity-40">Prev</button>
-            <span className="text-xs text-secondary">{page}/{totalPages}</span>
-            <button onClick={() => setPage(p => p + 1)} disabled={page >= totalPages} className="px-3 py-1.5 text-xs font-medium border border-black/[.06] rounded-lg hover:bg-surface-muted disabled:opacity-40">Next</button>
-          </div>
-        </div>
-      )}
+      {totalPages > 1 && <div className="flex items-center justify-between"><p className="text-xs text-text-muted">Showing {(page - 1) * 25 + 1}–{Math.min(page * 25, total)} of {total}</p><div className="flex items-center gap-2"><button onClick={() => setPage(p => p - 1)} disabled={page <= 1} className="px-3 py-1.5 text-xs font-medium border border-black/[.06] rounded-lg hover:bg-surface-muted disabled:opacity-40">Prev</button><span className="text-xs text-secondary">{page}/{totalPages}</span><button onClick={() => setPage(p => p + 1)} disabled={page >= totalPages} className="px-3 py-1.5 text-xs font-medium border border-black/[.06] rounded-lg hover:bg-surface-muted disabled:opacity-40">Next</button></div></div>}
     </div>
   );
 }
