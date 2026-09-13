@@ -224,26 +224,45 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
 
       {/* Main image */}
       <div className="container-shop">
-        <div className="relative aspect-square bg-white rounded-2xl overflow-hidden">
-          <Image
-            src={images[selectedImageIndex]?.url || ""}
-            alt={images[selectedImageIndex]?.alt || product.name}
-            fill
-            className="object-cover"
-            sizes="100vw"
-            priority
-          />
+        <div className="relative aspect-square bg-white rounded-2xl overflow-hidden group">
+          {/* Scrollable track */}
+          <div
+            ref={scrollRef}
+            className="w-full h-full flex overflow-x-auto snap-x snap-mandatory scrollbar-hide"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            onScroll={(e) => {
+              if (isProgrammaticScroll.current) return;
+              const container = e.currentTarget;
+              const index = Math.round(container.scrollLeft / container.clientWidth);
+              if (index !== selectedImageIndex && index >= 0 && index < images.length) {
+                setSelectedImageIndex(index);
+              }
+            }}
+          >
+            {images.map((image: any, i: number) => (
+              <div key={i} className="min-w-full h-full relative snap-center shrink-0">
+                <Image
+                  src={image.url || ""}
+                  alt={image.alt || product.name}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  priority={i === 0}
+                />
+              </div>
+            ))}
+          </div>
           {images.length > 1 && (
             <>
               <button
-                onClick={() => setSelectedImageIndex((i) => (i > 0 ? i - 1 : images.length - 1))}
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center"
+                onClick={() => handleScrollToImage(selectedImageIndex > 0 ? selectedImageIndex - 1 : images.length - 1)}
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 backdrop-blur-sm shadow-md rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
               >
                 <ChevronLeft size={16} />
               </button>
               <button
-                onClick={() => setSelectedImageIndex((i) => (i < images.length - 1 ? i + 1 : 0))}
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center"
+                onClick={() => handleScrollToImage(selectedImageIndex < images.length - 1 ? selectedImageIndex + 1 : 0)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 backdrop-blur-sm shadow-md rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
               >
                 <ChevronRight size={16} />
               </button>
@@ -256,7 +275,7 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
             {images.map((_, i) => (
               <button
                 key={i}
-                onClick={() => setSelectedImageIndex(i)}
+                onClick={() => handleScrollToImage(i)}
                 className={cn(
                   "rounded-full transition-all",
                   i === selectedImageIndex
