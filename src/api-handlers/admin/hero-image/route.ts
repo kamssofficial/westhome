@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
       }
     } catch {}
 
-    // Upload to storage — Drive first, Vercel Blob fallback, local in dev only.
+    // Upload to storage — Google Drive, local filesystem in dev only.
     const ext = file.name.split(".").pop() || "png";
     const filename = `hero-${Date.now()}.${ext}`;
     let imageUrl: string;
@@ -228,7 +228,7 @@ export async function DELETE() {
     const activeSetting = await db.siteSetting.findUnique({ where: { key: HERO_ACTIVE_KEY } });
     const active: HeroImage | null = activeSetting ? (activeSetting.value as any) : null;
 
-    // Best-effort storage cleanup (Drive file id or legacy Blob object URL).
+    // Best-effort storage cleanup (Drive file id or legacy /api/images URL).
     await deleteMedia({ fileId: active?.fileId, url: active?.url });
 
     if (active) {

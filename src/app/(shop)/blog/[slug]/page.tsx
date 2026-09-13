@@ -55,18 +55,18 @@ export default async function BlogArticlePage({ params }: PageProps) {
     publisher: {
       "@type": "Organization",
       name: "WESTHOME by BM Distributors",
-      url: "https://www.westhome.in/",
+      url: "https://westhome.in/",
     },
-    mainEntityOfPage: `https://www.westhome.in/blog/${article.slug}`,
+    mainEntityOfPage: `https://westhome.in/blog/${article.slug}`,
   };
 
   const breadcrumbLd = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: "https://www.westhome.in/" },
-      { "@type": "ListItem", position: 2, name: "Blog", item: "https://www.westhome.in/blog" },
-      { "@type": "ListItem", position: 3, name: article.title, item: `https://www.westhome.in/blog/${article.slug}` },
+      { "@type": "ListItem", position: 1, name: "Home", item: "https://westhome.in/" },
+      { "@type": "ListItem", position: 2, name: "Blog", item: "https://westhome.in/blog" },
+      { "@type": "ListItem", position: 3, name: article.title, item: `https://westhome.in/blog/${article.slug}` },
     ],
   };
 

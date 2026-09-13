@@ -6,7 +6,7 @@ export async function middleware(request: NextRequest) {
   // cookie-less host that misconfigured auth redirects used to land on. Permanently
   // fold it into the production domain so there is exactly one origin for the site.
   if (request.nextUrl.hostname === "westhome.vercel.app") {
-    const target = new URL(request.nextUrl.pathname + request.nextUrl.search, "https://www.westhome.in");
+    const target = new URL(request.nextUrl.pathname + request.nextUrl.search, "https://westhome.in");
     return NextResponse.redirect(target, 301);
   }
 

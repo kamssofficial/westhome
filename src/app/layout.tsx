@@ -7,13 +7,13 @@ import Providers from "@/components/layout/Providers";
 // NEXTAUTH_URL must NOT drive metadataBase: on Vercel it is set to the
 // deployment host (e.g. westhome.vercel.app), which would corrupt every
 // canonical/og:url with a non-production host.
-const SITE_URL = "https://www.westhome.in";
+const SITE_URL = "https://westhome.in";
 
 function siteUrl(): URL {
   try {
     return new URL(SITE_URL);
   } catch {
-    return new URL("https://www.westhome.in");
+    return new URL("https://westhome.in");
   }
 }
 
@@ -41,12 +41,12 @@ export const metadata: Metadata = {
     title: "WESTHOME by BM Distributors",
     description:
       "Premium home décor and lifestyle products curated for your comfort.",
-    url: "https://www.westhome.in/",
-    images: [{ url: "https://www.westhome.in/images/logo/westhome-logo-transparent.png", alt: "WESTHOME by BM Distributors", width: 1200, height: 630 }],
+    url: "https://westhome.in/",
+    images: [{ url: "https://westhome.in/images/logo/westhome-logo-transparent.png", alt: "WESTHOME by BM Distributors", width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary_large_image",
-    images: ["https://www.westhome.in/images/logo/westhome-logo-transparent.png"],
+    images: ["https://westhome.in/images/logo/westhome-logo-transparent.png"],
   },
   robots: {
     index: true,
@@ -77,13 +77,13 @@ export default function RootLayout({
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "Store",
-              "@id": "https://www.westhome.in/#store",
+              "@id": "https://westhome.in/#store",
               name: "WESTHOME by BM Distributors",
               alternateName: "WestHome",
-              url: "https://www.westhome.in/",
+              url: "https://westhome.in/",
               description:
                 "Premium home décor and lifestyle products curated for your comfort — laundry baskets, frames, soap dispensers, cushions, clocks and more.",
-              image: "https://www.westhome.in/images/logo/westhome-logo-transparent.png",
+              image: "https://westhome.in/images/logo/westhome-logo-transparent.png",
               priceRange: "₹₹",
               telephone: "+919895071144",
               email: "info@westhome.in",

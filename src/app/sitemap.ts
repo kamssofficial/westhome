@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import db from "@/lib/db";
 import { blogArticles } from "@/lib/blog";
 
-const SITE_URL = "https://www.westhome.in";
+const SITE_URL = "https://westhome.in";
 
 export const dynamic = "force-dynamic";
 

@@ -130,14 +130,12 @@ NEXTAUTH_URL="http://localhost:3000"
 RAZORPAY_KEY_ID="rzp_test_xxxxx"
 RAZORPAY_KEY_SECRET="xxxxx"
 
-# Media storage (Cloudflare R2) — R2_PUBLIC_BASE_URL should be a public URL
-# such as https://images.westhome.in (custom domain) or an r2.dev subdomain.
+# Media storage (Google Drive) — image uploads are stored in Google Drive.
+# Configure either a service-account credentials file path or inline JSON.
 # Without these, uploads fall back to the local dev filesystem.
-R2_ACCOUNT_ID="your-cloudflare-account-id"
-R2_ACCESS_KEY_ID="r2-api-token-access-key"
-R2_SECRET_ACCESS_KEY="r2-api-token-secret"
-R2_BUCKET="westhome-media"
-R2_PUBLIC_BASE_URL="https://images.westhome.in"
+GOOGLE_CREDENTIALS_PATH="/absolute/path/to/service-account.json"
+# GOOGLE_CREDENTIALS_JSON='{"type":"service_account",...}'
+# GOOGLE_DRIVE_ROOT_FOLDER_ID="optional-parent-folder-id"
 ```
 
 ### 3. Set up database

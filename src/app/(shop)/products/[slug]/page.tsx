@@ -217,7 +217,7 @@ export default async function ProductPage({ params }: PageProps) {
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
-    "@id": `https://www.westhome.in/products/${product.slug}#product`,
+    "@id": `https://westhome.in/products/${product.slug}#product`,
     name: product.seoTitle || product.name,
     description:
       product.seoDescription ||
@@ -234,7 +234,7 @@ export default async function ProductPage({ params }: PageProps) {
     },
     offers: {
       "@type": "Offer",
-      url: `https://www.westhome.in/products/${product.slug}`,
+      url: `https://westhome.in/products/${product.slug}`,
       priceCurrency: "INR",
       price: listedPrice,
       availability: isInStock

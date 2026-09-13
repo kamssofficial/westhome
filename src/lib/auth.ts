@@ -9,7 +9,7 @@ if (
   configuredAuthBase &&
   configuredAuthBase.includes("vercel.app")
 ) {
-  process.env.AUTH_URL = "https://www.westhome.in";
+  process.env.AUTH_URL = "https://westhome.in";
 }
 
 declare module "next-auth" {

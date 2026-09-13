@@ -23,13 +23,13 @@ export default function BlogPage() {
     "@context": "https://schema.org",
     "@type": "Blog",
     name: "WESTHOME Journal",
-    url: "https://www.westhome.in/blog",
+    url: "https://westhome.in/blog",
     description: "Home decor styling tips and buying guides for Indian homes.",
     blogPost: blogArticles.map((a) => ({
       "@type": "BlogPosting",
       headline: a.title,
       datePublished: a.date,
-      url: `https://www.westhome.in/blog/${a.slug}`,
+      url: `https://westhome.in/blog/${a.slug}`,
     })),
   };
 

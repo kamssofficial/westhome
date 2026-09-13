@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import stream from "stream";
 
 // ---------------------------------------------------------------------------
 // Config — reads from env at call time so Next.js cold-start works
@@ -34,9 +35,23 @@ async function driveClient(auth: Awaited<ReturnType<typeof getAuth>>) {
 // Auth — service account preferred, falls back to application-default
 // ---------------------------------------------------------------------------
 
-const SCOPE_DRIVE = "https://www.googleapis.com/auth/drive.file";
+const SCOPE_DRIVE = "https://www.googleapis.com/auth/drive";
 
 async function getAuth() {
+  if (
+    process.env.GOOGLE_OAUTH_CLIENT_ID &&
+    process.env.GOOGLE_OAUTH_CLIENT_SECRET &&
+    process.env.GOOGLE_OAUTH_REFRESH_TOKEN
+  ) {
+    const { google } = await import("googleapis");
+    const auth = new google.auth.OAuth2(
+      process.env.GOOGLE_OAUTH_CLIENT_ID,
+      process.env.GOOGLE_OAUTH_CLIENT_SECRET
+    );
+    auth.setCredentials({ refresh_token: process.env.GOOGLE_OAUTH_REFRESH_TOKEN });
+    return auth;
+  }
+
   const credsPath = credentialsPath();
   const credsJson = credentialsJson();
 
@@ -97,6 +112,8 @@ async function resolveFolderId(folder: string): Promise<string> {
     q,
     fields: "files(id, name)",
     pageSize: 5,
+    supportsAllDrives: true,
+    includeItemsFromAllDrives: true,
   });
 
   const match = res.data.files?.[0];
@@ -113,6 +130,7 @@ async function resolveFolderId(folder: string): Promise<string> {
       parents: parentId ? [parentId] : [],
     },
     fields: "id",
+    supportsAllDrives: true,
   });
 
   const newId = createRes.data.id;
@@ -143,7 +161,7 @@ async function uploadFile(
 
   const media = {
     mimeType,
-    data: buffer,
+    body: stream.Readable.from(buffer),
   };
 
   const res = await drive.files.create({
@@ -154,6 +172,7 @@ async function uploadFile(
     },
     media,
     fields: "id, name, webViewLink, webContentLink, size, mimeType",
+    supportsAllDrives: true,
   });
 
   const file = res.data;
@@ -175,7 +194,7 @@ async function uploadFile(
 async function deleteFile(fileId: string): Promise<void> {
   const auth = await getAuth();
   const drive = await driveClient(auth);
-  await drive.files.delete({ fileId });
+  await drive.files.delete({ fileId, supportsAllDrives: true });
 }
 
 /**
@@ -253,6 +272,7 @@ export async function driveFileUrl(fileId: string): Promise<string> {
   const res = await drive.files.get({
     fileId,
     fields: "id, name, webViewLink, webContentLink, mimeType",
+    supportsAllDrives: true,
   });
   const file = res.data;
   if (!file || !file.id) throw new Error(`Drive file not found: ${fileId}`);
@@ -265,13 +285,21 @@ export async function driveFileUrl(fileId: string): Promise<string> {
  * service-account-owned files without any public Drive sharing settings.
  * Used by the image proxy route so drive-stored images actually render.
  */
+function sniffMimeType(buf: Buffer): string | null {
+  if (buf.length >= 8 && buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) return "image/png";
+  if (buf.length >= 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return "image/jpeg";
+  if (buf.length >= 4 && buf[0] === 0x47 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x38) return "image/gif";
+  if (buf.length >= 12 && buf.toString("ascii", 0, 4) === "RIFF" && buf.toString("ascii", 8, 12) === "WEBP") return "image/webp";
+  return null;
+}
+
 export async function driveDownload(
   fileId: string
 ): Promise<{ data: Buffer; mimeType: string }> {
   const auth = await getAuth();
   const drive = await driveClient(auth);
   const res: any = await drive.files.get(
-    { fileId, alt: "media" },
+    { fileId, alt: "media", supportsAllDrives: true },
     { responseType: "arraybuffer" }
   );
   const raw = res?.data;
@@ -279,6 +307,10 @@ export async function driveDownload(
     throw new Error(`Drive download returned empty content: ${fileId}`);
   }
   const data = Buffer.from(raw as ArrayBuffer);
-  const mimeType = res?.headers?.["content-type"] || "application/octet-stream";
-  return { data, mimeType: String(mimeType) };
+  const headerType = res?.headers?.["content-type"];
+  const mimeType =
+    headerType && headerType !== "application/octet-stream"
+      ? String(headerType)
+      : sniffMimeType(data) ?? "application/octet-stream";
+return { data, mimeType };
 }

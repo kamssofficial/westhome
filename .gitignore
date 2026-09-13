@@ -59,6 +59,10 @@ skills/
 # uploads
 /uploads
 
+# google service account credentials (DO NOT COMMIT)
+service-account.json
+google-credentials.json
+
 # cache
 .cache/
 .next/cache/

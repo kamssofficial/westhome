@@ -17,7 +17,7 @@ export async function GET() {
       mode: process.env.NODE_ENV,
       recommendation: status.anyConfigured
         ? null
-        : "Configure GITHUB_STORAGE_TOKEN, B2_*, R2_*, or BLOB_READ_WRITE_TOKEN in Vercel Production.",
+        : "Configure GOOGLE_OAUTH_* (or GOOGLE_CREDENTIALS_PATH / GOOGLE_CREDENTIALS_JSON) in Vercel Production.",
     },
   });
 }
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error("Upload error:", error);
     const message = error?.message?.includes("Storage is not configured")
-      ? "Image storage is not configured. Add GITHUB_STORAGE_TOKEN, B2_*, R2_*, or BLOB_READ_WRITE_TOKEN to Vercel Production."
+      ? "Image storage is not configured. Add GOOGLE_OAUTH_* (or GOOGLE_CREDENTIALS_PATH / GOOGLE_CREDENTIALS_JSON) to Vercel Production."
       : "Upload failed. Please try again.";
     return NextResponse.json({ error: message }, { status: 503 });
   }
