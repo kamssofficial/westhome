@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSettings } from "@/components/ui/SettingsContext";
@@ -40,6 +40,22 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
     return initial;
   });
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const isProgrammaticScroll = useRef(false);
+
+  const handleScrollToImage = (index: number) => {
+    setSelectedImageIndex(index);
+    if (scrollRef.current) {
+      isProgrammaticScroll.current = true;
+      scrollRef.current.scrollTo({
+        left: index * scrollRef.current.clientWidth,
+        behavior: 'smooth'
+      });
+      setTimeout(() => { isProgrammaticScroll.current = false; }, 500);
+    }
+  };
+
   const [quantity, setQuantity] = useState(1);
   const [openAccordion, setOpenAccordion] = useState<string | null>(null);
   const [reviews, setReviews] = useState<any[]>(initialReviews || []);
