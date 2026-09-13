@@ -103,6 +103,7 @@ function ConfirmDialog({ title, message, confirmLabel, danger, onConfirm, onCanc
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -129,8 +130,25 @@ export default function AdminProductsPage() {
       .catch(() => setCategories([]));
   }, []);
 
+    const observerRef = useRef<IntersectionObserver | null>(null);
+  const lastElementRef = useCallback((node: HTMLDivElement | null) => {
+    if (loading || isFetchingMore) return;
+    if (observerRef.current) observerRef.current.disconnect();
+    observerRef.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && products.length < total) {
+        setPage(p => p + 1);
+      }
+    });
+    if (node) observerRef.current.observe(node);
+  }, [loading, isFetchingMore, products.length, total]);
+
   const fetchProducts = useCallback(async () => {
-    setLoading(true);
+    const isLoadMore = page > 1;
+    if (isLoadMore) {
+      setIsFetchingMore(true);
+    } else {
+      setLoading(true);
+    }
     setLoadError(null);
     try {
       const params = new URLSearchParams();
@@ -145,9 +163,13 @@ export default function AdminProductsPage() {
         window.location.href = "/login";
         return;
       }
-      if (res.ok) { const d = await res.json(); setProducts(d.products); setTotal(d.total); }
-      else { setLoadError("Failed to load products."); setProducts([]); }
-    } catch { setLoadError("Failed to load products."); setProducts([]); } finally { setLoading(false); }
+      if (res.ok) { 
+        const d = await res.json(); 
+        setProducts(prev => isLoadMore ? [...prev, ...d.products] : d.products);
+        setTotal(d.total); 
+      }
+      else { setLoadError("Failed to load products."); if (!isLoadMore) setProducts([]); }
+    } catch { setLoadError("Failed to load products."); if (!isLoadMore) setProducts([]); } finally { setLoading(false); setIsFetchingMore(false); }
   }, [debouncedSearch, statusFilter, categoryFilter, sort, page]);
 
   useEffect(() => { fetchProducts(); setSelectedIds(new Set()); }, [fetchProducts]);
@@ -191,8 +213,7 @@ export default function AdminProductsPage() {
     });
   };
 
-  const totalPages = Math.ceil(total / 25);
-
+  
   const isCategoryActive = Boolean(categoryFilter);
 
   return (
@@ -320,7 +341,23 @@ export default function AdminProductsPage() {
         </div>
       </div>
 
-      {totalPages > 1 && <div className="flex items-center justify-between"><p className="text-xs text-text-muted">Showing {(page - 1) * 25 + 1}–{Math.min(page * 25, total)} of {total}</p><div className="flex items-center gap-2"><button onClick={() => setPage(p => p - 1)} disabled={page <= 1} className="px-3 py-1.5 text-xs font-medium border border-black/[.06] rounded-lg hover:bg-surface-muted disabled:opacity-40">Prev</button><span className="text-xs text-secondary">{page}/{totalPages}</span><button onClick={() => setPage(p => p + 1)} disabled={page >= totalPages} className="px-3 py-1.5 text-xs font-medium border border-black/[.06] rounded-lg hover:bg-surface-muted disabled:opacity-40">Next</button></div></div>}
+            {(products.length < total || isFetchingMore) && total > 0 && (
+        <div ref={lastElementRef} className="py-6 flex items-center justify-center">
+          {isFetchingMore ? (
+            <div className="flex items-center gap-2 text-sm text-text-muted">
+              <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              Loading more products...
+            </div>
+          ) : (
+            <div className="h-4" /> 
+          )}
+        </div>
+      )}
+      {!loading && products.length === total && total > 0 && (
+        <div className="py-6 text-center text-xs text-text-muted">
+          End of list. Showing all {total} products.
+        </div>
+      )}
     </div>
   );
 }
