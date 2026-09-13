@@ -276,20 +276,20 @@ export default function NewProductPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-medium text-text-secondary mb-1 block">Category *</label>
-              <select value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value, subcategoryId: "" })} className={inputClass} required>
-                <option value="">Select Category</option>
+              <select value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value, subcategoryId: "" })} className={cn(inputClass, form.categoryId && "bg-primary text-white border-primary")} required>
+                <option value="" className="text-black bg-white">Select Category</option>
                 {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  <option key={cat.id} value={cat.id} className="text-black bg-white">{cat.name}</option>
                 ))}
               </select>
             </div>
             {selectedCategory?.subcategories && selectedCategory.subcategories.length > 0 && (
               <div>
                 <label className="text-xs font-medium text-text-secondary mb-1 block">Subcategory</label>
-                <select value={form.subcategoryId} onChange={(e) => setForm({ ...form, subcategoryId: e.target.value })} className={inputClass}>
-                  <option value="">None</option>
+                <select value={form.subcategoryId} onChange={(e) => setForm({ ...form, subcategoryId: e.target.value })} className={cn(inputClass, form.subcategoryId && "bg-primary text-white border-primary")}>
+                  <option value="" className="text-black bg-white">None</option>
                   {selectedCategory.subcategories.map((sub) => (
-                    <option key={sub.id} value={sub.id}>{sub.name}</option>
+                    <option key={sub.id} value={sub.id} className="text-black bg-white">{sub.name}</option>
                   ))}
                 </select>
               </div>

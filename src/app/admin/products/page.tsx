@@ -239,8 +239,8 @@ export default function AdminProductsPage() {
           )}
           style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")", backgroundPosition: "calc(100% - 10px) 50%", backgroundSize: "12px 12px" }}
         >
-          <option value="">All Categories</option>
-          {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+          <option value="" className="text-black bg-white">All Categories</option>
+          {categories.map((category) => <option key={category.id} value={category.id} className="text-black bg-white">{category.name}</option>)}
         </select>
         <button onClick={() => setShowFilters(!showFilters)} className={cn("px-3 py-1.5 rounded-full text-[11px] font-medium whitespace-nowrap transition-colors shrink-0 flex items-center gap-1 border",
           showFilters ? "bg-primary text-white border-primary" : "bg-white border-black/[.06] text-secondary hover:bg-surface-muted")}>

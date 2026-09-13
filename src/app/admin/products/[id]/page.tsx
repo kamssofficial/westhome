@@ -409,9 +409,9 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
         <div className="bg-surface rounded-[1.35rem] border border-border p-5">
           <h2 className="font-semibold mb-4">Category</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div><label className="text-xs font-medium text-text-secondary mb-1 block">Category *</label><select value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })} className={cn(inputClass, form.categoryId && "bg-primary text-white border-primary")}><option value="">Select</option>{categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
+            <div><label className="text-xs font-medium text-text-secondary mb-1 block">Category *</label><select value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })} className={cn(inputClass, form.categoryId && "bg-primary text-white border-primary")}><option value="" className="text-black bg-white">Select</option>{categories.map((c) => <option key={c.id} value={c.id} className="text-black bg-white">{c.name}</option>)}</select></div>
             {selectedCategory?.subcategories?.length > 0 && (
-              <div><label className="text-xs font-medium text-text-secondary mb-1 block">Subcategory</label><select value={form.subcategoryId} onChange={(e) => setForm({ ...form, subcategoryId: e.target.value })} className={cn(inputClass, form.subcategoryId && "bg-primary text-white border-primary")}><option value="">None</option>{selectedCategory.subcategories.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></div>
+              <div><label className="text-xs font-medium text-text-secondary mb-1 block">Subcategory</label><select value={form.subcategoryId} onChange={(e) => setForm({ ...form, subcategoryId: e.target.value })} className={cn(inputClass, form.subcategoryId && "bg-primary text-white border-primary")}><option value="" className="text-black bg-white">None</option>{selectedCategory.subcategories.map((s: any) => <option key={s.id} value={s.id} className="text-black bg-white">{s.name}</option>)}</select></div>
             )}
           </div>
         </div>
