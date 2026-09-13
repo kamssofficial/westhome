@@ -12,7 +12,7 @@ interface PageProps {
 async function getCategory(slug: string) {
   try {
     // Try top-level category first
-    let category = await db.category.findUnique({
+    const category = await db.category.findUnique({
       where: { slug, isActive: true },
       include: {
         subcategories: {

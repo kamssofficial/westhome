@@ -201,7 +201,7 @@ export async function GET(request: NextRequest) {
     }));
     
     // Apply minRating filter post-fetch (rating is computed from reviews)
-    let filteredProducts = minRatingNum > 0
+    const filteredProducts = minRatingNum > 0
       ? transformed.filter((p) => p.rating !== null && p.rating >= minRatingNum)
       : transformed;
 

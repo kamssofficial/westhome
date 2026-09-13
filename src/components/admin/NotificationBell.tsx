@@ -109,7 +109,7 @@ function groupNotifications(notifs: Notification[]): (Notification | { grouped: 
   while (i < notifs.length) {
     const current = notifs[i];
     // Check if next 2+ are same type within 10 minutes
-    let group = [current];
+    const group = [current];
     let j = i + 1;
     while (j < notifs.length && notifs[j].type === current.type && !notifs[j].isRead) {
       const diff = new Date(current.createdAt).getTime() - new Date(notifs[j].createdAt).getTime();

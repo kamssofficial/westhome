@@ -21,7 +21,7 @@ interface RazorpayOptions {
   modal?: { ondismiss?: () => void }; handler: (response: RazorpayResponse) => void;
 }
 declare global {
-  // eslint-disable-next-line no-var
+   
   var Razorpay: new (options: RazorpayOptions) => { open: () => void; close: () => void } | undefined;
 }
 interface Address { id: string; name: string; phone: string; addressLine1: string; addressLine2?: string; city: string; state: string; pinCode: string; isDefault?: boolean; }
