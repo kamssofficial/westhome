@@ -190,7 +190,7 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
       await fetch(`/api/products/${id}`, { method: "DELETE" });
       toast.success("Product deleted");
       router.push("/admin/products");
-    } catch { toast.error("Failed to delete"); }
+    } catch { toast.error("Unable to reach the server while deleting"); }
   };
 
   const handleAddDefaultSizes = async () => {
@@ -201,8 +201,8 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ productIds: [id] }),
       });
-      const data = await res.json();
-      const result = data.results?.[0];
+      const data = await res.json().catch(() => null);
+      const result = data?.results?.[0];
       if (res.ok && result && !result.error) {
         if (result.created > 0) {
           toast.success(`Added ${result.created} size variants`);
@@ -211,9 +211,9 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
           toast.success("Size variants already exist");
         }
       } else {
-        toast.error(result?.error || "Failed to add variants");
+        toast.error(result?.error || data?.error || `Failed to add variants (${res.status})`);
       }
-    } catch { toast.error("Failed to add variants"); } finally { setSavingVariant(false); }
+    } catch { toast.error("Unable to reach the server while adding variants"); } finally { setSavingVariant(false); }
   };
 
   const handleUpdateVariant = async (
@@ -230,9 +230,10 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
         toast.success("Variant updated");
         loadVariants();
       } else {
-        toast.error("Failed to update variant");
+        const d = await res.json().catch(() => null);
+        toast.error(d?.error || `Failed to update variant (${res.status})`);
       }
-    } catch { toast.error("Failed to update variant"); }
+    } catch { toast.error("Unable to reach the server while updating variant"); }
   };
 
   const handleDeleteVariant = async (variantId: string) => {
@@ -243,9 +244,10 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
         toast.success("Variant deleted");
         loadVariants();
       } else {
-        toast.error("Failed to delete variant");
+        const d = await res.json().catch(() => null);
+        toast.error(d?.error || `Failed to delete variant (${res.status})`);
       }
-    } catch { toast.error("Failed to delete variant"); }
+    } catch { toast.error("Unable to reach the server while deleting variant"); }
   };
 
   const handleAddVariant = async () => {
@@ -272,10 +274,10 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
         toast.success("Variant created");
         loadVariants();
       } else {
-        const data = await res.json();
-        toast.error(data.error || "Failed to create variant");
+        const data = await res.json().catch(() => null);
+        toast.error(data?.error || `Failed to create variant (${res.status})`);
       }
-    } catch { toast.error("Failed to create variant"); } finally { setSavingVariant(false); }
+    } catch { toast.error("Unable to reach the server while creating variant"); } finally { setSavingVariant(false); }
   };
 
   const inputClass = "w-full px-3 py-2.5 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30";

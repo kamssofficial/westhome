@@ -197,11 +197,11 @@ export default function NewProductPage() {
         toast.success("Product created!");
         router.push("/admin/products");
       } else {
-        const err = await res.json();
-        toast.error(err.error || "Failed to create product");
+        const err = await res.json().catch(() => null);
+        toast.error(err?.error || `Failed to create product (${res.status})`);
       }
     } catch {
-      toast.error("Failed to create product");
+      toast.error("Unable to reach the server. Check your connection and try again.");
     } finally {
       setLoading(false);
     }

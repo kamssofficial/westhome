@@ -201,7 +201,7 @@ export default function AdminProductsPage() {
     if (action === "archive") {
       setConfirmDlg({ title: "Archive product?", message: `"${product.name}" will be removed from the storefront.`, confirmLabel: "Archive",
         onConfirm: async () => { const res = await fetch("/api/admin/products/" + product.id, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "ARCHIVED" }) });
-          if (res.ok) { toast.success("Archived"); fetchProducts(); } else toast.error("Failed"); setConfirmDlg(null); },
+          if (res.ok) { toast.success("Archived"); fetchProducts(); } else { const d = await res.json().catch(() => null); toast.error(d?.error || d?.message || "Failed to archive"); } setConfirmDlg(null); },
       }); return;
     }
     if (action === "delete") {
@@ -220,7 +220,7 @@ export default function AdminProductsPage() {
   const handleBulk = async (action: string) => {
     const n = selectedIds.size; const isDel = action === "delete";
     setConfirmDlg({ title: isDel ? `Delete ${n} products?` : `${action} ${n} products?`, message: isDel ? "This cannot be undone." : "This will change status.", confirmLabel: isDel ? "Delete" : "Apply", danger: isDel,
-      onConfirm: async () => { try { const res = await fetch("/api/admin/products/bulk", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, ids: Array.from(selectedIds) }) }); const d = await res.json(); if (d.successCount > 0) toast.success(`${d.successCount} product(s) updated`); if (d.failCount > 0) toast.error(`${d.failCount} skipped`); } catch { toast.error("Failed"); } setSelectedIds(new Set()); setConfirmDlg(null); fetchProducts(); },
+      onConfirm: async () => { try { const res = await fetch("/api/admin/products/bulk", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, ids: Array.from(selectedIds) }) }); const d = await res.json(); if (d.successCount > 0) toast.success(`${d.successCount} product(s) updated`); if (d.failCount > 0) toast.error(`${d.failCount} skipped`); if (d.error) toast.error(d.error); } catch { toast.error("Request failed — check your connection and try again"); } setSelectedIds(new Set()); setConfirmDlg(null); fetchProducts(); },
     });
   };
 
