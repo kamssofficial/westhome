@@ -24,6 +24,7 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
   const { id } = use(params);
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [saving, setSaving] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
 
@@ -61,30 +62,45 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
   const loadVariants = () => {
     setLoadingVariants(true);
     fetch(`/api/admin/products/${id}/variants`)
-      .then((r) => r.json())
+      .then((r) => (r.ok ? r.json() : { variants: [] }))
       .then((d) => {
         setVariants(d.variants || []);
         setLoadingVariants(false);
       })
-      .catch(() => setLoadingVariants(false));
+      .catch(() => {
+        setVariants([]);
+        setLoadingVariants(false);
+      });
   };
 
   useEffect(() => {
     fetch(`/api/admin/products/${id}/variants`)
-      .then((r) => r.json())
+      .then((r) => (r.ok ? r.json() : { variants: [] }))
       .then((d) => {
         setVariants(d.variants || []);
         setLoadingVariants(false);
       })
-      .catch(() => setLoadingVariants(false));
+      .catch(() => {
+        setVariants([]);
+        setLoadingVariants(false);
+      });
   }, [id]);
 
-  useEffect(() => {
+  const reloadProduct = (silent = false) => {
+    if (!silent) {
+      setLoading(true);
+      setLoadFailed(false);
+    }
     Promise.all([
-      fetch(`/api/products/${id}`, { cache: "no-store" }).then((r) => r.json()),
-      fetch("/api/categories", { cache: "no-store" }).then((r) => r.json()),
-    ]).then(([prodData, catData]) => {
-      if (prodData.product) {
+      fetch(`/api/products/${id}`, { cache: "no-store" }).then((r) =>
+        r.ok ? r.json() : Promise.reject(new Error(`load ${r.status}`))
+      ),
+      fetch("/api/categories", { cache: "no-store" }).then((r) =>
+        r.ok ? r.json() : { categories: [] }
+      ),
+    ])
+      .then(([prodData, catData]) => {
+        if (!prodData.product) throw new Error("not found");
         const p = prodData.product;
         setForm({
           name: p.name || "", sku: p.sku || "", description: p.description || "",
@@ -124,16 +140,32 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
           // SEO
           seoTitle: p.seoTitle || "", seoDescription: p.seoDescription || "",
         });
-        // Load images
-        if (p.images?.length) {
-          setImages(p.images.map((img: any) => ({
+        // Load images (always overwrite so removed images disappear on reload)
+        setImages(
+          (p.images || []).map((img: any) => ({
             id: img.id, url: img.url, alt: img.alt || "", isPrimary: img.isPrimary, position: img.position,
             imageType: img.imageType || "PRODUCT",
-          })));
+          }))
+        );
+        setCategories(catData.categories || []);
+        setLoading(false);
+      })
+      .catch((err) => {
+        if (silent) return; // keep the current form on a failed background refresh
+        if (String(err?.message).includes("load 401")) {
+          // Session expired while editing — send to login and come back here after
+          toast.error("Your session expired. Please log in again.");
+          router.replace(`/login?callbackUrl=${encodeURIComponent(`/admin/products/${id}`)}`);
+          return;
         }
-      }
-      setCategories(catData.categories || []);
-    }).finally(() => setLoading(false));
+        setLoadFailed(true);
+        setLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    reloadProduct();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const selectedCategory = categories.find((c) => c.id === form.categoryId);
@@ -175,8 +207,16 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
           images: images,
         }),
       });
+      if (res.status === 401) {
+        toast.error("Your session expired. Please log in again.");
+        router.replace(`/login?callbackUrl=${encodeURIComponent(`/admin/products/${id}`)}`);
+        return;
+      }
       if (res.ok) {
         toast.success("Product updated");
+        // Silently re-sync from the server so a second edit starts from the
+        // true saved state (image rows are re-created on every save).
+        reloadProduct(true);
       } else {
         const data = await res.json().catch(() => null);
         toast.error(data?.error || "Failed to update product");
@@ -283,6 +323,21 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
   const inputClass = "w-full px-3 py-2.5 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30";
 
   if (loading) return <div className="py-8"><div className="animate-pulse h-64 bg-surface-muted rounded-xl" /></div>;
+
+  if (loadFailed) {
+    return (
+      <div className="max-w-md py-16 text-center">
+        <h1 className="text-lg font-semibold mb-2">Could not load this product</h1>
+        <p className="text-sm text-text-secondary mb-6">
+          The product may have been deleted, or the connection failed. Check your internet and try again.
+        </p>
+        <div className="flex items-center justify-center gap-2">
+          <Button variant="outline" onClick={() => router.push("/admin/products")}>Back to Products</Button>
+          <Button onClick={() => reloadProduct()}>Retry</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl">
