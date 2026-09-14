@@ -7,6 +7,7 @@ import {
   MoreVertical, Copy, Archive, AlertTriangle, ChevronDown, X, Filter,
   ArrowUpDown, ArrowUp, ArrowDown,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import PriceDisplay from "@/components/ui/PriceDisplay";
 import toast from "react-hot-toast";
@@ -107,6 +108,7 @@ interface DiagInfo {
 }
 
 export default function AdminProductsPage() {
+  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
@@ -169,7 +171,7 @@ export default function AdminProductsPage() {
       params.set("limit", "25");
       const res = await fetch("/api/admin/products?" + params.toString(), { cache: "no-store" });
       if (res.status === 401 || res.status === 403) {
-        window.location.href = "/login";
+        router.push("/login");
         return;
       }
       if (res.ok) { 
@@ -188,7 +190,7 @@ export default function AdminProductsPage() {
 
   const handleAction = async (action: string, product: Product) => {
     if (action === "view") { window.open("/products/" + product.slug, "_blank"); return; }
-    if (action === "edit") { window.location.href = "/admin/products/" + product.id; return; }
+    if (action === "edit") { router.push("/admin/products/" + product.id); return; }
     if (action === "duplicate") {
       toast.loading("Duplicating...");
       try { const res = await fetch("/api/admin/products/" + product.id + "/duplicate", { method: "POST" }); toast.dismiss();

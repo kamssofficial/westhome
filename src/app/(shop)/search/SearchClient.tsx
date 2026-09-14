@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   Search as SearchIcon, SlidersHorizontal, ChevronDown, Grid3X3, List,
   X, Clock, TrendingUp, Loader2, ArrowUpDown, Check,
@@ -27,6 +27,7 @@ const SORT_OPTIONS = [
 
 function SearchContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const initialQuery = searchParams.get("q") || "";
   const [query, setQuery] = useState(initialQuery);
   const [products, setProducts] = useState<Product[]>([]);
@@ -109,10 +110,10 @@ function SearchContent() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault(); setShowSuggestions(false);
-    if (query.trim()) window.location.href = "/search?q=" + encodeURIComponent(query.trim());
+    if (query.trim()) router.push("/search?q=" + encodeURIComponent(query.trim()));
   };
-  const clearSearch = () => { setQuery(""); window.location.href = "/search"; };
-  const handleSuggestionClick = (s: string) => { setQuery(s); setShowSuggestions(false); window.location.href = "/search?q=" + encodeURIComponent(s); };
+  const clearSearch = () => { setQuery(""); router.push("/search"); };
+  const handleSuggestionClick = (s: string) => { setQuery(s); setShowSuggestions(false); router.push("/search?q=" + encodeURIComponent(s)); };
   const clearRecentSearch = (s: string) => {
     const updated = recentSearches.filter(r => r !== s); setRecentSearches(updated);
     try { localStorage.setItem("westhome-recent-searches", JSON.stringify(updated)); } catch {}
