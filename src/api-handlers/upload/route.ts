@@ -5,7 +5,9 @@ import { storageStatus, uploadMedia } from "@/lib/media";
 
 export const runtime = "nodejs";
 
-const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+// Vercel serverless functions reject request bodies over ~4.5 MB at the platform
+// level (before this handler runs), so the effective limit must stay below that.
+const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 const ALLOWED_FOLDERS = ["products", "categories", "banners", "avatars", "homepage", "staff"];
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
@@ -29,7 +31,7 @@ export async function POST(request: NextRequest) {
   try {
     const contentLength = Number(request.headers.get("content-length"));
     if (Number.isFinite(contentLength) && contentLength > MAX_UPLOAD_BYTES) {
-      return NextResponse.json({ error: "Image is too large. Maximum size is 10 MB." }, { status: 413 });
+      return NextResponse.json({ error: "Image is too large. Maximum size is 4 MB." }, { status: 413 });
     }
 
     const formData = await request.formData();
@@ -42,7 +44,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unsupported image format. Please upload JPG, PNG, WebP, or GIF." }, { status: 400 });
     }
     if (file.size > MAX_UPLOAD_BYTES) {
-      return NextResponse.json({ error: "Image is too large. Maximum size is 10 MB." }, { status: 413 });
+      return NextResponse.json({ error: "Image is too large. Maximum size is 4 MB." }, { status: 413 });
     }
 
     const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";

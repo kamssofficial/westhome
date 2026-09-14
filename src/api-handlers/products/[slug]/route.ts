@@ -112,6 +112,20 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "Category is required" }, { status: 400 });
     }
 
+    // Validate category/subcategory before writing — a stale form (category deleted
+    // while the page was open, or a subcategory from a different category) would
+    // otherwise fail with a cryptic FK constraint 500.
+    const category = await db.category.findUnique({
+      where: { id: body.categoryId },
+      include: { subcategories: { select: { id: true } } },
+    });
+    if (!category) {
+      return NextResponse.json({ error: "Selected category no longer exists. Refresh the page and pick a category again." }, { status: 400 });
+    }
+    if (body.subcategoryId && !category.subcategories.some((s) => s.id === body.subcategoryId)) {
+      return NextResponse.json({ error: "Selected subcategory does not belong to the chosen category." }, { status: 400 });
+    }
+
     // Find product by slug or ID
     let product = await db.product.findUnique({ where: { slug } });
     if (!product) product = await db.product.findUnique({ where: { id: slug } });
@@ -275,6 +289,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       if (target?.includes?.("sku")) {
         return NextResponse.json({ error: "This SKU is already used by another product" }, { status: 409 });
       }
+    }
+    if (error?.code === "P2003") {
+      return NextResponse.json({ error: "Selected category or subcategory no longer exists. Refresh the page and try again." }, { status: 400 });
     }
     return NextResponse.json({ error: "Failed to update product" }, { status: 500 });
   }

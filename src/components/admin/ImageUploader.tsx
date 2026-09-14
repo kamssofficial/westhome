@@ -62,8 +62,8 @@ export default function ImageUploader({
           toast.error(`${file.name}: Please choose an image file`);
           continue;
         }
-        if (file.size > 10 * 1024 * 1024) {
-          toast.error(`${file.name}: Maximum file size is 10 MB`);
+        if (file.size > 4 * 1024 * 1024) {
+          toast.error(`${file.name}: Maximum file size is 4 MB`);
           continue;
         }
         try {

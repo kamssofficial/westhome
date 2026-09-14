@@ -220,7 +220,7 @@ export default function HeroManager({ embedded = false }: { embedded?: boolean }
               className="w-full flex flex-col items-center gap-2 py-10 border-2 border-dashed border-black/[.08] rounded-xl hover:border-[#d4a574] hover:bg-[#fdf6f0]/50 transition-all group">
               <Upload size={20} className="text-[#b0aba6] group-hover:text-[#d4a574] transition-colors" />
               <span className="text-sm font-medium text-[#6b6560] group-hover:text-[#1a1917]">{active ? "Replace with new image" : "Upload hero image"}</span>
-              <span className="text-[10px] text-[#b0aba6]">JPG, PNG, or WEBP — max 10MB</span>
+              <span className="text-[10px] text-[#b0aba6]">JPG, PNG, or WEBP — max 4MB</span>
             </button>
           ) : (
             <div className="flex items-center gap-3">

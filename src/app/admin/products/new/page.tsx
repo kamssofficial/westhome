@@ -127,7 +127,7 @@ export default function NewProductPage() {
         setVariants(v);
       } else {
         const data = await res.json().catch(() => null);
-        toast.error(data?.error || "Image upload failed (storage not configured)");
+        toast.error(data?.error || `Image upload failed (${res.status})`);
       }
     } catch {
       toast.error("Image upload error — server may be unreachable");
