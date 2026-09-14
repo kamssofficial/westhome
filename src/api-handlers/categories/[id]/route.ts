@@ -133,14 +133,14 @@ export async function DELETE(
       );
     }
 
-    const deletedCategory = await db.category.findUnique({ where: { id }, select: { name: true } });
+    const deletedCategory = await db.category.findUnique({ where: { id }, select: { name: true, slug: true } });
     await db.category.delete({ where: { id } });
     await logAdminAction({ action: "DELETE", entity: "CATEGORY", entityId: id, details: { name: deletedCategory?.name ?? null }, request });
 
     // Invalidate cached pages
     revalidatePath("/shop");
     revalidatePath("/search");
-    if (deletedCategory?.name) revalidatePath(`/collections/${deletedCategory.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`);
+    if (deletedCategory?.slug) revalidatePath(`/collections/${deletedCategory.slug}`);
 
     return NextResponse.json({ message: "Category deleted" });
   } catch (error) {
