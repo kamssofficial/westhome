@@ -100,6 +100,12 @@ function ConfirmDialog({ title, message, confirmLabel, danger, onConfirm, onCanc
   );
 }
 
+interface DiagInfo {
+  total: number; visibleOnStorefront: number; hiddenFromStorefront: number;
+  breakdown: Record<string, { isActive_true: number; isActive_false: number }>;
+  needsFix: { draftProducts: number; inactiveProducts: number; activeButInactive: number; totalFixable: number };
+}
+
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -117,6 +123,9 @@ export default function AdminProductsPage() {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [confirmDlg, setConfirmDlg] = useState<{ title: string; message: string; confirmLabel: string; danger?: boolean; onConfirm: () => void } | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [diag, setDiag] = useState<DiagInfo | null>(null);
+  const [diagLoading, setDiagLoading] = useState(false);
+  const [fixing, setFixing] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search), 300);
@@ -230,6 +239,89 @@ export default function AdminProductsPage() {
         </Link>
       </div>
 
+
+      {/* Diagnostic banner */}
+      {!diag && !loading && (
+        <button
+          onClick={async () => {
+            setDiagLoading(true);
+            try {
+              const res = await fetch("/api/admin/products/diagnose");
+              if (res.ok) setDiag(await res.json());
+            } catch {}
+            setDiagLoading(false);
+          }}
+          disabled={diagLoading}
+          className="flex items-center gap-2 w-full px-4 py-2.5 bg-amber-50 border border-amber-200 rounded-xl text-xs font-medium text-amber-800 hover:bg-amber-100 transition-colors"
+        >
+          <AlertTriangle size={14} className="shrink-0" />
+          {diagLoading ? "Checking product visibility…" : "Some products may be hidden from the storefront — tap to diagnose"}
+        </button>
+      )}
+      {diag && diag.hiddenFromStorefront > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertTriangle size={14} className="text-amber-600" />
+              <p className="text-xs font-semibold text-amber-800">
+                {diag.hiddenFromStorefront} of {diag.total} products are hidden from the storefront
+              </p>
+            </div>
+            <button onClick={() => setDiag(null)} className="text-amber-600 hover:text-amber-800"><X size={14} /></button>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px]">
+            <div className="bg-white rounded-lg p-2 border border-amber-100">
+              <p className="text-text-muted uppercase tracking-wider">ACTIVE + active=true</p>
+              <p className="text-sm font-bold text-emerald-600 mt-0.5">{diag.breakdown.ACTIVE?.isActive_true ?? 0}</p>
+              <p className="text-text-muted">Visible</p>
+            </div>
+            <div className="bg-white rounded-lg p-2 border border-amber-100">
+              <p className="text-text-muted uppercase tracking-wider">ACTIVE + active=false</p>
+              <p className="text-sm font-bold text-red-600 mt-0.5">{diag.breakdown.ACTIVE?.isActive_false ?? 0}</p>
+              <p className="text-text-muted">Hidden</p>
+            </div>
+            <div className="bg-white rounded-lg p-2 border border-amber-100">
+              <p className="text-text-muted uppercase tracking-wider">DRAFT</p>
+              <p className="text-sm font-bold text-amber-600 mt-0.5">{diag.needsFix.draftProducts}</p>
+              <p className="text-text-muted">Hidden</p>
+            </div>
+            <div className="bg-white rounded-lg p-2 border border-amber-100">
+              <p className="text-text-muted uppercase tracking-wider">INACTIVE</p>
+              <p className="text-sm font-bold text-amber-600 mt-0.5">{diag.needsFix.inactiveProducts}</p>
+              <p className="text-text-muted">Hidden</p>
+            </div>
+          </div>
+          <button
+            onClick={async () => {
+              if (!confirm(`Activate ${diag.needsFix.totalFixable} hidden product(s)? This will set them to ACTIVE status and make them visible on the storefront.`)) return;
+              setFixing(true);
+              try {
+                const res = await fetch("/api/admin/products/diagnose", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ excludeArchived: true }) });
+                const d = await res.json();
+                if (d.success) {
+                  toast.success(d.message);
+                  setDiag(null);
+                  fetchProducts();
+                } else {
+                  toast.error(d.error || "Failed");
+                }
+              } catch { toast.error("Failed to activate products"); }
+              setFixing(false);
+            }}
+            disabled={fixing}
+            className="w-full px-4 py-2 bg-primary text-white text-xs font-semibold rounded-lg hover:bg-primary-hover transition-colors disabled:opacity-50"
+          >
+            {fixing ? "Activating…" : `Activate all ${diag.needsFix.totalFixable} hidden products`}
+          </button>
+        </div>
+      )}
+      {diag && diag.hiddenFromStorefront === 0 && (
+        <div className="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-medium text-emerald-800">
+          <CheckSquare size={14} className="shrink-0" />
+          All {diag.total} products are visible on the storefront.
+          <button onClick={() => setDiag(null)} className="ml-auto text-emerald-600 hover:text-emerald-800"><X size={14} /></button>
+        </div>
+      )}
       <div className="relative">
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
         <input type="text" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}

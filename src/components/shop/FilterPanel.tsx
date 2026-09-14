@@ -191,7 +191,7 @@ export default function FilterPanel({ open, onClose, onApply, initialFilters, ca
         <div className="px-5 py-4 border-t border-black/[.06] shrink-0 bg-[#faf8f5]">
           <button onClick={() => { onApply(f); onClose(); }}
             className="w-full py-3.5 bg-[#1a1917] text-white rounded-2xl text-sm font-semibold hover:bg-[#2d2926] transition-colors min-h-[48px]">
-            Show {resultCount} Result{resultCount !== 1 ? "s" : ""}
+            Apply Filters
           </button>
         </div>
       </div>

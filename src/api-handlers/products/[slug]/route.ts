@@ -212,6 +212,43 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       await Promise.allSettled(removed.map((img) => deleteMedia({ url: img.url })));
     }
 
+    // Handle variants update if provided. On edit we replace the current set
+    // so the admin sees the exact submitted variants (add/edit/remove).
+    if (body.variants && Array.isArray(body.variants)) {
+      await db.$transaction(async (tx) => {
+        await tx.productVariant.deleteMany({ where: { productId: product.id } });
+        for (let i = 0; i < body.variants.length; i++) {
+          const v = body.variants[i];
+          if (!v.name || !String(v.name).trim()) continue;
+          const variant = await tx.productVariant.create({
+            data: {
+              productId: product.id,
+              name: v.name,
+              sku: v.sku || null,
+              price: v.price,
+              salePrice: v.salePrice || null,
+              stockQuantity: v.stockQuantity || 0,
+              isActive: v.isActive ?? true,
+              position: i,
+            },
+          });
+          if (v.images && Array.isArray(v.images)) {
+            for (const img of v.images) {
+              await tx.variantImage.create({
+                data: {
+                  variantId: variant.id,
+                  url: img.url,
+                  alt: img.alt || "",
+                  isPrimary: img.isPrimary ?? false,
+                  position: img.position ?? 0,
+                },
+              });
+            }
+          }
+        }
+      });
+    }
+
     // Log the action
     await logAdminAction({
       action: "UPDATE",
