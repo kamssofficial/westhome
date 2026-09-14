@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import db from "@/lib/db";
 import { CATEGORIES } from "@/lib/data";
 import { requireAuthRole } from "@/lib/apiAuth";
@@ -91,7 +92,7 @@ export async function GET() {
       };
     }));
 
-    return NextResponse.json({ categories: transformed }, { headers: { "Cache-Control": "public, s-maxage=30, stale-while-revalidate=120" } });
+    return NextResponse.json({ categories: transformed }, { headers: { "Cache-Control": "public, s-maxage=10, must-revalidate" } });
   } catch (error) {
     console.error("Categories API error:", error);
     return NextResponse.json({ categories: CATEGORIES });
@@ -108,6 +109,11 @@ export async function POST(request: NextRequest) {
     const category = await db.category.create({
       data: { name: body.name, slug, description: body.description, image: body.image, position: body.position || 0 },
     });
+
+    // Invalidate cached pages so storefront picks up the new category
+    revalidatePath("/shop");
+    revalidatePath("/search");
+
     return NextResponse.json({ category }, { status: 201 });
   } catch (error) {
     return NextResponse.json({ error: "Failed to create category" }, { status: 500 });

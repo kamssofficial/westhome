@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import db from "@/lib/db";
 import { requireAuthRole } from "@/lib/apiAuth";
 
@@ -30,6 +31,10 @@ export async function POST(
         position: subcategoryCount,
       },
     });
+
+    // Invalidate cached pages
+    revalidatePath("/shop");
+    revalidatePath("/search");
 
     return NextResponse.json({ subcategory }, { status: 201 });
   } catch (error) {

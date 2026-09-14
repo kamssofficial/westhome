@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import db from "@/lib/db";
 import { requireAuthRole } from "@/lib/apiAuth";
 import { deleteMedia } from "@/lib/media";
@@ -45,6 +46,10 @@ export async function PATCH(
       details: { categoryId: id, name: updated.name },
       request,
     });
+
+    // Invalidate cached pages
+    revalidatePath("/shop");
+    revalidatePath("/search");
 
     return NextResponse.json({ subcategory: updated });
   } catch (error) {
@@ -96,6 +101,10 @@ export async function DELETE(
       details: { categoryId: id, name: subcategory.name },
       request,
     });
+
+    // Invalidate cached pages
+    revalidatePath("/shop");
+    revalidatePath("/search");
 
     return NextResponse.json({ message: "Subcategory deleted" });
   } catch (error) {

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import db from "@/lib/db";
 import { requireAuthRole } from "@/lib/apiAuth";
 import { logAdminAction } from "@/lib/audit";
@@ -54,6 +55,11 @@ export async function PUT(
 
     await logAdminAction({ action: "UPDATE", entity: "CATEGORY", entityId: id, details: { name: body.name }, request });
 
+    // Invalidate cached pages so storefront picks up the change immediately
+    revalidatePath("/shop");
+    revalidatePath("/search");
+    revalidatePath(`/collections/${category.slug}`);
+
     return NextResponse.json({ category });
   } catch (error) {
     console.error("PUT category error:", error);
@@ -84,6 +90,11 @@ export async function PATCH(
     });
 
     await logAdminAction({ action: "UPDATE", entity: "CATEGORY", entityId: id, details: { name: body.name ?? category.name, isActive: body.isActive }, request });
+
+    // Invalidate cached pages so storefront picks up the change immediately
+    revalidatePath("/shop");
+    revalidatePath("/search");
+    revalidatePath(`/collections/${category.slug}`);
 
     return NextResponse.json({ category });
   } catch (error) {
@@ -125,6 +136,12 @@ export async function DELETE(
     const deletedCategory = await db.category.findUnique({ where: { id }, select: { name: true } });
     await db.category.delete({ where: { id } });
     await logAdminAction({ action: "DELETE", entity: "CATEGORY", entityId: id, details: { name: deletedCategory?.name ?? null }, request });
+
+    // Invalidate cached pages
+    revalidatePath("/shop");
+    revalidatePath("/search");
+    if (deletedCategory?.name) revalidatePath(`/collections/${deletedCategory.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`);
+
     return NextResponse.json({ message: "Category deleted" });
   } catch (error) {
     return NextResponse.json({ error: "Failed to delete category" }, { status: 500 });
