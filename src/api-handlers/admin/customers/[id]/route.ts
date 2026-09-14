@@ -238,15 +238,22 @@ export async function DELETE(
       );
     }
 
-    // Soft delete — deactivate account, anonymize email to preserve order history
-    await db.user.update({
-      where: { id },
-      data: {
-        isActive: false,
-        email: `deleted_${Date.now()}_${existing.email}`,
-        name: "Deleted Customer",
-        phone: null,
-      },
+    // Hard delete. Orders keep their history — they store customer info
+    // denormalized (customerName/customerEmail/customerPhone), so the user row
+    // is detached (userId -> null) and the order becomes guest-like.
+    await db.$transaction(async (tx) => {
+      // Relations without onDelete: Cascade must be removed explicitly
+      await tx.review.deleteMany({ where: { userId: id } });
+      await tx.couponUsage.deleteMany({ where: { userId: id } });
+
+      // Detach orders so purchase history survives (userId is nullable)
+      await tx.order.updateMany({ where: { userId: id }, data: { userId: null } });
+
+      // Detach analytics events (userId is nullable)
+      await tx.analyticsEvent.updateMany({ where: { userId: id }, data: { userId: null } });
+
+      // Addresses, wishlist, recentlyViewed cascade automatically with the user
+      await tx.user.delete({ where: { id } });
     });
 
     // Log the action
@@ -254,11 +261,11 @@ export async function DELETE(
       action: "DELETE",
       entity: "USER",
       entityId: id,
-      details: { email: existing.email },
+      details: { email: existing.email, hardDeleted: true },
       request,
     });
 
-    return NextResponse.json({ message: "Customer deleted" });
+    return NextResponse.json({ message: "Customer deleted permanently" });
   } catch (error) {
     console.error("Customer delete API error:", error);
     return NextResponse.json({ error: "Failed to delete customer" }, { status: 500 });

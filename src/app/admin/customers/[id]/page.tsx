@@ -39,7 +39,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
   };
 
   const handleDelete = async () => {
-    if (!confirm("Delete this customer? This action cannot be undone.")) return;
+    if (!confirm("Delete this customer permanently? Their account and personal data will be removed, but their orders will remain in order history. This cannot be undone.")) return;
     setDeleting(true);
     try {
       const res = await fetch("/api/admin/customers/" + id, { method: "DELETE" });

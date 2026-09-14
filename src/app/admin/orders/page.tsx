@@ -38,6 +38,28 @@ function AdminOrdersPageContent() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [clearing, setClearing] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const handleDelete = async (e: React.MouseEvent, id: string, orderNumber: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!window.confirm(`Delete order ${orderNumber} permanently? This cannot be undone.`)) return;
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/admin/orders/${id}`, { method: "DELETE" });
+      const data = await res.json().catch(() => null);
+      if (res.ok) {
+        toast.success(`Order ${orderNumber} deleted`);
+        setOrders((prev) => prev.filter((o) => o.id !== id));        setTotal((t) => Math.max(0, t - 1));
+      } else {
+        toast.error(data?.error || "Failed to delete order");
+      }
+    } catch {
+      toast.error("Failed to delete order");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const clearOrderHistory = async () => {
     if (!window.confirm("Clear the entire order history permanently? This deletes ALL orders and cannot be undone.")) return;
@@ -120,7 +142,7 @@ function AdminOrdersPageContent() {
                 <th className="text-center px-3 py-3 font-medium text-text-secondary hidden sm:table-cell">Status</th>
                 <th className="text-center px-3 py-3 font-medium text-text-secondary hidden md:table-cell">Payment</th>
                 <th className="text-right px-3 py-3 font-medium text-text-secondary hidden md:table-cell">Date</th>
-                <th className="text-right px-3 py-3 font-medium text-text-secondary">View</th>
+                <th className="text-right px-3 py-3 font-medium text-text-secondary">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -160,9 +182,19 @@ function AdminOrdersPageContent() {
                     </td>
                     <td className="px-3 py-3 text-right text-text-muted hidden md:table-cell text-xs">{formatDate(order.createdAt)}</td>
                     <td className="px-3 py-3 text-right">
-                      <Link href={`/admin/orders/${order.id}`} className="p-1.5 hover:bg-surface-muted rounded-lg inline-flex">
-                        <Eye size={14} className="text-text-muted" />
-                      </Link>
+                      <div className="flex items-center justify-end gap-1">
+                        <Link href={`/admin/orders/${order.id}`} className="p-1.5 hover:bg-surface-muted rounded-lg inline-flex" title="View order">
+                          <Eye size={14} className="text-text-muted" />
+                        </Link>
+                        <button
+                          onClick={(e) => handleDelete(e, order.id, order.orderNumber)}
+                          disabled={deletingId === order.id}
+                          className="p-1.5 rounded-lg hover:bg-red-50 disabled:opacity-50"
+                          title="Delete order"
+                        >
+                          <Trash2 size={14} className="text-red-500" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
