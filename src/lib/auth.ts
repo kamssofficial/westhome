@@ -3,6 +3,24 @@ import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import db from "./db";
 
+// In-memory rate limiter for login attempts (per phone/email).
+// In production on Vercel each isolate has its own map, so this is a best-effort
+// throttle — enough to slow brute-force without blocking legitimate users.
+const loginAttempts = new Map<string, { count: number; resetAt: number }>();
+const LOGIN_WINDOW_MS = 60_000; // 1 minute
+const LOGIN_MAX_ATTEMPTS = 8;
+
+function checkLoginRateLimit(key: string): boolean {
+  const now = Date.now();
+  const entry = loginAttempts.get(key);
+  if (!entry || entry.resetAt <= now) {
+    loginAttempts.set(key, { count: 1, resetAt: now + LOGIN_WINDOW_MS });
+    return true;
+  }
+  entry.count++;
+  return entry.count <= LOGIN_MAX_ATTEMPTS;
+}
+
 const configuredAuthBase = (process.env.AUTH_URL || process.env.NEXTAUTH_URL || "").toLowerCase();
 if (
   (process.env.NODE_ENV === "production" || process.env.VERCEL_ENV === "production") &&
@@ -38,6 +56,10 @@ export const authOptions: NextAuthConfig = {
       },
       async authorize(credentials) {
         if (!credentials?.phone || !credentials?.password) return null;
+
+        // Rate-limit login attempts by phone/email
+        const rateKey = (credentials.phone as string).trim().toLowerCase();
+        if (!checkLoginRateLimit(rateKey)) return null;
 
         // Normalize phone: strip spaces and leading +91/91/0
         const raw = (credentials.phone as string).trim();
