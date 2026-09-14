@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import db from "@/lib/db";
 import { requireAuthRole } from "@/lib/apiAuth";
 import { logAdminAction } from "@/lib/audit";
@@ -56,6 +57,12 @@ export async function POST(request: NextRequest) {
     details: { ids, successCount, failCount },
     request,
   });
+  // Bulk hide/show/delete must reflect on server-rendered collection/home pages immediately
+  if (successCount > 0) {
+    revalidatePath("/", "page");
+    revalidatePath("/collections/[slug]", "page");
+    revalidatePath("/collections/[slug]/[subcategory]", "page");
+  }
 
   return NextResponse.json({ successCount, failCount });
 }

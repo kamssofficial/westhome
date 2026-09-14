@@ -1,5 +1,6 @@
 import { notifyProductUpdated } from "@/lib/notifications";
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import db from "@/lib/db";
 import { requireAuthRole } from "@/lib/apiAuth";
 import { logAdminAction } from "@/lib/audit";
@@ -51,6 +52,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   });
 
   notifyProductUpdated(duplicate.name, "added (duplicated)").catch(() => {});
+  // Duplicate starts as DRAFT (hidden), so no storefront revalidation is needed
 
   return NextResponse.json({ product: duplicate });
 }

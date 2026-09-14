@@ -1,5 +1,6 @@
 import { notifyProductUpdated } from "@/lib/notifications";
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import db from "@/lib/db";
 import { requireAuthRole } from "@/lib/apiAuth";
 import { auth } from "@/lib/auth";
@@ -227,7 +228,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const slug = body.name.toLowerCase().replace(/[^\w\s-]/g, "").replace(/[\s_-]+/g, "-").replace(/^-+|-+$/g, "");
+    const slug = body.name.toLowerCase().replace(/[^\w\s-]/g, "").replace(/[\s_-]+/g, "-").replace(/^-+|-+$/g, "") || `product-${Date.now()}`;
     const product = await db.product.create({
       data: {
         name: body.name,
@@ -294,6 +295,7 @@ export async function POST(request: NextRequest) {
     // Handle images
     if (body.images && Array.isArray(body.images)) {
       for (const img of body.images) {
+        if (!img?.url) continue; // Skip malformed/pending uploads instead of failing the whole save
         await db.productImage.create({
           data: {
             productId: product.id,
@@ -350,6 +352,10 @@ export async function POST(request: NextRequest) {
       request,
     });
     notifyProductUpdated(product.name, "added").catch(() => {});
+    // New ACTIVE products must appear on server-rendered collection/home pages immediately
+    revalidatePath("/", "page");
+    revalidatePath("/collections/[slug]", "page");
+    revalidatePath("/collections/[slug]/[subcategory]", "page");
 
     return NextResponse.json({ product }, { status: 201 });
   } catch (error: any) {

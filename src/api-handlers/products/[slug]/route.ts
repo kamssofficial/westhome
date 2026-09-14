@@ -195,6 +195,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       await db.$transaction(async (tx) => {
         await tx.productImage.deleteMany({ where: { productId: product.id } });
         for (const img of body.images) {
+          if (!img?.url) continue; // Skip malformed/pending uploads instead of failing the whole save
           await tx.productImage.create({
             data: {
               productId: product.id,
@@ -312,6 +313,11 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     );
 
     await db.product.delete({ where: { id: product.id } });
+    // Deleted products must disappear from server-rendered collection/home pages immediately
+    revalidatePath("/", "page");
+    revalidatePath("/collections/[slug]", "page");
+    revalidatePath("/collections/[slug]/[subcategory]", "page");
+
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: "Failed to delete product" }, { status: 500 });
