@@ -63,55 +63,53 @@ export async function GET(request: Request) {
       });
     }
 
-    // Transaction: update master, create variants, delete duplicates
-    await db.$transaction(async (tx) => {
-      // Update master product to be the generic "Designer Lamp"
-      await tx.product.update({
-        where: { id: master.id },
-        data: {
-          name: "Designer Lamp",
-          slug: "designer-lamp",
-          shortDescription: "Choose from 34 stunning designer lamp designs to elevate your living spaces.",
-        }
-      });
-
-      // Delete old images from master (will re-add consolidated)
-      await tx.productImage.deleteMany({ where: { productId: master.id } });
-
-      // Re-add all consolidated images
-      for (let i = 0; i < allImages.length; i++) {
-        const img = allImages[i];
-        await tx.productImage.create({
-          data: {
-            productId: master.id,
-            url: img.url,
-            alt: img.alt || "Designer Lamp",
-            position: i,
-            isPrimary: i === 0,
-            imageType: img.imageType || "PRODUCT",
-          }
-        });
-      }
-
-      // Create all variants
-      for (const v of variantsToCreate) {
-        await tx.productVariant.create({ data: v });
-      }
-
-      // Delete duplicate products
-      for (const p of toDelete) {
-        await tx.productVariant.deleteMany({ where: { productId: p.id } });
-        await tx.productImage.deleteMany({ where: { productId: p.id } });
-        await tx.product.delete({ where: { id: p.id } });
+    // Step 1: Update master product name and slug
+    await db.product.update({
+      where: { id: master.id },
+      data: {
+        name: "Designer Lamp",
+        slug: "designer-lamp",
+        shortDescription: "Choose from 34 stunning designer lamp designs to elevate your living spaces.",
       }
     });
+
+    // Step 2: Delete old images from master and re-add consolidated
+    await db.productImage.deleteMany({ where: { productId: master.id } });
+    
+    for (let i = 0; i < allImages.length; i++) {
+      const img = allImages[i];
+      await db.productImage.create({
+        data: {
+          productId: master.id,
+          url: img.url,
+          alt: img.alt || "Designer Lamp",
+          position: i,
+          isPrimary: i === 0,
+          imageType: img.imageType || "PRODUCT",
+        }
+      });
+    }
+
+    // Step 3: Create all variants
+    for (const v of variantsToCreate) {
+      await db.productVariant.create({ data: v });
+    }
+
+    // Step 4: Delete duplicate products
+    let deletedCount = 0;
+    for (const p of toDelete) {
+      await db.productVariant.deleteMany({ where: { productId: p.id } });
+      await db.productImage.deleteMany({ where: { productId: p.id } });
+      await db.product.delete({ where: { id: p.id } });
+      deletedCount++;
+    }
 
     return NextResponse.json({
       success: true,
       master: master.id,
       masterNewName: "Designer Lamp",
       variantsCreated: variantsToCreate.length,
-      deletedProducts: toDelete.length,
+      deletedProducts: deletedCount,
       totalImagesConsolidated: allImages.length
     });
   } catch (error) {
