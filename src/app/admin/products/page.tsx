@@ -150,6 +150,27 @@ export default function AdminProductsPage() {
       .then((data) => setCategories((data?.categories || []).map((category: any) => ({ id: category.id, name: category.name }))))
       .catch(() => setCategories([]));
   }, []);
+  // Save scroll position when navigating away
+  useEffect(() => {
+    return () => {
+      try { sessionStorage.setItem('westhome-admin-products-scroll', String(window.scrollY)); } catch {}
+    };
+  }, []);
+
+  // Restore scroll position on back-navigation
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem('westhome-admin-products-scroll');
+      if (saved) {
+        sessionStorage.removeItem('westhome-admin-products-scroll');
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            window.scrollTo(0, parseInt(saved, 10));
+          });
+        });
+      }
+    } catch {}
+  }, []);
 
     const observerRef = useRef<IntersectionObserver | null>(null);
   const lastElementRef = useCallback((node: HTMLDivElement | null) => {
