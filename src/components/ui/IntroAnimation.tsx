@@ -45,10 +45,10 @@ export default function IntroAnimation({ children }: { children: React.ReactNode
     };
 
     at(() => setPhase("logo"), 50);
-    at(() => setPhase("line"), 1200);
-    at(() => setPhase("tagline"), 1800);
-    at(() => setPhase("wipe"), 3000);
-    at(() => setPhase("done"), 3600);
+    at(() => setPhase("line"), 700);
+    at(() => setPhase("tagline"), 1200);
+    at(() => setPhase("wipe"), 2500);
+    at(() => setPhase("done"), 3000);
 
     return () => timers.current.forEach(clearTimeout);
   }, [phase]);
