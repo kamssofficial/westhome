@@ -6,8 +6,8 @@ import {
   Package, ShoppingCart, Users, DollarSign,
   Eye, Heart, ShoppingBag, AlertTriangle, ArrowUpRight, ArrowDownRight,
   RefreshCw, Calendar, BarChart3, Target, Truck, Clock, Search, Filter,
-  ChevronRight, Activity, Zap, Shield, Layers,
-  PieChart, Map, MessageSquare, Smartphone, Monitor, Tablet, Star,
+  ChevronRight, Zap, Shield, Layers,
+  PieChart, Map, MessageSquare, Smartphone, Monitor, Tablet, Star, Globe,
   ExternalLink, Download, MoreHorizontal, CheckCircle, XCircle,
   Package as PackageIcon, UserPlus, CreditCard, Percent, Boxes,
 } from "lucide-react";
@@ -49,6 +49,43 @@ const DATE_RANGES = [
   { value: "lastMonth", label: "Last month" },
 ];
 
+// Real-time per-visitor rows from the existing /api/analytics/live endpoint.
+interface LiveVisitor {
+  sessionId: string;
+  device?: string | null;
+  currentPage?: string | null;
+  viewingProduct?: string | null;
+  isCustomer: boolean;
+  secondsSinceActive: number;
+}
+interface LiveState {
+  live: number;
+  customers: number;
+  guests: number;
+  visitors: LiveVisitor[];
+}
+const EMPTY_LIVE: LiveState = { live: 0, customers: 0, guests: 0, visitors: [] };
+
+function activeAgo(s: number): string {
+  if (s < 45) return "Just now";
+  if (s < 60) return `${s}s ago`;
+  const m = Math.floor(s / 60);
+  return m < 60 ? `${m} min ago` : `${Math.floor(m / 60)}h ago`;
+}
+// Human, anonymized page label — never raw slugs or URLs with identifiers.
+function prettyPage(path: string): string {
+  if (!path || path === "/") return "the homepage";
+  const p = path.replace(/^\/+/, "");
+  if (p.startsWith("products/")) return "a product";
+  if (p.startsWith("collections/")) return "a collection";
+  if (p.startsWith("cart")) return "the cart";
+  if (p.startsWith("checkout")) return "checkout";
+  if (p.startsWith("search")) return "search";
+  if (p.startsWith("account")) return "their account";
+  if (p.startsWith("wishlist")) return "their wishlist";
+  return "/" + p;
+}
+
 const STATUS_COLORS: Record<string, string> = {
   NEW: "bg-blue-100 text-blue-700", CONFIRMED: "bg-indigo-100 text-indigo-700",
   PROCESSING: "bg-amber-100 text-amber-700", SHIPPED: "bg-purple-100 text-purple-700",
@@ -59,10 +96,13 @@ const STATUS_COLORS: Record<string, string> = {
 // ─── Main Dashboard ──
 export default function AdminDashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
+  const [live, setLive] = useState<LiveState>(EMPTY_LIVE);
   const [range, setRange] = useState("30d");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [liveError, setLiveError] = useState(false);
+  const [liveLoaded, setLiveLoaded] = useState(false);
 
   const fetchData = useCallback(async (r: string, silent = false) => {
     if (!silent) setLoading(true);
@@ -89,6 +129,20 @@ export default function AdminDashboard() {
   }, []);
 
   useEffect(() => { fetchData(range); }, [range, fetchData]);
+
+  // Real-time visitors: poll the existing live endpoint (same one the BI
+  // dashboard uses) — no duplicate realtime system.
+  const fetchLive = useCallback(() => {
+    fetch("/api/analytics/live")
+      .then(r => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then(d => { setLive({ live: d.live || 0, customers: d.customers || 0, guests: d.guests || 0, visitors: d.visitors || [] }); setLiveError(false); setLiveLoaded(true); })
+      .catch(() => setLiveError(true));
+  }, []);
+  useEffect(() => {
+    fetchLive();
+    const i = setInterval(fetchLive, 15000);
+    return () => clearInterval(i);
+  }, [fetchLive]);
 
   const fmt = (n: number) => n >= 100000 ? `${(n / 100000).toFixed(1)}L` : n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n);
   const fmtCurrency = (n: number) => `₹${n.toLocaleString("en-IN")}`;
@@ -120,8 +174,11 @@ export default function AdminDashboard() {
   }
 
   const k = data?.kpis || {};
-  const live = data?.live || { sessions: 0, devices: [] };
   const funnel = data?.funnel || {};
+  const visitors = live.visitors || [];
+  const deviceCounts: Record<string, number> = { desktop: 0, mobile: 0, tablet: 0, unknown: 0 };
+  for (const v of visitors) { const d = (v.device || "unknown").toLowerCase(); deviceCounts[d] = (deviceCounts[d] || 0) + 1; }
+  const rangeLabel = DATE_RANGES.find(r => r.value === range)?.label || "Selected period";
 
   return (
     <div className="min-h-screen bg-[#f5f3ef]">
@@ -130,12 +187,6 @@ export default function AdminDashboard() {
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <h1 className="text-lg font-bold text-primary truncate">Dashboard</h1>
-            {live.sessions > 0 && (
-              <span className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 bg-green-50 text-green-700 text-xs font-medium rounded-full">
-                <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-                {live.sessions} live
-              </span>
-            )}
           </div>
           <div className="flex items-center gap-2">
             <select value={range} onChange={(e) => setRange(e.target.value)} className="px-3 py-1.5 text-xs font-medium border border-border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-accent/30">
@@ -157,34 +208,110 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* ── SECTION 1: Live Store ── */}
-        {live.sessions > 0 && (
-          <Section title="Live Store" icon={Activity} badge={`${live.sessions} online`} defaultOpen>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4">
-              <div className="text-center p-3 bg-surface-muted/50 rounded-xl">
-                <p className="text-2xl font-bold text-primary">{live.sessions}</p>
-                <p className="text-xs text-text-muted mt-1">Visitors Online</p>
-              </div>
-              {live.devices?.map((d: any) => (
-                <div key={d.type} className="text-center p-3 bg-surface-muted/50 rounded-xl">
-                  <p className="text-2xl font-bold text-primary">{d.count}</p>
-                  <p className="text-xs text-text-muted mt-1 capitalize">{d.type}</p>
-                </div>
-              ))}
+        {/* ── SECTION 1: LIVE STORE (real-time, always visible) ── */}
+        <section aria-label="Live Store" className="bg-white rounded-2xl border border-black/[.06] shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
+          {/* Header: one unambiguous live status */}
+          <div className="px-4 sm:px-6 py-4 flex items-center justify-between gap-3 flex-wrap border-b border-black/[.04]">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className="relative flex h-2.5 w-2.5 shrink-0" aria-hidden="true">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+              </span>
+              <h2 className="text-sm font-semibold text-primary tracking-wide">LIVE STORE</h2>
+              <span className="text-xs text-text-muted">·</span>
+              <span className="text-xs font-medium text-emerald-700 whitespace-nowrap">
+                {live.live} {live.live === 1 ? "visitor" : "visitors"} online
+              </span>
             </div>
-          </Section>
-        )}
+            <span className="hidden sm:flex items-center gap-1.5 text-[10px] font-medium text-text-muted">
+              <span className={cn("w-1.5 h-1.5 rounded-full", liveError ? "bg-red-400" : "bg-emerald-500 animate-pulse")} />
+              {liveError ? "Connection lost — retrying" : "Updating live"}
+            </span>
+          </div>
 
-        {/* ── SECTION 2: KPI Cards ── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <KPICard label="Revenue" value={fmtCurrency(k.revenue)} icon={DollarSign} trend={{ current: k.revenue, previous: k.prevRevenue }} href="/admin/orders?status=NEW" bg="bg-emerald-50" accent="text-emerald-600" />
-          <KPICard label="Orders" value={k.totalOrders || 0} icon={ShoppingCart} trend={{ current: k.totalOrders, previous: k.prevTotalOrders }} href="/admin/orders" />
-          <KPICard label="Avg Order Value" value={fmtCurrency(k.avgOrderValue)} icon={BarChart3} trend={{ current: k.avgOrderValue, previous: k.prevAvgOrderValue }} href="/admin/orders" bg="bg-blue-50" accent="text-blue-600" />
-          <KPICard label="Conversion Rate" value={`${k.conversionRate || 0}%`} icon={Target} href="/admin/analytics" bg="bg-purple-50" accent="text-purple-600" />
-          <KPICard label="Customers" value={k.totalCustomers || 0} icon={Users} trend={{ current: k.newCustomers, previous: k.prevNewCustomers }} href="/admin/customers" />
-          <KPICard label="Units Sold" value={k.unitsSold || 0} icon={Package} trend={{ current: k.unitsSold, previous: k.prevUnitsSold }} href="/admin/orders" bg="bg-amber-50" accent="text-amber-600" />
-          <KPICard label="Products" value={k.totalProducts || 0} icon={Boxes} href="/admin/products" bg="bg-indigo-50" accent="text-indigo-600" />
-          <KPICard label="Cancelled" value={k.cancelledOrders || 0} icon={XCircle} href="/admin/orders?status=CANCELLED" bg="bg-red-50" accent="text-red-500" />
+          {/* Summary: the one number that matters first */}
+          <div className="px-4 sm:px-6 py-5 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8">
+            <div className="flex items-center gap-4 min-w-0">
+              <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center shrink-0">
+                <span className="text-2xl font-bold text-emerald-700 tabular-nums">{live.live}</span>
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-primary">Visitors Online</p>
+                <p className="text-xs text-text-muted mt-0.5">
+                  {deviceCounts.desktop || 0} Desktop · {deviceCounts.mobile || 0} Mobile{deviceCounts.tablet > 0 ? ` · ${deviceCounts.tablet} Tablet` : ""}
+                </p>
+              </div>
+            </div>
+            <div className="sm:ml-auto sm:text-right">
+              <p className="text-[10px] font-medium text-text-muted uppercase tracking-wider">Active right now</p>
+              <p className="text-xs text-text-muted mt-0.5">Updates every 15s</p>
+            </div>
+          </div>
+
+          {/* Per-visitor live activity */}
+          <div className="px-4 sm:px-6 pb-5">
+            <div className="flex items-center justify-between mb-2.5">
+              <h3 className="text-xs font-semibold text-primary uppercase tracking-wider">Live Activity</h3>
+              <span className="text-[10px] text-text-muted">{visitors.length === 1 ? "1 person" : `${visitors.length} people`} browsing</span>
+            </div>
+            {!liveLoaded ? (
+              <div className="space-y-2">
+                {Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-14 rounded-xl bg-surface-muted/60 animate-pulse" />)}
+              </div>
+            ) : visitors.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-border py-8 text-center">
+                <Globe size={22} className="mx-auto text-text-muted/50 mb-2" />
+                <p className="text-sm font-medium text-primary">No visitors online right now</p>
+                <p className="text-xs text-text-muted mt-0.5">Live activity will appear here when someone visits your store.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {visitors.map((v) => {
+                  const Dev = v.device === "mobile" ? Smartphone : v.device === "tablet" ? Tablet : Monitor;
+                  const what = v.viewingProduct ? `Viewing "${v.viewingProduct}"` : v.currentPage ? `Browsing ${prettyPage(v.currentPage)}` : "Browsing the store";
+                  return (
+                    <div key={v.sessionId} className="flex items-center gap-3 p-3 rounded-xl border border-black/[.04] hover:bg-surface-muted/30 transition-colors">
+                      <span className="relative flex h-2 w-2 shrink-0" aria-hidden="true">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-primary truncate">
+                          <span className="font-medium">{v.isCustomer ? "Customer" : "Visitor"}</span>
+                          <span className="text-text-muted"> · </span>
+                          <span className="text-text-muted">{what}</span>
+                        </p>
+                        <p className="text-[11px] text-text-muted mt-0.5 flex items-center gap-1.5">
+                          <Dev size={11} className="shrink-0" />
+                          <span className="capitalize">{v.device || "Unknown device"}</span>
+                          <span>·</span>
+                          <span>{activeAgo(v.secondsSinceActive)}</span>
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* ── SECTION 2: Store Performance (historical — separate from Live Store) ── */}
+        <div>
+          <div className="flex items-center justify-between px-1 mb-2">
+            <h2 className="text-xs font-semibold text-text-muted uppercase tracking-wider">Store Performance</h2>
+            <span className="text-[10px] text-text-muted">{rangeLabel}</span>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <KPICard label="Revenue" value={fmtCurrency(k.revenue)} icon={DollarSign} trend={{ current: k.revenue, previous: k.prevRevenue }} trendLabel="previous period" href="/admin/orders?status=NEW" bg="bg-emerald-50" accent="text-emerald-600" />
+            <KPICard label="Orders" value={k.totalOrders || 0} icon={ShoppingCart} trend={{ current: k.totalOrders, previous: k.prevTotalOrders }} trendLabel="previous period" href="/admin/orders" />
+            <KPICard label="Avg Order Value" value={fmtCurrency(k.avgOrderValue)} icon={BarChart3} trend={{ current: k.avgOrderValue, previous: k.prevAvgOrderValue }} trendLabel="previous period" href="/admin/orders" bg="bg-blue-50" accent="text-blue-600" />
+            <KPICard label="Conversion Rate" value={`${k.conversionRate || 0}%`} icon={Target} href="/admin/analytics" bg="bg-purple-50" accent="text-purple-600" />
+            <KPICard label="Customers" value={k.totalCustomers || 0} icon={Users} trend={{ current: k.newCustomers, previous: k.prevNewCustomers }} trendLabel="previous period" href="/admin/customers" />
+            <KPICard label="Units Sold" value={k.unitsSold || 0} icon={Package} trend={{ current: k.unitsSold, previous: k.prevUnitsSold }} trendLabel="previous period" href="/admin/orders" bg="bg-amber-50" accent="text-amber-600" />
+            <KPICard label="Products" value={k.totalProducts || 0} icon={Boxes} href="/admin/products" bg="bg-indigo-50" accent="text-indigo-600" />
+            <KPICard label="Cancelled" value={k.cancelledOrders || 0} icon={XCircle} href="/admin/orders?status=CANCELLED" bg="bg-red-50" accent="text-red-500" />
+          </div>
         </div>
 
         {/* ── Revenue Quick Stats ── */}

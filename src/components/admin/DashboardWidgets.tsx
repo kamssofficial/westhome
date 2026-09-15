@@ -7,25 +7,31 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export function Trend({ current, previous, className }: { current: number; previous: number; className?: string }) {
-  const pct = previous === 0 ? (current > 0 ? 100 : 0) : Math.round(((current - previous) / previous) * 100);
+export function Trend({ current, previous, className, periodLabel }: { current: number; previous: number; className?: string; periodLabel?: string }) {
+  // With no previous-period baseline there is no honest comparison — show a
+  // neutral "New" badge instead of a misleading +100%.
+  if (previous === 0) {
+    if (current <= 0) return null;
+    return <span className={cn("text-[10px] font-medium text-text-muted bg-surface-muted px-1.5 py-0.5 rounded-full", className)}>New</span>;
+  }
+  const pct = Math.round(((current - previous) / previous) * 100);
   if (pct === 0) return <span className={cn("text-xs text-text-muted flex items-center gap-0.5", className)}><Minus size={12} /> 0%</span>;
   return (
     <span className={cn("text-xs font-medium flex items-center gap-0.5", pct > 0 ? "text-green-600" : "text-red-500", className)}>
       {pct > 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-      {Math.abs(pct)}%
+      {Math.abs(pct)}%{periodLabel ? ` vs ${periodLabel}` : ""}
     </span>
   );
 }
 
-export function KPICard({ label, value, icon: Icon, trend, href, bg, accent }: { label: string; value: string | number; icon: any; trend?: { current: number; previous: number }; href?: string; bg?: string; accent?: string }) {
+export function KPICard({ label, value, icon: Icon, trend, trendLabel, href, bg, accent }: { label: string; value: string | number; icon: any; trend?: { current: number; previous: number }; trendLabel?: string; href?: string; bg?: string; accent?: string }) {
   const card = (
     <div className={cn("bg-white rounded-2xl border border-black/[.06] p-4 hover:shadow-md transition-all", href && "cursor-pointer")}>
       <div className="flex items-start justify-between mb-3">
         <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", bg || "bg-[#f0ede8]")}>
           <Icon size={18} className={accent || "text-[#6b6560]"} />
         </div>
-        {trend && <Trend current={trend.current} previous={trend.previous} />}
+        {trend && <Trend current={trend.current} previous={trend.previous} periodLabel={trendLabel} />}
       </div>
       <p className="text-2xl font-bold text-primary tracking-tight">{value}</p>
       <p className="text-xs text-text-muted mt-1">{label}</p>
