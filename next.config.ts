@@ -3,9 +3,11 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   devIndicators: false,
   images: {
-    // Built-in optimizer: serves responsive sizes and converts to WebP/AVIF.
-    // (The previous custom loader disabled optimization entirely, so product
-    // photos shipped as original multi-MB PNGs at 3840px.)
+    // Vercel's hosted image optimizer currently returns 402
+    // OPTIMIZED_IMAGE_REQUEST_PAYMENT_REQUIRED on this deployment. Serve the
+    // existing local and remote image URLs directly so storefront images do
+    // not disappear when the optimizer quota/billing is unavailable.
+    unoptimized: true,
     formats: ["image/avif", "image/webp"],
     // Category tiles render local SVG placeholders through <Image>; the
     // optimizer rejects them without this. Only our own static SVGs are served.
