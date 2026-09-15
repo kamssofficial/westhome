@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import Providers from "@/components/layout/Providers";
+import ServiceWorkerRegistration from "@/components/ui/ServiceWorkerRegistration";
 
 // The production domain is the only correct base for canonical/OG URLs.
 // NEXTAUTH_URL must NOT drive metadataBase: on Vercel it is set to the
@@ -145,6 +146,7 @@ export default function RootLayout({
             },
           }}
         />
+        <ServiceWorkerRegistration />
         <Providers>
           {children}
         </Providers>

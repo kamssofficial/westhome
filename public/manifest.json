@@ -3,9 +3,12 @@
   "short_name": "WESTHOME",
   "description": "Premium Home & Lifestyle",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#1a1917",
+  "orientation": "portrait-primary",
+  "categories": ["shopping", "lifestyle"],
   "icons": [
     {
       "src": "/favicon-16x16.png",
