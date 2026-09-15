@@ -129,7 +129,13 @@ export default function AdminProductsPage() {
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [sort, setSort] = useState("newest");
   const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
+  const [total, setTotal] = useState(() => {
+    try {
+      const raw = sessionStorage.getItem(adminProductsCacheKey);
+      if (raw) { const e = JSON.parse(raw); if (e.expires > Date.now()) return e.data.total || 0; }
+    } catch {}
+    return 0;
+  });
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [confirmDlg, setConfirmDlg] = useState<{ title: string; message: string; confirmLabel: string; danger?: boolean; onConfirm: () => void } | null>(null);
