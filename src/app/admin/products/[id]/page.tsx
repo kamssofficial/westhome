@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, useRef, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Save, Trash2, Plus, PackagePlus, X } from "lucide-react";
@@ -58,6 +58,7 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
   const [variants, setVariants] = useState<VariantItem[]>([]);
   const [loadingVariants, setLoadingVariants] = useState(true);
   const [savingVariant, setSavingVariant] = useState(false);
+  const scrollRestoreRef = useRef<number | null>(null);
 
   const loadVariants = () => {
     setLoadingVariants(true);
@@ -149,6 +150,12 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
         );
         setCategories(catData.categories || []);
         setLoading(false);
+        // Restore scroll position after silent save-reload
+        if (silent && scrollRestoreRef.current !== null) {
+          const y = scrollRestoreRef.current;
+          scrollRestoreRef.current = null;
+          requestAnimationFrame(() => requestAnimationFrame(() => window.scrollTo(0, y)));
+        }
       })
       .catch((err) => {
         if (silent) return; // keep the current form on a failed background refresh
@@ -175,6 +182,7 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
       toast.error("Name, price, and category are required");
       return;
     }
+    scrollRestoreRef.current = window.scrollY;
     setSaving(true);
     try {
       const res = await fetch(`/api/products/${id}`, {

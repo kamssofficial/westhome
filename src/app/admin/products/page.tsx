@@ -128,6 +128,7 @@ export default function AdminProductsPage() {
   const [diag, setDiag] = useState<DiagInfo | null>(null);
   const [diagLoading, setDiagLoading] = useState(false);
   const [fixing, setFixing] = useState(false);
+  const scrollRestoreRef = useRef<number | null>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search), 300);
@@ -180,7 +181,15 @@ export default function AdminProductsPage() {
         setTotal(d.total); 
       }
       else { setLoadError("Failed to load products."); if (!isLoadMore) setProducts([]); }
-    } catch { setLoadError("Failed to load products."); if (!isLoadMore) setProducts([]); } finally { setLoading(false); setIsFetchingMore(false); }
+    } catch { setLoadError("Failed to load products."); if (!isLoadMore) setProducts([]); } finally {
+      setLoading(false); setIsFetchingMore(false);
+      // Restore scroll position if one was saved before this fetch
+      if (scrollRestoreRef.current !== null) {
+        const y = scrollRestoreRef.current;
+        scrollRestoreRef.current = null;
+        requestAnimationFrame(() => requestAnimationFrame(() => window.scrollTo(0, y)));
+      }
+    }
   }, [debouncedSearch, statusFilter, categoryFilter, sort, page]);
 
   useEffect(() => { fetchProducts(); setSelectedIds(new Set()); }, [fetchProducts]);
@@ -188,10 +197,14 @@ export default function AdminProductsPage() {
   const toggleAll = () => { if (selectedIds.size === products.length) setSelectedIds(new Set()); else setSelectedIds(new Set(products.map(p => p.id))); };
   const toggleOne = (id: string) => { const s = new Set(selectedIds); s.has(id) ? s.delete(id) : s.add(id); setSelectedIds(s); };
 
+  // Save scroll position before destructive actions so we can restore after fetch
+  const saveScrollForRestore = () => { scrollRestoreRef.current = window.scrollY; };
+
   const handleAction = async (action: string, product: Product) => {
     if (action === "view") { window.open("/products/" + product.slug, "_blank"); return; }
     if (action === "edit") { router.push("/admin/products/" + product.id); return; }
     if (action === "duplicate") {
+      saveScrollForRestore();
       toast.loading("Duplicating...");
       try { const res = await fetch("/api/admin/products/" + product.id + "/duplicate", { method: "POST" }); toast.dismiss();
         if (res.ok) { toast.success("Product duplicated"); fetchProducts(); } else { const d = await res.json(); toast.error(d.error || "Failed"); }
@@ -200,18 +213,18 @@ export default function AdminProductsPage() {
     }
     if (action === "archive") {
       setConfirmDlg({ title: "Archive product?", message: `"${product.name}" will be removed from the storefront.`, confirmLabel: "Archive",
-        onConfirm: async () => { const res = await fetch("/api/admin/products/" + product.id, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "ARCHIVED" }) });
+        onConfirm: async () => { saveScrollForRestore(); const res = await fetch("/api/admin/products/" + product.id, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "ARCHIVED" }) });
           if (res.ok) { toast.success("Archived"); fetchProducts(); } else { const d = await res.json().catch(() => null); toast.error(d?.error || d?.message || "Failed to archive"); } setConfirmDlg(null); },
       }); return;
     }
     if (action === "delete") {
       if (product._count.orderItems > 0) {
         setConfirmDlg({ title: "Cannot delete", message: `This product has ${product._count.orderItems} order(s). Archive instead.`, confirmLabel: "Archive Instead",
-          onConfirm: async () => { await fetch("/api/admin/products/" + product.id, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "ARCHIVED" }) }); toast.success("Archived"); fetchProducts(); setConfirmDlg(null); },
+          onConfirm: async () => { saveScrollForRestore(); await fetch("/api/admin/products/" + product.id, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "ARCHIVED" }) }); toast.success("Archived"); fetchProducts(); setConfirmDlg(null); },
         });
       } else {
         setConfirmDlg({ title: "Delete product?", message: `"${product.name}" will be permanently deleted.`, confirmLabel: "Delete", danger: true,
-          onConfirm: async () => { const res = await fetch("/api/admin/products/" + product.id, { method: "DELETE" }); if (res.ok) { toast.success("Deleted"); fetchProducts(); } else { const d = await res.json(); toast.error(d.message || "Failed"); } setConfirmDlg(null); },
+          onConfirm: async () => { saveScrollForRestore(); const res = await fetch("/api/admin/products/" + product.id, { method: "DELETE" }); if (res.ok) { toast.success("Deleted"); fetchProducts(); } else { const d = await res.json(); toast.error(d.message || "Failed"); } setConfirmDlg(null); },
         });
       }
     }
@@ -220,7 +233,7 @@ export default function AdminProductsPage() {
   const handleBulk = async (action: string) => {
     const n = selectedIds.size; const isDel = action === "delete";
     setConfirmDlg({ title: isDel ? `Delete ${n} products?` : `${action} ${n} products?`, message: isDel ? "This cannot be undone." : "This will change status.", confirmLabel: isDel ? "Delete" : "Apply", danger: isDel,
-      onConfirm: async () => { try { const res = await fetch("/api/admin/products/bulk", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, ids: Array.from(selectedIds) }) }); const d = await res.json(); if (d.successCount > 0) toast.success(`${d.successCount} product(s) updated`); if (d.failCount > 0) toast.error(`${d.failCount} skipped`); if (d.error) toast.error(d.error); } catch { toast.error("Request failed — check your connection and try again"); } setSelectedIds(new Set()); setConfirmDlg(null); fetchProducts(); },
+      onConfirm: async () => { saveScrollForRestore(); try { const res = await fetch("/api/admin/products/bulk", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, ids: Array.from(selectedIds) }) }); const d = await res.json(); if (d.successCount > 0) toast.success(`${d.successCount} product(s) updated`); if (d.failCount > 0) toast.error(`${d.failCount} skipped`); if (d.error) toast.error(d.error); } catch { toast.error("Request failed — check your connection and try again"); } setSelectedIds(new Set()); setConfirmDlg(null); fetchProducts(); },
     });
   };
 
