@@ -7,16 +7,20 @@ import { ArrowRight, ArrowUpRight } from "lucide-react";
 import { ProductGridSkeleton } from "@/components/ui/Skeleton";
 import type { Category } from "@/types";
 import { resolveCategoryImage } from "@/lib/categoryImages";
+import { cachedFetchWithBackgroundRefresh } from "@/lib/clientCache";
 
 export default function ShopPage() {
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<Category[]>(() => {
+    const cached = cachedFetchWithBackgroundRefresh<Category[]>("/api/categories", { ttl: 5 * 60_000 });
+    return cached || [];
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/categories")
       .then((r) => r.json())
       .then((data) => {
-        setCategories(data.categories || []);
+        if (data.categories?.length) setCategories(data.categories);
       })
       .catch(() => {})
       .finally(() => setLoading(false));

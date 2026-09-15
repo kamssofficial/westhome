@@ -21,14 +21,31 @@ import { ProductGridSkeleton } from "@/components/ui/Skeleton";
 import type { Category, Product } from "@/types";
 import Testimonials from "@/components/ui/Testimonials";
 import { resolveCategoryImage } from "@/lib/categoryImages";
+import { cachedFetchWithBackgroundRefresh } from "@/lib/clientCache";
 
 const SCROLL_KEY = "westhome-home-scroll";
 
 export default function HomePage() {
   const { whatsappNumber } = useSettings();
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
-  const [newArrivals, setNewArrivals] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>(() => {
+    // Show cached data instantly on mount
+    const cached = cachedFetchWithBackgroundRefresh<Category[]>("/api/categories", {
+      ttl: 5 * 60_000,
+    });
+    return cached || [];
+  });
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>(() => {
+    const cached = cachedFetchWithBackgroundRefresh<Product[]>("/api/products?lite=true&featured=true&limit=4", {
+      ttl: 5 * 60_000,
+    });
+    return cached || [];
+  });
+  const [newArrivals, setNewArrivals] = useState<Product[]>(() => {
+    const cached = cachedFetchWithBackgroundRefresh<Product[]>("/api/products?lite=true&newArrivals=true&limit=4", {
+      ttl: 5 * 60_000,
+    });
+    return cached || [];
+  });
   const [loading, setLoading] = useState(true);
   const scrollYRef = useRef(0);
 
@@ -52,7 +69,6 @@ export default function HomePage() {
       const saved = sessionStorage.getItem(SCROLL_KEY);
       if (saved) {
         sessionStorage.removeItem(SCROLL_KEY);
-        // Use rAF + setTimeout to ensure DOM is fully rendered before scrolling
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
             window.scrollTo(0, parseInt(saved, 10));
@@ -62,6 +78,7 @@ export default function HomePage() {
     } catch {}
   }, []);
 
+  // Background refresh: fetch fresh data and update state
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -75,7 +92,6 @@ export default function HomePage() {
           if (data.categories?.length) setCategories(data.categories);
         }
 
-        // Featured products — fallback to newest if none marked featured
         let featured: Product[] = [];
         if (featRes.status === "fulfilled" && featRes.value.ok) {
           const data = await featRes.value.json();
