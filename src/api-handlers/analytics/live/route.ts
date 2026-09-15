@@ -11,7 +11,7 @@ let lastCleanupAt = 0;
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { sessionId, deviceType, userAgent } = body;
+    const { sessionId, deviceType, userAgent, currentPage, currentProductId } = body;
     if (!isValidSessionId(sessionId)) {
       return NextResponse.json({ ok: true });
     }
@@ -31,6 +31,9 @@ export async function POST(request: NextRequest) {
         userAgent: typeof userAgent === "string" ? userAgent.slice(0, 1000) : null,
         userId,
         isStaff,
+        // What the visitor is looking at right now (cleared when not viewing a product)
+        currentPage: typeof currentPage === "string" ? currentPage.slice(0, 300) : null,
+        currentProductId: typeof currentProductId === "string" ? currentProductId.slice(0, 200) : null,
       },
       create: {
         sessionId,
@@ -38,6 +41,8 @@ export async function POST(request: NextRequest) {
         userAgent: typeof userAgent === "string" ? userAgent.slice(0, 1000) : null,
         userId,
         isStaff,
+        currentPage: typeof currentPage === "string" ? currentPage.slice(0, 300) : null,
+        currentProductId: typeof currentProductId === "string" ? currentProductId.slice(0, 200) : null,
       },
     });
 
@@ -60,23 +65,48 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   try {
     const session = await auth();
-    if (!session?.user) return NextResponse.json({ live: 0, customers: 0, guests: 0 });
-
-    const role = session.user.role;
-    if (role === "CUSTOMER") return NextResponse.json({ live: 0, customers: 0, guests: 0 });
-    if (!["ADMIN", "MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER", "STAFF"].includes(role)) {
-      return NextResponse.json({ live: 0, customers: 0, guests: 0 });
+    const role = session?.user?.role as string | undefined;
+    if (!session?.user || role === "CUSTOMER" || !["ADMIN", "MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER", "STAFF"].includes(role || "")) {
+      return NextResponse.json({ live: 0, customers: 0, guests: 0, visitors: [] });
     }
 
     const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000);
-    const [total, customers, guests] = await Promise.all([
+    const [total, customers, guests, rows] = await Promise.all([
       db.liveSession.count({ where: { lastActive: { gte: fiveMinAgo }, isStaff: false } }),
       db.liveSession.count({ where: { lastActive: { gte: fiveMinAgo }, isStaff: false, userId: { not: null } } }),
       db.liveSession.count({ where: { lastActive: { gte: fiveMinAgo }, isStaff: false, userId: null } }),
+      // Real per-visitor detail for the Live Store cards
+      db.liveSession.findMany({
+        where: { lastActive: { gte: fiveMinAgo }, isStaff: false },
+        select: {
+          sessionId: true, deviceType: true, currentPage: true, currentProductId: true,
+          lastActive: true, createdAt: true, userId: true,
+        },
+        orderBy: { lastActive: "desc" },
+        take: 50,
+      }),
     ]);
 
-    return NextResponse.json({ live: total, customers, guests });
+    // Resolve product names for visitors currently on a product page — from
+    // the real Product table, never invented.
+    const productIds = [...new Set(rows.map(r => r.currentProductId).filter(Boolean))] as string[];
+    const products = productIds.length > 0
+      ? await db.product.findMany({ where: { id: { in: productIds } }, select: { id: true, name: true } })
+      : [];
+    const pMap = Object.fromEntries(products.map(p => [p.id, p.name]));
+
+    const visitors = rows.map(r => ({
+      sessionId: r.sessionId,
+      device: r.deviceType || "unknown",
+      currentPage: r.currentPage,
+      viewingProduct: r.currentProductId ? (pMap[r.currentProductId] || null) : null,
+      isCustomer: r.userId != null,
+      secondsSinceActive: Math.max(0, Math.round((Date.now() - new Date(r.lastActive).getTime()) / 1000)),
+      sessionStartedAt: r.createdAt,
+    }));
+
+    return NextResponse.json({ live: total, customers, guests, visitors });
   } catch {
-    return NextResponse.json({ live: 0, customers: 0, guests: 0 });
+    return NextResponse.json({ live: 0, customers: 0, guests: 0, visitors: [] });
   }
 }

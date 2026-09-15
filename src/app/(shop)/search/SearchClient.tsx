@@ -8,6 +8,7 @@ import {
   X, Clock, TrendingUp, Loader2, ArrowUpDown, Check,
 } from "lucide-react";
 import ProductCard from "@/components/ui/ProductCard";
+import { trackEvent } from "@/components/ui/AnalyticsTracker";
 import { ProductGridSkeleton } from "@/components/ui/Skeleton";
 import FilterPanel, { type FilterState, EMPTY_FILTERS } from "@/components/shop/FilterPanel";
 import { cn } from "@/lib/utils";
@@ -89,6 +90,11 @@ function SearchContent() {
   }, [initialQuery, filters.category, filters.subcategory, filters.minPrice, filters.maxPrice, filters.inStock, sort]);
 
   useEffect(() => { setPage(1); setHasMore(true); fetchProducts(1, false); if (initialQuery) saveRecentSearch(initialQuery); }, [fetchProducts]);
+
+  // Real SEARCH analytics event when a query is actually searched
+  useEffect(() => {
+    if (initialQuery.trim()) trackEvent("SEARCH", { query: initialQuery.trim() });
+  }, [initialQuery]);
 
   useEffect(() => {
     if (!sentinelRef.current) return;

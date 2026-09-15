@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { SlidersHorizontal, ChevronDown, ArrowRight, ArrowLeft, Grid3X3, List } from "lucide-react";
 import ProductCard from "@/components/ui/ProductCard";
+import { trackEvent } from "@/components/ui/AnalyticsTracker";
 import { ProductGridSkeleton } from "@/components/ui/Skeleton";
 import EmptyState from "@/components/ui/EmptyState";
 import { cn } from "@/lib/utils";
@@ -28,6 +29,11 @@ interface CollectionContentProps {
 }
 function CategoryContent({ category: initialCategory, initialProducts, initialTotal: initialTotalCount, staticImages = [] }: CollectionContentProps) {
   const slug = initialCategory?.slug || "";
+
+  // Real COLLECTION_VIEW analytics event per collection visit
+  useEffect(() => {
+    if (initialCategory?.id) trackEvent("COLLECTION_VIEW", { categoryId: initialCategory.id });
+  }, [initialCategory?.id]);
 
   const [products, setProducts] = useState<any[]>(initialProducts || []);
   const [category, setCategory] = useState<any>(initialCategory || null);

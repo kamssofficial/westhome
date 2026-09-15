@@ -42,14 +42,17 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const range = searchParams.get("range") || "30d";
     const since = getDateRange(range);
+    // "yesterday" must not bleed into today: add an exclusive end bound.
+    const until = range === "yesterday" ? (() => { const d = new Date(); d.setDate(d.getDate() - 1); d.setHours(23, 59, 59, 999); return d; })() : null;
+    const sinceClause = until ? { gte: since, lte: until } : { gte: since };
     const now = new Date();
     const todayStart = new Date(now); todayStart.setHours(0,0,0,0);
     const weekAgo = new Date(now.getTime() - 7*24*60*60*1000);
 
     // Current period metrics
     const [eventsByType, uniqueSessions, todaySessions, weekSessions] = await Promise.all([
-      db.analyticsEvent.groupBy({ by: ["eventType"], _count: { id: true }, where: { createdAt: { gte: since } } }),
-      db.analyticsEvent.findMany({ where: { createdAt: { gte: since } }, select: { sessionId: true }, distinct: ["sessionId"] }),
+      db.analyticsEvent.groupBy({ by: ["eventType"], _count: { id: true }, where: { createdAt: sinceClause } }),
+      db.analyticsEvent.findMany({ where: { createdAt: sinceClause }, select: { sessionId: true }, distinct: ["sessionId"] }),
       db.analyticsEvent.findMany({ where: { createdAt: { gte: todayStart } }, select: { sessionId: true }, distinct: ["sessionId"] }),
       db.analyticsEvent.findMany({ where: { createdAt: { gte: weekAgo } }, select: { sessionId: true }, distinct: ["sessionId"] }),
     ]);
@@ -66,7 +69,7 @@ export async function GET(request: NextRequest) {
 
     // Revenue
     const [revenueResult, prevRevenueResult] = await Promise.all([
-      db.order.aggregate({ _sum: { total: true }, where: { paymentStatus: "COMPLETED", createdAt: { gte: since } } }),
+      db.order.aggregate({ _sum: { total: true }, where: { paymentStatus: "COMPLETED", createdAt: sinceClause } }),
       db.order.aggregate({ _sum: { total: true }, where: { paymentStatus: "COMPLETED", createdAt: { gte: prev.start, lte: prev.end } } }),
     ]);
     const revenue = Number(revenueResult._sum.total || 0);
@@ -74,15 +77,15 @@ export async function GET(request: NextRequest) {
 
     // Purchases & units
     const [purchases, prevPurchases, unitsResult] = await Promise.all([
-      db.order.count({ where: { paymentStatus: "COMPLETED", createdAt: { gte: since } } }),
+      db.order.count({ where: { paymentStatus: "COMPLETED", createdAt: sinceClause } }),
       db.order.count({ where: { paymentStatus: "COMPLETED", createdAt: { gte: prev.start, lte: prev.end } } }),
-      db.orderItem.aggregate({ _sum: { quantity: true }, where: { order: { createdAt: { gte: since }, paymentStatus: "COMPLETED" } } }),
+      db.orderItem.aggregate({ _sum: { quantity: true }, where: { order: { createdAt: sinceClause, paymentStatus: "COMPLETED" } } }),
     ]);
     const unitsSold = Number(unitsResult._sum.quantity || 0);
 
     // Traffic sources from metadata
     const trafficEvents = await db.analyticsEvent.findMany({
-      where: { createdAt: { gte: since }, metadata: { not: null } },
+      where: { createdAt: sinceClause, metadata: { not: null } },
       select: { metadata: true },
       take: 5000,
     });
@@ -93,10 +96,10 @@ export async function GET(request: NextRequest) {
     });
 
     // Device breakdown
-    const deviceBreakdown = await db.analyticsEvent.groupBy({ by: ["deviceType"], _count: { id: true }, where: { createdAt: { gte: since } } });
+    const deviceBreakdown = await db.analyticsEvent.groupBy({ by: ["deviceType"], _count: { id: true }, where: { createdAt: sinceClause } });
 
     // Category analytics
-    const categoryEvents = await db.analyticsEvent.groupBy({ by: ["categoryId", "eventType"], _count: { id: true }, where: { createdAt: { gte: since }, categoryId: { not: null } } });
+    const categoryEvents = await db.analyticsEvent.groupBy({ by: ["categoryId", "eventType"], _count: { id: true }, where: { createdAt: sinceClause, categoryId: { not: null } } });
     const categoryMap: Record<string, Record<string, number>> = {};
     categoryEvents.forEach(e => {
       if (!e.categoryId) return;
@@ -114,7 +117,7 @@ export async function GET(request: NextRequest) {
 
     // Search analytics
     const searchEvents = await db.analyticsEvent.findMany({
-      where: { createdAt: { gte: since }, eventType: "SEARCH", metadata: { not: null } },
+      where: { createdAt: sinceClause, eventType: "SEARCH", metadata: { not: null } },
       select: { metadata: true },
       take: 2000,
     });
@@ -127,11 +130,11 @@ export async function GET(request: NextRequest) {
 
     // Abandoned carts (CHECKOUT_STARTED without PURCHASE within session)
     const checkoutSessions = await db.analyticsEvent.findMany({
-      where: { createdAt: { gte: since }, eventType: "CHECKOUT_STARTED" },
+      where: { createdAt: sinceClause, eventType: "CHECKOUT_STARTED" },
       select: { sessionId: true },
     });
     const purchaseSessions = await db.analyticsEvent.findMany({
-      where: { createdAt: { gte: since }, eventType: "PURCHASE" },
+      where: { createdAt: sinceClause, eventType: "PURCHASE" },
       select: { sessionId: true },
     });
     const purchasedSessionIds = new Set(purchaseSessions.map(p => p.sessionId).filter(Boolean));
@@ -139,12 +142,12 @@ export async function GET(request: NextRequest) {
 
     // Customer retention
     const [newCustomers, returningCustomers] = await Promise.all([
-      db.user.count({ where: { role: "CUSTOMER", createdAt: { gte: since } } }),
+      db.user.count({ where: { role: "CUSTOMER", createdAt: sinceClause } }),
       db.user.count({ where: { role: "CUSTOMER", createdAt: { lt: since } } }),
     ]);
 
     // Top products by views
-    const topViewed = await db.analyticsEvent.groupBy({ by: ["productId"], _count: { id: true }, where: { eventType: "VIEW", productId: { not: null }, createdAt: { gte: since } }, orderBy: { _count: { id: "desc" } }, take: 10 });
+    const topViewed = await db.analyticsEvent.groupBy({ by: ["productId"], _count: { id: true }, where: { eventType: "VIEW", productId: { not: null }, createdAt: sinceClause }, orderBy: { _count: { id: "desc" } }, take: 10 });
     const topViewedIds = topViewed.map(t => t.productId).filter(Boolean) as string[];
     const topViewedProducts = topViewedIds.length > 0 ? await db.product.findMany({ where: { id: { in: topViewedIds } }, select: { id: true, name: true, slug: true, regularPrice: true, stockQuantity: true } }) : [];
     const tvMap = Object.fromEntries(topViewedProducts.map(p => [p.id, p]));
@@ -153,7 +156,7 @@ export async function GET(request: NextRequest) {
       count: t._count.id, stock: tvMap[t.productId!]?.stockQuantity || 0,
     }));
 
-    const topPurchased = await db.orderItem.groupBy({ by: ["productId"], _sum: { quantity: true, totalPrice: true }, _count: { id: true }, where: { order: { createdAt: { gte: since }, paymentStatus: "COMPLETED" } }, orderBy: { _sum: { quantity: "desc" } }, take: 10 });
+    const topPurchased = await db.orderItem.groupBy({ by: ["productId"], _sum: { quantity: true, totalPrice: true }, _count: { id: true }, where: { order: { createdAt: sinceClause, paymentStatus: "COMPLETED" } }, orderBy: { _sum: { quantity: "desc" } }, take: 10 });
     const topPurchasedIds = topPurchased.map(t => t.productId);
     const topPurchasedProducts = topPurchasedIds.length > 0 ? await db.product.findMany({ where: { id: { in: topPurchasedIds } }, select: { id: true, name: true, slug: true } }) : [];
     const tpMap = Object.fromEntries(topPurchasedProducts.map(p => [p.id, p]));

@@ -107,6 +107,18 @@ export async function POST(request: NextRequest) {
       orderId: processedOrder.id,
     }).catch(() => {});
 
+    // Real PURCHASE analytics event (server-side, so it cannot be blocked by
+    // the browser and fires exactly once per verified payment)
+    db.analyticsEvent.create({
+      data: {
+        eventType: "PURCHASE",
+        sessionId: ("order_" + processedOrder.id).slice(0, 100),
+        userId: processedOrder.userId,
+        productId: processedOrder.items[0]?.productId || null,
+        metadata: { orderId: processedOrder.id, orderNumber: processedOrder.orderNumber, total: Number(processedOrder.total), itemCount: processedOrder.items.length },
+      },
+    }).catch(() => {});
+
     for (const item of processedOrder.items) {
       try {
         const product = await db.product.findUnique({ where: { id: item.productId }, select: { id: true, name: true, stockQuantity: true, trackInventory: true, lowStockThreshold: true } });

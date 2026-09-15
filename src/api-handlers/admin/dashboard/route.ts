@@ -58,6 +58,9 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const range = searchParams.get("range") || "30d";
     const since = getDateRange(range);
+    // "yesterday" must not bleed into today: add an exclusive end bound.
+    const until = range === "yesterday" ? (() => { const d = new Date(); d.setDate(d.getDate() - 1); d.setHours(23, 59, 59, 999); return d; })() : null;
+    const sinceClause = until ? { gte: since, lte: until } : { gte: since };
     const prevStart = getPreviousStart(range);
     const prevEnd = getPreviousEnd(range);
     const now = new Date();
@@ -67,9 +70,9 @@ export async function GET(request: NextRequest) {
 
     // ── Revenue & Orders ──
     const [revenueData, prevRevenueData, totalOrders, prevTotalOrders] = await Promise.all([
-      db.order.aggregate({ _sum: { total: true }, _count: { id: true }, where: { paymentStatus: "COMPLETED", createdAt: { gte: since } } }),
+      db.order.aggregate({ _sum: { total: true }, _count: { id: true }, where: { paymentStatus: "COMPLETED", createdAt: sinceClause } }),
       db.order.aggregate({ _sum: { total: true }, _count: { id: true }, where: { paymentStatus: "COMPLETED", createdAt: { gte: prevStart, lte: prevEnd } } }),
-      db.order.count({ where: { createdAt: { gte: since } } }),
+      db.order.count({ where: { createdAt: sinceClause } }),
       db.order.count({ where: { createdAt: { gte: prevStart, lte: prevEnd } } }),
     ]);
 
@@ -81,7 +84,7 @@ export async function GET(request: NextRequest) {
     const prevAvgOrderValue = prevCompletedOrders > 0 ? Math.round(prevRevenue / prevCompletedOrders) : 0;
 
     // ── Order Status Breakdown ──
-    const statusCounts = await db.order.groupBy({ by: ["status"], _count: { id: true }, where: { createdAt: { gte: since } } });
+    const statusCounts = await db.order.groupBy({ by: ["status"], _count: { id: true }, where: { createdAt: sinceClause } });
     const statusMap: Record<string, number> = {};
     statusCounts.forEach(s => { statusMap[s.status] = s._count.id; });
 
@@ -90,7 +93,7 @@ export async function GET(request: NextRequest) {
     const monthOrders = await db.order.count({ where: { createdAt: { gte: monthStart } } });
 
     // ── Units Sold ──
-    const unitsData = await db.orderItem.aggregate({ _sum: { quantity: true }, where: { order: { createdAt: { gte: since }, paymentStatus: "COMPLETED" } } });
+    const unitsData = await db.orderItem.aggregate({ _sum: { quantity: true }, where: { order: { createdAt: sinceClause, paymentStatus: "COMPLETED" } } });
     const unitsSold = Number(unitsData._sum.quantity || 0);
     const prevUnitsData = await db.orderItem.aggregate({ _sum: { quantity: true }, where: { order: { createdAt: { gte: prevStart, lte: prevEnd }, paymentStatus: "COMPLETED" } } });
     const prevUnitsSold = Number(prevUnitsData._sum.quantity || 0);
@@ -98,7 +101,7 @@ export async function GET(request: NextRequest) {
     // ── Customers ──
     const [totalCustomers, newCustomers, prevNewCustomers] = await Promise.all([
       db.user.count({ where: { role: "CUSTOMER", isActive: true } }),
-      db.user.count({ where: { role: "CUSTOMER", isActive: true, createdAt: { gte: since } } }),
+      db.user.count({ where: { role: "CUSTOMER", isActive: true, createdAt: sinceClause } }),
       db.user.count({ where: { role: "CUSTOMER", isActive: true, createdAt: { gte: prevStart, lte: prevEnd } } }),
     ]);
     const returningCustomers = totalCustomers - newCustomers;
@@ -112,13 +115,13 @@ export async function GET(request: NextRequest) {
     ]);
 
     // ── Products Sold (distinct) ──
-    const productsSold = await db.orderItem.groupBy({ by: ["productId"], where: { order: { createdAt: { gte: since }, paymentStatus: "COMPLETED" } } });
+    const productsSold = await db.orderItem.groupBy({ by: ["productId"], where: { order: { createdAt: sinceClause, paymentStatus: "COMPLETED" } } });
 
     // ── Refunds / Cancelled ──
     const [refundCount, cancelledCount, pendingPayments] = await Promise.all([
-      db.order.count({ where: { paymentStatus: "REFUNDED", createdAt: { gte: since } } }),
-      db.order.count({ where: { status: "CANCELLED", createdAt: { gte: since } } }),
-      db.order.count({ where: { paymentStatus: "PENDING", createdAt: { gte: since } } }),
+      db.order.count({ where: { paymentStatus: "REFUNDED", createdAt: sinceClause } }),
+      db.order.count({ where: { status: "CANCELLED", createdAt: sinceClause } }),
+      db.order.count({ where: { paymentStatus: "PENDING", createdAt: sinceClause } }),
     ]);
 
     // ── Live Sessions ──
@@ -127,7 +130,7 @@ export async function GET(request: NextRequest) {
     const liveDevices = await db.liveSession.groupBy({ by: ["deviceType"], _count: { id: true }, where: { lastActive: { gte: fiveMinAgo }, isStaff: false } });
 
     // ── Analytics Events ──
-    const eventCounts = await db.analyticsEvent.groupBy({ by: ["eventType"], _count: { id: true }, where: { createdAt: { gte: since } } });
+    const eventCounts = await db.analyticsEvent.groupBy({ by: ["eventType"], _count: { id: true }, where: { createdAt: sinceClause } });
     const events: Record<string, number> = {};
     eventCounts.forEach(e => { events[e.eventType] = e._count.id; });
 
@@ -147,27 +150,27 @@ export async function GET(request: NextRequest) {
     // ── Top Products ──
     const topByRevenue = await db.orderItem.groupBy({
       by: ["productId"], _sum: { totalPrice: true, quantity: true }, _count: { id: true },
-      where: { order: { createdAt: { gte: since }, paymentStatus: "COMPLETED" } },
+      where: { order: { createdAt: sinceClause, paymentStatus: "COMPLETED" } },
       orderBy: { _sum: { totalPrice: "desc" } }, take: 10,
     });
     const topByUnits = await db.orderItem.groupBy({
       by: ["productId"], _sum: { quantity: true, totalPrice: true }, _count: { id: true },
-      where: { order: { createdAt: { gte: since }, paymentStatus: "COMPLETED" } },
+      where: { order: { createdAt: sinceClause, paymentStatus: "COMPLETED" } },
       orderBy: { _sum: { quantity: "desc" } }, take: 10,
     });
     const topByViews = await db.analyticsEvent.groupBy({
       by: ["productId"], _count: { id: true },
-      where: { eventType: { in: ["VIEW", "PRODUCT_VIEW"] }, productId: { not: null }, createdAt: { gte: since } },
+      where: { eventType: { in: ["VIEW", "PRODUCT_VIEW"] }, productId: { not: null }, createdAt: sinceClause },
       orderBy: { _count: { id: "desc" } }, take: 10,
     });
     const topByWishlist = await db.analyticsEvent.groupBy({
       by: ["productId"], _count: { id: true },
-      where: { eventType: { in: ["WISHLIST_ADD", "WISHLIST"] }, productId: { not: null }, createdAt: { gte: since } },
+      where: { eventType: { in: ["WISHLIST_ADD", "WISHLIST"] }, productId: { not: null }, createdAt: sinceClause },
       orderBy: { _count: { id: "desc" } }, take: 10,
     });
     const topByCart = await db.analyticsEvent.groupBy({
       by: ["productId"], _count: { id: true },
-      where: { eventType: "ADD_TO_CART", productId: { not: null }, createdAt: { gte: since } },
+      where: { eventType: "ADD_TO_CART", productId: { not: null }, createdAt: sinceClause },
       orderBy: { _count: { id: "desc" } }, take: 10,
     });
 
@@ -214,7 +217,7 @@ export async function GET(request: NextRequest) {
         by: ["productId"],
         _count: { id: true },
         _sum: { totalPrice: true, quantity: true },
-        where: { order: { createdAt: { gte: since }, paymentStatus: "COMPLETED" } },
+        where: { order: { createdAt: sinceClause, paymentStatus: "COMPLETED" } },
       }),
       db.product.groupBy({ by: ["categoryId"], _count: { id: true } }),
     ]);
@@ -242,7 +245,7 @@ export async function GET(request: NextRequest) {
     // ── Customer List (top) ──
     const customerOrders = await db.order.groupBy({
       by: ["userId"], _count: { id: true }, _sum: { total: true },
-      where: { createdAt: { gte: since }, userId: { not: null } },
+      where: { createdAt: sinceClause, userId: { not: null } },
       orderBy: { _sum: { total: "desc" } }, take: 20,
     });
     const custIds = customerOrders.map(c => c.userId).filter(Boolean) as string[];
@@ -254,7 +257,7 @@ export async function GET(request: NextRequest) {
     // ── Geographic ──
     const geoDataRaw = await db.order.groupBy({
       by: ["state"], _count: { id: true }, _sum: { total: true },
-      where: { createdAt: { gte: since } },
+      where: { createdAt: sinceClause },
       orderBy: { _count: { id: "desc" } }, take: 30,
     });
     const geoData = geoDataRaw.filter(g => g.state != null);
@@ -268,7 +271,7 @@ export async function GET(request: NextRequest) {
 
     // ── Search Terms ──
     const searchEvents = await db.analyticsEvent.findMany({
-      where: { eventType: "SEARCH", metadata: { not: null }, createdAt: { gte: since } },
+      where: { eventType: "SEARCH", metadata: { not: null }, createdAt: sinceClause },
       select: { metadata: true }, take: 2000,
     });
     const searchTerms: Record<string, number> = {};
@@ -279,7 +282,7 @@ export async function GET(request: NextRequest) {
     const topSearches = Object.entries(searchTerms).sort((a, b) => b[1] - a[1]).slice(0, 15);
 
     // ── Device Breakdown ──
-    const devices = await db.analyticsEvent.groupBy({ by: ["deviceType"], _count: { id: true }, where: { createdAt: { gte: since } } });
+    const devices = await db.analyticsEvent.groupBy({ by: ["deviceType"], _count: { id: true }, where: { createdAt: sinceClause } });
 
     // ── Wishlist Stats ──
     const [totalWishlist, wishlistToday] = await Promise.all([
@@ -288,13 +291,13 @@ export async function GET(request: NextRequest) {
     ]);
 
     // ── Conversion Rate ──
-    const uniqueVisitors = (await db.analyticsEvent.findMany({ where: { createdAt: { gte: since } }, select: { sessionId: true }, distinct: ["sessionId"] })).length;
+    const uniqueVisitors = (await db.analyticsEvent.findMany({ where: { createdAt: sinceClause }, select: { sessionId: true }, distinct: ["sessionId"] })).length;
     const conversionRate = uniqueVisitors > 0 ? Math.round((completedOrders / uniqueVisitors) * 10000) / 100 : 0;
 
     // ── Payment Stats ──
     const [paymentSuccess, paymentFailed] = await Promise.all([
-      db.payment.count({ where: { status: "COMPLETED", createdAt: { gte: since } } }),
-      db.payment.count({ where: { status: "FAILED", createdAt: { gte: since } } }),
+      db.payment.count({ where: { status: "COMPLETED", createdAt: sinceClause } }),
+      db.payment.count({ where: { status: "FAILED", createdAt: sinceClause } }),
     ]);
 
     // Insights

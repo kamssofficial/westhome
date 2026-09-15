@@ -416,6 +416,7 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
           href={whatsappUrl}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={() => trackEvent("WHATSAPP_ENQUIRY", { productId: product.id, productName: product.name })}
           className="w-full py-3.5 rounded-2xl text-sm font-semibold border-2 border-primary text-primary hover:bg-primary hover:text-white transition-all duration-200 text-center flex items-center justify-center gap-2 mt-3"
         >
           <MessageCircle size={18} />

@@ -916,14 +916,16 @@ model AnalyticsEvent {
 }
 
 model LiveSession {
-  id          String   @id @default(cuid())
-  sessionId   String   @unique
-  userId      String?
-  lastActive  DateTime @default(now())
-  userAgent   String?
-  deviceType  String?  // mobile, desktop, tablet
-  isStaff     Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  id               String   @id @default(cuid())
+  sessionId        String   @unique
+  userId           String?
+  lastActive       DateTime @default(now())
+  userAgent        String?
+  deviceType       String?  // mobile, desktop, tablet
+  isStaff          Boolean  @default(false)
+  currentPage      String?  // storefront path the visitor is on right now
+  currentProductId String?  // product slug being viewed right now (display only)
+  createdAt        DateTime @default(now())
 
   @@index([lastActive])
   @@index([isStaff])
