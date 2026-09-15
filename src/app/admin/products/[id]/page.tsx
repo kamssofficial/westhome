@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, use } from "react";
+import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Save, Trash2, Plus, PackagePlus, X } from "lucide-react";
@@ -58,7 +58,6 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
   const [variants, setVariants] = useState<VariantItem[]>([]);
   const [loadingVariants, setLoadingVariants] = useState(true);
   const [savingVariant, setSavingVariant] = useState(false);
-  const scrollRestoreRef = useRef<number | null>(null);
 
   const loadVariants = () => {
     setLoadingVariants(true);
@@ -150,12 +149,6 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
         );
         setCategories(catData.categories || []);
         setLoading(false);
-        // Restore scroll position after silent save-reload
-        if (silent && scrollRestoreRef.current !== null) {
-          const y = scrollRestoreRef.current;
-          scrollRestoreRef.current = null;
-          requestAnimationFrame(() => requestAnimationFrame(() => window.scrollTo(0, y)));
-        }
       })
       .catch((err) => {
         if (silent) return; // keep the current form on a failed background refresh
@@ -182,7 +175,6 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
       toast.error("Name, price, and category are required");
       return;
     }
-    scrollRestoreRef.current = window.scrollY;
     setSaving(true);
     try {
       const res = await fetch(`/api/products/${id}`, {
@@ -329,7 +321,8 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
 
   const inputClass = "w-full px-3 py-2.5 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30";
 
-  if (loading) return <div className="py-8"><div className="animate-pulse h-64 bg-surface-muted rounded-xl" /></div>;
+  // Show form immediately — fields populate as data loads
+  // (removing the full-page skeleton that blocked the UI for seconds)
 
   if (loadFailed) {
     return (
