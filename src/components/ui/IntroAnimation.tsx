@@ -38,11 +38,6 @@ export default function IntroAnimation({ children }: { children: React.ReactNode
   // here re-armed a fresh `logo` timer on every transition, which always fired
   // before `done` — the splash looped forever unless the user tapped it.)
   useEffect(() => {
-    if (phase === "done") {
-      try { sessionStorage.setItem(INTRO_KEY, "1"); } catch {}
-      return;
-    }
-
     const at = (fn: () => void, ms: number) => {
       timers.current.push(setTimeout(fn, ms));
     };
@@ -56,6 +51,13 @@ export default function IntroAnimation({ children }: { children: React.ReactNode
     return () => timers.current.forEach(clearTimeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Mark the intro as seen when it completes so it never replays this session.
+  useEffect(() => {
+    if (phase === "done") {
+      try { sessionStorage.setItem(INTRO_KEY, "1"); } catch {}
+    }
+  }, [phase]);
 
   return (
     <>
