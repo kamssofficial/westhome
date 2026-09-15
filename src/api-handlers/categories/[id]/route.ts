@@ -56,6 +56,7 @@ export async function PUT(
     await logAdminAction({ action: "UPDATE", entity: "CATEGORY", entityId: id, details: { name: body.name }, request });
 
     // Invalidate cached pages so storefront picks up the change immediately
+    revalidatePath("/");
     revalidatePath("/shop");
     revalidatePath("/search");
     revalidatePath(`/collections/${category.slug}`);
@@ -92,6 +93,7 @@ export async function PATCH(
     await logAdminAction({ action: "UPDATE", entity: "CATEGORY", entityId: id, details: { name: body.name ?? category.name, isActive: body.isActive }, request });
 
     // Invalidate cached pages so storefront picks up the change immediately
+    revalidatePath("/");
     revalidatePath("/shop");
     revalidatePath("/search");
     revalidatePath(`/collections/${category.slug}`);

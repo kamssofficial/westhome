@@ -36,10 +36,13 @@ interface CategoryTileSource {
 }
 
 async function resolveCategoryImage(cat: CategoryTileSource): Promise<string | null> {
-  if (cat.image && !PLACEHOLDER_RE.test(cat.image)) return cat.image;
   const primaryImage =
     cat.images?.find((i) => i.isPrimary) || cat.images?.[0];
+  // The admin page writes both the legacy category.image field and the
+  // normalized CategoryImage row. Prefer the current primary row when it is
+  // available, then fall back to the legacy field for older records.
   if (primaryImage?.url && !PLACEHOLDER_RE.test(primaryImage.url)) return primaryImage.url;
+  if (cat.image && !PLACEHOLDER_RE.test(cat.image)) return cat.image;
   const product = await db.product.findFirst({
     where: { categoryId: cat.id, isActive: true, status: "ACTIVE" },
     include: { images: { orderBy: [{ isPrimary: "desc" as const }, { position: "asc" as const }] } },
@@ -92,7 +95,7 @@ export async function GET() {
       };
     }));
 
-    return NextResponse.json({ categories: transformed }, { headers: { "Cache-Control": "public, s-maxage=10, must-revalidate" } });
+    return NextResponse.json({ categories: transformed }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("Categories API error:", error);
     return NextResponse.json({ categories: CATEGORIES });

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import db from "@/lib/db";
 import { requireAuthRole } from "@/lib/apiAuth";
 
@@ -47,6 +48,9 @@ export async function POST(
         data: { image: image.url },
       });
     }
+
+    revalidatePath("/");
+    revalidatePath("/shop");
 
     return NextResponse.json({ image }, { status: 201 });
   } catch (error) {
