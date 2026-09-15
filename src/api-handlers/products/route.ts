@@ -246,11 +246,21 @@ export async function POST(request: NextRequest) {
     }
 
     const slug = body.name.toLowerCase().replace(/[^\w\s-]/g, "").replace(/[\s_-]+/g, "-").replace(/^-+|-+$/g, "") || `product-${Date.now()}`;
+    // SKU: use the provided code, or auto-generate one (GEN-#### unique) so every
+    // product is identifiable in orders and inventory — the create form promises this.
+    let sku = body.sku ? String(body.sku).trim() || null : null;
+    if (!sku) {
+      for (let attempt = 0; attempt < 10; attempt++) {
+        const candidate = `GEN-${String(Math.floor(1000 + Math.random() * 9000))}`;
+        const clash = await db.product.findUnique({ where: { sku: candidate }, select: { id: true } });
+        if (!clash) { sku = candidate; break; }
+      }
+    }
     const product = await db.product.create({
       data: {
         name: body.name,
         slug,
-        sku: body.sku ? String(body.sku).trim() : null,
+        sku,
         description: body.description,
         shortDescription: body.shortDescription,
         regularPrice: body.regularPrice,

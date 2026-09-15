@@ -88,11 +88,11 @@ export async function POST(request: NextRequest) {
     const [products, variants] = await Promise.all([
       db.product.findMany({
         where: { id: { in: productIds } },
-        select: { id: true, regularPrice: true, salePrice: true, isActive: true, stockQuantity: true, trackInventory: true },
+        select: { id: true, regularPrice: true, salePrice: true, isActive: true, stockQuantity: true, trackInventory: true, sku: true },
       }),
       variantIds.length > 0 ? db.productVariant.findMany({
         where: { id: { in: variantIds }, isActive: true },
-        select: { id: true, productId: true, price: true, salePrice: true, stockQuantity: true },
+        select: { id: true, productId: true, price: true, salePrice: true, stockQuantity: true, sku: true },
       }) : Promise.resolve([]),
     ]);
     
@@ -110,6 +110,9 @@ export async function POST(request: NextRequest) {
       // Use variant price/stock if variant is specified
       let regularPrice: number;
       let salePrice: number | null = null;
+      // SKU is resolved server-side from the DB — never trusted from the client —
+      // so order pages always show the true code even if the cart is stale.
+      let resolvedSku: string | null;
       
       if (item.variantId) {
         const variant = variantMap.get(item.variantId);
@@ -119,6 +122,9 @@ export async function POST(request: NextRequest) {
         if (variant.productId !== item.productId) {
           throw new Error(`Variant ${item.variantId} does not belong to product ${item.productId}`);
         }
+        // SKU is resolved server-side from the DB — never trusted from the client —
+        // so order pages always show the true code even if the cart is stale.
+        resolvedSku = variant.sku || product.sku || null;
         regularPrice = Number(variant.price);
         salePrice = variant.salePrice != null && Number(variant.salePrice) > 0 ? Number(variant.salePrice) : null;
         // Stock 0 is un-buyable regardless of trackInventory/allowBackorder.
@@ -132,13 +138,14 @@ export async function POST(request: NextRequest) {
         }
         regularPrice = Number(product.regularPrice);
         salePrice = product.salePrice ? Number(product.salePrice) : null;
+        resolvedSku = product.sku || null;
       }
       
       // The customer pays the sale price when one is live; record that as the unit price.
       const effectivePrice = salePrice !== null && salePrice > 0 ? salePrice : regularPrice;
       const totalPrice = effectivePrice * item.quantity;
       serverSubtotal += totalPrice;
-      return { ...item, unitPrice: effectivePrice, salePrice, totalPrice };
+      return { ...item, unitPrice: effectivePrice, salePrice, totalPrice, sku: resolvedSku };
     });
     
     // Server-side coupon validation

@@ -13,11 +13,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const original = await db.product.findUnique({ where: { id }, include: { images: true, tags: true } });
   if (!original) return NextResponse.json({ error: "Product not found" }, { status: 404 });
 
+  // SKU must stay unique — "X-copy" collides when a product is duplicated
+  // twice. Append a timestamp-suffix always, keeping the family readable.
+  const duplicateSku = original.sku ? `${original.sku}-C${Date.now().toString(36).slice(-4).toUpperCase()}` : null;
   const duplicate = await db.product.create({
     data: {
       name: original.name + " (Copy)",
       slug: original.slug + "-copy-" + Date.now(),
-      sku: original.sku ? original.sku + "-copy" : null,
+      sku: duplicateSku,
       description: original.description,
       shortDescription: original.shortDescription,
       regularPrice: original.regularPrice,

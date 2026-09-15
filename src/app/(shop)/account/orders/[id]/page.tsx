@@ -15,6 +15,7 @@ interface OrderItem {
   variantId: string | null;
   productName: string;
   variantName: string | null;
+  sku: string | null;
   quantity: number;
   unitPrice: number;
   totalPrice: number;
@@ -250,6 +251,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{item.productName}</p>
                     {item.variantName && <p className="text-xs text-text-muted">{item.variantName}</p>}
+                    {item.sku && <p className="text-[10px] font-mono text-text-muted mt-0.5">SKU: {item.sku}</p>}
                     <p className="text-xs text-text-muted">Qty: {item.quantity}</p>
                   </div>
                   <p className="text-sm font-medium">{formatPrice(item.totalPrice)}</p>
