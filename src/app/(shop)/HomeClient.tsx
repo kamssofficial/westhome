@@ -24,6 +24,17 @@ import { cachedFetchWithBackgroundRefresh } from "@/lib/clientCache";
 
 const SCROLL_KEY = "westhome-home-scroll";
 
+// API responses are envelopes like { products: [...] } / { categories: [...] },
+// but sessionStorage caches written by older builds may hold either shape.
+// Normalize every entry point so this state is always a plain array.
+function asArray<T>(data: unknown, key: "products" | "categories"): T[] {
+  if (Array.isArray(data)) return data as T[];
+  if (data && typeof data === "object" && Array.isArray((data as Record<string, unknown>)[key])) {
+    return (data as Record<string, unknown>)[key] as T[];
+  }
+  return [];
+}
+
 
 export default function HomePage() {
   const { whatsappNumber } = useSettings();
@@ -32,22 +43,22 @@ export default function HomePage() {
   
 
   const [categories, setCategories] = useState<Category[]>(() => {
-    return cachedFetchWithBackgroundRefresh<Category[]>("/api/categories", {
+    return asArray<Category>(cachedFetchWithBackgroundRefresh<Category[]>("/api/categories", {
       ttl: 5 * 60_000,
-      onUpdate: (data) => { if (data?.length) setCategories(data); },
-    }) || [];
+      onUpdate: (data) => { const list = asArray<Category>(data, "categories"); if (list.length) setCategories(list); },
+    }), "categories");
   });
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>(() => {
-    return cachedFetchWithBackgroundRefresh<Product[]>("/api/products?lite=true&featured=true&limit=4", {
+    return asArray<Product>(cachedFetchWithBackgroundRefresh<Product[]>("/api/products?lite=true&featured=true&limit=4", {
       ttl: 5 * 60_000,
-      onUpdate: (data) => { if (data?.length) setFeaturedProducts(data); },
-    }) || [];
+      onUpdate: (data) => { const list = asArray<Product>(data, "products"); if (list.length) setFeaturedProducts(list); },
+    }), "products");
   });
   const [newArrivals, setNewArrivals] = useState<Product[]>(() => {
-    return cachedFetchWithBackgroundRefresh<Product[]>("/api/products?lite=true&newArrivals=true&limit=4", {
+    return asArray<Product>(cachedFetchWithBackgroundRefresh<Product[]>("/api/products?lite=true&newArrivals=true&limit=4", {
       ttl: 5 * 60_000,
-      onUpdate: (data) => { if (data?.length) setNewArrivals(data); },
-    }) || [];
+      onUpdate: (data) => { const list = asArray<Product>(data, "products"); if (list.length) setNewArrivals(list); },
+    }), "products");
   });
   // Only show loading skeleton when there's no cached data to show
   // No loading state needed — show content immediately
@@ -114,7 +125,7 @@ export default function HomePage() {
 
         if (newRes.status === "fulfilled" && newRes.value.ok) {
           const data = await newRes.value.json();
-          if (data.products?.length) setNewArrivals(data);
+          setNewArrivals(asArray<Product>(data, "products"));
         }
       } catch (error) {
         console.error("Homepage fetch error:", error);
