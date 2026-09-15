@@ -56,7 +56,7 @@ export default function IntroAnimation({ children }: { children: React.ReactNode
   return (
     <>
       {/* Page content — hidden until intro finishes */}
-      <div className={phase === "done" ? "opacity-100" : "opacity-0"}>
+      <div>
         {children}
       </div>
 
