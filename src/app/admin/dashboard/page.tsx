@@ -177,30 +177,28 @@ export default function AdminDashboard() {
 
         {/* ── SECTION 2: KPI Cards ── */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <KPICard label="Revenue" value={fmtCurrency(k.revenue)} icon={DollarSign} trend={{ current: k.revenue, previous: k.prevRevenue }} bg="bg-emerald-50" accent="text-emerald-600" />
-          <KPICard label="Orders" value={k.totalOrders || 0} icon={ShoppingCart} trend={{ current: k.totalOrders, previous: k.prevTotalOrders }} />
-          <KPICard label="Avg Order Value" value={fmtCurrency(k.avgOrderValue)} icon={BarChart3} trend={{ current: k.avgOrderValue, previous: k.prevAvgOrderValue }} bg="bg-blue-50" accent="text-blue-600" />
-          <KPICard label="Conversion Rate" value={`${k.conversionRate || 0}%`} icon={Target} bg="bg-purple-50" accent="text-purple-600" />
+          <KPICard label="Revenue" value={fmtCurrency(k.revenue)} icon={DollarSign} trend={{ current: k.revenue, previous: k.prevRevenue }} href="/admin/orders?status=NEW" bg="bg-emerald-50" accent="text-emerald-600" />
+          <KPICard label="Orders" value={k.totalOrders || 0} icon={ShoppingCart} trend={{ current: k.totalOrders, previous: k.prevTotalOrders }} href="/admin/orders" />
+          <KPICard label="Avg Order Value" value={fmtCurrency(k.avgOrderValue)} icon={BarChart3} trend={{ current: k.avgOrderValue, previous: k.prevAvgOrderValue }} href="/admin/orders" bg="bg-blue-50" accent="text-blue-600" />
+          <KPICard label="Conversion Rate" value={`${k.conversionRate || 0}%`} icon={Target} href="/admin/analytics" bg="bg-purple-50" accent="text-purple-600" />
           <KPICard label="Customers" value={k.totalCustomers || 0} icon={Users} trend={{ current: k.newCustomers, previous: k.prevNewCustomers }} href="/admin/customers" />
-          <KPICard label="Units Sold" value={k.unitsSold || 0} icon={Package} trend={{ current: k.unitsSold, previous: k.prevUnitsSold }} bg="bg-amber-50" accent="text-amber-600" />
+          <KPICard label="Units Sold" value={k.unitsSold || 0} icon={Package} trend={{ current: k.unitsSold, previous: k.prevUnitsSold }} href="/admin/orders" bg="bg-amber-50" accent="text-amber-600" />
           <KPICard label="Products" value={k.totalProducts || 0} icon={Boxes} href="/admin/products" bg="bg-indigo-50" accent="text-indigo-600" />
-          <KPICard label="Cancelled" value={k.cancelledOrders || 0} icon={XCircle} bg="bg-red-50" accent="text-red-500" />
+          <KPICard label="Cancelled" value={k.cancelledOrders || 0} icon={XCircle} href="/admin/orders?status=CANCELLED" bg="bg-red-50" accent="text-red-500" />
         </div>
 
         {/* ── Revenue Quick Stats ── */}
         <div className="grid grid-cols-3 gap-3">
-          <div className="bg-white rounded-2xl border border-black/[.06] p-4 text-center">
-            <p className="text-xs text-text-muted">Today</p>
-            <p className="text-lg font-bold text-primary mt-1">{k.todayOrders || 0} orders</p>
-          </div>
-          <div className="bg-white rounded-2xl border border-black/[.06] p-4 text-center">
-            <p className="text-xs text-text-muted">This Week</p>
-            <p className="text-lg font-bold text-primary mt-1">{k.weekOrders || 0} orders</p>
-          </div>
-          <div className="bg-white rounded-2xl border border-black/[.06] p-4 text-center">
-            <p className="text-xs text-text-muted">This Month</p>
-            <p className="text-lg font-bold text-primary mt-1">{k.monthOrders || 0} orders</p>
-          </div>
+          {[
+            { label: "Today", value: k.todayOrders, href: "/admin/orders" },
+            { label: "This Week", value: k.weekOrders, href: "/admin/orders" },
+            { label: "This Month", value: k.monthOrders, href: "/admin/orders" },
+          ].map(q => (
+            <Link key={q.label} href={q.href} className="bg-white rounded-2xl border border-black/[.06] p-4 text-center hover:shadow-md transition-all cursor-pointer">
+              <p className="text-xs text-text-muted">{q.label}</p>
+              <p className="text-lg font-bold text-primary mt-1">{q.value || 0} orders</p>
+            </Link>
+          ))}
         </div>
 
         {/* ── SECTION 3: Revenue Chart ── */}
@@ -275,14 +273,14 @@ export default function AdminDashboard() {
           <Section title="Order Status" icon={ShoppingCart} badge={k.totalOrders}>
             <div className="pt-4 space-y-2">
               {Object.entries(data?.orderStatus || {}).sort((a, b) => b[1] - a[1]).map(([status, count]) => (
-                <div key={status} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                <Link key={status} href={"/admin/orders?status=" + status} className="flex items-center justify-between py-2 border-b border-border last:border-0 hover:bg-surface-muted/30 transition-colors rounded px-1 -mx-1">
                   <div className="flex items-center gap-2">
                     <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-medium", STATUS_COLORS[status] || "bg-gray-100 text-gray-700")}>
                       {status.replace(/_/g, " ")}
                     </span>
                   </div>
                   <span className="text-sm font-semibold text-primary">{count as number}</span>
-                </div>
+                </Link>
               ))}
               {Object.keys(data?.orderStatus || {}).length === 0 && <p className="text-xs text-text-muted py-4 text-center">No orders yet</p>}
             </div>
@@ -325,7 +323,7 @@ export default function AdminDashboard() {
             <Section key={section.title} title={section.title} icon={Star} defaultOpen={false}>
               <div className="pt-4 space-y-2">
                 {section.data.slice(0, 5).map((item: any, i: number) => (
-                  <div key={i} className="flex items-center gap-3 py-2 border-b border-border last:border-0">
+                  <Link key={i} href={item.product?.slug ? "/admin/products/" + (item.product.slug) : "/admin/products"} className="flex items-center gap-3 py-2 border-b border-border last:border-0 hover:bg-surface-muted/30 transition-colors rounded px-1 -mx-1">
                     <span className="text-xs font-bold text-text-muted w-5">{i + 1}</span>
                     <div className="w-8 h-8 rounded-lg bg-surface-muted overflow-hidden shrink-0">
                       {item.product?.images?.[0]?.url && <img src={item.product.images[0].url} alt="" className="w-full h-full object-cover" />}
@@ -334,7 +332,7 @@ export default function AdminDashboard() {
                       <p className="text-xs font-medium text-primary truncate">{item.product?.name || "Unknown"}</p>
                     </div>
                     <span className="text-xs font-semibold text-primary whitespace-nowrap">{section.format(item[section.field] || 0)}</span>
-                  </div>
+                  </Link>
                 ))}
                 {section.data.length === 0 && <p className="text-xs text-text-muted py-4 text-center">No data yet</p>}
               </div>
@@ -414,13 +412,13 @@ export default function AdminDashboard() {
               <div className="space-y-2">
                 <p className="text-xs font-medium text-text-muted uppercase tracking-wider">Needs Attention</p>
                 {data.lowStockProducts.map((p: any) => (
-                  <div key={p.id} className="flex items-center justify-between py-2 px-3 bg-amber-50 rounded-lg">
+                  <Link key={p.id} href="/admin/products" className="flex items-center justify-between py-2 px-3 bg-amber-50 rounded-lg hover:bg-amber-100 transition-colors">
                     <div>
                       <p className="text-xs font-medium text-primary">{p.name}</p>
                       <p className="text-[10px] text-amber-600">{p.stock} left (threshold: {p.threshold})</p>
                     </div>
                     <span className="text-[10px] font-medium text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">Low</span>
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}
@@ -439,13 +437,13 @@ export default function AdminDashboard() {
               {data?.topSearches?.length > 0 ? (
                 <div className="space-y-2">
                   {data.topSearches.slice(0, 10).map((s: any, i: number) => (
-                    <div key={i} className="flex items-center justify-between py-1.5">
+                    <Link key={i} href={"/search?q=" + encodeURIComponent(s.query)} className="flex items-center justify-between py-1.5 hover:bg-surface-muted/30 transition-colors rounded px-1 -mx-1">
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] text-text-muted w-4">{i + 1}.</span>
                         <span className="text-xs text-primary">{s.query}</span>
                       </div>
                       <span className="text-[10px] text-text-muted">{s.count} searches</span>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               ) : (
@@ -526,7 +524,7 @@ export default function AdminDashboard() {
         <Section title="Recent Activity" icon={Clock} defaultOpen={false}>
           <div className="pt-4 space-y-2">
             {data?.activity?.recentOrders?.slice(0, 8).map((order: any) => (
-              <div key={order.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+              <Link key={order.id} href={"/admin/orders/" + order.id} className="flex items-center justify-between py-2 border-b border-border last:border-0 hover:bg-surface-muted/30 transition-colors rounded px-1 -mx-1">
                 <div className="flex items-center gap-2">
                   <div className={cn("w-8 h-8 rounded-full flex items-center justify-center", order.status === "DELIVERED" ? "bg-green-100" : order.status === "CANCELLED" ? "bg-red-100" : "bg-blue-100")}>
                     {order.status === "DELIVERED" ? <CheckCircle size={14} className="text-green-600" /> : order.status === "CANCELLED" ? <XCircle size={14} className="text-red-500" /> : <ShoppingCart size={14} className="text-blue-600" />}
@@ -542,7 +540,7 @@ export default function AdminDashboard() {
                     {order.status.replace(/_/g, " ")}
                   </span>
                 </div>
-              </div>
+              </Link>
             ))}
             {data?.activity?.recentOrders?.length === 0 && <p className="text-xs text-text-muted py-4 text-center">No recent activity</p>}
           </div>
@@ -571,7 +569,7 @@ export default function AdminDashboard() {
                       const cartAdds = data.topByCart?.find((c: any) => c.productId === item.productId)?._count?.id || 0;
                       const stock = item.product?.stockQuantity ?? 0;
                       return (
-                        <tr key={i} className="border-b border-border last:border-0 hover:bg-surface-muted/30">
+                        <tr key={i} className="border-b border-border last:border-0 hover:bg-surface-muted/30 cursor-pointer" onClick={() => { if (item.product?.slug) window.location.href = "/admin/products/" + item.product.slug; }}>
                           <td className="py-2 px-2">
                             <div className="flex items-center gap-2">
                               <div className="w-7 h-7 rounded bg-surface-muted overflow-hidden shrink-0">
@@ -624,14 +622,14 @@ export default function AdminDashboard() {
               <div className="space-y-2">
                 <p className="text-xs font-medium text-text-muted uppercase tracking-wider">Most Wishlisted</p>
                 {data.topByWishlist.slice(0, 5).map((item: any, i: number) => (
-                  <div key={i} className="flex items-center gap-3 py-2 border-b border-border last:border-0">
+                  <Link key={i} href={item.product?.slug ? "/admin/products/" + (item.product.slug) : "/admin/products"} className="flex items-center gap-3 py-2 border-b border-border last:border-0 hover:bg-surface-muted/30 transition-colors rounded px-1 -mx-1">
                     <span className="text-xs font-bold text-text-muted w-5">{i + 1}</span>
                     <div className="w-7 h-7 rounded bg-surface-muted overflow-hidden shrink-0">
                       {item.product?.images?.[0]?.url && <img src={item.product.images[0].url} alt="" className="w-full h-full object-cover" />}
                     </div>
                     <span className="text-xs font-medium text-primary truncate flex-1">{item.product?.name || "—"}</span>
                     <span className="text-xs font-semibold text-primary">{item._count?.id || 0} wishlists</span>
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}
@@ -663,14 +661,14 @@ export default function AdminDashboard() {
               <div className="space-y-2">
                 <p className="text-xs font-medium text-text-muted uppercase tracking-wider">Most Added to Cart</p>
                 {data.topByCart.slice(0, 5).map((item: any, i: number) => (
-                  <div key={i} className="flex items-center gap-3 py-2 border-b border-border last:border-0">
+                  <Link key={i} href={item.product?.slug ? "/admin/products/" + (item.product.slug) : "/admin/products"} className="flex items-center gap-3 py-2 border-b border-border last:border-0 hover:bg-surface-muted/30 transition-colors rounded px-1 -mx-1">
                     <span className="text-xs font-bold text-text-muted w-5">{i + 1}</span>
                     <div className="w-7 h-7 rounded bg-surface-muted overflow-hidden shrink-0">
                       {item.product?.images?.[0]?.url && <img src={item.product.images[0].url} alt="" className="w-full h-full object-cover" />}
                     </div>
                     <span className="text-xs font-medium text-primary truncate flex-1">{item.product?.name || "—"}</span>
                     <span className="text-xs font-semibold text-primary">{item._count?.id || 0} adds</span>
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}

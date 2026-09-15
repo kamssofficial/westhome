@@ -25,6 +25,10 @@ export async function trackEvent(eventType: string, metadata?: Record<string, an
   try {
     const sessionId = getOrCreateSessionId();
     if (!sessionId) return;
+    // productId / categoryId / subcategoryId are stored as dedicated columns
+    // (the dashboard groups on them), so they must go at the top level of the
+    // payload — inside `metadata` they would be dropped by the track API.
+    const { productId, categoryId, subcategoryId, ...rest } = metadata || {};
     await fetch("/api/analytics/track", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -32,7 +36,10 @@ export async function trackEvent(eventType: string, metadata?: Record<string, an
         eventType,
         sessionId,
         deviceType: getDeviceType(),
-        metadata,
+        productId: typeof productId === "string" ? productId : undefined,
+        categoryId: typeof categoryId === "string" ? categoryId : undefined,
+        subcategoryId: typeof subcategoryId === "string" ? subcategoryId : undefined,
+        metadata: rest,
       }),
     });
   } catch {

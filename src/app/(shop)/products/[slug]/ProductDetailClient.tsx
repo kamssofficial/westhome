@@ -57,6 +57,11 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
   };
 
   const [quantity, setQuantity] = useState(1);
+
+  // Log a product VIEW event once per mount so "Most Viewed" analytics work.
+  useEffect(() => {
+    if (product?.id) trackEvent("VIEW", { productId: product.id, categoryId: product.categoryId || undefined });
+  }, [product?.id, product?.categoryId]);
   const [openAccordion, setOpenAccordion] = useState<string | null>(null);
   const [reviews, setReviews] = useState<any[]>(initialReviews || []);
   const [reviewAvg, setReviewAvg] = useState<number | null>(initialReviewAvg);
