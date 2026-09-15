@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { Prisma } from "@prisma/client";
 import db from "@/lib/db";
-import { notifyLowStock } from "@/lib/notifications";
+import { notifyLowStock, createNotification } from "@/lib/notifications";
 import { requireAuth } from "@/lib/auth";
 
 async function getRazorpay() {
@@ -98,6 +98,14 @@ export async function POST(request: NextRequest) {
       }
     }
     if (!processedOrder) return NextResponse.json({ verified: true, message: "Payment already verified" });
+
+    // Notify staff that payment was received
+    createNotification({
+      type: "PAYMENT_SUCCESS",
+      title: "Payment Received",
+      message: `Payment verified for order ${processedOrder.orderNumber}`,
+      orderId: processedOrder.id,
+    }).catch(() => {});
 
     for (const item of processedOrder.items) {
       try {

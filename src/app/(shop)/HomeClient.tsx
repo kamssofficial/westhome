@@ -22,12 +22,37 @@ import type { Category, Product } from "@/types";
 import Testimonials from "@/components/ui/Testimonials";
 import { resolveCategoryImage } from "@/lib/categoryImages";
 
+const SCROLL_KEY = "westhome-home-scroll";
+
 export default function HomePage() {
   const { whatsappNumber } = useSettings();
   const [categories, setCategories] = useState<Category[]>([]);
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [newArrivals, setNewArrivals] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Restore scroll position on back-navigation
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem(SCROLL_KEY);
+      if (saved) {
+        sessionStorage.removeItem(SCROLL_KEY);
+        // Use rAF to ensure the DOM has rendered before scrolling
+        requestAnimationFrame(() => {
+          window.scrollTo(0, parseInt(saved, 10));
+        });
+      }
+    } catch {}
+  }, []);
+
+  // Save scroll position before navigating away
+  useEffect(() => {
+    const saveScroll = () => {
+      try { sessionStorage.setItem(SCROLL_KEY, String(window.scrollY)); } catch {}
+    };
+    window.addEventListener("beforeunload", saveScroll);
+    return () => window.removeEventListener("beforeunload", saveScroll);
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {

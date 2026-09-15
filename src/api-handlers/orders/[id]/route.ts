@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import db from "@/lib/db";
-import { notifyOrderStatusChange } from "@/lib/notifications";
+import { notifyOrderStatusChange, createNotification } from "@/lib/notifications";
 
 export async function GET(
   request: NextRequest,
@@ -147,7 +147,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Cannot cancel this order" }, { status: 400 });
     }
 
-    await db.order.update({
+    const updatedOrder = await db.order.update({
       where: { id },
       data: {
         status: "CANCELLED",
@@ -156,6 +156,14 @@ export async function DELETE(
         },
       },
     });
+
+    // Notify admin staff about the customer cancellation
+    createNotification({
+      type: "CANCELLED",
+      title: "Order Cancelled",
+      message: `Order ${updatedOrder.orderNumber} cancelled by customer`,
+      orderId: id,
+    }).catch(() => {});
 
     return NextResponse.json({ success: true });
   } catch (error) {

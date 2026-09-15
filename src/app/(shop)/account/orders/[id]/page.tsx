@@ -113,9 +113,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     setCancelling(true);
     try {
       const res = await fetch("/api/orders/" + order!.id, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "CANCELLED", note: "Cancelled by customer" }),
+        method: "DELETE",
       });
       if (res.ok) {
         setOrder((prev) => prev ? { ...prev, status: "CANCELLED" } : null);

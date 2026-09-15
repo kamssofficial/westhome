@@ -14,10 +14,18 @@ import Image from "next/image";
  *
  * Total duration ~3 s. Tap anywhere to skip instantly.
  */
+const INTRO_KEY = "westhome-intro-seen";
+
 export default function IntroAnimation({ children }: { children: React.ReactNode }) {
-  const [phase, setPhase] = useState<"idle" | "logo" | "line" | "tagline" | "wipe" | "done">("idle");
+  const [phase, setPhase] = useState<"idle" | "logo" | "line" | "tagline" | "wipe" | "done">(() => {
+    // Skip intro entirely if already seen in this session — avoids replaying
+    // on back-navigation which destroys scroll position.
+    if (typeof window !== "undefined" && sessionStorage.getItem(INTRO_KEY)) {
+      return "done";
+    }
+    return "idle";
+  });
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
-  const started = useRef(false);
 
   const skip = useCallback(() => {
     timers.current.forEach(clearTimeout);
@@ -27,8 +35,10 @@ export default function IntroAnimation({ children }: { children: React.ReactNode
   }, []);
 
   useEffect(() => {
-    if (started.current) { setPhase("done"); return; }
-    started.current = true;
+    if (phase === "done") {
+      try { sessionStorage.setItem(INTRO_KEY, "1"); } catch {}
+      return;
+    }
 
     const at = (fn: () => void, ms: number) => {
       timers.current.push(setTimeout(fn, ms));
@@ -41,7 +51,7 @@ export default function IntroAnimation({ children }: { children: React.ReactNode
     at(() => setPhase("done"), 3600);
 
     return () => timers.current.forEach(clearTimeout);
-  }, []);
+  }, [phase]);
 
   return (
     <>

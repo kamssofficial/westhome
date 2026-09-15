@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { requireAdmin } from "@/lib/apiAuth";
 import { logAdminAction } from "@/lib/audit";
 import { restoreOrderStock } from "@/lib/inventory";
+import { notifyNewOrder } from "@/lib/notifications";
 
 export async function GET(request: NextRequest) {
   try {
@@ -277,16 +278,8 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Create notification
-    await db.notification.create({
-      data: {
-        type: "ORDER_PLACED",
-        title: "New Order",
-        message: `Order ${orderNumber} placed by ${customerName} for ₹${finalTotal}`,
-        orderId: order.id,
-        readBy: "[]",
-      },
-    });
+    // Create notification (fire-and-forget)
+    notifyNewOrder(order.id, orderNumber, customerName, finalTotal).catch(() => {});
 
     return NextResponse.json({ order: { id: order.id, orderNumber: order.orderNumber } }, { status: 201 });
   } catch (error) {

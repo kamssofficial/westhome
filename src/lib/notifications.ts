@@ -12,16 +12,7 @@ export async function createNotification(params: {
   orderId?: string;
 }) {
   try {
-    // Find all admin/staff users who should receive notifications
-    const staffUsers = await db.user.findMany({
-      where: {
-        role: { in: ["ADMIN", "MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER"] },
-        isActive: true,
-      },
-      select: { id: true },
-    });
-
-    // All staff start as not having read it (empty readBy)
+    // Notification is created with empty readBy; staff filter is done at read time
     await db.notification.create({
       data: {
         type: params.type,
@@ -55,6 +46,7 @@ export async function notifyOrderStatusChange(orderId: string, orderNumber: stri
     DELIVERED: "DELIVERED",
     CANCELLED: "CANCELLED",
     REFUNDED: "REFUNDED",
+    PAYMENT_CONFIRMED: "PAYMENT_SUCCESS",
   };
   const statusLabel = newStatus.replace(/_/g, " ").toLowerCase();
   await createNotification({
