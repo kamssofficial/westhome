@@ -33,6 +33,7 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
   });
   const [loadFailed, setLoadFailed] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
 
   const [form, setForm] = useState({
@@ -230,13 +231,58 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
     } catch { toast.error("Unable to reach the server. Please try again."); } finally { setSaving(false); }
   };
 
-  const handleDelete = async () => {
-    if (!confirm("Delete this product? This cannot be undone.")) return;
+  // Drop cached copies so the list/edit pages don't keep showing a deleted product
+  const clearProductCaches = () => {
     try {
-      await fetch(`/api/products/${id}`, { method: "DELETE" });
-      toast.success("Product deleted");
-      router.push("/admin/products");
-    } catch { toast.error("Unable to reach the server while deleting"); }
+      sessionStorage.removeItem(productCacheKey);
+      sessionStorage.removeItem("wh-cache-/api/admin/products");
+    } catch {}
+  };
+
+  const handleDelete = async () => {
+    if (deleting) return;
+    if (!confirm("Delete this product? This cannot be undone.")) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/admin/products/${id}`, { method: "DELETE" });
+      const data = await res.json().catch(() => null);
+
+      if (res.ok) {
+        clearProductCaches();
+        toast.success("Product deleted");
+        router.push("/admin/products");
+        return;
+      }
+
+      // Products with order history cannot be deleted without destroying those
+      // orders — offer to archive instead (same behaviour as the products list).
+      if (res.status === 409 && data?.canDelete === false) {
+        const archiveIt = confirm(
+          (data.message || "This product cannot be deleted.") + "\n\nArchive it instead?"
+        );
+        if (!archiveIt) return;
+        const archiveRes = await fetch(`/api/admin/products/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "ARCHIVED" }),
+        });
+        if (archiveRes.ok) {
+          clearProductCaches();
+          toast.success("Product archived");
+          router.push("/admin/products");
+        } else {
+          const archiveData = await archiveRes.json().catch(() => null);
+          toast.error(archiveData?.error || archiveData?.message || "Failed to archive product");
+        }
+        return;
+      }
+
+      toast.error(data?.message || data?.error || ("Failed to delete product (" + res.status + ")"));
+    } catch {
+      toast.error("Unable to reach the server while deleting");
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const handleAddDefaultSizes = async () => {
@@ -354,7 +400,7 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
 
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3"><h1 className="text-xl font-semibold">Edit Product</h1>{form.sku && <span className="text-xs font-mono bg-surface-muted text-text-secondary px-2 py-1 rounded-lg border border-border">SKU: {form.sku}</span>}</div>
-        <button onClick={handleDelete} className="p-2 text-text-muted hover:text-error rounded-lg transition-colors">
+        <button onClick={handleDelete} disabled={deleting} title="Delete product" aria-label="Delete product" className="p-2 text-text-muted hover:text-error rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           <Trash2 size={18} />
         </button>
       </div>

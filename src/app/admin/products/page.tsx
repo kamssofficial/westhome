@@ -108,6 +108,27 @@ interface DiagInfo {
   needsFix: { draftProducts: number; inactiveProducts: number; activeButInactive: number; totalFixable: number };
 }
 
+// The products list keeps its search/filter/sort selection here so that opening a
+// product and coming back returns the user to the same list they were browsing.
+const ADMIN_VIEW_KEY = "westhome-admin-products-view";
+const ADMIN_SCROLL_KEY = "westhome-admin-products-scroll";
+
+function readSavedView(): { search: string; status: string; category: string; sort: string } | null {
+  try {
+    const raw = sessionStorage.getItem(ADMIN_VIEW_KEY);
+    if (!raw) return null;
+    const v = JSON.parse(raw);
+    return {
+      search: typeof v?.search === "string" ? v.search : "",
+      status: typeof v?.status === "string" ? v.status : "",
+      category: typeof v?.category === "string" ? v.category : "",
+      sort: typeof v?.sort === "string" && v.sort ? v.sort : "newest",
+    };
+  } catch {
+    return null;
+  }
+}
+
 export default function AdminProductsPage() {
   const router = useRouter();
   const adminProductsCacheKey = "wh-cache-/api/admin/products";
@@ -122,12 +143,13 @@ export default function AdminProductsPage() {
   const [loading, setLoading] = useState(!hasProductsCache);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("");
+  // Seed the filters from the last visit so the first fetch already uses them
+  const [search, setSearch] = useState(() => readSavedView()?.search ?? "");
+  const [debouncedSearch, setDebouncedSearch] = useState(() => readSavedView()?.search ?? "");
+  const [statusFilter, setStatusFilter] = useState(() => readSavedView()?.status ?? "");
+  const [categoryFilter, setCategoryFilter] = useState(() => readSavedView()?.category ?? "");
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
-  const [sort, setSort] = useState("newest");
+  const [sort, setSort] = useState(() => readSavedView()?.sort ?? "newest");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(() => {
     try {
@@ -156,27 +178,46 @@ export default function AdminProductsPage() {
       .then((data) => setCategories((data?.categories || []).map((category: any) => ({ id: category.id, name: category.name }))))
       .catch(() => setCategories([]));
   }, []);
-  // Save scroll position when navigating away
+  // Keep the latest selection in a ref so the unmount cleanup can persist it
+  const viewRef = useRef({ search, status: statusFilter, category: categoryFilter, sort });
+  useEffect(() => {
+    viewRef.current = { search, status: statusFilter, category: categoryFilter, sort };
+  }, [search, statusFilter, categoryFilter, sort]);
+
+  // Save the selection + scroll position when navigating away (e.g. opening a product)
   useEffect(() => {
     return () => {
-      try { sessionStorage.setItem('westhome-admin-products-scroll', String(window.scrollY)); } catch {}
+      try {
+        sessionStorage.setItem(ADMIN_VIEW_KEY, JSON.stringify(viewRef.current));
+        sessionStorage.setItem(ADMIN_SCROLL_KEY, String(window.scrollY));
+      } catch {}
     };
   }, []);
 
-  // Restore scroll position on back-navigation
+  // Restore the scroll position only once the list has rendered — scrolling before
+  // the products are on screen would clamp to the top of an empty page.
   useEffect(() => {
-    try {
-      const saved = sessionStorage.getItem('westhome-admin-products-scroll');
-      if (saved) {
-        sessionStorage.removeItem('westhome-admin-products-scroll');
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            window.scrollTo(0, parseInt(saved, 10));
-          });
-        });
-      }
-    } catch {}
-  }, []);
+    if (loading) return;
+    let saved: string | null = null;
+    try { saved = sessionStorage.getItem(ADMIN_SCROLL_KEY); } catch {}
+    if (!saved) return;
+    const target = Number.parseInt(saved, 10);
+    if (Number.isNaN(target)) {
+      try { sessionStorage.removeItem(ADMIN_SCROLL_KEY); } catch {}
+      return;
+    }
+    let inner = 0;
+    const outer = requestAnimationFrame(() => {
+      inner = requestAnimationFrame(() => {
+        window.scrollTo(0, target);
+        try { sessionStorage.removeItem(ADMIN_SCROLL_KEY); } catch {}
+      });
+    });
+    return () => {
+      cancelAnimationFrame(outer);
+      if (inner) cancelAnimationFrame(inner);
+    };
+  }, [loading, products.length]);
 
     const observerRef = useRef<IntersectionObserver | null>(null);
   const lastElementRef = useCallback((node: HTMLDivElement | null) => {
