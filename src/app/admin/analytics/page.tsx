@@ -26,7 +26,7 @@ function SC({ label, value, icon: Ic, color, sub, comp }: any) {
 
 export default function AnalyticsPage() {
   const [data, setData] = useState(null);
-  const [live, setLive] = useState({ live: 0, customers: 0, guests: 0 });
+  const [live, setLive] = useState({ live: 0, customers: 0, guests: 0, visitors: [] as { sessionId: string; device?: string | null; currentPage?: string | null; viewingProduct?: string | null; isCustomer: boolean; secondsSinceActive: number }[] });
   const [activities, setActivities] = useState([]);
   const [range, setRange] = useState('30d');
   const [tab, setTab] = useState('overview');
@@ -37,7 +37,7 @@ export default function AnalyticsPage() {
     setLoading(true);
     Promise.all([
       fetch('/api/analytics/dashboard?range=' + range).then(r => r.json()),
-      fetch('/api/analytics/live').then(r => r.json()).catch(() => ({ live: 0, customers: 0, guests: 0 })),
+      fetch('/api/analytics/live').then(r => r.json()).catch(() => ({ live: 0, customers: 0, guests: 0, visitors: [] })),
     ]).then(([a, l]) => { setData(a); setLive(l); }).catch(() => {}).finally(() => setLoading(false));
   }, [range]);
 
