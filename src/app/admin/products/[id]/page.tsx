@@ -221,9 +221,12 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
         return;
       }
       if (res.ok) {
+        // Close the editor and return to the list, which restores the saved
+        // filters + scroll position (see ADMIN_VIEW_KEY / ADMIN_SCROLL_KEY in
+        // the list page). Caches are cleared so the list refetches fresh data.
+        clearProductCaches();
         toast.success("Product updated");
-        // Don't reload — the form already has the saved data and reloading
-        // causes a full re-render that jumps the scroll to the top.
+        router.push("/admin/products");
       } else {
         const data = await res.json().catch(() => null);
         toast.error(data?.error || "Failed to update product");
