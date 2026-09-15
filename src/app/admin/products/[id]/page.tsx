@@ -222,9 +222,8 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
       }
       if (res.ok) {
         toast.success("Product updated");
-        // Silently re-sync from the server so a second edit starts from the
-        // true saved state (image rows are re-created on every save).
-        reloadProduct(true);
+        // Don't reload — the form already has the saved data and reloading
+        // causes a full re-render that jumps the scroll to the top.
       } else {
         const data = await res.json().catch(() => null);
         toast.error(data?.error || "Failed to update product");
