@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSettings } from "@/components/ui/SettingsContext";
 import Image from "next/image";
@@ -30,28 +30,36 @@ export default function HomePage() {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [newArrivals, setNewArrivals] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const scrollYRef = useRef(0);
 
-  // Restore scroll position on back-navigation
+  // Track scroll position continuously so it's always fresh
+  useEffect(() => {
+    const onScroll = () => { scrollYRef.current = window.scrollY; };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Save scroll position when this component unmounts (route change)
+  useEffect(() => {
+    return () => {
+      try { sessionStorage.setItem(SCROLL_KEY, String(scrollYRef.current)); } catch {}
+    };
+  }, []);
+
+  // Restore scroll position on mount (back-navigation)
   useEffect(() => {
     try {
       const saved = sessionStorage.getItem(SCROLL_KEY);
       if (saved) {
         sessionStorage.removeItem(SCROLL_KEY);
-        // Use rAF to ensure the DOM has rendered before scrolling
+        // Use rAF + setTimeout to ensure DOM is fully rendered before scrolling
         requestAnimationFrame(() => {
-          window.scrollTo(0, parseInt(saved, 10));
+          requestAnimationFrame(() => {
+            window.scrollTo(0, parseInt(saved, 10));
+          });
         });
       }
     } catch {}
-  }, []);
-
-  // Save scroll position before navigating away
-  useEffect(() => {
-    const saveScroll = () => {
-      try { sessionStorage.setItem(SCROLL_KEY, String(window.scrollY)); } catch {}
-    };
-    window.addEventListener("beforeunload", saveScroll);
-    return () => window.removeEventListener("beforeunload", saveScroll);
   }, []);
 
   useEffect(() => {
