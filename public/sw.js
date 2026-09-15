@@ -1,11 +1,9 @@
-const CACHE_NAME = "westhome-v1";
-const STATIC_CACHE = "westhome-static-v1";
-const PAGE_CACHE = "westhome-pages-v1";
+const CACHE_NAME = "westhome-v2";
+const STATIC_CACHE = "westhome-static-v2";
+const PAGE_CACHE = "westhome-pages-v2";
 
-// Static assets to pre-cache on install
+// Only pre-cache static assets — never cache HTML pages for dynamic apps
 const PRECACHE_URLS = [
-  "/",
-  "/shop",
   "/manifest.json",
   "/favicon.ico",
   "/icon-192x192.png",
@@ -65,8 +63,8 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Pages — network first, fallback to cache (semi-offline)
-  event.respondWith(networkFirst(request, PAGE_CACHE));
+  // Pages — network only (dynamic content must always be fresh)
+  return;
 });
 
 // Cache-first: serve from cache, fallback to network

@@ -25,28 +25,47 @@ import { cachedFetchWithBackgroundRefresh } from "@/lib/clientCache";
 
 const SCROLL_KEY = "westhome-home-scroll";
 
+// Check if cached data exists and is still valid
+function hasCachedData(url: string): boolean {
+  try {
+    const raw = sessionStorage.getItem("wh-cache-" + url);
+    if (!raw) return false;
+    const entry = JSON.parse(raw);
+    return entry.expires > Date.now();
+  } catch {
+    return false;
+  }
+}
+
 export default function HomePage() {
   const { whatsappNumber } = useSettings();
+
+  // Determine if we can skip initial loading state
+  const hasCache =
+    hasCachedData("/api/categories") &&
+    hasCachedData("/api/products?lite=true&featured=true&limit=4") &&
+    hasCachedData("/api/products?lite=true&newArrivals=true&limit=4");
+
   const [categories, setCategories] = useState<Category[]>(() => {
-    // Show cached data instantly on mount
-    const cached = cachedFetchWithBackgroundRefresh<Category[]>("/api/categories", {
+    return cachedFetchWithBackgroundRefresh<Category[]>("/api/categories", {
       ttl: 5 * 60_000,
-    });
-    return cached || [];
+      onUpdate: (data) => { if (data?.length) setCategories(data); },
+    }) || [];
   });
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>(() => {
-    const cached = cachedFetchWithBackgroundRefresh<Product[]>("/api/products?lite=true&featured=true&limit=4", {
+    return cachedFetchWithBackgroundRefresh<Product[]>("/api/products?lite=true&featured=true&limit=4", {
       ttl: 5 * 60_000,
-    });
-    return cached || [];
+      onUpdate: (data) => { if (data?.length) setFeaturedProducts(data); },
+    }) || [];
   });
   const [newArrivals, setNewArrivals] = useState<Product[]>(() => {
-    const cached = cachedFetchWithBackgroundRefresh<Product[]>("/api/products?lite=true&newArrivals=true&limit=4", {
+    return cachedFetchWithBackgroundRefresh<Product[]>("/api/products?lite=true&newArrivals=true&limit=4", {
       ttl: 5 * 60_000,
-    });
-    return cached || [];
+      onUpdate: (data) => { if (data?.length) setNewArrivals(data); },
+    }) || [];
   });
-  const [loading, setLoading] = useState(true);
+  // Only show loading skeleton when there's no cached data to show
+  const [loading, setLoading] = useState(!hasCache);
   const scrollYRef = useRef(0);
 
   // Track scroll position continuously so it's always fresh
@@ -78,7 +97,7 @@ export default function HomePage() {
     } catch {}
   }, []);
 
-  // Background refresh: fetch fresh data and update state
+  // Background refresh: fetch fresh data and update state + clear loading
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -110,7 +129,7 @@ export default function HomePage() {
 
         if (newRes.status === "fulfilled" && newRes.value.ok) {
           const data = await newRes.value.json();
-          if (data.products?.length) setNewArrivals(data.products);
+          if (data.products?.length) setNewArrivals(data);
         }
       } catch (error) {
         console.error("Homepage fetch error:", error);
