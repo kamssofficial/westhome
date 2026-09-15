@@ -33,7 +33,30 @@ export default function ImageUploader({
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [brokenIds, setBrokenIds] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Large photos are downscaled and re-encoded client-side before upload:
+  // stays under the 4 MB server limit and keeps the storefront fast.
+  const prepareFile = async (file: File): Promise<File> => {
+    if (file.type === "image/gif" || file.size <= 1.5 * 1024 * 1024) return file;
+    try {
+      const bitmap = await createImageBitmap(file);
+      const maxDim = 2000;
+      const scale = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(bitmap.width * scale);
+      canvas.height = Math.round(bitmap.height * scale);
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return file;
+      ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.85));
+      if (!blob || blob.size >= file.size) return file;
+      return new File([blob], file.name.replace(/\.(png|webp|jpeg|jpg)$/i, "") + ".jpg", { type: "image/jpeg" });
+    } catch {
+      return file;
+    }
+  };
 
   const reorderImages = (fromId: string, toId: string) => {
     if (fromId === toId) return;
@@ -57,7 +80,7 @@ export default function ImageUploader({
       const newImages: ImageItem[] = [];
 
       for (let i = 0; i < files.length; i++) {
-        const file = files[i];
+        let file = files[i];
         if (!file.type.startsWith("image/")) {
           toast.error(`${file.name}: Please choose an image file`);
           continue;
@@ -66,6 +89,7 @@ export default function ImageUploader({
           toast.error(`${file.name}: Maximum file size is 4 MB`);
           continue;
         }
+        file = await prepareFile(file);
         try {
           const formData = new FormData();
           formData.append("file", file);
@@ -202,7 +226,7 @@ export default function ImageUploader({
               : "Drag images here or click to browse"}
           </p>
           <p className="text-xs text-text-muted">
-            JPEG, PNG, WebP, GIF • Max 10MB • Up to {maxImages} images
+            JPEG, PNG, WebP, GIF • Max 4 MB (large photos are auto-optimized) • Up to {maxImages} images
           </p>
         </div>
       </div>
@@ -239,13 +263,21 @@ export default function ImageUploader({
 
               {/* Thumbnail */}
               <div className="relative w-20 h-20 md:w-40 md:h-40 rounded-lg overflow-hidden bg-surface-muted flex-shrink-0">
-                <Image
-                  src={image.url}
-                  alt={image.alt || ""}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 80px, 160px"
-                />
+                {brokenIds.has(image.id) ? (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 p-1 text-center bg-red-50">
+                    <ImageIcon size={16} className="text-red-400" />
+                    <span className="text-[9px] leading-tight text-red-600 font-medium">Image unavailable — re-upload</span>
+                  </div>
+                ) : (
+                  <Image
+                    src={image.url}
+                    alt={image.alt || ""}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 80px, 160px"
+                    onError={() => setBrokenIds((prev) => new Set(prev).add(image.id))}
+                  />
+                )}
                 {image.isPrimary && (
                   <div className="absolute top-0.5 left-0.5">
                     <Star
