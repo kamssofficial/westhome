@@ -11,6 +11,22 @@ export default function ShopError({
 }) {
   useEffect(() => {
     console.error("Shop page error:", error);
+    const recoveryKey = "westhome-stale-shell-recovered";
+    if (!sessionStorage.getItem(recoveryKey)) {
+      sessionStorage.setItem(recoveryKey, "1");
+      void (async () => {
+        try {
+          const registrations = await navigator.serviceWorker?.getRegistrations();
+          await Promise.all((registrations || []).map((registration) => registration.unregister()));
+          const keys = await caches.keys();
+          await Promise.all(keys.map((key) => caches.delete(key)));
+        } catch {
+          // Keep the normal retry UI if cache cleanup is unavailable.
+        } finally {
+          window.location.reload();
+        }
+      })();
+    }
   }, [error]);
 
   return (
