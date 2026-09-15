@@ -353,7 +353,7 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
       </Link>
 
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-semibold">Edit Product</h1>
+        <div className="flex items-center gap-3"><h1 className="text-xl font-semibold">Edit Product</h1>{form.sku && <span className="text-xs font-mono bg-surface-muted text-text-secondary px-2 py-1 rounded-lg border border-border">SKU: {form.sku}</span>}</div>
         <button onClick={handleDelete} className="p-2 text-text-muted hover:text-error rounded-lg transition-colors">
           <Trash2 size={18} />
         </button>
