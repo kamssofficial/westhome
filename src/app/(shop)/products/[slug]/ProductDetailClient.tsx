@@ -32,7 +32,10 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
   const { whatsappNumber } = useSettings();
   const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>(() => {
     const initial: Record<string, string> = {};
-    const firstVariant = product?.variants?.[0];
+    // Default to the first variant that actually has stock, so an out-of-stock
+    // first variant (e.g. size S sold out, M/L available) doesn't show the
+    // whole product as Sold Out on load.
+    const firstVariant = product?.variants?.find((v: any) => v.stockQuantity > 0) ?? product?.variants?.[0];
     if (firstVariant) {
       firstVariant.attributes.forEach((attr: any) => {
         initial[attr.attributeName] = attr.value;

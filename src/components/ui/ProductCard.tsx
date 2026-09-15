@@ -39,8 +39,15 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
     product.slug,
   );
   const discount = calculateDiscount(product.regularPrice, product.salePrice || 0);
-  // Stock 0 is always out of stock, regardless of trackInventory.
-  const inStock = product.stockQuantity > 0;
+  // Mirror the detail page's buyability exactly. Stock 0 is always out of
+  // stock regardless of trackInventory. For variant products the variants
+  // decide (e.g. basket set: product stock 0, S/M/L stocked = buyable; or
+  // product stock 1 but every size 0 = sold out, since checkout always picks
+  // a variant). Products without variants use their own stock.
+  const inStock =
+    (product.variants?.length ?? 0) > 0
+      ? product.variants.some((v) => v.stockQuantity > 0)
+      : product.stockQuantity > 0;
 
   const handleWishlist = (e: React.MouseEvent) => {
     e.preventDefault();

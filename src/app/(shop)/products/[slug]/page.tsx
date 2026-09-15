@@ -109,6 +109,8 @@ async function getRelatedProducts(categorySlug: string, excludeId: string) {
       include: {
         images: { where: { isPrimary: true }, take: 1 },
         category: { select: { name: true, slug: true } },
+        // ProductCard checks variant stock for availability (any variant stocked = buyable)
+        variants: { where: { isActive: true }, select: { stockQuantity: true } },
       },
       take: 4,
     });

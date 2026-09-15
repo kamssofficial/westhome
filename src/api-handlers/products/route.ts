@@ -139,7 +139,8 @@ export async function GET(request: NextRequest) {
               category: { select: { id: true, name: true, slug: true } },
               subcategory: { select: { id: true, name: true, slug: true } },
               images: { orderBy: [{ isPrimary: "desc" }, { position: "asc" }], take: 1 },
-              variants: { where: { isActive: true }, orderBy: { position: "asc" }, take: 1, include: { images: { orderBy: { position: "asc" }, take: 1 } } },
+              // All active variants so cards can compute true availability (any variant stocked = buyable)
+              variants: { where: { isActive: true }, orderBy: { position: "asc" }, include: { images: { orderBy: { position: "asc" }, take: 1 } } },
               reviews: { where: { status: "APPROVED" }, select: { rating: true } },
               tags: { where: { tag: { startsWith: "color:" } } },
             }
