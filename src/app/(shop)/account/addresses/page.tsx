@@ -27,7 +27,7 @@ const INDIAN_STATES = [
 
 export default function AddressesPage() {
   const [addresses, setAddresses] = useState<Address[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
     name: "", phone: "", addressLine1: "", addressLine2: "",

@@ -53,7 +53,7 @@ const STATUS_STEPS = ["NEW", "CONFIRMED", "PROCESSING", "SHIPPED", "OUT_FOR_DELI
 export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [order, setOrder] = useState<OrderDetail | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [reordering, setReordering] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);

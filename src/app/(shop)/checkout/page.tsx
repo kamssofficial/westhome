@@ -44,7 +44,7 @@ export default function CheckoutPage() {
   const [deliveryOption, setDeliveryOption] = useState("standard");
   const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
   const [addresses, setAddresses] = useState<Address[]>([]);
-  const [loadingAddresses, setLoadingAddresses] = useState(true);
+  const [loadingAddresses, setLoadingAddresses] = useState(false);
   const [placingOrder, setPlacingOrder] = useState(false);
   const [verifyingPayment, setVerifyingPayment] = useState(false);
   const [paymentAcknowledged, setPaymentAcknowledged] = useState(false);

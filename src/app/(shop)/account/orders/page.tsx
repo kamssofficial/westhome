@@ -47,7 +47,7 @@ const STATUS_LABELS: Record<string, string> = {
 export default function OrdersPage() {
   const [activeTab, setActiveTab] = useState("All");
   const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
 
   useEffect(() => {

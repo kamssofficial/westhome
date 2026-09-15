@@ -29,7 +29,7 @@ export default function ShopPage() {
       onUpdate: (data) => { if (data?.length) setCategories(data); },
     }) || [];
   });
-  const [loading, setLoading] = useState(!hasCache);
+  // No loading state needed
 
   useEffect(() => {
     fetch("/api/categories")
@@ -55,13 +55,7 @@ export default function ShopPage() {
 
       {/* Category grid */}
       <section className="container-shop pb-20 md:pb-28">
-        {loading ? (
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="skeleton aspect-[.82] rounded-[1.35rem]" />
-            ))}
-          </div>
-        ) : categories.length > 0 ? (
+        {categories.length > 0 ? (
           <div className="stagger-in grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6">
             {categories.map((cat, index) => (
               <Link

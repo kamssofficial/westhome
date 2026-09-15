@@ -65,7 +65,7 @@ export default function HomePage() {
     }) || [];
   });
   // Only show loading skeleton when there's no cached data to show
-  const [loading, setLoading] = useState(!hasCache);
+  // No loading state needed — show content immediately
   const scrollYRef = useRef(0);
 
   // Track scroll position continuously so it's always fresh
@@ -134,7 +134,7 @@ export default function HomePage() {
       } catch (error) {
         console.error("Homepage fetch error:", error);
       } finally {
-        setLoading(false);
+        // loaded
       }
     };
     fetchData();
@@ -296,9 +296,7 @@ export default function HomePage() {
               />
             </Link>
           </div>
-          {loading ? (
-            <ProductGridSkeleton count={4} className="lg:grid-cols-4" />
-          ) : featuredProducts.length === 0 ? (
+          {featuredProducts.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-text-muted text-sm mb-4">Discover our curated collection.</p>
               <Link href="/search" className="inline-flex items-center gap-2 text-sm font-semibold text-accent hover:underline">
@@ -373,9 +371,7 @@ export default function HomePage() {
             />
           </Link>
         </div>
-        {loading ? (
-          <ProductGridSkeleton count={3} />
-        ) : newArrivals.length === 0 ? (
+        {newArrivals.length === 0 ? (
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6">
             {[1, 2, 3].map((i) => (
               <div key={i} className="aspect-[.82] rounded-[1.35rem] bg-surface-muted animate-pulse" />

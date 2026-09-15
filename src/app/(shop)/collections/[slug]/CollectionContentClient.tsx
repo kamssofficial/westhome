@@ -31,7 +31,7 @@ function CategoryContent({ category: initialCategory, initialProducts, initialTo
 
   const [products, setProducts] = useState<any[]>(initialProducts || []);
   const [category, setCategory] = useState<any>(initialCategory || null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [total, setTotal] = useState(initialTotalCount || 0);
   const [sort, setSort] = useState("recommended");
