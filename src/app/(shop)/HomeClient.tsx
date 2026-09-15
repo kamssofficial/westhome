@@ -24,10 +24,6 @@ import { cachedFetchWithBackgroundRefresh } from "@/lib/clientCache";
 
 const SCROLL_KEY = "westhome-home-scroll";
 
- catch {
-    return false;
-  }
-}
 
 export default function HomePage() {
   const { whatsappNumber } = useSettings();

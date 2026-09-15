@@ -9,10 +9,6 @@ import type { Category } from "@/types";
 import { resolveCategoryImage } from "@/lib/categoryImages";
 import { cachedFetchWithBackgroundRefresh } from "@/lib/clientCache";
 
- catch {
-    return false;
-  }
-}
 
 export default function ShopPage() {
   const [categories, setCategories] = useState<Category[]>(() => {
