@@ -34,6 +34,9 @@ export default function IntroAnimation({ children }: { children: React.ReactNode
     setTimeout(() => setPhase("done"), 500);
   }, []);
 
+  // Schedule the whole sequence exactly once on mount. (Depending on [phase]
+  // here re-armed a fresh `logo` timer on every transition, which always fired
+  // before `done` — the splash looped forever unless the user tapped it.)
   useEffect(() => {
     if (phase === "done") {
       try { sessionStorage.setItem(INTRO_KEY, "1"); } catch {}
@@ -51,7 +54,8 @@ export default function IntroAnimation({ children }: { children: React.ReactNode
     at(() => setPhase("done"), 3000);
 
     return () => timers.current.forEach(clearTimeout);
-  }, [phase]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <>
