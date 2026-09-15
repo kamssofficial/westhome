@@ -15,6 +15,10 @@ export function isPlaceholderImage(url?: string | null): boolean {
 }
 
 export function resolveCategoryImage(slug?: string | null, image?: string | null): string | null {
+  // Admin-uploaded category images must take precedence over committed
+  // category fallbacks. Only use the fallback when the database has no usable
+  // image (or still contains one of the old placeholder paths).
+  if (image && !isPlaceholderImage(image)) return image;
   return categoryFallbackImage(slug) || image || null;
 }
 
