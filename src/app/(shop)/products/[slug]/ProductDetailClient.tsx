@@ -14,6 +14,7 @@ import { cn, formatPrice, getWhatsAppUrl, generateProductWhatsAppMessage } from 
 import PriceDisplay from "@/components/ui/PriceDisplay";
 import { useCartStore } from "@/store/cart";
 import { trackEvent } from "@/components/ui/AnalyticsTracker";
+import { reportImageError } from "@/lib/reportImageError";
 import { useWishlistStore } from "@/store/wishlist";
 import toast from "react-hot-toast";
 import type { ProductVariant } from "@/types";
@@ -255,6 +256,7 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
                   className="object-cover"
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   priority={i === 0}
+                  onError={() => reportImageError({ url: image.url, productId: product.id, productName: product.name })}
                 />
               </div>
             ))}

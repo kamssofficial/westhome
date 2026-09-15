@@ -6,6 +6,7 @@ import Image from "next/image";
 import { Minus, Plus, Trash2, ArrowLeft, ShoppingBag } from "lucide-react";
 import { useCartStore } from "@/store/cart";
 import { formatPrice } from "@/lib/utils";
+import { reportImageError } from "@/lib/reportImageError";
 
 export default function CartPage() {
   const items = useCartStore((s) => s.items);
@@ -72,7 +73,7 @@ export default function CartPage() {
             {/* Image */}
             <div className="relative w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-surface-muted">
               {item.image ? (
-                <Image src={item.image} alt={item.name} fill className="object-cover" sizes="80px" />
+                <Image src={item.image} alt={item.name} fill className="object-cover" sizes="80px" onError={() => reportImageError({ url: item.image, productId: item.productId, productName: item.name })} />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-text-muted text-xs">
                   {item.name.slice(0, 2)}

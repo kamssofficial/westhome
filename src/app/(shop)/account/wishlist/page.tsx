@@ -7,6 +7,7 @@ import { useWishlistStore } from "@/store/wishlist";
 import { useCartStore } from "@/store/cart";
 import { formatPrice } from "@/lib/utils";
 import toast from "react-hot-toast";
+import { reportImageError } from "@/lib/reportImageError";
 
 export default function WishlistPage() {
   const items = useWishlistStore((s) => s.items);
@@ -84,7 +85,7 @@ export default function WishlistPage() {
               <div key={item.id} className="flex gap-3 bg-white rounded-xl p-3 shadow-sm">
                 <div className="relative w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-surface-muted">
                   {item.image ? (
-                    <Image src={item.image} alt={item.name} fill className="object-cover" sizes="80px" />
+                    <Image src={item.image} alt={item.name} fill className="object-cover" sizes="80px" onError={() => reportImageError({ url: item.image, productId: item.productId, productName: item.name })} />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-text-muted text-xs">
                       {item.name.slice(0, 2)}

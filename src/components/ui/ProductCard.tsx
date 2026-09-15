@@ -10,6 +10,7 @@ import { useWishlistStore } from "@/store/wishlist";
 import toast from "react-hot-toast";
 import type { Product } from "@/types";
 import { resolveProductImage } from "@/lib/categoryImages";
+import { reportImageError } from "@/lib/reportImageError";
 
 // Swatch hex per palette name (mirrors scripts/add-palette-tags.mjs NAMED palette)
 const COLOR_HEX: Record<string, string> = {
@@ -72,7 +73,10 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
               className="object-cover group-hover:scale-105 transition-transform duration-500"
               priority={priority}
-              onError={() => setImageError(true)}
+              onError={() => {
+                setImageError(true);
+                reportImageError({ url: displayImage, productId: product.id, productName: product.name });
+              }}
             />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center text-text-muted">
