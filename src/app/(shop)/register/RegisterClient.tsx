@@ -2,13 +2,17 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { signIn as nextAuthSignIn } from "next-auth/react";
 import { Eye, EyeOff } from "lucide-react";
 import Button from "@/components/ui/Button";
 import toast from "react-hot-toast";
 
 export default function RegisterPage() {
-  const [form, setForm] = useState({ name: "", phone: "", email: "", password: "", confirmPassword: "", consent: false });
+  const searchParams = useSearchParams();
+  // Deep-linked from the login page: phone prefilled, destination preserved.
+  const callbackUrl = searchParams.get("callbackUrl") || "/account";
+  const [form, setForm] = useState({ name: "", phone: searchParams.get("phone") || "", email: "", password: "", confirmPassword: "", consent: false });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -55,15 +59,15 @@ export default function RegisterPage() {
 
         if (result?.error) {
           toast.success("Account created! Please sign in.");
-          window.location.href = "/login";
+          window.location.href = "/login?callbackUrl=" + encodeURIComponent(callbackUrl);
         } else {
           toast.success("Account created and signed in!");
-          window.location.href = "/account";
+          window.location.href = callbackUrl;
         }
       } catch {
         // Auto-login failed (e.g. session fetch error) — account was still created
         toast.success("Account created! Please sign in.");
-        window.location.href = "/login";
+        window.location.href = "/login?callbackUrl=" + encodeURIComponent(callbackUrl);
       }
     } catch (err: any) {
       toast.error(err.message || "Failed to create account");

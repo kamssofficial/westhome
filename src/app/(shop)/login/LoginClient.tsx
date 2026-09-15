@@ -11,6 +11,8 @@ function LoginForm() {
   const error = searchParams.get("error");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [lastPhone, setLastPhone] = useState("");
+  const [showNoAccountHint, setShowNoAccountHint] = useState(false);
   const [errorMsg, setErrorMsg] = useState(error === "CredentialsSignin" ? "Invalid phone number or password" : error ? "Sign in failed. Please try again." : "");
   
 
@@ -18,10 +20,12 @@ function LoginForm() {
     e.preventDefault();
     setLoading(true);
     setErrorMsg("");
+    setShowNoAccountHint(false);
 
     const formData = new FormData(e.currentTarget);
     const phone = formData.get("phone") as string;
     const password = formData.get("password") as string;
+    setLastPhone(phone);
 
     try {
       // Step 1: Get CSRF token
@@ -51,6 +55,9 @@ function LoginForm() {
         window.location.href = callbackUrl;
       } else {
         setErrorMsg("Invalid phone number or password");
+        // A failed sign-in is most often a new visitor who has no account yet —
+        // offer the way in instead of a dead-end error.
+        setShowNoAccountHint(true);
         setLoading(false);
       }
     } catch (err) {
@@ -71,6 +78,18 @@ function LoginForm() {
         {errorMsg && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600 text-center">
             {errorMsg}
+          </div>
+        )}
+
+        {showNoAccountHint && (
+          <div className="mb-4 p-3 bg-[#faf6ef] border border-[#e8dcc8] rounded-xl text-center">
+            <p className="text-sm text-[#6b6560]">New to WESTHOME? Create an account in seconds.</p>
+            <Link
+              href={`/register?phone=${encodeURIComponent(lastPhone)}&callbackUrl=${encodeURIComponent(callbackUrl)}`}
+              className="inline-block mt-2 px-4 py-1.5 bg-stone-900 text-white text-xs font-medium rounded-lg hover:bg-stone-800 transition-colors"
+            >
+              Create account with this number
+            </Link>
           </div>
         )}
 
