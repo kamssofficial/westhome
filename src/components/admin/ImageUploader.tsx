@@ -238,13 +238,13 @@ export default function ImageUploader({
               </div>
 
               {/* Thumbnail */}
-              <div className="relative w-24 h-24 rounded-lg overflow-hidden bg-surface-muted flex-shrink-0">
+              <div className="relative w-20 h-20 md:w-40 md:h-40 rounded-lg overflow-hidden bg-surface-muted flex-shrink-0">
                 <Image
                   src={image.url}
                   alt={image.alt || ""}
                   fill
                   className="object-cover"
-                  sizes="96px"
+                  sizes="(max-width: 768px) 80px, 160px"
                 />
                 {image.isPrimary && (
                   <div className="absolute top-0.5 left-0.5">
