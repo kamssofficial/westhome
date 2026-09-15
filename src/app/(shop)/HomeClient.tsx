@@ -219,7 +219,7 @@ export default function HomePage() {
               Browse by mood
             </p>
             <h2 className="font-display text-4xl md:text-5xl">
-              Find your feeling.
+              Shop by Category
             </h2>
           </div>
           <Link
