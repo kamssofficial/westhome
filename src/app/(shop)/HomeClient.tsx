@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import ProductCard from "@/components/ui/ProductCard";
 import Button from "@/components/ui/Button";
-import { ProductGridSkeleton } from "@/components/ui/Skeleton";
 import type { Category, Product } from "@/types";
 import Testimonials from "@/components/ui/Testimonials";
 import { resolveCategoryImage } from "@/lib/categoryImages";
@@ -25,14 +24,7 @@ import { cachedFetchWithBackgroundRefresh } from "@/lib/clientCache";
 
 const SCROLL_KEY = "westhome-home-scroll";
 
-// Check if cached data exists and is still valid
-function hasCachedData(url: string): boolean {
-  try {
-    const raw = sessionStorage.getItem("wh-cache-" + url);
-    if (!raw) return false;
-    const entry = JSON.parse(raw);
-    return entry.expires > Date.now();
-  } catch {
+ catch {
     return false;
   }
 }
@@ -41,10 +33,7 @@ export default function HomePage() {
   const { whatsappNumber } = useSettings();
 
   // Determine if we can skip initial loading state
-  const hasCache =
-    hasCachedData("/api/categories") &&
-    hasCachedData("/api/products?lite=true&featured=true&limit=4") &&
-    hasCachedData("/api/products?lite=true&newArrivals=true&limit=4");
+  
 
   const [categories, setCategories] = useState<Category[]>(() => {
     return cachedFetchWithBackgroundRefresh<Category[]>("/api/categories", {

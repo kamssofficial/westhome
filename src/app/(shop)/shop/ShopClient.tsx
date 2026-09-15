@@ -4,25 +4,17 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
-import { ProductGridSkeleton } from "@/components/ui/Skeleton";
+
 import type { Category } from "@/types";
 import { resolveCategoryImage } from "@/lib/categoryImages";
 import { cachedFetchWithBackgroundRefresh } from "@/lib/clientCache";
 
-// Check if cached data exists and is still valid
-function hasCachedData(url: string): boolean {
-  try {
-    const raw = sessionStorage.getItem("wh-cache-" + url);
-    if (!raw) return false;
-    const entry = JSON.parse(raw);
-    return entry.expires > Date.now();
-  } catch {
+ catch {
     return false;
   }
 }
 
 export default function ShopPage() {
-  const hasCache = hasCachedData("/api/categories");
   const [categories, setCategories] = useState<Category[]>(() => {
     return cachedFetchWithBackgroundRefresh<Category[]>("/api/categories", {
       ttl: 5 * 60_000,
@@ -38,7 +30,7 @@ export default function ShopPage() {
         if (data.categories?.length) setCategories(data.categories);
       })
       .catch(() => {})
-      .finally(() => setLoading(false));
+      .finally(() => {}); // no loading state
   }, []);
 
   return (
