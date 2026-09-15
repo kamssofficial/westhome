@@ -13,19 +13,44 @@ export default function WishlistPage() {
   const removeItem = useWishlistStore((s) => s.removeItem);
   const addToCart = useCartStore((s) => s.addItem);
 
-  const handleMoveAllToCart = () => {
-    items.forEach((item) => {
-      addToCart({
-        id: item.productId,
-        productId: item.productId,
-        name: item.name,
-        price: item.salePrice != null && item.salePrice > 0 ? item.salePrice : item.price,
-        quantity: 1,
-        image: item.image,
-        maxStock: 10,
+  // Stock 0 must never be cartable: look up real stock before adding.
+  // Returns true when the item was added, false when out of stock/unreachable.
+  const addWithStockCheck = async (productId: string, add: (maxStock: number) => void): Promise<boolean> => {
+    try {
+      const res = await fetch(`/api/products?lite=true&ids=${productId}`);
+      const data = await res.json();
+      const stock = data.products?.[0]?.stockQuantity ?? 0;
+      if (stock <= 0) {
+        toast.error("This item is out of stock");
+        return false;
+      }
+      add(stock);
+      return true;
+    } catch {
+      toast.error("Could not check stock. Please try again.");
+      return false;
+    }
+  };
+
+  const handleMoveAllToCart = async () => {
+    let added = 0;
+    let skipped = 0;
+    for (const item of items) {
+      const ok = await addWithStockCheck(item.productId, (maxStock) => {
+        addToCart({
+          id: item.productId,
+          productId: item.productId,
+          name: item.name,
+          price: item.salePrice != null && item.salePrice > 0 ? item.salePrice : item.price,
+          quantity: 1,
+          image: item.image,
+          maxStock,
+        });
       });
-    });
-    toast.success(`${items.length} items added to cart`);
+      if (ok) added++; else skipped++;
+    }
+    if (added > 0) toast.success(`${added} item${added > 1 ? "s" : ""} added to cart`);
+    if (skipped > 0) toast.error(`${skipped} item${skipped > 1 ? "s" : ""} skipped — out of stock`);
   };
 
   return (
@@ -74,16 +99,18 @@ export default function WishlistPage() {
                   <div className="flex items-center gap-2 mt-2">
                     <button
                       onClick={() => {
-                        addToCart({
-                          id: item.productId,
-                          productId: item.productId,
-                          name: item.name,
-                          price: item.salePrice != null && item.salePrice > 0 ? item.salePrice : item.price,
-                          quantity: 1,
-                          image: item.image,
-                          maxStock: 10,
+                        addWithStockCheck(item.productId, (maxStock) => {
+                          addToCart({
+                            id: item.productId,
+                            productId: item.productId,
+                            name: item.name,
+                            price: item.salePrice != null && item.salePrice > 0 ? item.salePrice : item.price,
+                            quantity: 1,
+                            image: item.image,
+                            maxStock,
+                          });
+                          toast.success("Added to cart");
                         });
-                        toast.success("Added to cart");
                       }}
                       className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-border rounded-lg hover:bg-surface-muted transition-colors"
                     >

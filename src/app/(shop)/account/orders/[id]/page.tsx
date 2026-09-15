@@ -77,9 +77,12 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
       const data = await res.json();
       const products = data.products || [];
       let addedCount = 0;
+      let skippedCount = 0;
       for (const item of order.items) {
         const product = products.find((p: any) => p.id === item.productId);
         if (!product) continue;
+        // Stock 0 is never re-orderable.
+        if ((product.stockQuantity ?? 0) <= 0) { skippedCount++; continue; }
         const price = product.salePrice != null && product.salePrice > 0 ? product.salePrice : product.regularPrice;
         const image = product.images && product.images[0] ? product.images[0].url : item.image;
         addItem({
@@ -90,16 +93,17 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           variantName: item.variantName || undefined,
           price: Number(price),
           salePrice: product.salePrice ? Number(product.salePrice) : undefined,
-          quantity: item.quantity,
+          quantity: Math.min(item.quantity, product.stockQuantity),
           image: image || undefined,
-          maxStock: product.stockQuantity || 10,
+          maxStock: product.stockQuantity,
         });
         addedCount++;
       }
+      if (skippedCount > 0) toast.error(skippedCount + " item" + (skippedCount > 1 ? "s" : "") + " skipped — out of stock");
       if (addedCount > 0) {
         toast.success("Added " + addedCount + " item" + (addedCount > 1 ? "s" : "") + " to cart");
         router.push("/cart");
-      } else {
+      } else if (skippedCount === 0) {
         toast.error("Could not add items - products may no longer be available");
       }
     } catch {
