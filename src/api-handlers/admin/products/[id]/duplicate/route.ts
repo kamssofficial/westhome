@@ -24,7 +24,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       salePrice: original.salePrice,
       stockQuantity: original.stockQuantity,
       lowStockThreshold: original.lowStockThreshold,
-      trackInventory: original.trackInventory,
+      trackInventory: true, // inventory is always tracked
       categoryId: original.categoryId,
       subcategoryId: original.subcategoryId,
       status: "DRAFT",

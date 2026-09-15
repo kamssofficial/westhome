@@ -257,7 +257,7 @@ export async function POST(request: NextRequest) {
         salePrice: body.salePrice,
         stockQuantity: body.stockQuantity || 0,
         lowStockThreshold: body.lowStockThreshold || 5,
-        trackInventory: body.trackInventory ?? true,
+        trackInventory: true, // inventory is always tracked; client value ignored
         allowBackorder: body.allowBackorder ?? false,
         allowCustomSize: body.allowCustomSize ?? false,
         customSizeUnit: body.customSizeUnit,

@@ -50,7 +50,6 @@ const SORT_OPTIONS = [
 ];
 
 function StockBadge({ product }: { product: Product }) {
-  if (!product.trackInventory) return <span className="text-[10px] text-text-muted">Not tracked</span>;
   if (product.stockQuantity === 0) return <span className="px-1.5 py-0.5 bg-red-50 text-red-600 text-[10px] font-medium rounded-full">Out of stock</span>;
   if (product.stockQuantity <= (product.lowStockThreshold || 5)) return <span className="px-1.5 py-0.5 bg-amber-50 text-amber-600 text-[10px] font-medium rounded-full">Low: {product.stockQuantity}</span>;
   return <span className="px-1.5 py-0.5 bg-green-50 text-green-600 text-[10px] font-medium rounded-full">{product.stockQuantity} in stock</span>;

@@ -152,7 +152,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         salePrice: body.salePrice,
         stockQuantity: body.stockQuantity,
         lowStockThreshold: body.lowStockThreshold,
-        trackInventory: body.trackInventory,
+        trackInventory: true, // inventory is always tracked; client value ignored
         allowBackorder: body.allowBackorder,
         categoryId: body.categoryId,
         subcategoryId: body.subcategoryId || null,

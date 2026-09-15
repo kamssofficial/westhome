@@ -441,7 +441,6 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
             <div><label className="text-xs font-medium text-text-secondary mb-1 block">Stock</label><input type="number" value={form.stockQuantity} onChange={(e) => setForm({ ...form, stockQuantity: e.target.value })} className={inputClass} /></div>
           </div>
           <div className="flex items-center gap-6 mt-4">
-            <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" checked={form.trackInventory} onChange={(e) => setForm({ ...form, trackInventory: e.target.checked })} className="accent-accent" /> Track inventory</label>
             <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" checked={form.allowBackorder} onChange={(e) => setForm({ ...form, allowBackorder: e.target.checked })} className="accent-accent" /> Allow backorder</label>
           </div>
         </div>

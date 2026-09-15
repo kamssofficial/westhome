@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
               regularPrice: Number(item.price) || 0,
               salePrice: null,
               stockQuantity: 0,
-              trackInventory: false,
+              trackInventory: true, // inventory is always tracked
               status: "ACTIVE",
               isActive: true,
               categoryId: category.id,
