@@ -121,12 +121,14 @@ export async function POST(request: NextRequest) {
         }
         regularPrice = Number(variant.price);
         salePrice = variant.salePrice != null && Number(variant.salePrice) > 0 ? Number(variant.salePrice) : null;
-        if (product.trackInventory && variant.stockQuantity < item.quantity) {
-          throw new Error(`Insufficient stock for ${item.productName} (variant)`);
+        // Stock 0 is un-buyable regardless of trackInventory/allowBackorder.
+        if (variant.stockQuantity < item.quantity) {
+          throw new Error(`Out of stock: ${item.productName}${item.variantName ? ` (${item.variantName})` : ""}`);
         }
       } else {
-        if (product.trackInventory && !item.variantId && product.stockQuantity < item.quantity) {
-          throw new Error(`Insufficient stock for ${item.productName}`);
+        // Stock 0 is un-buyable regardless of trackInventory/allowBackorder.
+        if (product.stockQuantity < item.quantity) {
+          throw new Error(`Out of stock: ${item.productName}`);
         }
         regularPrice = Number(product.regularPrice);
         salePrice = product.salePrice ? Number(product.salePrice) : null;

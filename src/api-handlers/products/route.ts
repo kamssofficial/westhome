@@ -80,9 +80,9 @@ export async function GET(request: NextRequest) {
     if (colorTag) {
       where.tags = { some: { tag: { equals: `color:${colorTag}`, mode: "insensitive" } } };
     }
-    // Stock filter: also show products that don't track inventory (always in stock)
+    // Stock filter: stock 0 is out of stock regardless of trackInventory.
     if (inStock === "true") {
-      where.AND = [...(where.AND || []), { OR: [{ stockQuantity: { gt: 0 } }, { trackInventory: false }] }];
+      where.AND = [...(where.AND || []), { stockQuantity: { gt: 0 } }];
     }
     if (onSale === "true") where.salePrice = { not: null };
     

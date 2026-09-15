@@ -38,7 +38,8 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
     product.slug,
   );
   const discount = calculateDiscount(product.regularPrice, product.salePrice || 0);
-  const inStock = product.trackInventory ? product.stockQuantity > 0 : true;
+  // Stock 0 is always out of stock, regardless of trackInventory.
+  const inStock = product.stockQuantity > 0;
 
   const handleWishlist = (e: React.MouseEvent) => {
     e.preventDefault();

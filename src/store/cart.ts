@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { CartItem, CustomSize } from "@/types";
 import { trackEvent } from "@/components/ui/AnalyticsTracker";
+import toast from "react-hot-toast";
 
 interface CartStore {
   items: CartItem[];
@@ -28,6 +29,11 @@ export const useCartStore = create<CartStore>()(
       discount: 0,
 
       addItem: (item) => {
+        // Stock 0 is never cartable.
+        if ((item.maxStock ?? 0) <= 0) {
+          toast.error("This item is out of stock");
+          return;
+        }
         trackEvent("ADD_TO_CART", { productId: item.productId, productName: item.name });
         const { items } = get();
         const existingIndex = items.findIndex(

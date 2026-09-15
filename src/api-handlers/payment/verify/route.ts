@@ -46,14 +46,14 @@ async function verifyPaymentOnce(params: { orderId: string; razorpayOrderId: str
       const product = await tx.product.findUnique({ where: { id: item.productId }, select: { trackInventory: true, allowBackorder: true, isActive: true } });
       if (!product || !product.isActive) throw new Error(`Product ${item.productName} is no longer available`);
 
+      // Stock 0 is un-buyable regardless of trackInventory/allowBackorder:
+      // these conditional updates only match when enough stock exists.
       if (item.variantId) {
-        if (product.trackInventory && !product.allowBackorder) {
-          const result = await tx.productVariant.updateMany({ where: { id: item.variantId, isActive: true, stockQuantity: { gte: item.quantity } }, data: { stockQuantity: { decrement: item.quantity } } });
-          if (result.count !== 1) throw new Error(`Insufficient stock for ${item.productName}${item.variantName ? ` (${item.variantName})` : ""}`);
-        }
-      } else if (product.trackInventory && !product.allowBackorder) {
+        const result = await tx.productVariant.updateMany({ where: { id: item.variantId, isActive: true, stockQuantity: { gte: item.quantity } }, data: { stockQuantity: { decrement: item.quantity } } });
+        if (result.count !== 1) throw new Error(`Out of stock: ${item.productName}${item.variantName ? ` (${item.variantName})` : ""}`);
+      } else {
         const result = await tx.product.updateMany({ where: { id: item.productId, stockQuantity: { gte: item.quantity } }, data: { stockQuantity: { decrement: item.quantity } } });
-        if (result.count !== 1) throw new Error(`Insufficient stock for ${item.productName}`);
+        if (result.count !== 1) throw new Error(`Out of stock: ${item.productName}`);
       }
     }
 

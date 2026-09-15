@@ -204,10 +204,13 @@ export default async function ProductPage({ params }: PageProps) {
     product.variants.length > 0
       ? product.variants.reduce((s: number, v: any) => s + (v.stockQuantity ?? 0), 0)
       : product.stockQuantity ?? 0;
-  // Mirror ProductDetailClient's buyability exactly: inventory is ignored when
-  // trackInventory is off (e.g. WhatsApp/backorder products), otherwise the
-  // product is buyable when any active variant (or the product itself) has stock.
-  const isInStock = product.trackInventory === false || baseStock > 0;
+  // Mirror ProductDetailClient's buyability exactly: stock 0 is always out of
+  // stock regardless of trackInventory. A variant product is buyable when any
+  // active variant has stock; otherwise the product stock decides.
+  const isInStock =
+    product.variants.length > 0
+      ? product.variants.some((v: any) => v.isActive !== false && (v.stockQuantity ?? 0) > 0)
+      : (product.stockQuantity ?? 0) > 0;
   // Mirror the client's price display: salePrice only applies when > 0.
   const listedPrice =
     product.salePrice != null && product.salePrice > 0

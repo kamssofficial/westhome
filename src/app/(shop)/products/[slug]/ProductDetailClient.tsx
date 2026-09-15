@@ -143,7 +143,9 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
   }));
   const currentPrice = (selectedVariant?.salePrice != null && selectedVariant.salePrice > 0 ? selectedVariant.salePrice : selectedVariant?.price) ?? (product.salePrice != null && product.salePrice > 0 ? product.salePrice : product.regularPrice);
   const originalPrice = product.regularPrice;
-  const inStock = product.trackInventory ? (selectedVariant?.stockQuantity ?? product.stockQuantity) > 0 : true;
+  // Stock 0 is always out of stock, regardless of trackInventory. Variant
+  // stock governs when a variant is selected; product stock otherwise.
+  const inStock = (selectedVariant?.stockQuantity ?? product.stockQuantity) > 0;
   const rating = reviewAvg !== null ? reviewAvg : (product.rating || 0);
   const totalReviews = realReviewCount;
 
