@@ -23,7 +23,14 @@ interface VariantItem {
 export default function AdminProductEditPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
+  const productCacheKey = "wh-cache-product-" + id;
+  const [loading, setLoading] = useState(() => {
+    try {
+      const raw = sessionStorage.getItem(productCacheKey);
+      if (raw) { const e = JSON.parse(raw); if (e.expires > Date.now()) return false; }
+    } catch {}
+    return true;
+  });
   const [loadFailed, setLoadFailed] = useState(false);
   const [saving, setSaving] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);

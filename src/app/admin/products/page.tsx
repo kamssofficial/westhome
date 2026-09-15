@@ -8,6 +8,7 @@ import {
   ArrowUpDown, ArrowUp, ArrowDown,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { cachedFetchWithBackgroundRefresh, invalidateCache } from "@/lib/clientCache";
 import { cn } from "@/lib/utils";
 import PriceDisplay from "@/components/ui/PriceDisplay";
 import toast from "react-hot-toast";
@@ -109,8 +110,16 @@ interface DiagInfo {
 
 export default function AdminProductsPage() {
   const router = useRouter();
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  const adminProductsCacheKey = "wh-cache-/api/admin/products";
+  const [products, setProducts] = useState<Product[]>(() => {
+    try {
+      const raw = sessionStorage.getItem(adminProductsCacheKey);
+      if (raw) { const e = JSON.parse(raw); if (e.expires > Date.now()) return e.data.products || []; }
+    } catch {}
+    return [];
+  });
+  const hasProductsCache = (() => { try { const r = sessionStorage.getItem(adminProductsCacheKey); return r ? JSON.parse(r).expires > Date.now() : false; } catch { return false; } })();
+  const [loading, setLoading] = useState(!hasProductsCache);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -199,6 +208,7 @@ export default function AdminProductsPage() {
 
   // Save scroll position before destructive actions so we can restore after fetch
   const saveScrollForRestore = () => { scrollRestoreRef.current = window.scrollY; };
+  const invalidateAdminProductsCache = () => { try { sessionStorage.removeItem(adminProductsCacheKey); } catch {} };
 
   const handleAction = async (action: string, product: Product) => {
     if (action === "view") { window.open("/products/" + product.slug, "_blank"); return; }
