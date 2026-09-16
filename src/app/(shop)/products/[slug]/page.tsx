@@ -222,7 +222,9 @@ export default async function ProductPage({ params }: PageProps) {
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
-    "@id": `https://westhome.in/products/${product.slug}#product`,
+    // Absolute www URL: the JSON-LD is host-agnostic and must not depend on
+    // metadataBase. Bare westhome.in 308s to www, which Google indexes.
+    "@id": `https://www.westhome.in/products/${product.slug}#product`,
     name: product.seoTitle || product.name,
     description:
       product.seoDescription ||
@@ -235,11 +237,11 @@ export default async function ProductPage({ params }: PageProps) {
     sku: product.sku || undefined,
     brand: {
       "@type": "Brand",
-      name: "WESTHOME by BM Distributors",
+      name: "WEST HOME by BM Distributors",
     },
     offers: {
       "@type": "Offer",
-      url: `https://westhome.in/products/${product.slug}`,
+      url: `https://www.westhome.in/products/${product.slug}`,
       priceCurrency: "INR",
       price: listedPrice,
       availability: isInStock
@@ -248,7 +250,7 @@ export default async function ProductPage({ params }: PageProps) {
       itemCondition: "https://schema.org/NewCondition",
       seller: {
         "@type": "Organization",
-        name: "WESTHOME by BM Distributors",
+        name: "WEST HOME by BM Distributors",
       },
     },
     aggregateRating:
@@ -264,11 +266,73 @@ export default async function ProductPage({ params }: PageProps) {
   // "<" so DB-controlled text (names/descriptions) can never break out of it.
   const jsonLdHtml = JSON.stringify(jsonLd).replace(/</g, "\\u003c");
 
+  const productUrl = `https://www.westhome.in/products/${product.slug}`;
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: "https://www.westhome.in/" },
+      { "@type": "ListItem", position: 2, name: "Shop", item: "https://www.westhome.in/shop" },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: product.category?.name ?? "Collections",
+        item: product.category?.slug
+          ? `https://www.westhome.in/collections/${product.category.slug}`
+          : undefined,
+      },
+      { "@type": "ListItem", position: 4, name: product.name, item: productUrl },
+    ],
+  };
+
+  // Buyer-intent FAQ: renders on the page AND feeds FAQPage structured data.
+  // Prices/eligibility must mirror the storefront rules (free shipping ≥ ₹999
+  // per the shipping policy; WhatsApp fallback per purchaseMethod).
+  const faqs = [
+    {
+      q: "What is the price and is it in stock?",
+      a: `${product.name} is priced at ₹${listedPrice.toLocaleString("en-IN")}${
+        product.salePrice != null && product.salePrice > 0 ? " (sale price)" : ""
+      }. ${isInStock ? "It is currently in stock and ready to ship." : "It is currently out of stock — check back soon or message us on WhatsApp."}`,
+    },
+    {
+      q: "Do you deliver, and what are the shipping charges?",
+      a: "Yes — we deliver across India. Shipping is free on orders above ₹999; a flat ₹49 applies below that.",
+    },
+    {
+      q: "Can I buy this in the showroom?",
+      a: "Yes. Visit us at our Kasaragod or Mangalore showrooms to see it in person — opening hours and directions are on the contact page.",
+    },
+    {
+      q: "How do I care for it?",
+      a:
+        product.careInstructions?.trim() ||
+        "Wipe with a soft dry cloth; avoid direct sunlight and abrasive cleaners. Full care guidance ships with the product.",
+    },
+  ];
+  const faqLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqs.map((f) => ({
+      "@type": "Question",
+      name: f.q,
+      acceptedAnswer: { "@type": "Answer", text: f.a },
+    })),
+  };
+
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdHtml }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd).replace(/</g, "\\u003c") }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd).replace(/</g, "\\u003c") }}
       />
       <ProductDetailClient
         product={product}
@@ -277,6 +341,19 @@ export default async function ProductPage({ params }: PageProps) {
         reviewCount={reviewData.reviewCount}
         relatedProducts={relatedProducts}
       />
+      <section className="container-shop max-w-3xl pb-20 md:pb-28" aria-labelledby="product-faq">
+        <h2 id="product-faq" className="font-display text-2xl md:text-3xl mb-6">
+          Frequently asked questions
+        </h2>
+        <dl className="space-y-6">
+          {faqs.map((f) => (
+            <div key={f.q}>
+              <dt className="font-semibold text-sm md:text-base">{f.q}</dt>
+              <dd className="mt-1 text-sm leading-relaxed text-text-muted">{f.a}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
     </>
   );
 }

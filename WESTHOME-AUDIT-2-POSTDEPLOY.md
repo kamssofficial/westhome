@@ -44,10 +44,60 @@ Method: live production probing (curl, HTTP status, HTML/JSON-LD extraction) + D
 - Local "home decor Kasaragod" searches surface competitors (plumint, Justdial, Empire Furniture, studio GKW) —
   westhome.in absent from that SERP (unindexed, expected)
 
----
+---## Bottom line
 
-## Bottom line
 Every **red** item from the first audit is now fixed and verified live. The remaining work is:
 (a) 1-line code fix (blog in sitemap), (b) add canonical/og:url, and (c) **submit the sitemap to Google Search
 Console** — the single most important step now, since the site has zero indexation and indexing takes weeks to
 compound.
+
+---
+
+# WESTHOME.IN — Google Shopping visibility audit — Sep 16, 2026
+
+Goal: products showing in Google when shoppers search for similar products.
+
+## What changed since Sep 6 (verified live)
+
+- **Google has indexed the site**: homepage, /search, /about, /cart, collections, policies all surface for
+  `site:westhome.in`. But **almost no /products/* pages are indexed** — one product + one junk parameterised URL
+  (`/?add-to-wishlist=11918`) were the only product-ish results.
+- **Deployment gap confirmed**: the repo's canonical/og:url code was never shipped. Live product pages emit
+  **no canonical, no og:url, and no Product JSON-LD** (only the default Store schema). All code fixes from the
+  first audit remain **undeployed on production**.
+- **Host mismatch found**: production serves and indexes `https://www.westhome.in` (bare `westhome.in` → 308 →
+  www), but every in-repo URL (sitemap loc, robots sitemap line, JSON-LD @id/url, merchant feed host, layout
+  metadataBase) pointed at the **bare** domain — i.e. canonicals that canonicalize to a redirect.
+- No Google Merchant Center feed existed; nothing supplies Google Shopping / "similar products" carousels.
+
+## Code changes this session (all typechecked; webpack build green; 31/31 tests pass)
+
+1. **`products.xml` feed route (new)** — `src/app/products.xml/route.ts`: Google Merchant Center RSS 2.0 feed
+   with all required attributes (`id/title/description/link/image_link/price/availability/brand/condition`),
+   sale prices, MPN, `item_group_id` for variants (one item per variant with variant price/images),
+   `product_type` (Category > Subcategory), `google_product_category`, up to 10 additional images, XML-safe
+   escaping, and the same isActive/stock/sale-price rules the storefront uses. Served outside `/api/` because
+   robots.ts disallows `/api/`.
+2. **Host alignment to www** — `layout.tsx` SITE_URL/metadataBase, `robots.ts`, `sitemap.ts`, product-page
+   JSON-LD @id/offer url, Store JSON-LD @id/url, Blog JSON-LD URLs (blog pages still use bare-domain literals —
+   harmless but worth sweeping next), all now use `https://www.westhome.in`.
+
+## Undeployed — shipping these changes is the actual blocker
+
+Nothing here helps until this repo is deployed to production (Vercel or the GoDaddy standalone path in
+DEPLOY-GODADDY.md). `git status` also shows unrelated pre-existing modifications (prisma seed, scripts, public
+assets) — leave those to the owner or commit separately.
+
+## Manual steps after deploy (cannot be done from code)
+
+1. **Google Search Console** (domain property `westhome.in`): submit `https://www.westhome.in/sitemap.xml`;
+   URL-inspect ~10 key product URLs and request indexing; watch the Pages report for the canonical/redirect
+   issue disappearing.
+2. **Google Merchant Center**: create account → verify/claim `westhome.in` (can auto-verify via the same
+   Search Console) → create feed *Country of sale: India, Currency: INR* → scheduled fetch **daily** of
+   `https://www.westhome.in/products.xml` → fix any item diagnostics → free listings start serving in days.
+3. **Google Business Profile**: claim/verify for both showrooms (Kasaragod + Mangalore), add
+   `westhome.in` as the website, push real customer reviews (local intent searches currently surface
+   competitors only).
+4. Optional: Merchant Center free listings get product into Shopping tab; paid PMax/Shopping campaigns can
+   reuse the same feed later.

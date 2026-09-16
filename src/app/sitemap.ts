@@ -2,7 +2,8 @@ import type { MetadataRoute } from "next";
 import db from "@/lib/db";
 import { blogArticles } from "@/lib/blog";
 
-const SITE_URL = "https://westhome.in";
+// Must match layout.tsx SITE_URL: the indexed www host, not the redirecting bare domain.
+const SITE_URL = "https://www.westhome.in";
 
 export const dynamic = "force-dynamic";
 

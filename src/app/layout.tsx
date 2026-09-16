@@ -9,24 +9,27 @@ import ServiceWorkerRegistration from "@/components/ui/ServiceWorkerRegistration
 // NEXTAUTH_URL must NOT drive metadataBase: on Vercel it is set to the
 // deployment host (e.g. westhome.vercel.app), which would corrupt every
 // canonical/og:url with a non-production host.
-const SITE_URL = "https://westhome.in";
+// NOTE: this MUST be the www host. Google indexes www.westhome.in; the bare
+// domain only 308-redirects there. A bare-domain canonical makes every page
+// "canonicalize to a redirect", which is a classic indexing suppressor.
+const SITE_URL = "https://www.westhome.in";
 
 function siteUrl(): URL {
   try {
     return new URL(SITE_URL);
   } catch {
-    return new URL("https://westhome.in");
+    return new URL("https://www.westhome.in");
   }
 }
 
 export const metadata: Metadata = {
   metadataBase: siteUrl(),
   title: {
-    default: "WESTHOME by BM Distributors | Premium Home & Lifestyle",
-    template: "%s | WESTHOME by BM Distributors",
+    default: "WEST HOME by BM Distributors | Premium Home & Lifestyle",
+    template: "%s | WEST HOME by BM Distributors",
   },
   description:
-    "Premium home décor — laundry baskets, frames, and soap dispensers at WESTHOME by BM Distributors.",
+    "Premium home décor — laundry baskets, frames, and soap dispensers at WEST HOME by BM Distributors.",
   keywords: [
     "home decor",
     "premium home",
@@ -39,16 +42,16 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_IN",
-    siteName: "WESTHOME by BM Distributors",
-    title: "WESTHOME by BM Distributors",
+    siteName: "WEST HOME by BM Distributors",
+    title: "WEST HOME by BM Distributors",
     description:
       "Premium home décor and lifestyle products curated for your comfort.",
-    url: "https://westhome.in/",
-    images: [{ url: "https://westhome.in/images/logo/westhome-logo-transparent.png", alt: "WESTHOME by BM Distributors", width: 1200, height: 630 }],
+    url: "https://www.westhome.in/",
+    images: [{ url: "https://www.westhome.in/images/logo/westhome-logo-transparent.png", alt: "WEST HOME by BM Distributors", width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary_large_image",
-    images: ["https://westhome.in/images/logo/westhome-logo-transparent.png"],
+    images: ["https://www.westhome.in/images/logo/westhome-logo-transparent.png"],
   },
   robots: {
     index: true,
@@ -84,14 +87,14 @@ export default function RootLayout({
                 "@type": "Store",
                 "@id":
                   index === 0
-                    ? "https://westhome.in/#store"
-                    : `https://westhome.in/#store-${store.id}`,
+                    ? "https://www.westhome.in/#store"
+                    : `https://www.westhome.in/#store-${store.id}`,
                 name: "WEST HOME by BM Distributors",
                 alternateName: "West Home",
-                url: "https://westhome.in/",
+                url: "https://www.westhome.in/",
                 description:
                   "Premium home décor and lifestyle products curated for your comfort — laundry baskets, frames, soap dispensers, cushions, clocks and more.",
-                image: "https://westhome.in/images/logo/westhome-logo-transparent.png",
+                image: "https://www.westhome.in/images/logo/westhome-logo-transparent.png",
                 priceRange: "₹₹",
                 telephone: "+919895071144",
                 email: "info@westhome.in",
@@ -104,7 +107,7 @@ export default function RootLayout({
                   ...store.geo,
                 },
                 ...(index > 0
-                  ? { parentOrganization: { "@id": "https://westhome.in/#store" } }
+                  ? { parentOrganization: { "@id": "https://www.westhome.in/#store" } }
                   : {}),
                 openingHoursSpecification: [
                   {

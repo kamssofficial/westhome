@@ -9,12 +9,12 @@ export const metadata: Metadata = {
     "Styling tips, buying guides and organisation ideas for Indian homes — from wall clocks and cushion covers to laundry room storage.",
   alternates: { canonical: "/blog" },
   openGraph: {
-    title: "WESTHOME Journal — Home Decor Blog",
+    title: "WEST HOME Journal — Home Decor Blog",
     description:
       "Styling tips, buying guides and organisation ideas for Indian homes — from wall clocks and cushion covers to laundry room storage.",
     type: "website",
     url: "/blog",
-    images: [{ url: "/images/logo/westhome-logo-transparent.png", alt: "WESTHOME by BM Distributors" }],
+    images: [{ url: "/images/logo/westhome-logo-transparent.png", alt: "WEST HOME by BM Distributors" }],
   },
 };
 
@@ -22,14 +22,14 @@ export default function BlogPage() {
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Blog",
-    name: "WESTHOME Journal",
-    url: "https://westhome.in/blog",
+    name: "WEST HOME Journal",
+    url: "https://www.westhome.in/blog",
     description: "Home decor styling tips and buying guides for Indian homes.",
     blogPost: blogArticles.map((a) => ({
       "@type": "BlogPosting",
       headline: a.title,
       datePublished: a.date,
-      url: `https://westhome.in/blog/${a.slug}`,
+      url: `https://www.westhome.in/blog/${a.slug}`,
     })),
   };
 

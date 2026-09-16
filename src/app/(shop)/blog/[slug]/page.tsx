@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description: article.excerpt,
       type: "article",
       url: canonical,
-      images: [{ url: "/images/logo/westhome-logo-transparent.png", alt: "WESTHOME by BM Distributors" }],
+      images: [{ url: "/images/logo/westhome-logo-transparent.png", alt: "WEST HOME by BM Distributors" }],
     },
   };
 }
@@ -50,23 +50,23 @@ export default async function BlogArticlePage({ params }: PageProps) {
     dateModified: article.date,
     author: {
       "@type": "Organization",
-      name: "WESTHOME by BM Distributors",
+      name: "WEST HOME by BM Distributors",
     },
     publisher: {
       "@type": "Organization",
-      name: "WESTHOME by BM Distributors",
-      url: "https://westhome.in/",
+      name: "WEST HOME by BM Distributors",
+      url: "https://www.westhome.in/",
     },
-    mainEntityOfPage: `https://westhome.in/blog/${article.slug}`,
+    mainEntityOfPage: `https://www.westhome.in/blog/${article.slug}`,
   };
 
   const breadcrumbLd = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: "https://westhome.in/" },
-      { "@type": "ListItem", position: 2, name: "Blog", item: "https://westhome.in/blog" },
-      { "@type": "ListItem", position: 3, name: article.title, item: `https://westhome.in/blog/${article.slug}` },
+      { "@type": "ListItem", position: 1, name: "Home", item: "https://www.westhome.in/" },
+      { "@type": "ListItem", position: 2, name: "Blog", item: "https://www.westhome.in/blog" },
+      { "@type": "ListItem", position: 3, name: article.title, item: `https://www.westhome.in/blog/${article.slug}` },
     ],
   };
 

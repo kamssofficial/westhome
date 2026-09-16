@@ -5,8 +5,9 @@ export async function middleware(request: NextRequest) {
   // The *.vercel.app alias is a second live, crawlable copy of the store and the
   // cookie-less host that misconfigured auth redirects used to land on. Permanently
   // fold it into the production domain so there is exactly one origin for the site.
+  // www is the indexed host (bare westhome.in 308s here); keep redirects on-host.
   if (request.nextUrl.hostname === "westhome.vercel.app") {
-    const target = new URL(request.nextUrl.pathname + request.nextUrl.search, "https://westhome.in");
+    const target = new URL(request.nextUrl.pathname + request.nextUrl.search, "https://www.westhome.in");
     return NextResponse.redirect(target, 301);
   }
 
