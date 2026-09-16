@@ -1,6 +1,13 @@
 import type { NextConfig } from "next";
 
+// A self-hosted GoDaddy (or other VPS/cPanel Passenger) deploy ships a
+// self-contained bundle at .next/standalone that runs with `node server.js`
+// and no node_modules tree. Vercel builds keep the default output format,
+// so leaving NEXT_OUTPUT_MODE unset changes nothing there.
+const isStandalone = process.env.NEXT_OUTPUT_MODE === "standalone";
+
 const nextConfig: NextConfig = {
+  ...(isStandalone ? { output: "standalone" as const } : {}),
   // sharp is a native module used by the image proxy to transcode uploaded
   // media to WebP; keep it out of the server bundle so it loads at runtime.
   serverExternalPackages: ["sharp"],
