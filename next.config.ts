@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // sharp is a native module used by the image proxy to transcode uploaded
+  // media to WebP; keep it out of the server bundle so it loads at runtime.
+  serverExternalPackages: ["sharp"],
   devIndicators: false,
   images: {
     // Vercel's hosted image optimizer currently returns 402

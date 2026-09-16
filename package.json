@@ -10,6 +10,7 @@
     "qa:static": "node scripts/qa-static-check.mjs",
     "qa:regression": "node scripts/qa-audit-regression.mjs",
     "qa:preflight": "node scripts/preflight-audit.mjs",
+    "audit:images": "node --env-file=.env scripts/audit-public-images.mjs",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:seed": "prisma db seed",
