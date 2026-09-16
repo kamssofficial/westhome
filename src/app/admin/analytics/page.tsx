@@ -1,8 +1,9 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { BarChart3, Eye, ShoppingCart, MousePointerClick, MessageSquare, TrendingUp, Users, Package, DollarSign, RefreshCw, Globe, Monitor, Smartphone, Tablet, Search, AlertTriangle, ArrowUp, ArrowDown, Minus, Target, Filter, Activity, Radio, ChevronRight, ArrowRight, UserPlus, UserCheck, ShoppingBag, XCircle } from "lucide-react";
 import { formatPrice, cn } from "@/lib/utils";
+import { LiveUpdated } from "@/components/admin/DashboardWidgets";
 
 const RANGES = [{value:"today",label:"Today"},{value:"yesterday",label:"Yesterday"},{value:"7d",label:"7 Days"},{value:"30d",label:"30 Days"},{value:"90d",label:"90 Days"}];
 const TABS = [{id:"overview",label:"Overview",icon:BarChart3},{id:"traffic",label:"Traffic",icon:Globe},{id:"products",label:"Products",icon:Package},{id:"categories",label:"Categories",icon:Filter},{id:"search",label:"Search",icon:Search},{id:"customers",label:"Customers",icon:Users},{id:"realtime",label:"Live",icon:Radio}];
@@ -32,13 +33,20 @@ export default function AnalyticsPage() {
   const [tab, setTab] = useState('overview');
   const [loading, setLoading] = useState(true);
   const [actLoading, setActLoading] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<number | null>(null);
+  // Guards against overlapping requests when a poll and a manual refresh collide.
+  const requestId = useRef(0);
 
-  const fetchData = useCallback(() => {
-    setLoading(true);
+  const fetchData = useCallback((silent = false) => {
+    // Stamps the request so a slow response can never overwrite fresher numbers.
+    const id = ++requestId.current;
+    // Only a user-initiated load shows the skeleton; the background poll swaps
+    // the numbers in place instead of flashing placeholders.
+    if (!silent) setLoading(true);
     Promise.all([
       fetch('/api/analytics/dashboard?range=' + range).then(r => r.json()),
       fetch('/api/analytics/live').then(r => r.json()).catch(() => ({ live: 0, customers: 0, guests: 0, visitors: [] })),
-    ]).then(([a, l]) => { setData(a); setLive(l); }).catch(() => {}).finally(() => setLoading(false));
+    ]).then(([a, l]) => { if (id !== requestId.current) return; setData(a); setLive(l); setLastUpdated(Date.now()); }).catch(() => {}).finally(() => { if (id === requestId.current) setLoading(false); });
   }, [range]);
 
   const fetchActivities = useCallback(() => {
@@ -47,7 +55,31 @@ export default function AnalyticsPage() {
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-  useEffect(() => { const i = setInterval(() => fetch('/api/analytics/live').then(r => r.json()).then(setLive).catch(() => {}), 15000); return () => clearInterval(i); }, []);
+
+  // Keep the whole page live: the BI figures refresh on their own. Polling runs
+  // only while the tab is visible, and regaining focus refreshes immediately.
+  useEffect(() => {
+    const refresh = () => {
+      if (document.visibilityState !== 'visible') return;
+      fetchData(true);
+    };
+    const i = setInterval(refresh, 20000);
+    document.addEventListener('visibilitychange', refresh);
+    window.addEventListener('focus', refresh);
+    return () => {
+      clearInterval(i);
+      document.removeEventListener('visibilitychange', refresh);
+      window.removeEventListener('focus', refresh);
+    };
+  }, [fetchData]);
+  useEffect(() => {
+    const tick = () => {
+      if (document.visibilityState !== 'visible') return;
+      fetch('/api/analytics/live').then(r => r.json()).then(setLive).catch(() => {});
+    };
+    const i = setInterval(tick, 15000);
+    return () => clearInterval(i);
+  }, []);
   useEffect(() => { if (tab === 'realtime') { fetchActivities(); const i = setInterval(fetchActivities, 10000); return () => clearInterval(i); } }, [tab, fetchActivities]);
 
   const fmtTime = (iso) => new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
@@ -59,7 +91,8 @@ export default function AnalyticsPage() {
       <p className='text-sm text-[#6b6560] mt-0.5'>Real-time customer activity & performance</p></div>
       <div className='flex items-center gap-2 flex-wrap'>
         <div className='flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-full text-xs font-medium'><span className='w-2 h-2 rounded-full bg-emerald-500 animate-pulse' /> Live: {live.live}</div>
-        <button onClick={fetchData} className='p-1.5 rounded-lg hover:bg-gray-100 text-[#6b6560]'><RefreshCw size={14} /></button>
+        <LiveUpdated at={lastUpdated} />
+        <button onClick={() => fetchData()} className='p-1.5 rounded-lg hover:bg-gray-100 text-[#6b6560]'><RefreshCw size={14} /></button>
         <div className='flex gap-1 bg-[#f7f5f2] rounded-lg p-0.5'>{RANGES.map(r => (<button key={r.value} onClick={() => setRange(r.value)} className={cn('px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors', range === r.value ? 'bg-white text-[#1a1917] shadow-sm' : 'text-[#6b6560] hover:text-[#1a1917]')}>{r.label}</button>))}</div>
       </div>
     </div>

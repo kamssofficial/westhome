@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   TrendingUp, TrendingDown, Minus, ChevronDown, ExternalLink,
@@ -55,6 +55,37 @@ export function Section({ title, icon: Icon, children, defaultOpen = true, badge
       </button>
       {open && <div className="px-5 pb-5 border-t border-border">{children}</div>}
     </div>
+  );
+}
+
+/**
+ * Shows that a dashboard refreshes itself: a pulsing live dot plus how long ago
+ * the data behind it was fetched. Owns its own one-second ticker so the clock
+ * doesn't re-render the whole dashboard every second.
+ */
+export function LiveUpdated({ at }: { at: number | null }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const i = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(i);
+  }, []);
+
+  if (at === null) return null;
+  const seconds = Math.max(0, Math.round((now - at) / 1000));
+  const ago =
+    seconds < 5 ? "just now" : seconds < 60 ? `${seconds}s ago` : `${Math.floor(seconds / 60)}m ago`;
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-600 whitespace-nowrap"
+      title="This dashboard refreshes by itself — no need to reload"
+    >
+      <span className="relative flex h-1.5 w-1.5" aria-hidden="true">
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
+        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+      </span>
+      Live
+      <span className="text-text-muted font-normal tabular-nums">· updated {ago}</span>
+    </span>
   );
 }
 

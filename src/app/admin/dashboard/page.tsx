@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import {
   Package, ShoppingCart, Users, DollarSign,
@@ -12,7 +12,7 @@ import {
   Package as PackageIcon, UserPlus, CreditCard, Percent, Boxes,
 } from "lucide-react";
 import { formatPrice, cn } from "@/lib/utils";
-import { Trend, KPICard, Section, MiniBar } from "@/components/admin/DashboardWidgets";
+import { Trend, KPICard, Section, MiniBar, LiveUpdated } from "@/components/admin/DashboardWidgets";
 
 // ─── Types ──
 interface DashboardData {
@@ -103,10 +103,16 @@ export default function AdminDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [liveError, setLiveError] = useState(false);
   const [liveLoaded, setLiveLoaded] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<number | null>(null);
+  // Stamps each request so a slow response can't overwrite fresher data.
+  const requestId = useRef(0);
 
   const fetchData = useCallback(async (r: string, silent = false) => {
+    const id = ++requestId.current;
     if (!silent) setLoading(true);
-    setRefreshing(true);
+    // Background refreshes stay quiet: the "Live · updated" badge shows progress
+    // instead, so the refresh button doesn't spin every 20 seconds.
+    if (!silent) setRefreshing(true);
     try {
       const res = await fetch(`/api/admin/dashboard?range=${r}`);
       if (res.status === 401 || res.status === 403) {
@@ -114,17 +120,23 @@ export default function AdminDashboard() {
         window.location.href = "/login";
         return;
       }
+      // A newer request (range change, or a quick manual refresh) supersedes this
+      // one, so a slow response can never overwrite fresher numbers.
+      if (id !== requestId.current) return;
       if (res.ok) {
         setData(await res.json());
+        setLastUpdated(Date.now());
         setError(null);
       } else {
-        setError("Failed to load dashboard data.");
+        if (!silent) setError("Failed to load dashboard data.");
       }
     } catch {
-      setError("Failed to load dashboard data.");
+      if (!silent) setError("Failed to load dashboard data.");
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (id === requestId.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   }, []);
 
@@ -140,9 +152,29 @@ export default function AdminDashboard() {
   }, []);
   useEffect(() => {
     fetchLive();
-    const i = setInterval(fetchLive, 15000);
+    const tick = () => { if (document.visibilityState === "visible") fetchLive(); };
+    const i = setInterval(tick, 15000);
     return () => clearInterval(i);
   }, [fetchLive]);
+
+  // Keep the figures live as well as the visitor count, so the dashboard never
+  // needs a manual reload. Polling runs only while the tab is visible, and a tab
+  // that regains focus refreshes immediately.
+  useEffect(() => {
+    const refresh = () => {
+      if (document.visibilityState !== "visible") return;
+      fetchData(range, true);
+      fetchLive();
+    };
+    const i = setInterval(refresh, 20000);
+    document.addEventListener("visibilitychange", refresh);
+    window.addEventListener("focus", refresh);
+    return () => {
+      clearInterval(i);
+      document.removeEventListener("visibilitychange", refresh);
+      window.removeEventListener("focus", refresh);
+    };
+  }, [range, fetchData, fetchLive]);
 
   const fmt = (n: number) => n >= 100000 ? `${(n / 100000).toFixed(1)}L` : n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n);
   const fmtCurrency = (n: number) => `₹${n.toLocaleString("en-IN")}`;
@@ -187,6 +219,7 @@ export default function AdminDashboard() {
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <h1 className="text-lg font-bold text-primary truncate">Dashboard</h1>
+            <LiveUpdated at={lastUpdated} />
           </div>
           <div className="flex items-center gap-2">
             <select value={range} onChange={(e) => setRange(e.target.value)} className="px-3 py-1.5 text-xs font-medium border border-border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-accent/30">

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
-import sharp from "sharp";
 import { driveDownload } from "@/lib/gdrive";
+import { acceptsWebp as acceptsWebpHeader, toWebp as toWebpPure, WEBP_MIN_BYTES, IMMUTABLE_MEDIA_CACHE, LEGACY_MEDIA_CACHE } from "@/lib/imageProxy";
 
 const PROJECT_ROOT = process.cwd();
 const PUBLIC_IMAGES_DIR = path.join(PROJECT_ROOT, "public", "images");
@@ -82,46 +82,24 @@ function binaryCacheSet(key: string, data: Buffer, mimeType: string) {
   binaryCacheBytes += data.byteLength;
 }
 
-// Product photos are stored as multi-megabyte PNGs — a 1086x1448 photo lands at
-// ~2.4 MB, roughly ten times what the same pixels cost as WebP. Serving those
-// originals on every product view is what drained the deployment's bandwidth
-// allowance, so any image the browser will accept as WebP is transcoded once
-// and cached, then served at a fraction of the bytes.
-const WEBP_QUALITY = 80;
-const WEBP_MIN_BYTES = 32 * 1024;
-
 function acceptsWebp(req: NextRequest): boolean {
-  return (req.headers.get("accept") || "").toLowerCase().includes("image/webp");
+  return acceptsWebpHeader(req.headers.get("accept"));
 }
 
+// Wraps the pure toWebp with the in-memory cache so repeated views of the same
+// image don't re-run sharp.
 async function toWebp(
   cacheKey: string,
   data: Buffer,
   mimeType: string,
 ): Promise<{ data: Buffer; mimeType: string }> {
-  // Only raster formats can be transcoded, and tiny files aren't worth it.
-  if (!/^image\/(png|jpe?g)$/i.test(mimeType)) return { data, mimeType };
-  if (data.byteLength < WEBP_MIN_BYTES) return { data, mimeType };
-
   const cached = binaryCacheGet(`${cacheKey}#webp`);
   if (cached) return { data: cached.data, mimeType: cached.mimeType };
-
-  try {
-    // `rotate()` applies EXIF orientation so the visitor sees the same framing
-    // as the original file.
-    const converted = await sharp(data)
-      .rotate()
-      .webp({ quality: WEBP_QUALITY, effort: 4 })
-      .toBuffer();
-    // Never send something bigger than what we started with.
-    if (converted.byteLength >= data.byteLength) return { data, mimeType };
-    binaryCacheSet(`${cacheKey}#webp`, converted, "image/webp");
-    return { data: converted, mimeType: "image/webp" };
-  } catch (err) {
-    // A transcode failure must never break an image — fall back to the original.
-    console.warn("webp transcode failed, serving original", cacheKey, err);
-    return { data, mimeType };
+  const result = await toWebpPure(data, mimeType);
+  if (result.mimeType === "image/webp" && result.data !== data) {
+    binaryCacheSet(`${cacheKey}#webp`, result.data, result.mimeType);
   }
+  return result;
 }
 
 function resolveFilePath(req: NextRequest): string | null {
@@ -166,19 +144,7 @@ async function serveLocal(
   return binaryResponse(body.data, body.mimeType, LEGACY_MEDIA_CACHE);
 }
 
-// Uploaded media is immutable per URL: upload filenames carry a timestamp +
-// uuid, and a Drive id never changes once created. These used to be served with
-// max-age=300 and no edge caching, so every visitor re-ran this function and
-// re-downloaded multi-megabyte originals from Drive every five minutes — the
-// single biggest drain on the deployment's bandwidth and function usage. Cache
-// them hard in the browser and at the Vercel edge instead.
-const IMMUTABLE_MEDIA_CACHE =
-  "public, max-age=604800, s-maxage=31536000, stale-while-revalidate=604800";
-// Legacy committed files (relative paths under public/images/) can be replaced
-// by a deploy at the same path, so the browser only revalidates cheaply (304)
-// while the edge still holds the bytes.
-const LEGACY_MEDIA_CACHE =
-  "public, max-age=86400, s-maxage=2592000, stale-while-revalidate=604800";
+
 
 function binaryResponse(
   data: Buffer,
