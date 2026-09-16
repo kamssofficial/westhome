@@ -1,7 +1,8 @@
 "use client";
 import { useSettings } from "@/components/ui/SettingsContext";
+import { STORE_LOCATIONS } from "@/lib/storeLocations";
 
-import { Shield, Sparkles, Users } from "lucide-react";
+import { ArrowUpRight, Shield, Sparkles, Users } from "lucide-react";
 
 export default function AboutPage() {
   const { contactPhone } = useSettings();
@@ -32,17 +33,30 @@ export default function AboutPage() {
         </p>
       </div>
 
-      {/* Store Location */}
+      {/* Store Locations */}
       <div className="container-shop pb-6">
         <div className="bg-surface rounded-[1.35rem] border border-foreground/[.08] p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-primary mb-3">Visit Our Store</h3>
-          <div className="space-y-2 text-sm text-secondary">
-            <p className="font-medium text-primary">West Home by BM Distributors</p>
-            <p>City Gate Building, near Press Club Junction,</p>
-            <p>Karandakkad, Kasaragod, Kerala — 671121</p>
-            <div className="pt-2">
-              <a href={`tel:${contactPhone.replace(/[^0-9+]/g, "")}`} className="text-accent hover:underline">{contactPhone}</a>
-            </div>
+          <h3 className="text-sm font-semibold text-primary mb-3">Visit Our Stores</h3>
+          <div className="space-y-4">
+            {STORE_LOCATIONS.map((store) => (
+              <div key={store.id} className="text-sm text-secondary">
+                <p className="font-medium text-primary">{store.label}</p>
+                {store.lines.map((line) => (
+                  <p key={line}>{line}</p>
+                ))}
+                <a
+                  href={store.mapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline"
+                >
+                  Get directions <ArrowUpRight size={12} />
+                </a>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 border-t border-foreground/[.08] pt-3 text-sm text-secondary">
+            <a href={`tel:${contactPhone.replace(/[^0-9+]/g, "")}`} className="text-accent hover:underline">{contactPhone}</a>
           </div>
         </div>
       </div>

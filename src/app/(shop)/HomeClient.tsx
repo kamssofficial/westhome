@@ -111,7 +111,11 @@ export default function HomePage() {
             if (fbData.products?.length) featured = fbData.products;
           } catch {}
         }
-        setFeaturedProducts(featured);
+        // A failed refresh must not blank out products the shopper is already
+        // looking at, so only an empty result clears an empty list.
+        setFeaturedProducts((prev) =>
+          featured.length > 0 ? featured : prev.length > 0 ? prev : []
+        );
 
         if (newRes.status === "fulfilled") {
           setNewArrivals(asArray<Product>(newRes.value, "products"));

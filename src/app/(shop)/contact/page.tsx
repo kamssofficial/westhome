@@ -4,12 +4,12 @@ import ContactClient from "./ContactClient";
 export const metadata: Metadata = {
   title: "Contact Us",
   description:
-    "Get in touch with WestHome by BM Distributors — visit our store in Kasaragod, Kerala, or reach us via phone, email, or WhatsApp.",
+    "Get in touch with West Home by BM Distributors — visit our showrooms in Kasaragod, Kerala and Mangalore, Karnataka, or reach us via phone, email, or WhatsApp.",
   alternates: { canonical: "/contact" },
   openGraph: {
     title: "Contact WESTHOME by BM Distributors",
     description:
-      "Visit our store in Kasaragod, Kerala, or reach us via phone, email, or WhatsApp.",
+      "Visit our showrooms in Kasaragod, Kerala and Mangalore, Karnataka, or reach us via phone, email, or WhatsApp.",
     url: "/contact",
     images: [{ url: "/images/logo/westhome-logo-transparent.png", alt: "WESTHOME by BM Distributors" }],
   },

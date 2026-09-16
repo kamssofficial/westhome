@@ -4,7 +4,7 @@ import AboutClient from "./AboutClient";
 export const metadata: Metadata = {
   title: "About Us",
   description:
-    "Learn about WestHome by BM Distributors — premium home décor and lifestyle products curated for Indian homes. Based in Kasaragod, Kerala.",
+    "Learn about West Home by BM Distributors — premium home décor and lifestyle products curated for Indian homes. Showrooms in Kasaragod, Kerala and Mangalore, Karnataka.",
   alternates: { canonical: "/about" },
   openGraph: {
     title: "About WESTHOME by BM Distributors",

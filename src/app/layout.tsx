@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { STORE_LOCATIONS } from "@/lib/storeLocations";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import Providers from "@/components/layout/Providers";
@@ -77,48 +78,53 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
-              "@type": "Store",
-              "@id": "https://westhome.in/#store",
-              name: "WESTHOME by BM Distributors",
-              alternateName: "WestHome",
-              url: "https://westhome.in/",
-              description:
-                "Premium home décor and lifestyle products curated for your comfort — laundry baskets, frames, soap dispensers, cushions, clocks and more.",
-              image: "https://westhome.in/images/logo/westhome-logo-transparent.png",
-              priceRange: "₹₹",
-              telephone: "+919895071144",
-              email: "info@westhome.in",
-              address: {
-                "@type": "PostalAddress",
-                streetAddress: "City Gate Building, near Press Club Junction, Karandakkad",
-                addressLocality: "Kasaragod",
-                addressRegion: "Kerala",
-                postalCode: "671121",
-                addressCountry: "IN",
-              },
-              geo: {
-                "@type": "GeoCoordinates",
-                latitude: 12.4924,
-                longitude: 74.9899,
-              },
-              openingHoursSpecification: [
-                {
-                  "@type": "OpeningHoursSpecification",
-                  dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
-                  opens: "10:00",
-                  closes: "20:00",
+              // One Store node per showroom: search engines read them
+              // independently, so each carries its own address and pin.
+              "@graph": STORE_LOCATIONS.map((store, index) => ({
+                "@type": "Store",
+                "@id":
+                  index === 0
+                    ? "https://westhome.in/#store"
+                    : `https://westhome.in/#store-${store.id}`,
+                name: "WEST HOME by BM Distributors",
+                alternateName: "West Home",
+                url: "https://westhome.in/",
+                description:
+                  "Premium home décor and lifestyle products curated for your comfort — laundry baskets, frames, soap dispensers, cushions, clocks and more.",
+                image: "https://westhome.in/images/logo/westhome-logo-transparent.png",
+                priceRange: "₹₹",
+                telephone: "+919895071144",
+                email: "info@westhome.in",
+                address: {
+                  "@type": "PostalAddress",
+                  ...store.address,
                 },
-                {
-                  "@type": "OpeningHoursSpecification",
-                  dayOfWeek: "Sunday",
-                  opens: "11:00",
-                  closes: "18:00",
+                geo: {
+                  "@type": "GeoCoordinates",
+                  ...store.geo,
                 },
-              ],
-              sameAs: [
-                "https://www.facebook.com/westhomebybmdistributors/",
-                "https://www.instagram.com/westhomebybmd/",
-              ],
+                ...(index > 0
+                  ? { parentOrganization: { "@id": "https://westhome.in/#store" } }
+                  : {}),
+                openingHoursSpecification: [
+                  {
+                    "@type": "OpeningHoursSpecification",
+                    dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+                    opens: "10:00",
+                    closes: "20:00",
+                  },
+                  {
+                    "@type": "OpeningHoursSpecification",
+                    dayOfWeek: "Sunday",
+                    opens: "11:00",
+                    closes: "18:00",
+                  },
+                ],
+                sameAs: [
+                  "https://www.facebook.com/westhomebybmdistributors/",
+                  "https://www.instagram.com/westhomebybmd/",
+                ],
+              })),
             }),
           }}
         />

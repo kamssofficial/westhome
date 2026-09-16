@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useSettings } from "@/components/ui/SettingsContext";
-import { ArrowLeft, Phone, Mail, MapPin, MessageCircle, Clock } from "lucide-react";
+import { STORE_LOCATIONS } from "@/lib/storeLocations";
+import { ArrowLeft, ArrowUpRight, Phone, Mail, MapPin, MessageCircle, Clock } from "lucide-react";
 
 export default function ContactPage() {
   const { contactPhone, contactEmail, whatsappNumber } = useSettings();
@@ -34,13 +35,24 @@ export default function ContactPage() {
               <div className="w-9 h-9 rounded-full bg-surface-muted flex items-center justify-center flex-shrink-0">
                 <MapPin size={16} className="text-secondary" />
               </div>
-              <div>
-                <p className="text-sm font-medium text-primary">Store Address</p>
-                <p className="text-sm text-secondary mt-0.5 leading-relaxed">
-                  City Gate Building, near Press Club Junction,<br />
-                  Karandakkad, Kasaragod,<br />
-                  Kerala, India — 671121
-                </p>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-primary">Store Addresses</p>
+                {STORE_LOCATIONS.map((store) => (
+                  <div key={store.id} className="mt-2 text-sm text-secondary leading-relaxed">
+                    <p className="font-medium text-primary">{store.label}</p>
+                    {store.lines.map((line) => (
+                      <p key={line}>{line}</p>
+                    ))}
+                    <a
+                      href={store.mapsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline"
+                    >
+                      Get directions <ArrowUpRight size={12} />
+                    </a>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -127,16 +139,26 @@ export default function ContactPage() {
         </div>
       </div>
 
-      {/* Map Placeholder */}
+      {/* Store locations — each tile opens the showroom in Google Maps */}
       <div className="container-shop pb-8">
-        <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
-          <div className="relative h-48 bg-surface-muted flex items-center justify-center">
-            <div className="text-center">
-              <MapPin size={32} className="mx-auto text-secondary mb-2" />
-              <p className="text-sm font-medium text-primary">Karandakkad, Kasaragod</p>
-              <p className="text-xs text-secondary mt-0.5">Kerala, India — 671121</p>
-            </div>
-          </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {STORE_LOCATIONS.map((store) => (
+            <a
+              key={store.id}
+              href={store.mapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group bg-white rounded-2xl overflow-hidden shadow-sm"
+            >
+              <div className="relative h-32 bg-surface-muted flex items-center justify-center">
+                <MapPin size={28} className="text-secondary transition-colors group-hover:text-accent" />
+              </div>
+              <div className="p-4">
+                <p className="text-sm font-medium text-primary">{store.label}</p>
+                <p className="text-xs text-secondary mt-0.5">Open in Google Maps</p>
+              </div>
+            </a>
+          ))}
         </div>
       </div>
     </div>
