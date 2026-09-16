@@ -82,13 +82,31 @@ function serveLocal(fileId: string): NextResponse | null {
           : ext === ".svg"
             ? "image/svg+xml"
             : "image/jpeg";
-  return binaryResponse(buf, type);
+  return binaryResponse(buf, type, LEGACY_MEDIA_CACHE);
 }
 
-function binaryResponse(data: Buffer, mimeType: string): NextResponse {
+// Uploaded media is immutable per URL: upload filenames carry a timestamp +
+// uuid, and a Drive id never changes once created. These used to be served with
+// max-age=300 and no edge caching, so every visitor re-ran this function and
+// re-downloaded multi-megabyte originals from Drive every five minutes — the
+// single biggest drain on the deployment's bandwidth and function usage. Cache
+// them hard in the browser and at the Vercel edge instead.
+const IMMUTABLE_MEDIA_CACHE =
+  "public, max-age=604800, s-maxage=31536000, stale-while-revalidate=604800";
+// Legacy committed files (relative paths under public/images/) can be replaced
+// by a deploy at the same path, so the browser only revalidates cheaply (304)
+// while the edge still holds the bytes.
+const LEGACY_MEDIA_CACHE =
+  "public, max-age=86400, s-maxage=2592000, stale-while-revalidate=604800";
+
+function binaryResponse(
+  data: Buffer,
+  mimeType: string,
+  cacheControl: string = IMMUTABLE_MEDIA_CACHE,
+): NextResponse {
   const headers = new Headers();
   headers.set("Content-Type", mimeType || "image/png");
-  headers.set("Cache-Control", "public, max-age=300, stale-while-revalidate=60");
+  headers.set("Cache-Control", cacheControl);
   headers.set("Content-Length", String(data.byteLength));
   return new NextResponse(new Uint8Array(data), { headers });
 }
