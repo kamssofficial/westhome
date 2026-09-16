@@ -8,7 +8,7 @@ import {
   ArrowUpDown, ArrowUp, ArrowDown,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { cachedFetchWithBackgroundRefresh, invalidateCache } from "@/lib/clientCache";
+import { invalidateCache } from "@/lib/clientCache";
 import { cn } from "@/lib/utils";
 import PriceDisplay from "@/components/ui/PriceDisplay";
 import toast from "react-hot-toast";

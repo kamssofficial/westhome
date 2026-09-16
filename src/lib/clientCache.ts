@@ -54,52 +54,21 @@ export async function cachedFetch<T>(
 }
 
 /**
- * Return cached data immediately (if available), then fetch fresh in background
- * and call onUpdate with the fresh data. Perfect for showing instantly on navigation.
+ * Read a fresh cache entry synchronously and do nothing else.
+ *
+ * Safe to call during render (including inside a useState initializer): it never
+ * fetches and never schedules an update, so it cannot produce the "state update on
+ * a component that hasn't mounted yet" warning. Revalidate from a useEffect with
+ * cachedFetch({ forceRefresh: true }) instead.
  */
-export function cachedFetchWithBackgroundRefresh<T>(
-  url: string,
-  options?: { ttl?: number; onUpdate?: (data: T) => void }
-): T | null {
-  const ttl = options?.ttl ?? DEFAULT_TTL;
-  const key = PREFIX + url;
-  const now = Date.now();
-
-  let cachedData: T | null = null;
-
+export function readCached<T>(url: string): T | null {
   try {
-    const raw = sessionStorage.getItem(key);
-    if (raw) {
-      const entry: CacheEntry<T> = JSON.parse(raw);
-      if (entry.expires > now) {
-        cachedData = entry.data;
-      }
-    }
+    const raw = sessionStorage.getItem(PREFIX + url);
+    if (!raw) return null;
+    const entry: CacheEntry<T> = JSON.parse(raw);
+    if (entry.expires > Date.now()) return entry.data;
   } catch {}
-
-  // Background refresh (fire-and-forget)
-  if (options?.onUpdate) {
-    fetch(url)
-      .then((res) => {
-        if (!res.ok) return;
-        return res.json();
-      })
-      .then((data: any) => {
-        if (data) {
-          // Update cache
-          try {
-            sessionStorage.setItem(
-              key,
-              JSON.stringify({ data, expires: now + ttl })
-            );
-          } catch {}
-          options.onUpdate!(data);
-        }
-      })
-      .catch(() => {});
-  }
-
-  return cachedData;
+  return null;
 }
 
 /**

@@ -7,26 +7,25 @@ import { ArrowRight, ArrowUpRight } from "lucide-react";
 
 import type { Category } from "@/types";
 import { resolveCategoryImage } from "@/lib/categoryImages";
-import { cachedFetchWithBackgroundRefresh } from "@/lib/clientCache";
+import { cachedFetch, readCached } from "@/lib/clientCache";
 
 
 export default function ShopPage() {
   const [categories, setCategories] = useState<Category[]>(() => {
-    return cachedFetchWithBackgroundRefresh<Category[]>("/api/categories", {
-      ttl: 5 * 60_000,
-      onUpdate: (data) => { if (data?.length) setCategories(data); },
-    }) || [];
+    return readCached<Category[]>("/api/categories") || [];
   });
   // No loading state needed
 
+  // Revalidate after mount and rewrite the cache for the next visit.
   useEffect(() => {
-    fetch("/api/categories")
-      .then((r) => r.json())
+    cachedFetch<{ categories?: Category[] }>("/api/categories", {
+      ttl: 5 * 60_000,
+      forceRefresh: true,
+    })
       .then((data) => {
         if (data.categories?.length) setCategories(data.categories);
       })
-      .catch(() => {})
-      .finally(() => {}); // no loading state
+      .catch(() => {});
   }, []);
 
   return (

@@ -12,6 +12,12 @@ const nextConfig: NextConfig = {
   // media to WebP; keep it out of the server bundle so it loads at runtime.
   serverExternalPackages: ["sharp"],
   devIndicators: false,
+  // The dev server only serves dev assets (chunks, HMR, RSC payloads) to the
+  // origin it was started on. Loading it through another loopback address —
+  // 127.0.0.1 when it was started as localhost — returned the HTML but refused
+  // the rest, which stalls hydration silently: the page looked fine while no
+  // client code ever ran. Dev-only setting; production ignores it.
+  allowedDevOrigins: ["127.0.0.1"],
   images: {
     // Vercel's hosted image optimizer currently returns 402
     // OPTIMIZED_IMAGE_REQUEST_PAYMENT_REQUIRED on this deployment. Serve the

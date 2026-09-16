@@ -20,7 +20,7 @@ import Button from "@/components/ui/Button";
 import type { Category, Product } from "@/types";
 import Testimonials from "@/components/ui/Testimonials";
 import { resolveCategoryImage } from "@/lib/categoryImages";
-import { cachedFetchWithBackgroundRefresh } from "@/lib/clientCache";
+import { cachedFetch, readCached } from "@/lib/clientCache";
 
 const SCROLL_KEY = "westhome-home-scroll";
 
@@ -43,22 +43,13 @@ export default function HomePage() {
   
 
   const [categories, setCategories] = useState<Category[]>(() => {
-    return asArray<Category>(cachedFetchWithBackgroundRefresh<Category[]>("/api/categories", {
-      ttl: 5 * 60_000,
-      onUpdate: (data) => { const list = asArray<Category>(data, "categories"); if (list.length) setCategories(list); },
-    }), "categories");
+    return asArray<Category>(readCached<Category[]>("/api/categories"), "categories");
   });
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>(() => {
-    return asArray<Product>(cachedFetchWithBackgroundRefresh<Product[]>("/api/products?lite=true&featured=true&limit=4", {
-      ttl: 5 * 60_000,
-      onUpdate: (data) => { const list = asArray<Product>(data, "products"); if (list.length) setFeaturedProducts(list); },
-    }), "products");
+    return asArray<Product>(readCached<Product[]>("/api/products?lite=true&featured=true&limit=4"), "products");
   });
   const [newArrivals, setNewArrivals] = useState<Product[]>(() => {
-    return asArray<Product>(cachedFetchWithBackgroundRefresh<Product[]>("/api/products?lite=true&newArrivals=true&limit=4", {
-      ttl: 5 * 60_000,
-      onUpdate: (data) => { const list = asArray<Product>(data, "products"); if (list.length) setNewArrivals(list); },
-    }), "products");
+    return asArray<Product>(readCached<Product[]>("/api/products?lite=true&newArrivals=true&limit=4"), "products");
   });
   // Only show loading skeleton when there's no cached data to show
   // No loading state needed — show content immediately
@@ -93,44 +84,40 @@ export default function HomePage() {
     } catch {}
   }, []);
 
-  // Background refresh: fetch fresh data and update state + clear loading
+  // Background refresh: the markup above painted from cache instantly, so this
+  // runs after mount — a side effect belongs here, not in the render phase.
   useEffect(() => {
+    const TTL = 5 * 60_000;
     const fetchData = async () => {
       try {
         const [catRes, featRes, newRes] = await Promise.allSettled([
-          fetch("/api/categories"),
-          fetch("/api/products?lite=true&featured=true&limit=4"),
-          fetch("/api/products?lite=true&newArrivals=true&limit=4"),
+          cachedFetch<{ categories?: Category[] }>("/api/categories", { ttl: TTL, forceRefresh: true }),
+          cachedFetch<{ products?: Product[] }>("/api/products?lite=true&featured=true&limit=4", { ttl: TTL, forceRefresh: true }),
+          cachedFetch<{ products?: Product[] }>("/api/products?lite=true&newArrivals=true&limit=4", { ttl: TTL, forceRefresh: true }),
         ]);
-        if (catRes.status === "fulfilled" && catRes.value.ok) {
-          const data = await catRes.value.json();
+        if (catRes.status === "fulfilled") {
+          const data = catRes.value;
           if (data.categories?.length) setCategories(data.categories);
         }
 
         let featured: Product[] = [];
-        if (featRes.status === "fulfilled" && featRes.value.ok) {
-          const data = await featRes.value.json();
+        if (featRes.status === "fulfilled") {
+          const data = featRes.value;
           if (data.products?.length) featured = data.products;
         }
         if (featured.length === 0) {
           try {
-            const fbRes = await fetch("/api/products?lite=true&limit=4&sort=newest");
-            if (fbRes.ok) {
-              const fbData = await fbRes.json();
-              if (fbData.products?.length) featured = fbData.products;
-            }
+            const fbData = await cachedFetch<{ products?: Product[] }>("/api/products?lite=true&limit=4&sort=newest", { ttl: TTL, forceRefresh: true });
+            if (fbData.products?.length) featured = fbData.products;
           } catch {}
         }
         setFeaturedProducts(featured);
 
-        if (newRes.status === "fulfilled" && newRes.value.ok) {
-          const data = await newRes.value.json();
-          setNewArrivals(asArray<Product>(data, "products"));
+        if (newRes.status === "fulfilled") {
+          setNewArrivals(asArray<Product>(newRes.value, "products"));
         }
       } catch (error) {
         console.error("Homepage fetch error:", error);
-      } finally {
-        // loaded
       }
     };
     fetchData();
@@ -148,7 +135,13 @@ export default function HomePage() {
           sizes="100vw"
           className="object-cover object-center"
         />
-        
+
+        {/* Legibility scrim for the stacked layout, where the copy sits over the
+            bottom of the photo. Desktop keeps the photo clean (lg:bg-none) — the
+            old scrim was clipped to the photo-side grid cell, so it began at 40%
+            opacity on the column edge and left a hard vertical seam at 44% width. */}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#1f2521]/50 via-[#1f2521]/10 to-transparent lg:bg-none" />
+
         <div className="absolute -right-4 top-10 h-44 w-44 rounded-full bg-[#d5966e]/20 blur-3xl" />
         
         <div className="relative grid items-stretch lg:min-h-[700px] lg:grid-cols-[.88fr_1.12fr]">
@@ -186,11 +179,8 @@ export default function HomePage() {
               </span>
             </div>
           </div>
-          <div className="order-1 relative hidden min-h-[250px] overflow-hidden sm:block lg:order-2 lg:min-h-full">
-
-            <div className="absolute inset-0 bg-gradient-to-t from-[#1f2521]/50 via-[#1f2521]/10 to-transparent lg:bg-gradient-to-r lg:from-[#1f2521]/40 lg:via-[#1f2521]/10 lg:to-transparent" />
-            
-          </div>
+          {/* Photo side of the split hero — layout spacer only, no overlay of its own. */}
+          <div className="order-1 relative hidden min-h-[250px] overflow-hidden sm:block lg:order-2 lg:min-h-full" />
         </div>
       </section>
 
