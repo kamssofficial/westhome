@@ -269,7 +269,7 @@ export default function HomePage() {
           <div className="mb-8 flex items-end justify-between md:mb-12">
             <div>
               <p className="font-label mb-3 text-[9px] text-accent">
-                The edit
+                Curated picks
               </p>
               <h2 className="font-display text-4xl md:text-5xl">
                 Selected for you.
