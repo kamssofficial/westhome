@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { requireAuthRole } from "@/lib/apiAuth";
 import { logAdminAction } from "@/lib/audit";
+import { syncParentPriceFromVariants } from "@/lib/deriveProductPrice";
 
 export async function GET(
   _request: NextRequest,
@@ -66,6 +67,9 @@ export async function POST(
       position: (maxPosition._max.position ?? -1) + 1,
     },
   });
+
+  // Keep the parent price in sync — variants are the price source of truth
+  await syncParentPriceFromVariants(id);
 
   if (attributes?.length) {
     for (const attr of attributes) {

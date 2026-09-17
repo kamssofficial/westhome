@@ -42,6 +42,11 @@ export async function POST(request: NextRequest) {
       });
       let pos = (maxPosition._max.position ?? -1) + 1;
 
+      // Seed each new variant's stock from the parent product. Without this the
+      // schema default (0) silently flips the storefront to "Out of Stock" the
+      // moment "Add S/M/L" is used on an in-stock product.
+      const inheritedStock = product.stockQuantity ?? 0;
+
       let sizeAttr = await db.variantAttribute.findUnique({
         where: { productId_name: { productId, name: "Size" } },
       });
@@ -59,6 +64,7 @@ export async function POST(request: NextRequest) {
             name: sv.name,
             price: sv.price,
             salePrice: sv.salePrice,
+            stockQuantity: inheritedStock,
             position: pos++,
           },
         });

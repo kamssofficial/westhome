@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { requireAuthRole } from "@/lib/apiAuth";
 import { logAdminAction } from "@/lib/audit";
+import { syncParentPriceFromVariants } from "@/lib/deriveProductPrice";
 
 export async function PATCH(
   request: NextRequest,
@@ -29,6 +30,9 @@ export async function PATCH(
       ...(body.isActive != null && { isActive: body.isActive }),
     },
   });
+
+  // Keep the parent price in sync — variants are the price source of truth
+  await syncParentPriceFromVariants(id);
 
   await logAdminAction({
     action: "UPDATE",
@@ -58,6 +62,9 @@ export async function DELETE(
   await db.variantAttributeValue.deleteMany({ where: { variantId } });
   await db.variantImage.deleteMany({ where: { variantId } });
   await db.productVariant.delete({ where: { id: variantId } });
+
+  // Keep the parent price in sync — variants are the price source of truth
+  await syncParentPriceFromVariants(id);
 
   await logAdminAction({
     action: "DELETE",

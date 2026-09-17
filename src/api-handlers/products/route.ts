@@ -5,6 +5,7 @@ import db from "@/lib/db";
 import { requireAuthRole } from "@/lib/apiAuth";
 import { auth } from "@/lib/auth";
 import { logAdminAction } from "@/lib/audit";
+import { syncParentPriceFromVariants } from "@/lib/deriveProductPrice";
 
 export async function GET(request: NextRequest) {
   try {
@@ -371,7 +372,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Log the action
+    // When variants were provided, derive the parent price from them so the
+    // storefront never shows two competing prices (variant prices are what
+    // customers actually pay).
+    if (body.variants && Array.isArray(body.variants)) {
+      await syncParentPriceFromVariants(product.id).catch(() => {});
+    }
+
     await logAdminAction({
       action: "CREATE",
       entity: "PRODUCT",

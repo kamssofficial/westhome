@@ -178,8 +178,27 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
 
   const selectedCategory = categories.find((c) => c.id === form.categoryId);
 
+  // With size variants, the storefront charges variant prices — the general
+  // price is derived from them, so show it read-only instead of two competing
+  // price inputs (the "two prices" problem).
+  const hasVariants = variants.length > 0;
+  const priceSummary = (() => {
+    const priced = variants.filter((v) => v.price > 0);
+    if (priced.length === 0) return null;
+    const sale = priced.filter((v) => v.salePrice != null && v.salePrice > 0);
+    const fmt = (n: number) => "₹" + n.toLocaleString("en-IN");
+    if (sale.length === priced.length && priced.length > 1) {
+      const lo = Math.min(...priced.map((v) => v.salePrice as number));
+      const hi = Math.max(...priced.map((v) => v.salePrice as number));
+      return lo === hi ? fmt(lo) : `${fmt(lo)} – ${fmt(hi)}`;
+    }
+    const lo = Math.min(...priced.map((v) => v.price));
+    const hi = Math.max(...priced.map((v) => v.price));
+    return lo === hi ? fmt(lo) : `${fmt(lo)} – ${fmt(hi)}`;
+  })();
+
   const handleSave = async () => {
-    if (!form.name.trim() || !form.regularPrice || !form.categoryId) {
+    if (!form.name.trim() || (!hasVariants && !form.regularPrice) || !form.categoryId) {
       toast.error("Name, price, and category are required");
       return;
     }
@@ -434,12 +453,18 @@ export default function AdminProductEditPage({ params }: { params: Promise<{ id:
 
         {/* Pricing & Stock */}
         <div className="bg-surface rounded-[1.35rem] border border-border p-5">
-          <h2 className="font-semibold mb-4">Pricing & Stock</h2>
+          {hasVariants ? (
+            <div className="mb-4 px-4 py-3 bg-surface-muted/60 border border-border rounded-xl">
+              <p className="text-xs text-text-secondary mb-1">Price is set per size variant below — the storefront charges variant prices.</p>
+              <p className="text-sm font-semibold text-primary">{priceSummary || "Set prices on the variants below"} <span className="text-xs font-normal text-text-secondary">· across {variants.length} size{variants.length === 1 ? "" : "s"}</span></p>
+            </div>
+          ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div><label className="text-xs font-medium text-text-secondary mb-1 block">Regular Price (₹) *</label><input type="number" step="0.01" value={form.regularPrice} onChange={(e) => setForm({ ...form, regularPrice: e.target.value })} className={inputClass} /></div>
             <div><label className="text-xs font-medium text-text-secondary mb-1 block">Sale Price (₹)</label><input type="number" step="0.01" value={form.salePrice} onChange={(e) => setForm({ ...form, salePrice: e.target.value })} className={inputClass} /></div>
             <div><label className="text-xs font-medium text-text-secondary mb-1 block">Stock</label><input type="number" value={form.stockQuantity} onChange={(e) => setForm({ ...form, stockQuantity: e.target.value })} className={inputClass} /></div>
           </div>
+          )}
           <div className="flex items-center gap-6 mt-4">
             <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" checked={form.allowBackorder} onChange={(e) => setForm({ ...form, allowBackorder: e.target.checked })} className="accent-accent" /> Allow backorder</label>
           </div>

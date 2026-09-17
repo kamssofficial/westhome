@@ -6,6 +6,7 @@ import { requireAuthRole } from "@/lib/apiAuth";
 import { auth } from "@/lib/auth";
 import { logAdminAction } from "@/lib/audit";
 import { deleteMedia } from "@/lib/media";
+import { deriveParentPriceFromVariants, syncParentPriceFromVariants } from "@/lib/deriveProductPrice";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -134,6 +135,16 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     // Recompute slug when the name changes (same normalization as create)
     const nextSlug = body.name.trim().toLowerCase().replace(/[^\w\s-]/g, "").replace(/[\s_-]+/g, "-").replace(/^-+|-+$/g, "");
 
+    // When the product has variants, the storefront charges variant prices —
+    // derive the parent price from them so collection cards, the detail page
+    // fallback and the admin list can never show a stale second price.
+    const variantCount = await db.productVariant.count({ where: { productId: product.id } });
+    let derivedPricing: { regularPrice?: number; salePrice?: number | null } = {};
+    if (variantCount > 0) {
+      const derived = await deriveParentPriceFromVariants(product.id);
+      if (derived) derivedPricing = derived;
+    }
+
     const updated = await db.product.update({
       where: { id: product.id },
       data: {
@@ -148,8 +159,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         sku: typeof body.sku === "string" && body.sku.trim() ? body.sku.trim() : null,
         description: body.description,
         shortDescription: body.shortDescription,
-        regularPrice: body.regularPrice,
-        salePrice: body.salePrice,
+        regularPrice: derivedPricing.regularPrice ?? body.regularPrice,
+        salePrice: variantCount > 0 && "salePrice" in derivedPricing ? derivedPricing.salePrice : body.salePrice,
         stockQuantity: body.stockQuantity,
         lowStockThreshold: body.lowStockThreshold,
         trackInventory: true, // inventory is always tracked; client value ignored
@@ -262,6 +273,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
           }
         }
       });
+      // Variants were just replaced — re-derive the parent price from the new set
+      await syncParentPriceFromVariants(product.id).catch(() => {});
     }
 
     // Log the action
