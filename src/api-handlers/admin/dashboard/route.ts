@@ -99,10 +99,11 @@ export async function GET(request: NextRequest) {
     const prevUnitsSold = Number(prevUnitsData._sum.quantity || 0);
 
     // ── Customers ──
+    const customerFilter = { OR: [{ role: "CUSTOMER" }, { orders: { some: {} } }], isActive: true };
     const [totalCustomers, newCustomers, prevNewCustomers] = await Promise.all([
-      db.user.count({ where: { role: "CUSTOMER", isActive: true } }),
-      db.user.count({ where: { role: "CUSTOMER", isActive: true, createdAt: sinceClause } }),
-      db.user.count({ where: { role: "CUSTOMER", isActive: true, createdAt: { gte: prevStart, lte: prevEnd } } }),
+db.user.count({ where: customerFilter }),
+      db.user.count({ where: { ...customerFilter, createdAt: sinceClause } }),
+      db.user.count({ where: { ...customerFilter, createdAt: { gte: prevStart, lte: prevEnd } } }),
     ]);
     const returningCustomers = totalCustomers - newCustomers;
 
@@ -217,7 +218,7 @@ export async function GET(request: NextRequest) {
         by: ["productId"],
         _count: { id: true },
         _sum: { totalPrice: true, quantity: true },
-        where: { order: { createdAt: sinceClause, paymentStatus: "COMPLETED" } },
+where: { order: { createdAt: sinceClause, paymentStatus: "COMPLETED" } },
       }),
       db.product.groupBy({ by: ["categoryId"], _count: { id: true } }),
     ]);

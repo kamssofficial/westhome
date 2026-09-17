@@ -18,12 +18,21 @@ export async function GET(request: NextRequest) {
     const query = searchParams.get("q") || "";
     const limit = parseInt(searchParams.get("limit") || "50");
 
-    const where: any = { role: "CUSTOMER" };
+    const where: any = {
+      OR: [
+        { role: "CUSTOMER" },
+        { orders: { some: {} } }
+      ]
+    };
     if (query) {
-      where.OR = [
-        { name: { contains: query, mode: "insensitive" } },
-        { email: { contains: query, mode: "insensitive" } },
-        { phone: { contains: query, mode: "insensitive" } },
+      where.AND = [
+        {
+          OR: [
+            { name: { contains: query, mode: "insensitive" } },
+            { email: { contains: query, mode: "insensitive" } },
+            { phone: { contains: query, mode: "insensitive" } },
+          ]
+        }
       ];
     }
 

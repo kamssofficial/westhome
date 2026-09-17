@@ -12,7 +12,10 @@ export async function GET() {
     // (anonymized emails like "deleted_..." with name "Deleted Customer")
     const customers = await db.user.findMany({
       where: {
-        role: "CUSTOMER",
+OR: [
+          { role: "CUSTOMER" },
+          { orders: { some: {} } }
+        ],
         NOT: { name: "Deleted Customer", isActive: false },
       },
       select: {

@@ -79,8 +79,8 @@ export async function GET(
       return NextResponse.json({ error: "Customer not found" }, { status: 404 });
     }
 
-    // SECURITY: Only expose CUSTOMER role users through this endpoint
-    if (customer.role !== "CUSTOMER") {
+    // SECURITY: Only expose CUSTOMER role users or users who have placed orders through this endpoint
+    if (customer.role !== "CUSTOMER" && customer.orders.length === 0) {
       return NextResponse.json({ error: "Customer not found" }, { status: 404 });
     }
 
