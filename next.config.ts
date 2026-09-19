@@ -7,9 +7,7 @@ import type { NextConfig } from "next";
 const isStandalone = process.env.NEXT_OUTPUT_MODE === "standalone";
 
 const nextConfig: NextConfig = {
-  ...(isStandalone ? { output: "standalone" as const } : {}),
-  // sharp is a native module used by the image proxy to transcode uploaded
-  // media to WebP; keep it out of the server bundle so it loads at runtime.
+  output: "standalone",
   serverExternalPackages: ["sharp"],
   devIndicators: false,
   // The dev server only serves dev assets (chunks, HMR, RSC payloads) to the

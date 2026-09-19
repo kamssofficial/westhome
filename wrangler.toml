@@ -1,0 +1,11 @@
+name = "westhome"
+compatibility_date = "2024-01-01"
+pages_build_output_dir = ".vercel/output/static"
+
+[env.vars]
+NEXT_TELEMETRY_DISABLED = "1"
+NODE_VERSION = "20"
+
+# Set these in Cloudflare Pages Dashboard → Settings → Environment Variables:
+# DATABASE_URL, NEXTAUTH_SECRET, NEXTAUTH_URL, RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET
+# R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME, R2_PUBLIC_BASE_URL
