@@ -11,7 +11,11 @@ export async function middleware(request: NextRequest) {
   const host = request.nextUrl.hostname;
   const isCanonicalHost = host === "www.westhome.in";
   const isFoldableHost =
-    host === "westhome.in" || host.endsWith(".onrender.com") || host.endsWith(".vercel.app");
+    host === "westhome.in" ||
+    host === "westhomebybmd.com" ||
+    host.endsWith(".westhomebybmd.com") ||
+    host.endsWith(".onrender.com") ||
+    host.endsWith(".vercel.app");
   if (!isCanonicalHost && isFoldableHost) {
     const target = new URL(request.nextUrl.pathname + request.nextUrl.search, "https://www.westhome.in");
     return NextResponse.redirect(target, 301);
