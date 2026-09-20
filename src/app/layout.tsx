@@ -73,8 +73,11 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // `data-scroll-behavior` pairs with the `scroll-behavior: smooth` in globals.css:
+  // Next needs it declared so it can turn smooth scrolling off during route
+  // transitions instead of animating every navigation.
   return (
-    <html lang="en">
+    <html lang="en" data-scroll-behavior="smooth">
       <body className="min-h-screen bg-background text-foreground antialiased">
         <script
           type="application/ld+json"
