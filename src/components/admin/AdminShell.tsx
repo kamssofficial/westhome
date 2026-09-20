@@ -179,9 +179,9 @@ export default function AdminShell({
           </div>
 
           <div className="flex items-center gap-2">
-            <NotificationBell accentRing="ring-panel-header" />
+            <NotificationBell />
             <div className="w-px h-6 bg-panel-border mx-1" />
-            <ProfileMenu userName={userName} userRole={userRole} userInitials={initials} basePath={`/${breadcrumbRoot.toLowerCase()}`} accentRing="ring-panel-header" />
+            <ProfileMenu userName={userName} userRole={userRole} userInitials={initials} basePath={`/${breadcrumbRoot.toLowerCase()}`} />
           </div>
         </header>
 

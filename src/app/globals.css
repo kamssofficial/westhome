@@ -35,6 +35,11 @@
   --color-panel-active: #1C1917;     /* active nav pill */
   --color-panel-active-text: #FFFFFF;
   --color-panel-mark: #10B981;       /* the dot beside the panel name */
+  --color-panel-popover: #FFFFFF;    /* floating menus: profile, notifications */
+  --color-panel-avatar: #292524;     /* avatar disc */
+  --color-panel-avatar-ring: #57534E; /* its ring while the menu is open */
+  --color-panel-badge: #D4A574;      /* unread count, unread row tint and dot */
+  --color-panel-danger: #DC2626;     /* destructive hover (sign out) */
   --color-success: #2D7A4F;
   --color-error: #BD4A42;
   --color-warning: #B68436;
@@ -69,6 +74,9 @@
   --color-panel-active-text: #FFFFFF;
   --color-panel-hover: rgba(15, 118, 110, 0.07);
   --color-panel-mark: #0F766E;
+  --color-panel-badge: #0F766E;
+  --color-panel-avatar-ring: #0F766E;
+  --color-panel-danger: #BD4A42;
 }
 
 /* Only the values that genuinely differ from the defaults above. */

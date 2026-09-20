@@ -21,7 +21,6 @@ interface Notification {
 
 interface NotificationBellProps {
   className?: string;
-  accentRing?: string;
 }
 
 // ── Lucide icons per notification type ──
@@ -42,21 +41,26 @@ const TYPE_ICON_MAP: Record<string, any> = {
   GENERAL: Bell,
 };
 
+/* Type tints come from the design system's tones rather than a 12-colour
+   Tailwind palette, so a notification reads the same as the dashboard's
+   status colours. */
+const NEUTRAL_TONE = "bg-surface-muted text-text-secondary";
+
 const TYPE_COLOR_MAP: Record<string, string> = {
-  ORDER_PLACED: "bg-blue-100 text-blue-600",
-  PAYMENT_SUCCESS: "bg-green-100 text-green-600",
-  PAYMENT_FAILED: "bg-red-100 text-red-500",
-  ORDER_CONFIRMED: "bg-indigo-100 text-indigo-600",
-  ORDER_SHIPPED: "bg-purple-100 text-purple-600",
-  OUT_FOR_DELIVERY: "bg-amber-100 text-amber-600",
-  DELIVERED: "bg-green-100 text-green-600",
-  CANCELLED: "bg-red-100 text-red-500",
-  REFUNDED: "bg-orange-100 text-orange-600",
-  NEW_CUSTOMER: "bg-blue-100 text-blue-500",
-  LOW_STOCK: "bg-amber-100 text-amber-600",
-  PRODUCT_UPDATED: "bg-gray-100 text-gray-600",
-  STAFF_UPDATED: "bg-gray-100 text-gray-500",
-  GENERAL: "bg-gray-100 text-gray-500",
+  ORDER_PLACED: "bg-info/10 text-info",
+  PAYMENT_SUCCESS: "bg-success/10 text-success",
+  PAYMENT_FAILED: "bg-error/10 text-error",
+  ORDER_CONFIRMED: "bg-accent/10 text-accent",
+  ORDER_SHIPPED: "bg-info/10 text-info",
+  OUT_FOR_DELIVERY: "bg-warning/10 text-warning",
+  DELIVERED: "bg-success/10 text-success",
+  CANCELLED: "bg-error/10 text-error",
+  REFUNDED: "bg-warning/10 text-warning",
+  NEW_CUSTOMER: "bg-accent/10 text-accent",
+  LOW_STOCK: "bg-warning/10 text-warning",
+  PRODUCT_UPDATED: NEUTRAL_TONE,
+  STAFF_UPDATED: NEUTRAL_TONE,
+  GENERAL: NEUTRAL_TONE,
 };
 
 const FILTERS = [
@@ -94,7 +98,7 @@ function getNotifLink(n: Notification): string {
 
 function NotifIcon({ type }: { type: string }) {
   const Icon = TYPE_ICON_MAP[type] || Bell;
-  const color = TYPE_COLOR_MAP[type] || "bg-gray-100 text-gray-500";
+  const color = TYPE_COLOR_MAP[type] || NEUTRAL_TONE;
   return (
     <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0", color)}>
       <Icon size={14} />
@@ -129,7 +133,7 @@ function groupNotifications(notifs: Notification[]): (Notification | { grouped: 
   return result;
 }
 
-export default function NotificationBell({ className, accentRing = "ring-panel-header" }: NotificationBellProps) {
+export default function NotificationBell({ className }: NotificationBellProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [allNotifications, setAllNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -230,17 +234,17 @@ export default function NotificationBell({ className, accentRing = "ring-panel-h
       <button
         ref={buttonRef}
         onClick={(e) => { e.stopPropagation(); setOpen(p => !p); }}
-        className="relative w-11 h-11 flex items-center justify-center hover:bg-black/[.04] rounded-xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d4a574]/50"
+        className="relative w-11 h-11 flex items-center justify-center hover:bg-panel-hover rounded-xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-panel-badge/50"
         aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ""}`}
         aria-expanded={open}
         type="button"
       >
-        <Bell size={18} className="text-[#6b6560]" />
+        <Bell size={18} className="text-panel-text" />
         {unreadCount > 0 && (
           <span className={cn(
             "absolute top-1.5 right-1.5 min-w-[18px] h-[18px] flex items-center justify-center",
-            "bg-[#d4a574] text-white text-[10px] font-bold rounded-full px-1",
-            "ring-2", accentRing
+            "bg-panel-badge text-text-inverse text-[10px] font-bold rounded-full px-1",
+            "ring-2 ring-panel-header"
           )}>
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
@@ -260,18 +264,18 @@ export default function NotificationBell({ className, accentRing = "ring-panel-h
               "fixed sm:absolute bottom-0 sm:bottom-auto right-0 sm:right-0 top-auto sm:top-full sm:mt-2",
               "w-full sm:w-[380px] sm:max-w-[calc(100vw-2rem)]",
               "max-h-[75vh] sm:max-h-[520px]",
-              "bg-white sm:rounded-2xl rounded-t-2xl border border-black/[.06]",
+              "bg-panel-popover sm:rounded-2xl rounded-t-2xl border border-panel-border",
               "sm:shadow-xl shadow-[0_-10px_40px_rgba(0,0,0,0.15)]",
               "z-50 overflow-hidden animate-fade-in",
               "flex flex-col"
             )}
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-black/[.06] shrink-0">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-panel-border shrink-0">
               <div className="flex items-center gap-2">
-                <h3 className="text-sm font-semibold text-[#1a1917]">Notifications</h3>
+                <h3 className="text-sm font-semibold text-panel-text-strong">Notifications</h3>
                 {unreadCount > 0 && (
-                  <span className="px-1.5 py-0.5 bg-[#d4a574]/10 text-[#d4a574] text-[10px] font-bold rounded-full">{unreadCount}</span>
+                  <span className="px-1.5 py-0.5 bg-panel-badge/10 text-panel-badge text-[10px] font-bold rounded-full">{unreadCount}</span>
                 )}
               </div>
               <div className="flex items-center gap-1">
@@ -279,23 +283,23 @@ export default function NotificationBell({ className, accentRing = "ring-panel-h
                   <button
                     onClick={markAllRead}
                     disabled={loading}
-                    className="flex items-center gap-1 text-xs font-medium text-[#6b6560] hover:text-[#1a1917] px-2 py-1 rounded-lg hover:bg-[#f7f5f2] transition-colors disabled:opacity-50"
+                    className="flex items-center gap-1 text-xs font-medium text-panel-text hover:text-panel-text-strong px-2 py-1 rounded-lg hover:bg-panel transition-colors disabled:opacity-50"
                   >
                     <CheckCheck size={13} /> Mark all read
                   </button>
                 )}
                 <button
                   onClick={() => setOpen(false)}
-                  className="p-1.5 hover:bg-[#f7f5f2] rounded-lg transition-colors ml-1"
+                  className="p-1.5 hover:bg-panel rounded-lg transition-colors ml-1"
                   aria-label="Close notifications"
                 >
-                  <X size={14} className="text-[#b0aba6]" />
+                  <X size={14} className="text-panel-icon" />
                 </button>
               </div>
             </div>
 
             {/* Filters */}
-            <div className="flex gap-1 px-4 py-2 border-b border-black/[.03] overflow-x-auto scrollbar-hide shrink-0">
+            <div className="flex gap-1 px-4 py-2 border-b border-panel-border/50 overflow-x-auto scrollbar-hide shrink-0">
               {FILTERS.map(f => (
                 <button
                   key={f.key}
@@ -303,8 +307,8 @@ export default function NotificationBell({ className, accentRing = "ring-panel-h
                   className={cn(
                     "px-2.5 py-1 rounded-full text-[11px] font-medium whitespace-nowrap transition-colors shrink-0",
                     filter === f.key
-                      ? "bg-[#1a1917] text-white"
-                      : "bg-[#f7f5f2] text-[#6b6560] hover:bg-[#ece9e4]"
+                      ? "bg-panel-active text-panel-active-text"
+                      : "bg-panel text-panel-text hover:bg-surface-muted"
                   )}
                 >
                   {f.label}
@@ -316,42 +320,42 @@ export default function NotificationBell({ className, accentRing = "ring-panel-h
             <div ref={listRef} className="overflow-y-auto flex-1 overscroll-contain" style={{ scrollbarWidth: "none" }}>
               {loading && notifications.length === 0 ? (
                 <div className="py-12 text-center">
-                  <RefreshCw size={20} className="text-[#d1ccc6] mx-auto mb-2 animate-spin" />
-                  <p className="text-xs text-[#b0aba6]">Loading notifications...</p>
+                  <RefreshCw size={20} className="text-panel-icon/70 mx-auto mb-2 animate-spin" />
+                  <p className="text-xs text-panel-icon">Loading notifications...</p>
                 </div>
               ) : grouped.length === 0 ? (
                 <div className="py-12 text-center">
-                  <div className="w-12 h-12 rounded-full bg-[#f7f5f2] flex items-center justify-center mx-auto mb-3">
-                    <Bell size={20} className="text-[#d1ccc6]" />
+                  <div className="w-12 h-12 rounded-full bg-panel flex items-center justify-center mx-auto mb-3">
+                    <Bell size={20} className="text-panel-icon/70" />
                   </div>
-                  <p className="text-sm font-medium text-[#6b6560]">You&apos;re all caught up</p>
-                  <p className="text-xs text-[#b0aba6] mt-1">No new notifications right now.</p>
+                  <p className="text-sm font-medium text-panel-text">You&apos;re all caught up</p>
+                  <p className="text-xs text-panel-icon mt-1">No new notifications right now.</p>
                 </div>
               ) : (
                 <>
                   {grouped.map((item, idx) => {
                     if ("grouped" in item && item.grouped) {
                       const Icon = TYPE_ICON_MAP[item.type] || Bell;
-                      const color = TYPE_COLOR_MAP[item.type] || "bg-gray-100 text-gray-500";
+                      const color = TYPE_COLOR_MAP[item.type] || NEUTRAL_TONE;
                       return (
                         <Link
                           key={item.ids.join(",")}
                           href={getNotifLink(item.sample)}
                           onClick={() => { item.ids.forEach(id => markAsRead(id)); setOpen(false); }}
-                          className="flex items-start gap-3 px-4 py-2.5 hover:bg-[#f7f5f2]/60 transition-colors border-b border-black/[.03] last:border-0"
+                          className="flex items-start gap-3 px-4 py-2.5 hover:bg-panel/60 transition-colors border-b border-panel-border/50 last:border-0"
                         >
                           <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0", color)}>
                             <Icon size={14} />
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5">
-                              <p className="text-sm font-medium text-[#1a1917]">{item.count} {item.type.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</p>
-                              <span className="px-1.5 py-0.5 bg-[#f7f5f2] text-[#6b6560] text-[9px] font-bold rounded-full">{item.count}</span>
+                              <p className="text-sm font-medium text-panel-text-strong">{item.count} {item.type.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</p>
+                              <span className="px-1.5 py-0.5 bg-panel text-panel-text text-[9px] font-bold rounded-full">{item.count}</span>
                             </div>
-                            <p className="text-xs text-[#b0aba6] mt-0.5 line-clamp-1">Tap to view all</p>
-                            <p className="text-[10px] text-[#d1ccc6] mt-0.5">{timeAgo(item.latest)}</p>
+                            <p className="text-xs text-panel-icon mt-0.5 line-clamp-1">Tap to view all</p>
+                            <p className="text-[10px] text-panel-icon/70 mt-0.5">{timeAgo(item.latest)}</p>
                           </div>
-                          <ArrowRight size={12} className="text-[#d1ccc6] mt-2 shrink-0" />
+                          <ArrowRight size={12} className="text-panel-icon/70 mt-2 shrink-0" />
                         </Link>
                       );
                     }
@@ -363,18 +367,18 @@ export default function NotificationBell({ className, accentRing = "ring-panel-h
                         href={getNotifLink(n)}
                         onClick={() => { if (!n.isRead) markAsRead(n.id); setOpen(false); }}
                         className={cn(
-                          "flex items-start gap-3 px-4 py-2.5 transition-colors border-b border-black/[.03] last:border-0",
-                          n.isRead ? "bg-white hover:bg-[#f7f5f2]/50" : "bg-[#d4a574]/[.03] hover:bg-[#d4a574]/[.06]"
+                          "flex items-start gap-3 px-4 py-2.5 transition-colors border-b border-panel-border/50 last:border-0",
+                          n.isRead ? "bg-panel-popover hover:bg-panel/50" : "bg-panel-badge/[.03] hover:bg-panel-badge/[.06]"
                         )}
                       >
                         {!n.isRead && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#d4a574] mt-2.5 shrink-0" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-panel-badge mt-2.5 shrink-0" />
                         )}
                         <NotifIcon type={n.type} />
                         <div className="flex-1 min-w-0">
-                          <p className={cn("text-sm leading-tight", n.isRead ? "text-[#6b6560]" : "font-medium text-[#1a1917]")}>{n.title}</p>
-                          <p className="text-xs text-[#b0aba6] mt-0.5 line-clamp-2">{n.message}</p>
-                          <p className="text-[10px] text-[#d1ccc6] mt-1">{timeAgo(n.createdAt)}</p>
+                          <p className={cn("text-sm leading-tight", n.isRead ? "text-panel-text" : "font-medium text-panel-text-strong")}>{n.title}</p>
+                          <p className="text-xs text-panel-icon mt-0.5 line-clamp-2">{n.message}</p>
+                          <p className="text-[10px] text-panel-icon/70 mt-1">{timeAgo(n.createdAt)}</p>
                         </div>
                       </Link>
                     );
@@ -383,7 +387,7 @@ export default function NotificationBell({ className, accentRing = "ring-panel-h
                   {hasMore && (
                     <button
                       onClick={loadMore}
-                      className="w-full py-2.5 text-xs font-medium text-[#6b6560] hover:bg-[#f7f5f2] transition-colors"
+                      className="w-full py-2.5 text-xs font-medium text-panel-text hover:bg-panel transition-colors"
                     >
                       Load more
                     </button>
