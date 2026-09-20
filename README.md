@@ -2,7 +2,7 @@
 
 Premium mobile-first ecommerce platform for home décor and lifestyle products.
 
-**Live domain:** [westhome.in](https://westhome.in)
+**Live domain:** [www.westhome.in](https://www.westhome.in) (the bare domain 308s here)
 
 ---
 

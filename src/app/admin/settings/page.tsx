@@ -70,7 +70,7 @@ export default function AdminSettingsPage() {
             <Field label="Contact Phone" error={errs.contactPhone}><input type="tel" value={s.contactPhone} onChange={(e) => u("contactPhone", e.target.value)} className={ic + (errs.contactPhone ? " " + ie : "")} placeholder="+91 98765 43210" /></Field>
             <Field label="WhatsApp Number" error={errs.whatsappNumber}><input type="tel" value={s.whatsappNumber} onChange={(e) => u("whatsappNumber", e.target.value)} className={ic + (errs.whatsappNumber ? " " + ie : "")} placeholder="+91 98765 43210" /></Field>
           </div>
-          <Field label="Email" error={errs.contactEmail}><input type="email" value={s.contactEmail} onChange={(e) => u("contactEmail", e.target.value)} className={ic + (errs.contactEmail ? " " + ie : "")} placeholder="info@westhome.com" /></Field>
+          <Field label="Email" error={errs.contactEmail}><input type="email" value={s.contactEmail} onChange={(e) => u("contactEmail", e.target.value)} className={ic + (errs.contactEmail ? " " + ie : "")} placeholder="info@westhome.in" /></Field>
           <Field label="Address" error={errs.address}><textarea value={s.address} onChange={(e) => u("address", e.target.value)} className={ic + " min-h-[80px] resize-y"} placeholder="Full store address" rows={2} /></Field>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Field label="City" error={errs.city}><input type="text" value={s.city} onChange={(e) => u("city", e.target.value)} className={ic + (errs.city ? " " + ie : "")} placeholder="Kasaragod" /></Field>

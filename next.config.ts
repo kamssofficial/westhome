@@ -85,7 +85,9 @@ const nextConfig: NextConfig = {
     {
       source: "/api/(.*)",
       headers: [
-        { key: "Access-Control-Allow-Origin", value: "https://westhome.in" },
+        // Must match layout.tsx SITE_URL: the site is served and indexed on www,
+        // so a bare-domain ACAO would not match the origin the browser sends.
+        { key: "Access-Control-Allow-Origin", value: "https://www.westhome.in" },
         { key: "Access-Control-Allow-Methods", value: "GET, POST, PUT, PATCH, DELETE, OPTIONS" },
         { key: "Access-Control-Allow-Headers", value: "Content-Type, Authorization" },
         { key: "Access-Control-Max-Age", value: "86400" },

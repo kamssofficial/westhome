@@ -191,7 +191,7 @@ export default function AddStaffPage() {
             <div>
               <label className="text-xs font-medium text-[#6b6560] mb-1.5 block">Email Address *</label>
               <input type="email" value={form.email} onChange={e => set("email", e.target.value)}
-                placeholder="john@westhome.com" className={cn(inputCls, errors.email && "border-red-400")} />
+                placeholder="john@westhome.in" className={cn(inputCls, errors.email && "border-red-400")} />
               {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email}</p>}
             </div>
             <div>

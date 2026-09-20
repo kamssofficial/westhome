@@ -21,13 +21,18 @@ function checkLoginRateLimit(key: string): boolean {
   return entry.count <= LOGIN_MAX_ATTEMPTS;
 }
 
+// Deployment aliases (Vercel, Cloudflare Pages) are a second origin for the same
+// site. Sign-in must always start from the canonical www host, both so the session
+// cookie is scoped to the host people browse and so a preview URL can never become
+// the auth base.
+const AUTH_ALIAS_HOSTS = ["vercel.app", "pages.dev"];
 const configuredAuthBase = (process.env.AUTH_URL || process.env.NEXTAUTH_URL || "").toLowerCase();
 if (
   (process.env.NODE_ENV === "production" || process.env.VERCEL_ENV === "production") &&
   configuredAuthBase &&
-  configuredAuthBase.includes("vercel.app")
+  AUTH_ALIAS_HOSTS.some((host) => configuredAuthBase.includes(host))
 ) {
-  process.env.AUTH_URL = "https://westhome.in";
+  process.env.AUTH_URL = "https://www.westhome.in";
 }
 
 declare module "next-auth" {

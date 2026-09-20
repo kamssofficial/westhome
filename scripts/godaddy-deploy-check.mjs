@@ -77,7 +77,7 @@ function checkEnv(loadedFiles) {
   if (!publicUrl) {
     fail("env NEXTAUTH_URL", "missing — sign-in redirects will break");
   } else if (/localhost|127\.0\.0\.1/.test(publicUrl)) {
-    fail("env NEXTAUTH_URL", `${publicUrl} — must be the public https URL (https://westhome.in)`);
+    fail("env NEXTAUTH_URL", `${publicUrl} — must be the public https URL (https://www.westhome.in)`);
   } else if (!publicUrl.startsWith("https://")) {
     warn("env NEXTAUTH_URL", `${publicUrl} — production should use https://`);
   } else {

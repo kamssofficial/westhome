@@ -178,9 +178,9 @@ ones the app reads (`npm run deploy:check` verifies them on the server):
 | --- | --- |
 | `DATABASE_URL` | Supabase pooler URL — copy exactly, including `?pgbouncer=true`-style params |
 | `NEXTAUTH_SECRET` | Must match the current value or every existing login session is invalidated |
-| `NEXTAUTH_URL` | `https://westhome.in` — a `localhost` value here breaks sign-in |
+| `NEXTAUTH_URL` | `https://www.westhome.in` — the canonical www host. A `localhost` value breaks sign-in, and the bare domain scopes the session cookie to a host that immediately 308s to www |
 | `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` | Live keys to keep taking payments |
-| `NEXT_PUBLIC_APP_URL` | `https://westhome.in` |
+| `NEXT_PUBLIC_APP_URL` | `https://www.westhome.in` |
 | `NEXT_PUBLIC_WHATSAPP_NUMBER`, `NEXT_PUBLIC_APP_NAME` | Storefront contact/config |
 | `UPLOAD_DIR`, `MAX_FILE_SIZE` | `public/uploads`, `5242880` |
 | `GOOGLE_OAUTH_CLIENT_ID` / `_CLIENT_SECRET` / `_REFRESH_TOKEN` (or `GOOGLE_CREDENTIALS_JSON`) | Needed for admin uploads to reach Google Drive; without these, uploads fall back to local disk |
@@ -210,8 +210,8 @@ anything is wrong.
 Wait for propagation, then:
 
 ```bash
-curl -sS -o /dev/null -w "%{http_code}\n" https://westhome.in/            # 200, not 402
-curl -sS -o /dev/null -w "%{http_code}\n" https://westhome.in/api/products?limit=1
+curl -sS -o /dev/null -w "%{http_code}\n" https://www.westhome.in/            # 200, not 402
+curl -sS -o /dev/null -w "%{http_code}\n" https://www.westhome.in/api/products?limit=1
 ```
 
 Then click through, signed in as admin: homepage images, a product page, **sign-in**,
