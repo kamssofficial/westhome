@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { requireAuthRole } from "@/lib/apiAuth";
+import { UserRole } from "@prisma/client";
 
 function getDateRange(range: string): Date {
   const now = new Date();
@@ -99,9 +100,9 @@ export async function GET(request: NextRequest) {
     const prevUnitsSold = Number(prevUnitsData._sum.quantity || 0);
 
     // ── Customers ──
-    const customerFilter = { OR: [{ role: "CUSTOMER" }, { orders: { some: {} } }], isActive: true };
+    const customerFilter = { OR: [{ role: UserRole.CUSTOMER }, { orders: { some: {} } }], isActive: true };
     const [totalCustomers, newCustomers, prevNewCustomers] = await Promise.all([
-db.user.count({ where: customerFilter }),
+      db.user.count({ where: customerFilter }),
       db.user.count({ where: { ...customerFilter, createdAt: sinceClause } }),
       db.user.count({ where: { ...customerFilter, createdAt: { gte: prevStart, lte: prevEnd } } }),
     ]);
