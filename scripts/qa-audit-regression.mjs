@@ -85,11 +85,19 @@ assert.ok(checkout.indexOf("clearCart()") > checkout.indexOf("if (res.ok)"), "Ca
 requireText(checkout, "paymentAcknowledged", "UPI order creation requires an explicit acknowledgement");
 requireText(checkout, 'Place Order — ${formatPrice(total)} (Payment Pending)', "UPI order action is labelled pending, not as a fake payment success");
 
+// The dashboard's queries moved out of the route into a loader, so these
+// invariants are asserted against the loader and the route is checked for the
+// auth boundary it still owns. Pointing them at the route would silently pass on
+// a wrapper that no longer contains any of the query logic.
 const dashboardApi = await apiSource("src/app/api/admin/dashboard/route.ts");
-requireText(dashboardApi, 'status: "ACTIVE"', "Dashboard products use published active status");
-requireText(dashboardApi, 'role: "CUSTOMER", isActive: true', "Dashboard customers use active customer semantics");
-requireText(dashboardApi, "ordersToday", "Dashboard exposes an authoritative today count");
-requireText(dashboardApi, "lowStockProductsAtRisk", "Dashboard counts all qualifying low-stock products");
+requireText(dashboardApi, "requireAuthRole", "Dashboard route enforces an authenticated role list");
+
+const dashboardLoader = await source("src/lib/dashboardData.ts");
+requireText(dashboardLoader, 'status: "ACTIVE"', "Dashboard products use published active status");
+requireText(dashboardLoader, 'role: "CUSTOMER"', "Dashboard customers are role-scoped");
+requireText(dashboardLoader, "isActive: true", "Dashboard excludes deactivated customers");
+requireText(dashboardLoader, "ordersToday", "Dashboard exposes an authoritative today count");
+requireText(dashboardLoader, "lowStockProductsAtRisk", "Dashboard counts all qualifying low-stock products");
 
 const staffDashboard = await source("src/app/staff/dashboard/page.tsx");
 requireText(staffDashboard, 'fetch("/api/admin/dashboard")', "Staff dashboard uses the authoritative dashboard endpoint");
