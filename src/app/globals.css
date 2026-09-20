@@ -39,6 +39,15 @@
   --shadow-modal: 0 30px 90px rgba(31, 33, 31, 0.22);
 }
 
+/* The admin panel runs on its own accent — deep teal — so it reads as a working
+   tool rather than a storefront page. Scoping the token, rather than overriding
+   utilities, keeps every accent-* class, its opacity tints, the focus ring and
+   ::selection in step. /staff and the shop keep the brand terracotta. */
+.admin-theme {
+  --color-accent: #0F766E;
+  --color-accent-hover: #115E59;
+}
+
 html {
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;

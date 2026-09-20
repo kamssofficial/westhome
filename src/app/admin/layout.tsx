@@ -48,18 +48,23 @@ const NAV_GROUPS: NavGroup[] = [
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <AdminShell
-      nav={NAV_GROUPS}
-      panelLabel="Admin"
-      homePath="/admin/dashboard"
-      breadcrumbRoot="Admin"
-      accentRing="ring-[#f7f5f2]"
-      sidebarWidthClass="w-[260px]"
-      contentMarginClass="lg:ml-[260px]"
-      headerBgClass="bg-[#f7f5f2]/80"
-      brandDotClass="bg-emerald-500"
-    >
-      {children}
-    </AdminShell>
+    // `admin-theme` re-points the accent token at deep teal for everything under
+    // /admin. Scoped here, not inside AdminShell, so the /staff panel keeps the
+    // brand terracotta.
+    <div className="admin-theme">
+      <AdminShell
+        nav={NAV_GROUPS}
+        panelLabel="Admin"
+        homePath="/admin/dashboard"
+        breadcrumbRoot="Admin"
+        accentRing="ring-[#f7f5f2]"
+        sidebarWidthClass="w-[260px]"
+        contentMarginClass="lg:ml-[260px]"
+        headerBgClass="bg-[#f7f5f2]/80"
+        brandDotClass="bg-emerald-500"
+      >
+        {children}
+      </AdminShell>
+    </div>
   );
 }

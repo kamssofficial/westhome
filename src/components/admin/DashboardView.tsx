@@ -1,6 +1,6 @@
 "use client";
 
-import type { ComponentType } from "react";
+import type { ComponentType, ReactNode } from "react";
 import Link from "next/link";
 import {
   AlertTriangle, BarChart3, Boxes, CheckCircle, Clock, CreditCard, Download,
@@ -23,7 +23,6 @@ export interface DashboardData {
   revenueOverTime: any[];
   orderStatus: Record<string, number>;
   topByRevenue: any[];
-  topByUnits: any[];
   topByViews: any[];
   topByWishlist: any[];
   topByCart: any[];
@@ -104,6 +103,35 @@ const share = (value: number | undefined, max: number | undefined) => {
   if (p < 1) return `${p.toFixed(1)}%`;
   return `${Math.round(p)}%`;
 };
+
+/** Searches, Devices and Category performance are the same list three times over:
+    a label, a right-hand figure and a bar. One component, three callers. */
+function DeviceIcon({ device }: { device?: string | null }) {
+  const Icon = device === "mobile" ? Smartphone : device === "tablet" ? Tablet : Monitor;
+  return <Icon size={14} aria-hidden="true" className="text-text-muted" />;
+}
+
+function BarList({
+  rows,
+  tone = "neutral",
+}: {
+  rows: { key: string; label: ReactNode; meta: ReactNode; value: number; max: number }[];
+  tone?: "neutral" | "accent";
+}) {
+  return (
+    <ul className="space-y-3">
+      {rows.map((row) => (
+        <li key={row.key}>
+          <div className="mb-1 flex items-center justify-between gap-3">
+            {row.label}
+            <span className="shrink-0 text-[11px] text-text-muted tabular-nums">{row.meta}</span>
+          </div>
+          <MiniBar value={row.value} max={row.max} tone={tone} />
+        </li>
+      ))}
+    </ul>
+  );
+}
 const money = (n: number | undefined) => formatPrice(n || 0);
 
 /* ─── Dashboard view ─────────────────────────────────────────────────────────
@@ -230,6 +258,13 @@ export default function DashboardView({
   const searchRows = (data?.topSearches || []).slice(0, 8);
   const searchMax = Math.max(...searchRows.map((s) => s.count), 1);
   const recentOrders = (data?.activity?.recentOrders || []).slice(0, 8);
+  const deviceTotal = (data?.deviceBreakdown || []).reduce((s: number, d: any) => s + d.count, 0);
+  // Indexed once rather than scanning three ranked lists for every table row.
+  const countByProductId = (rows: any[] | undefined) =>
+    new Map<string, number>((rows || []).map((r: any) => [r.productId, r._count?.id || 0]));
+  const viewsByProduct = countByProductId(data?.topByViews);
+  const wishlistsByProduct = countByProductId(data?.topByWishlist);
+  const cartAddsByProduct = countByProductId(data?.topByCart);
 
   const funnelStages = [
     { label: "Page views", value: funnel.pageViews, tone: "info" as const },
@@ -448,7 +483,6 @@ export default function DashboardView({
           <KPICard
             label="Customers" value={count(k.totalCustomers)} icon={Users}
             trend={{ current: k.newCustomers || 0, previous: k.prevNewCustomers || 0 }} trendLabel="previous period"
-            hint={`${count(k.newCustomers)} new · ${count(k.returningCustomers)} returning`}
             href="/admin/customers"
           />
           <KPICard
@@ -650,9 +684,9 @@ export default function DashboardView({
               </thead>
               <tbody>
                 {data!.topByRevenue.slice(0, 15).map((item: any, i: number) => {
-                  const views = data!.topByViews?.find((v: any) => v.productId === item.productId)?._count?.id || 0;
-                  const wishlists = data!.topByWishlist?.find((w: any) => w.productId === item.productId)?._count?.id || 0;
-                  const cartAdds = data!.topByCart?.find((c: any) => c.productId === item.productId)?._count?.id || 0;
+                  const views = viewsByProduct.get(item.productId) || 0;
+                  const wishlists = wishlistsByProduct.get(item.productId) || 0;
+                  const cartAdds = cartAddsByProduct.get(item.productId) || 0;
                   const stock = item.product?.stockQuantity ?? 0;
                   const href = item.product?.slug ? `/admin/products/${item.product.slug}` : "/admin/products";
                   return (
@@ -786,22 +820,22 @@ export default function DashboardView({
           {searchRows.length === 0 ? (
             <EmptyState icon={Search} title="No search data yet" />
           ) : (
-            <ul className="space-y-3">
-              {searchRows.map((s: any, i: number) => (
-                <li key={i}>
-                  <div className="mb-1 flex items-center justify-between gap-3">
-                    <Link
-                      href={`/search?q=${encodeURIComponent(s.query)}`}
-                      className="focus-ring truncate text-xs text-primary hover:text-accent"
-                    >
-                      {s.query}
-                    </Link>
-                    <span className="shrink-0 text-[11px] text-text-muted tabular-nums">{count(s.count)}</span>
-                  </div>
-                  <MiniBar value={s.count} max={searchMax} tone="neutral" />
-                </li>
-              ))}
-            </ul>
+            <BarList
+              rows={searchRows.map((s: any) => ({
+                key: s.query,
+                label: (
+                  <Link
+                    href={`/search?q=${encodeURIComponent(s.query)}`}
+                    className="focus-ring truncate text-xs text-primary hover:text-accent"
+                  >
+                    {s.query}
+                  </Link>
+                ),
+                meta: count(s.count),
+                value: s.count,
+                max: searchMax,
+              }))}
+            />
           )}
         </Section>
 
@@ -809,25 +843,20 @@ export default function DashboardView({
           {(data?.deviceBreakdown?.length || 0) === 0 ? (
             <EmptyState icon={Monitor} title="No device data yet" />
           ) : (
-            <ul className="space-y-3">
-              {data!.deviceBreakdown.map((d: any) => {
-                const total = data!.deviceBreakdown.reduce((s: number, x: any) => s + x.count, 0);
-                const pct = total > 0 ? Math.round((d.count / total) * 100) : 0;
-                const Icon = d.device === "mobile" ? Smartphone : d.device === "tablet" ? Tablet : Monitor;
-                return (
-                  <li key={d.device}>
-                    <div className="mb-1 flex items-center justify-between gap-3">
-                      <span className="flex items-center gap-2 text-xs font-medium capitalize text-primary">
-                        <Icon size={14} aria-hidden="true" className="text-text-muted" />
-                        {d.device}
-                      </span>
-                      <span className="text-[11px] text-text-muted tabular-nums">{pct}% ({count(d.count)})</span>
-                    </div>
-                    <MiniBar value={d.count} max={total} tone="neutral" />
-                  </li>
-                );
-              })}
-            </ul>
+            <BarList
+              rows={data!.deviceBreakdown.map((d: any) => ({
+                key: d.device,
+                label: (
+                  <span className="flex items-center gap-2 text-xs font-medium capitalize text-primary">
+                    <DeviceIcon device={d.device} />
+                    {d.device}
+                  </span>
+                ),
+                meta: `${share(d.count, deviceTotal)} (${count(d.count)})`,
+                value: d.count,
+                max: deviceTotal,
+              }))}
+            />
           )}
           <p className="mt-4 text-[11px] text-text-muted">
             {count(data?.uniqueVisitors)} unique visitors in {rangeLabel.toLowerCase()}.
@@ -862,19 +891,16 @@ export default function DashboardView({
 
         {categories.length > 0 ? (
           <Section title="Category performance" icon={Layers} hint={rangeLabel}>
-            <ul className="space-y-3">
-              {categories.map((cat: any) => (
-                <li key={cat.id}>
-                  <div className="mb-1 flex items-center justify-between gap-3">
-                    <span className="truncate text-xs font-medium text-primary">{cat.name}</span>
-                    <span className="shrink-0 text-[11px] text-text-muted tabular-nums">
-                      {count(cat.products)} products · {money(cat.revenue)}
-                    </span>
-                  </div>
-                  <MiniBar value={cat.revenue} max={categoryMax} tone="accent" />
-                </li>
-              ))}
-            </ul>
+            <BarList
+              tone="accent"
+              rows={categories.map((cat: any) => ({
+                key: cat.id,
+                label: <span className="truncate text-xs font-medium text-primary">{cat.name}</span>,
+                meta: `${count(cat.products)} products · ${money(cat.revenue)}`,
+                value: cat.revenue,
+                max: categoryMax,
+              }))}
+            />
           </Section>
         ) : null}
       </div>

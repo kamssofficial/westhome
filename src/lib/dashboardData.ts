@@ -158,11 +158,6 @@ db.user.count({ where: customerFilter }),
       where: { order: { createdAt: sinceClause, paymentStatus: "COMPLETED" } },
       orderBy: { _sum: { totalPrice: "desc" } }, take: 10,
     });
-    const topByUnits = await db.orderItem.groupBy({
-      by: ["productId"], _sum: { quantity: true, totalPrice: true }, _count: { id: true },
-      where: { order: { createdAt: sinceClause, paymentStatus: "COMPLETED" } },
-      orderBy: { _sum: { quantity: "desc" } }, take: 10,
-    });
     const topByViews = await db.analyticsEvent.groupBy({
       by: ["productId"], _count: { id: true },
       where: { eventType: { in: ["VIEW", "PRODUCT_VIEW"] }, productId: { not: null }, createdAt: sinceClause },
@@ -181,7 +176,7 @@ db.user.count({ where: customerFilter }),
 
     // Fetch product details for all top lists
     const allProductIds = new Set<string>();
-    [...topByRevenue, ...topByUnits, ...topByViews, ...topByWishlist, ...topByCart].forEach(t => { if (t.productId) allProductIds.add(t.productId); });
+    [...topByRevenue, ...topByViews, ...topByWishlist, ...topByCart].forEach(t => { if (t.productId) allProductIds.add(t.productId); });
     const productDetails = allProductIds.size > 0
       ? await db.product.findMany({ where: { id: { in: [...allProductIds] } }, select: { id: true, name: true, slug: true, regularPrice: true, salePrice: true, stockQuantity: true, trackInventory: true, images: { take: 1, select: { url: true } } } })
       : [];
@@ -307,17 +302,13 @@ where: { order: { createdAt: sinceClause, paymentStatus: "COMPLETED" } },
 
     // Insights
     const insights: string[] = [];
-    if (revenue > 0 && prevRevenue > 0) {
-      const rc = pctChange(revenue, prevRevenue);
-      insights.push("Revenue " + (rc > 0 ? "increased" : "decreased") + " " + Math.abs(rc) + "% compared with the previous period.");
-    }
     if (topByRevenue.length > 0 && pMap[topByRevenue[0].productId || ""] ) {
       insights.push("Your highest-selling product is " + pMap[topByRevenue[0].productId!].name + ".");
     }
-    if (outOfStock > 0) insights.push(outOfStock + " product" + (outOfStock > 1 ? "s are" : " is") + " currently out of stock.");
-    if (lowStockProductsAtRisk.length > 0) insights.push(lowStockProductsAtRisk.length + " product" + (lowStockProductsAtRisk.length > 1 ? "s need" : " needs") + " restocking soon.");
-    if (conversionRate > 0) insights.push("Your conversion rate is " + conversionRate + "%.");
-    if (ordersToday > 0) insights.push(ordersToday + " order" + (ordersToday > 1 ? "s placed" : " placed") + " today.");
+    // Insights stay a place for synthesis, not a second copy of the page. Stock
+    // counts, conversion rate, orders today and the revenue change each restated a
+    // KPI tile or the Action required card verbatim, so they were dropped — the two
+    // that remain say something no single card does.
     // Both sides of this percentage must come from the same population: the
     // device groupBy counts *every* event in the range, so dividing it by a
     // single event type (product views) reported nonsense like "mobile 2372%".
@@ -353,7 +344,6 @@ where: { order: { createdAt: sinceClause, paymentStatus: "COMPLETED" } },
       orderStatus: statusMap,
       // Top Products
       topByRevenue: enrich(topByRevenue, "revenue"),
-      topByUnits: enrich(topByUnits, "quantity"),
       topByViews: topByViews.map(t => ({ ...t, product: pMap[t.productId || ""] || null, views: t._count.id })),
       topByWishlist: topByWishlist.map(t => ({ ...t, product: pMap[t.productId || ""] || null, wishlists: t._count.id })),
       topByCart: topByCart.map(t => ({ ...t, product: pMap[t.productId || ""] || null, cartAdds: t._count.id })),

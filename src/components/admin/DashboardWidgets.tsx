@@ -44,7 +44,7 @@ const TONE_BG: Record<Tone, string> = {
   info: "bg-info",
 };
 
-export function Trend({
+function Trend({
   current,
   previous,
   className,
@@ -248,7 +248,7 @@ const STATUS_TONE: Record<string, Tone> = {
   DRAFT: "neutral",
 };
 
-export function statusTone(status: string): Tone {
+function statusTone(status: string): Tone {
   return STATUS_TONE[status] ?? "neutral";
 }
 
