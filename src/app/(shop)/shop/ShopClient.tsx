@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
@@ -8,25 +8,43 @@ import { ArrowRight, ArrowUpRight } from "lucide-react";
 import type { Category } from "@/types";
 import { resolveCategoryImage } from "@/lib/categoryImages";
 import { cachedFetch, readCached } from "@/lib/clientCache";
+import { CategoryCardSkeleton } from "@/components/ui/Skeleton";
 
+// The catalogue request has three distinct outcomes. Collapsing them into
+// "categories.length === 0" is what used to flash "No collections available
+// yet." on every cold visit (sessionStorage starts empty per tab) and stick
+// there whenever the network was slow - the fetch error was swallowed and the
+// initial [] looked exactly like a genuinely empty catalogue.
+type LoadStatus = "loading" | "ready" | "error";
 
 export default function ShopPage() {
-  const [categories, setCategories] = useState<Category[]>(() => {
-    return readCached<Category[]>("/api/categories") || [];
-  });
-  // No loading state needed
+  const cached = readCached<Category[]>("/api/categories");
+  const [categories, setCategories] = useState<Category[]>(cached || []);
+  // A warm cache paints real content instantly; a cold one must show loading,
+  // never the empty state.
+  const [status, setStatus] = useState<LoadStatus>(cached ? "ready" : "loading");
 
-  // Revalidate after mount and rewrite the cache for the next visit.
-  useEffect(() => {
+  const load = useCallback(() => {
+    setStatus((s) => (s === "ready" ? s : "loading"));
     cachedFetch<{ categories?: Category[] }>("/api/categories", {
       ttl: 5 * 60_000,
       forceRefresh: true,
     })
       .then((data) => {
-        if (data.categories?.length) setCategories(data.categories);
+        setCategories(data.categories || []);
+        setStatus("ready");
       })
-      .catch(() => {});
+      .catch(() => {
+        // Keep showing whatever cached content is already on screen; only a
+        // cold visit with no data at all drops to the error state.
+        setStatus((s) => (s === "ready" ? s : "error"));
+      });
   }, []);
+
+  // Revalidate after mount and rewrite the cache for the next visit.
+  useEffect(() => {
+    load();
+  }, [load]);
 
   return (
     <div className="animate-fade-in">
@@ -88,7 +106,27 @@ export default function ShopPage() {
               </Link>
             ))}
           </div>
+        ) : status === "loading" ? (
+          // Same 2/3-column rhythm as the real grid so nothing jumps on load.
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <CategoryCardSkeleton key={i} />
+            ))}
+          </div>
+        ) : status === "error" ? (
+          <div className="text-center py-16">
+            <p className="text-sm text-text-secondary">
+              Couldn&apos;t load the collections — check your connection.
+            </p>
+            <button
+              onClick={load}
+              className="mt-4 rounded-full border border-foreground/[.15] px-5 py-2.5 text-sm font-semibold transition-colors hover:bg-surface-muted"
+            >
+              Try again
+            </button>
+          </div>
         ) : (
+          // Genuinely empty: the API answered successfully with zero collections.
           <div className="text-center py-16">
             <p className="text-text-muted text-sm">No collections available yet.</p>
           </div>
