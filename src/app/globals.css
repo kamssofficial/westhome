@@ -61,21 +61,52 @@
   --shadow-modal: 0 30px 90px rgba(31, 33, 31, 0.22);
 }
 
-/* The admin panel runs on its own accent — deep teal — so it reads as a working
-   tool rather than a storefront page. Scoping the tokens, rather than overriding
-   utilities, keeps every accent-* class, its opacity tints, the focus ring and
-   ::selection in step, and pulls the shell's chrome — active nav pill, nav hover,
-   the panel mark — along with it. /staff (.staff-theme) and the shop keep the
-   brand terracotta. */
+/* The admin panel runs its own skin: cool slate surfaces under a deep-teal accent,
+   so it reads as a working tool rather than a storefront page. Re-pointing the
+   tokens — rather than overriding utilities — recolours every panel surface,
+   hairline, border and text tone at once and keeps them in step with the accent
+   tints, focus rings and ::selection. It also pulls the shell's chrome (sidebar,
+   header, active nav pill, panel mark) along with it, because those read the same
+   tokens. /staff (.staff-theme) and the shop keep the warm brand palette. */
 .admin-theme {
+  /* accent */
   --color-accent: #0F766E;
   --color-accent-hover: #115E59;
-  --color-panel-active: #0F766E;
-  --color-panel-active-text: #FFFFFF;
+
+  /* Neutral family — warm cream becomes cool slate. */
+  --color-background: #EFF3F6;   /* page behind the panel */
+  --color-surface: #FFFFFF;      /* cards */
+  --color-surface-hover: #EAF0F4;
+  --color-surface-muted: #E1E9EF;
+  --color-border: rgba(15, 23, 42, 0.12);
+  --color-border-light: rgba(15, 23, 42, 0.07);
+  --color-primary: #0F1D29;      /* headings and body ink */
+  --color-primary-hover: #08131B;
+  --color-foreground: #0F1D29;   /* what unclassed text inherits */
+  --color-secondary: #5A6673;
+  --color-secondary-hover: #3F4A56;
+  --color-text-primary: #0F1D29;
+  --color-text-secondary: #5A6673;
+  --color-text-muted: #8493A1;
+  --color-text-inverse: #F8FAFC;
+
+  /* Shell chrome. */
+  --color-panel: #EFF3F6;
+  --color-panel-surface: #F7FAFC;   /* sidebar */
+  --color-panel-header: #F7FAFC;    /* sticky top bar */
+  --color-panel-border: rgba(15, 23, 42, 0.08);
   --color-panel-hover: rgba(15, 118, 110, 0.07);
+  --color-panel-text: #55606D;      /* inactive nav text */
+  --color-panel-text-strong: #0F1D29;
+  --color-panel-icon: #98A5B2;
+  --color-panel-label: #7C8794;
+  --color-panel-active: #0F766E;    /* active nav pill */
+  --color-panel-active-text: #FFFFFF;
   --color-panel-mark: #0F766E;
-  --color-panel-badge: #0F766E;
+  --color-panel-popover: #FFFFFF;
+  --color-panel-avatar: #0F1D29;
   --color-panel-avatar-ring: #0F766E;
+  --color-panel-badge: #0F766E;
   --color-panel-danger: #BD4A42;
 }
 

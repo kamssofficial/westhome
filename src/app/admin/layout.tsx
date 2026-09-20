@@ -48,10 +48,15 @@ const NAV_GROUPS: NavGroup[] = [
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    // `admin-theme` owns the whole panel skin: the accent, the active nav pill,
-    // nav hover and the panel mark. Scoped here, not inside AdminShell, so the
-    // /staff panel can declare its own values in `.staff-theme`.
-    <div className="admin-theme">
+    // `admin-theme` owns the whole panel skin: surfaces, borders, text tones, the
+    // accent, the active nav pill and the panel mark. Scoped here, not inside
+    // AdminShell, so the /staff panel can declare its own values in `.staff-theme`.
+    // It also paints the page itself: without a background the root body's cream
+    // would show through wherever the shell does not reach, e.g. past the end of a
+    // short page or during overscroll. `text-foreground` is in the same spirit —
+    // the body's warm ink would otherwise be inherited by every element the panel
+    // does not colour explicitly, leaving most of the text tinted for the old skin.
+    <div className="admin-theme min-h-screen bg-panel text-foreground">
       <AdminShell
         nav={NAV_GROUPS}
         panelLabel="Admin"
