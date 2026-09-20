@@ -38,6 +38,20 @@ async function serveGitHub(
   return binaryResponse(body.data, body.mimeType);
 }
 
+async function downloadPublicDriveImage(
+  fileId: string,
+): Promise<{ data: Buffer; mimeType: string } | null> {
+  const response = await fetch(`https://lh3.googleusercontent.com/d/${encodeURIComponent(fileId)}`, {
+    headers: { Accept: "image/avif,image/webp,image/png,image/jpeg,image/*" },
+    next: { revalidate: 3600 },
+  });
+  if (!response.ok) return null;
+  const mimeType = response.headers.get("content-type")?.split(";", 1)[0] || "";
+  if (!mimeType.startsWith("image/")) return null;
+  const data = Buffer.from(await response.arrayBuffer());
+  return data.byteLength > 0 ? { data, mimeType } : null;
+}
+
 // Bounded in-memory cache for Drive downloads so repeated image views don't
 // hammer the Drive API quota. FIFO eviction when the byte budget is exceeded.
 type CachedBinary = { data: Buffer; mimeType: string; expires: number };
@@ -185,6 +199,17 @@ export async function GET(req: NextRequest) {
           source = binaryCacheGet(fileId);
         } catch (err) {
           console.warn("driveDownload failed for", fileId, err);
+        }
+      }
+      if (!source) {
+        try {
+          const publicImage = await downloadPublicDriveImage(fileId);
+          if (publicImage) {
+            binaryCacheSet(fileId, publicImage.data, publicImage.mimeType);
+            source = binaryCacheGet(fileId);
+          }
+        } catch (err) {
+          console.warn("public Drive image fallback failed for", fileId, err);
         }
       }
       if (source) {
