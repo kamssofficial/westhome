@@ -172,6 +172,11 @@ export default function DashboardView({
   const funnel = data?.funnel || {};
   const rangeLabel = DATE_RANGES.find((r) => r.value === range)?.label || "Selected period";
   const visitors = live.visitors || [];
+  // An empty store is the normal state for a small shop, and the full card was
+  // mostly emptiness — a zero in a 14×14 tile, two counters reading zero and an
+  // empty-state box. Collapse it to one line; the full card comes back the moment
+  // somebody arrives.
+  const liveIdle = liveLoaded && (live.live || 0) === 0 && visitors.length === 0;
   const exporting = [
     { label: "Orders CSV", endpoint: "/api/orders?all=true&limit=1000" },
     { label: "Products CSV", endpoint: "/api/products?limit=1000" },
@@ -266,6 +271,10 @@ export default function DashboardView({
   const wishlistsByProduct = countByProductId(data?.topByWishlist);
   const cartAddsByProduct = countByProductId(data?.topByCart);
 
+  // Every stage is kept, zeros included. Filtering them out made the funnel read
+  // as if cart adds converted straight into orders, when the truth was that
+  // checkout was never started at all — a zero here is the most informative bar
+  // on the chart, so the card is shown whenever there is any traffic to shape it.
   const funnelStages = [
     { label: "Page views", value: funnel.pageViews, tone: "info" as const },
     { label: "Product views", value: funnel.productViews, tone: "info" as const },
@@ -273,8 +282,9 @@ export default function DashboardView({
     { label: "Checkout started", value: funnel.checkoutStarted, tone: "warning" as const },
     { label: "Payment started", value: funnel.paymentStarted, tone: "accent" as const },
     { label: "Orders completed", value: funnel.orderCompleted, tone: "success" as const },
-  ].filter((s) => (s.value || 0) > 0);
-  const funnelMax = funnelStages[0]?.value || 1;
+  ];
+  const hasFunnel = (funnel.pageViews || 0) > 0;
+  const funnelMax = funnel.pageViews || 1;
 
   return (
     <div className="space-y-6 lg:space-y-8">
@@ -378,26 +388,37 @@ export default function DashboardView({
         </div>
 
         <div className="flex flex-col gap-4 px-5 py-5 sm:flex-row sm:items-center sm:gap-8">
-          <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-success/10">
-              <span className="text-2xl font-semibold tabular-nums text-success">{live.live}</span>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-primary">
-                {live.live === 1 ? "Visitor online" : "Visitors online"}
-              </p>
-              <p className="mt-0.5 text-xs text-text-muted" aria-live="polite">
-                {deviceCounts.desktop || 0} desktop · {deviceCounts.mobile || 0} mobile
-                {deviceCounts.tablet > 0 ? ` · ${deviceCounts.tablet} tablet` : ""}
-              </p>
-            </div>
-          </div>
-          <div className="sm:ml-auto sm:text-right">
-            <p className="font-label text-text-muted">Active right now</p>
-            <p className="mt-1 text-xs text-text-muted">
-              {count(live.customers)} signed in · {count(live.guests)} guests
+          {liveIdle ? (
+            <p className="text-sm text-text-muted" aria-live="polite">
+              No one is on the store right now
+              <span className="text-text-secondary">
+                {" "}· {count(live.customers)} signed in · {count(live.guests)} guests
+              </span>
             </p>
-          </div>
+          ) : (
+            <>
+              <div className="flex items-center gap-4">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-success/10">
+                  <span className="text-2xl font-semibold tabular-nums text-success">{live.live}</span>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-primary">
+                    {live.live === 1 ? "Visitor online" : "Visitors online"}
+                  </p>
+                  <p className="mt-0.5 text-xs text-text-muted" aria-live="polite">
+                    {deviceCounts.desktop || 0} desktop · {deviceCounts.mobile || 0} mobile
+                    {deviceCounts.tablet > 0 ? ` · ${deviceCounts.tablet} tablet` : ""}
+                  </p>
+                </div>
+              </div>
+              <div className="sm:ml-auto sm:text-right">
+                <p className="font-label text-text-muted">Active right now</p>
+                <p className="mt-1 text-xs text-text-muted">
+                  {count(live.customers)} signed in · {count(live.guests)} guests
+                </p>
+              </div>
+            </>
+          )}
         </div>
 
         <div className="px-5 pb-5">
@@ -414,11 +435,17 @@ export default function DashboardView({
               ))}
             </div>
           ) : visitors.length === 0 ? (
-            <EmptyState
-              icon={Globe}
-              title="No visitors online right now"
-              hint="Live activity appears here the moment someone opens your store."
-            />
+            liveIdle ? (
+              <p className="text-xs text-text-muted">
+                Nobody is browsing. This list fills in the moment someone opens the store.
+              </p>
+            ) : (
+              <EmptyState
+                icon={Globe}
+                title="No visitors online right now"
+                hint="Live activity appears here the moment someone opens your store."
+              />
+            )
           ) : (
             <ul className="space-y-2">
               {visitors.map((v) => {
@@ -545,7 +572,7 @@ export default function DashboardView({
           </Section>
         ) : null}
 
-        {funnelStages.length > 0 ? (
+        {hasFunnel ? (
           <Section title="Sales funnel" icon={Target} hint={rangeLabel}>
             <ol className="space-y-3">
               {funnelStages.map((stage, i) => (
@@ -561,8 +588,11 @@ export default function DashboardView({
                     <p className="mt-1 text-[10px] text-text-muted">
                       {/* Drop-off is how much of this stage failed to advance, so it
                           is measured against the current stage and floored at 0 —
-                          a stage that grew is not a negative drop-off. */}
-                      {Math.max(0, Math.round(((stage.value - funnelStages[i + 1].value) / (stage.value || 1)) * 100))}% drop-off
+                          a stage that grew is not a negative drop-off. A stage with
+                          no visitors at all has no drop-off to report. */}
+                      {(stage.value || 0) > 0
+                        ? `${Math.max(0, Math.round(((stage.value - funnelStages[i + 1].value) / stage.value) * 100))}% drop-off`
+                        : "no visitors reached this step"}
                     </p>
                   ) : null}
                 </li>
