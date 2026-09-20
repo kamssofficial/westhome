@@ -17,24 +17,25 @@ const NAV_GROUPS: NavGroup[] = [
 
 export default function StaffLayout({ children }: { children: React.ReactNode }) {
   return (
-    <AdminShell
-      nav={NAV_GROUPS}
-      panelLabel="Staff"
-      homePath="/staff/dashboard"
-      breadcrumbRoot="Staff"
-      accentRing="ring-[#faf8f5]"
-      sidebarWidthClass="w-64"
-      contentMarginClass="lg:ml-64"
-      headerBgClass="bg-[#faf8f5]/80"
-      brandDotClass="bg-[#d4a574]"
-      userRoleFallback="MANAGER"
-      redirectForRole={(role) => {
-        if (role === "ADMIN") return "/admin/dashboard";
-        if (!["MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER"].includes(role)) return "/";
-        return null;
-      }}
-    >
-      {children}
-    </AdminShell>
+    // Same shell, its own skin: `.staff-theme` only overrides the values that
+    // differ from the panel defaults (header surface, mark colour).
+    <div className="staff-theme">
+      <AdminShell
+        nav={NAV_GROUPS}
+        panelLabel="Staff"
+        homePath="/staff/dashboard"
+        breadcrumbRoot="Staff"
+        sidebarWidthClass="w-64"
+        contentMarginClass="lg:ml-64"
+        userRoleFallback="MANAGER"
+        redirectForRole={(role) => {
+          if (role === "ADMIN") return "/admin/dashboard";
+          if (!["MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER"].includes(role)) return "/";
+          return null;
+        }}
+      >
+        {children}
+      </AdminShell>
+    </div>
   );
 }

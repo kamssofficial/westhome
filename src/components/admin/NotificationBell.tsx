@@ -129,7 +129,7 @@ function groupNotifications(notifs: Notification[]): (Notification | { grouped: 
   return result;
 }
 
-export default function NotificationBell({ className, accentRing = "ring-[#f7f5f2]" }: NotificationBellProps) {
+export default function NotificationBell({ className, accentRing = "ring-panel-header" }: NotificationBellProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [allNotifications, setAllNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);

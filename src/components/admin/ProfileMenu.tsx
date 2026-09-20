@@ -18,7 +18,7 @@ export default function ProfileMenu({
   userName,
   userRole,
   userInitials,
-  accentRing = "ring-[#f7f5f2]",
+  accentRing = "ring-panel-header",
   basePath = "/admin",
 }: ProfileMenuProps) {
   const [open, setOpen] = useState(false);

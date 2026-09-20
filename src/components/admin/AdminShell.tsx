@@ -27,11 +27,8 @@ export default function AdminShell({
   panelLabel,
   homePath,
   breadcrumbRoot,
-  accentRing,
   sidebarWidthClass,
   contentMarginClass,
-  headerBgClass,
-  brandDotClass,
   userRoleFallback = "",
   redirectForRole,
 }: {
@@ -40,11 +37,8 @@ export default function AdminShell({
   panelLabel: string;
   homePath: string;
   breadcrumbRoot: string;
-  accentRing: string;
   sidebarWidthClass: string;
   contentMarginClass: string;
-  headerBgClass: string;
-  brandDotClass: string;
   userRoleFallback?: string;
   /** Client-side role redirect (server middleware enforces the real rules). */
   redirectForRole?: (role: string) => string | null;
@@ -84,7 +78,7 @@ export default function AdminShell({
     nav.flatMap((g) => g.items).find((item) => pathname.startsWith(item.href))?.label || "Dashboard";
 
   return (
-    <div className="min-h-screen bg-[#f7f5f2]">
+    <div className="min-h-screen bg-panel">
       {/* Mobile overlay */}
       <div
         className={cn(
@@ -98,18 +92,18 @@ export default function AdminShell({
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed top-0 left-0 z-50 h-full bg-[#faf8f5] border-r border-black/[.06] transition-transform duration-300 lg:translate-x-0 flex flex-col",
+          "fixed top-0 left-0 z-50 h-full bg-panel-surface border-r border-panel-border transition-transform duration-300 lg:translate-x-0 flex flex-col",
           sidebarWidthClass,
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
         {/* Brand header */}
-        <div className="px-5 py-5 border-b border-black/[.06]">
+        <div className="px-5 py-5 border-b border-panel-border">
           <Link href={homePath} className="flex flex-col gap-0.5">
             <WestHomeLogo size="sm" plain />
             <div className="mt-1.5 inline-flex items-center gap-1.5">
-              <div className={cn("w-1.5 h-1.5 rounded-full", brandDotClass)} />
-              <span className="text-[9px] text-[#8a857f] tracking-wider uppercase font-medium">{panelLabel} Panel</span>
+              <div className="w-1.5 h-1.5 rounded-full bg-panel-mark" />
+              <span className="text-[9px] text-panel-label tracking-wider uppercase font-medium">{panelLabel} Panel</span>
             </div>
           </Link>
         </div>
@@ -119,7 +113,7 @@ export default function AdminShell({
           {visibleGroups.map((group) => (
             <div key={group.title || "nav"}>
               {group.title && (
-                <p className="text-[9px] font-semibold text-[#b0aba6] uppercase tracking-[.12em] px-3 mb-1.5">{group.title}</p>
+                <p className="text-[9px] font-semibold text-panel-icon uppercase tracking-[.12em] px-3 mb-1.5">{group.title}</p>
               )}
               <div className="space-y-0.5">
                 {group.items.map((item) => {
@@ -133,11 +127,11 @@ export default function AdminShell({
                       className={cn(
                         "flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] font-medium transition-all duration-150 group",
                         isActive
-                          ? "bg-stone-900 text-white shadow-sm"
-                          : "text-[#6b6560] hover:text-[#1a1917] hover:bg-black/[.03]"
+                          ? "bg-panel-active text-panel-active-text shadow-sm"
+                          : "text-panel-text hover:text-panel-text-strong hover:bg-panel-hover"
                       )}
                     >
-                      <Icon size={16} className={cn(isActive ? "text-white/70" : "text-[#b0aba6] group-hover:text-[#8a857f]")} />
+                      <Icon size={16} className={cn(isActive ? "text-panel-active-text/70" : "text-panel-icon group-hover:text-panel-label")} />
                       {item.label}
                     </Link>
                   );
@@ -148,19 +142,19 @@ export default function AdminShell({
         </nav>
 
         {/* Footer */}
-        <div className="p-3 border-t border-black/[.06] space-y-0.5">
+        <div className="p-3 border-t border-panel-border space-y-0.5">
           <Link
             href="/"
-            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] font-medium text-[#6b6560] hover:text-[#1a1917] hover:bg-black/[.03] transition-all"
+            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] font-medium text-panel-text hover:text-panel-text-strong hover:bg-panel-hover transition-all"
           >
-            <Store size={16} className="text-[#b0aba6]" />
+            <Store size={16} className="text-panel-icon" />
             View Store
           </Link>
           <button
             onClick={async () => { const { signOut } = await import("next-auth/react"); await signOut({ callbackUrl: "/login" }); }}
-            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] font-medium text-[#6b6560] hover:text-[#1a1917] hover:bg-black/[.03] transition-all w-full"
+            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] font-medium text-panel-text hover:text-panel-text-strong hover:bg-panel-hover transition-all w-full"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#b0aba6]"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-panel-icon"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
             Sign Out
           </button>
         </div>
@@ -169,25 +163,25 @@ export default function AdminShell({
       {/* Main content */}
       <div className={contentMarginClass}>
         {/* Top bar */}
-        <header className={cn("sticky top-0 z-30 backdrop-blur-lg border-b border-black/[.06] h-14 flex items-center px-4 md:px-6 gap-4", headerBgClass)}>
+        <header className="sticky top-0 z-30 backdrop-blur-lg border-b border-panel-border h-14 flex items-center px-4 md:px-6 gap-4 bg-panel-header/80">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="lg:hidden p-2 hover:bg-black/[.04] rounded-xl transition-colors"
+            className="lg:hidden p-2 hover:bg-panel-hover rounded-xl transition-colors"
           >
             <Menu size={18} />
           </button>
 
           {/* Breadcrumb */}
           <div className="flex-1 flex items-center gap-1.5 text-sm">
-            <span className="text-[#b0aba6]">{breadcrumbRoot}</span>
-            <ChevronRight size={12} className="text-[#d1ccc6]" />
-            <span className="font-medium text-[#1a1917]">{currentPageLabel}</span>
+            <span className="text-panel-icon">{breadcrumbRoot}</span>
+            <ChevronRight size={12} className="text-panel-icon/70" />
+            <span className="font-medium text-panel-text-strong">{currentPageLabel}</span>
           </div>
 
           <div className="flex items-center gap-2">
-            <NotificationBell accentRing={accentRing} />
-            <div className="w-px h-6 bg-black/[.08] mx-1" />
-            <ProfileMenu userName={userName} userRole={userRole} userInitials={initials} basePath={`/${breadcrumbRoot.toLowerCase()}`} accentRing={accentRing} />
+            <NotificationBell accentRing="ring-panel-header" />
+            <div className="w-px h-6 bg-panel-border mx-1" />
+            <ProfileMenu userName={userName} userRole={userRole} userInitials={initials} basePath={`/${breadcrumbRoot.toLowerCase()}`} accentRing="ring-panel-header" />
           </div>
         </header>
 

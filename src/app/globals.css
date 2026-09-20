@@ -18,6 +18,23 @@
   --color-text-secondary: #6F736E;
   --color-text-muted: #979B95;
   --color-text-inverse: #F8F6F1;
+
+  /* Panel chrome. AdminShell used to hardcode these as hexes and Tailwind
+     greys, which left the sidebar and top bar outside the design system. They
+     live here so a panel scope (.admin-theme / .staff-theme) can own its whole
+     skin instead of passing class strings around. */
+  --color-panel: #F7F5F2;            /* page behind the panel */
+  --color-panel-surface: #FAF8F5;    /* sidebar */
+  --color-panel-header: #F7F5F2;     /* sticky top bar, and the ring that cuts into it */
+  --color-panel-border: rgba(31, 33, 31, 0.06);
+  --color-panel-hover: rgba(31, 33, 31, 0.03);
+  --color-panel-text: #6B6560;       /* inactive nav text */
+  --color-panel-text-strong: #1A1917;
+  --color-panel-icon: #B0ABA6;       /* nav icons, group titles, breadcrumb root */
+  --color-panel-label: #8A857F;      /* "… Panel" eyebrow, hovered icons */
+  --color-panel-active: #1C1917;     /* active nav pill */
+  --color-panel-active-text: #FFFFFF;
+  --color-panel-mark: #10B981;       /* the dot beside the panel name */
   --color-success: #2D7A4F;
   --color-error: #BD4A42;
   --color-warning: #B68436;
@@ -40,12 +57,24 @@
 }
 
 /* The admin panel runs on its own accent — deep teal — so it reads as a working
-   tool rather than a storefront page. Scoping the token, rather than overriding
+   tool rather than a storefront page. Scoping the tokens, rather than overriding
    utilities, keeps every accent-* class, its opacity tints, the focus ring and
-   ::selection in step. /staff and the shop keep the brand terracotta. */
+   ::selection in step, and pulls the shell's chrome — active nav pill, nav hover,
+   the panel mark — along with it. /staff (.staff-theme) and the shop keep the
+   brand terracotta. */
 .admin-theme {
   --color-accent: #0F766E;
   --color-accent-hover: #115E59;
+  --color-panel-active: #0F766E;
+  --color-panel-active-text: #FFFFFF;
+  --color-panel-hover: rgba(15, 118, 110, 0.07);
+  --color-panel-mark: #0F766E;
+}
+
+/* Only the values that genuinely differ from the defaults above. */
+.staff-theme {
+  --color-panel-header: #FAF8F5;
+  --color-panel-mark: #D4A574;
 }
 
 html {
