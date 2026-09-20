@@ -61,12 +61,13 @@ export default function AdminShell({
 
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.push("/login");
+      // Send them back to the page they were on once they sign in.
+      router.push(`/login?callbackUrl=${encodeURIComponent(pathname)}`);
     } else if (status === "authenticated" && redirectForRole) {
       const dest = redirectForRole(userRole);
       if (dest) router.push(dest);
     }
-  }, [status, router, userRole, redirectForRole]);
+  }, [status, router, userRole, redirectForRole, pathname]);
 
   const visibleGroups = nav
     .map((group) => ({
