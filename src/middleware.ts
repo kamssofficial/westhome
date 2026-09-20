@@ -2,11 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 
 export async function middleware(request: NextRequest) {
-  // The *.vercel.app alias is a second live, crawlable copy of the store and the
-  // cookie-less host that misconfigured auth redirects used to land on. Permanently
-  // fold it into the production domain so there is exactly one origin for the site.
-  // www is the indexed host (bare westhome.in 308s here); keep redirects on-host.
-  if (request.nextUrl.hostname === "westhome.vercel.app") {
+  // Exactly one origin may serve the store: https://www.westhome.in. Every other
+  // host that still resolves to this app is folded into it with a permanent
+  // redirect - the bare apex, any *.onrender.com origin (this app answers there
+  // too), and the legacy *.vercel.app aliases. Doing this in the app rather than
+  // in a hosting dashboard is what keeps the canonical host stable across
+  // platform moves: Vercel's redirect rules did not follow us to Render.
+  const host = request.nextUrl.hostname;
+  const isCanonicalHost = host === "www.westhome.in";
+  const isFoldableHost =
+    host === "westhome.in" || host.endsWith(".onrender.com") || host.endsWith(".vercel.app");
+  if (!isCanonicalHost && isFoldableHost) {
     const target = new URL(request.nextUrl.pathname + request.nextUrl.search, "https://www.westhome.in");
     return NextResponse.redirect(target, 301);
   }

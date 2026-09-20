@@ -45,6 +45,9 @@ const nextConfig: NextConfig = {
       source: "/(.*)",
       headers: [
         { key: "X-Frame-Options", value: "DENY" },
+        // Vercel injected this automatically; self-hosted hosts do not, so keep it
+        // explicit or the header silently disappears on a platform move.
+        { key: "Strict-Transport-Security", value: "max-age=63072000" },
         { key: "X-Content-Type-Options", value: "nosniff" },
         { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
         { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=(self)" },
@@ -87,6 +90,15 @@ const nextConfig: NextConfig = {
         { key: "Access-Control-Allow-Headers", value: "Content-Type, Authorization" },
         { key: "Access-Control-Max-Age", value: "86400" },
       ],
+    },
+    // Next.js self-hosted serves prerendered HTML with `s-maxage=31536000`, which
+    // only governs shared/CDN caches and leaves browsers on heuristic freshness.
+    // Vercel normalized HTML to no-cache; keep that behavior on every host so
+    // shoppers always get a fresh shell (product data loads client-side anyway).
+    // API routes and hashed static assets are excluded - they manage their own.
+    {
+      source: "/((?!api/|_next/|images/).*)",
+      headers: [{ key: "Cache-Control", value: "public, max-age=0, must-revalidate" }],
     },
     {
       source: "/images/(.*)",
