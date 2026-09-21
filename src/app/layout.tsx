@@ -57,6 +57,17 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  // Google Search Console URL-prefix verification via HTML meta tag. The token
+  // is issued per-property in GSC (Add property → HTML tag); it is a public
+  // value by design. Set NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION in the deploy
+  // environment (the "google-site-verification=<token>" string) and it goes
+  // live on every page after the next deploy — no DNS access required. This
+  // matters because the domain already carries an older Google TXT record in
+  // GoDaddy that belongs to a previous property; a meta-tag verification lets
+  // the current business account claim the site without touching DNS.
+  verification: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+    ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }
+    : undefined,
 };
 
 export const viewport: Viewport = {
