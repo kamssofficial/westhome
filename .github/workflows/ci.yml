@@ -1,0 +1,64 @@
+name: CI
+
+# Real gates for every PR and every push to main. The previous workflow failed
+# on every run (its deploy action, cloudflare/pages-action, was removed from
+# GitHub Marketplace), so this repo had no working CI at all. This job runs the
+# actual verification the app needs: dependencies install from the npm
+# lockfile, the production Next build compiles (which includes the TypeScript
+# pass), the unit suite and both QA audits pass, and ESLint runs.
+#
+# Deliberately NOT in CI: the Cloudflare Pages deploy. Deploy stays on Render,
+# which builds main itself; the deploy step here was unverifiable without
+# Cloudflare secrets ever having been set (the old workflow never got past job
+# setup to prove otherwise).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      # The production build reads these at build time; only placeholders are
+      # needed to compile (no DB connection is made during `next build`).
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+      NEXTAUTH_SECRET: ci-secret
+      NEXTAUTH_URL: https://www.westhome.in
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Build (includes TypeScript)
+        run: npx next build
+
+      - name: Unit tests
+        run: npm test
+
+      - name: QA static checks
+        run: npm run qa:static
+
+      - name: QA regression checks
+        run: npm run qa:regression
+
+      - name: Lint
+        run: npm run lint
