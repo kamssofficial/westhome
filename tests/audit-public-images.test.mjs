@@ -18,6 +18,11 @@ import { join } from "node:path";
 const ROOT = join(import.meta.dirname, "..");
 const AUDIT_SCRIPT = join(ROOT, "scripts", "audit-public-images.mjs");
 
+// The audit shells out with --env-file=.env (it queries the production image
+// inventory), so it can only run where a .env exists. Skip it everywhere else
+// (CI runners, sandboxes) instead of failing the whole suite.
+const hasEnv = existsSync(join(ROOT, ".env"));
+
 function runAudit() {
   try {
     const stdout = execFileSync("node", ["--env-file=.env", AUDIT_SCRIPT], {
@@ -76,7 +81,10 @@ function parseSummary(stdout) {
 
 // ── Tests ───────────────────────────────────────────────────────────────────
 
-describe("audit-public-images", () => {
+describe(
+  "audit-public-images",
+  { skip: hasEnv ? false : "requires .env (database-backed audit not available here)" },
+  () => {
   const result = runAudit();
 
   it("audit script exits cleanly", () => {

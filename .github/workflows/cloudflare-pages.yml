@@ -1,4 +1,17 @@
-name: Deploy to Cloudflare Pages
+# CI gate for every push to main and every PR targeting main.
+#
+# Why this is not a deploy workflow anymore: production deploys are driven by
+# Cloudflare's native Git integration, not GitHub Actions. Running deploys from
+# Actions never worked here — the workflow failed on every run since Sep 19,
+# first because the `cloudflare/pages-action` was removed from the Marketplace
+# ("Unable to resolve action"), then because a CI deploy needs Actions secrets
+# that don't exist in this repository, and `@cloudflare/next-on-pages`
+# additionally requires every non-static route to export `runtime = 'edge'`.
+# Meanwhile real deploys kept shipping (this PR's guest checkout included).
+#
+# The job keeps the historical check name `deploy` so the existing required-ish
+# context on open PRs updates green instead of leaving a stale failure.
+name: CI
 
 on:
   push:
@@ -11,7 +24,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      deployments: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -36,30 +48,5 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
-      - name: Build for Cloudflare Pages
-        run: pnpm build:cf
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
-          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
-          RAZORPAY_KEY_ID: ${{ secrets.RAZORPAY_KEY_ID }}
-          RAZORPAY_KEY_SECRET: ${{ secrets.RAZORPAY_KEY_SECRET }}
-          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
-          R2_PUBLIC_BASE_URL: ${{ secrets.R2_PUBLIC_BASE_URL }}
-
-      # cloudflare/pages-action was removed from the Marketplace and no longer
-      # resolves ("Unable to resolve action `cloudflare/pages-action`, not found"),
-      # which failed this workflow on every run since Sep 19. Deploys go through
-      # the maintained wrangler-action instead. Real production deploys are driven
-      # by Cloudflare's native Git integration; this job is a build/deploy gate.
-      - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
-        if: github.ref == 'refs/heads/main'
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          wranglerVersion: "3"
-          command: pages deploy .vercel/output/static --project-name=westhome --branch=main
+      - name: Tests
+        run: pnpm test
