@@ -8,7 +8,13 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: "*",
-        allow: "/",
+        // RFC 9309 (Google/Bing implement this): when rules conflict, the
+        // LONGEST matching path wins. "Allow: /api/images/" therefore carves
+        // the image proxy out of the broader "/api/" block. Without it, the
+        // blanket block kept EVERY product photo (/api/images/<id>) out of
+        // Googlebot-Image's reach — no Google Images/Lens presence and a
+        // degraded quality signal on every product page that references one.
+        allow: "/api/images/",
         disallow: [
           "/admin",
           "/staff",
