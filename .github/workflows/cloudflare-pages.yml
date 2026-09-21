@@ -52,3 +52,10 @@ jobs:
 
       - name: Tests
         run: pnpm test
+
+      # Full-project typecheck. This exact gate would have caught the
+      # products.xml Response-vs-string type error that broke three Render
+      # deploys (and took the storefront down) before it ever deployed.
+      # Runs on CI's 7GB runner - the local sandbox can't fit tsc in 2GB.
+      - name: Typecheck
+        run: npx tsc --noEmit
