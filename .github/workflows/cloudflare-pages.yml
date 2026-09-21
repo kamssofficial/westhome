@@ -50,13 +50,16 @@ jobs:
           R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
           R2_PUBLIC_BASE_URL: ${{ secrets.R2_PUBLIC_BASE_URL }}
 
+      # cloudflare/pages-action was removed from the Marketplace and no longer
+      # resolves ("Unable to resolve action `cloudflare/pages-action`, not found"),
+      # which failed this workflow on every run since Sep 19. Deploys go through
+      # the maintained wrangler-action instead. Real production deploys are driven
+      # by Cloudflare's native Git integration; this job is a build/deploy gate.
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/pages-action@v1
+        uses: cloudflare/wrangler-action@v3
         if: github.ref == 'refs/heads/main'
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: westhome
-          directory: .vercel/output/static
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
           wranglerVersion: "3"
+          command: pages deploy .vercel/output/static --project-name=westhome --branch=main
