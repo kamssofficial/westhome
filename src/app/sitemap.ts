@@ -5,7 +5,11 @@ import { blogArticles } from "@/lib/blog";
 // Must match layout.tsx SITE_URL: the indexed www host, not the redirecting bare domain.
 const SITE_URL = "https://www.westhome.in";
 
-export const dynamic = "force-dynamic";
+// Regenerated at most once an hour (ISR). Recomputing per request was costing
+// two full catalog queries on every crawler hit — multi-second responses on a
+// small origin and zero shared caching. One-hour freshness is ample for a
+// catalog that changes a few times a week.
+export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();

@@ -18,7 +18,10 @@ import { resolveProductImage } from "@/lib/categoryImages";
 const SITE_URL = "https://www.westhome.in";
 const BRAND = "WEST HOME by BM Distributors";
 
-export const dynamic = "force-dynamic";
+// Regenerated at most once an hour (ISR). Recomputing per request was costing
+// a full catalog serialization on every fetch — multi-second responses on a
+// small origin. Merchant Center fetches daily; one-hour freshness is ample.
+export const revalidate = 3600;
 
 function xmlEscape(input: string): string {
   return input
@@ -254,8 +257,10 @@ export async function GET() {
     status: 200,
     headers: {
       "Content-Type": "application/xml; charset=utf-8",
-      // Merchant Center fetches on a schedule; a short shared cache is fine.
-      "Cache-Control": "public, max-age=3600",
+      // Browsers: refetch hourly; shared/CDN cache: serve stale for a day
+      // while regenerating in the background, so crawls never block on origin.
+      "Cache-Control":
+        "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400",
     },
   });
 }
