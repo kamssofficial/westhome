@@ -16,15 +16,15 @@ const STATIC_CATEGORY_IMAGES: Record<string, string> = {
   lamps: "/collections/lamps/modern-lamp.webp",
   carpets: "/collections/carpets/gray-distressed-rug.webp",
   clocks: "/collections/clocks/dark-roman-numeral-clock.webp",
-  accessories: "/collections/soap-dispensers/set/soap-dispenser-cream-white-collection.png",
+  accessories: "/collections/soap-dispensers/set/soap-dispenser-cream-white-collection.webp",
   // Sub-category fallbacks
   frames: "/collections/frames/frame-abstract-art-green-sofa.webp",
-  "cushion-covers": "/collections/cushion-covers/cushion-cover-4532-1.png",
-  "soap-dispensers": "/collections/soap-dispensers/set/soap-dispenser-cream-white-collection.png",
-  vases: "/collections/soap-dispensers/set/soap-dispenser-cream-white-collection.png",
-  "flower-pots": "/collections/soap-dispensers/set/soap-dispenser-cream-white-collection.png",
-  "tissue-boxes": "/collections/soap-dispensers/set/soap-dispenser-cream-white-collection.png",
-  dustbin: "/collections/soap-dispensers/set/soap-dispenser-cream-white-collection.png",
+  "cushion-covers": "/collections/cushion-covers/cushion-cover-4532-1.webp",
+  "soap-dispensers": "/collections/soap-dispensers/set/soap-dispenser-cream-white-collection.webp",
+  vases: "/collections/soap-dispensers/set/soap-dispenser-cream-white-collection.webp",
+  "flower-pots": "/collections/soap-dispensers/set/soap-dispenser-cream-white-collection.webp",
+  "tissue-boxes": "/collections/soap-dispensers/set/soap-dispenser-cream-white-collection.webp",
+  dustbin: "/collections/soap-dispensers/set/soap-dispenser-cream-white-collection.webp",
   basket: "/collections/basket/basket-natural-cylindrical-woven-set.webp",
 };
 

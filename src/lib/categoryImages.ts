@@ -1,9 +1,9 @@
 const CATEGORY_IMAGES: Record<string, string> = {
-  carpets: "/images/categories/drive-replacements/carpets.png",
-  clocks: "/images/categories/drive-replacements/clocks.png",
-  comforters: "/images/categories/drive-replacements/comforters.png",
-  lamps: "/images/categories/drive-replacements/lamps.png",
-  "wall-decor": "/images/categories/drive-replacements/wall-decor.png",
+  carpets: "/images/categories/drive-replacements/carpets.webp",
+  clocks: "/images/categories/drive-replacements/clocks.webp",
+  comforters: "/images/categories/drive-replacements/comforters.webp",
+  lamps: "/images/categories/drive-replacements/lamps.webp",
+  "wall-decor": "/images/categories/drive-replacements/wall-decor.webp",
 };
 
 export function categoryFallbackImage(slug?: string | null): string | null {
