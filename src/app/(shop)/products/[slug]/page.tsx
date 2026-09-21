@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import db from "@/lib/db";
 import ProductDetailClient from "./ProductDetailClient";
 import { normalizeImageUrl, resolveProductImage } from "@/lib/categoryImages";
+import { basketSizeChartFor } from "@/lib/basketSizeChart";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -228,6 +229,16 @@ export default async function ProductPage({ params }: PageProps) {
       ? product.salePrice
       : product.regularPrice;
 
+  // Per-size dimensions from the supplier catalogue (woven-basket families).
+  // Surfaced in the FAQ answer and Product JSON-LD so buyers — and Google —
+  // see concrete sizes per variant.
+  const sizeChart = basketSizeChartFor(product.slug);
+  const sizeLine = sizeChart
+    ? ` Available sizes: ${sizeChart.rows
+        .map((r) => `${r.size} ${r.dims} cm`)
+        .join(", ")}`
+    : "";
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -302,7 +313,7 @@ export default async function ProductPage({ params }: PageProps) {
       q: "What is the price and is it in stock?",
       a: `${product.name} is priced at ₹${listedPrice.toLocaleString("en-IN")}${
         product.salePrice != null && product.salePrice > 0 ? " (sale price)" : ""
-      }. ${isInStock ? "It is currently in stock and ready to ship." : "It is currently out of stock — check back soon or message us on WhatsApp."}`,
+      }. ${isInStock ? "It is currently in stock and ready to ship." : "It is currently out of stock — check back soon or message us on WhatsApp."}${sizeLine}`,
     },
     {
       q: "Do you deliver, and what are the shipping charges?",
