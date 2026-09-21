@@ -1,13 +1,21 @@
-# Keeps the Render free instance from idling out. Free web services sleep
-# after 15 minutes without traffic and then take ~60s to wake, which shoppers
-# feel as a dead store. A ping every 10 minutes keeps it warm.
+# Keeps the Render free-tier instance awake. Free instances spin down after
+# 15 minutes without inbound traffic and then take ~60s to wake; the storefront
+# then hangs or 502s for real shoppers. A recurring ping resets the idle timer
+# and wakes it. Free on GitHub because this repository is public. Note that
+# GitHub disables scheduled workflows on repos with no activity for 60 days -
+# any commit (even to a docs file) resets that clock.
 #
-# Free on GitHub because this repository is public. Note that GitHub disables
-# scheduled workflows on repos with no activity for 60 days - any commit
-# (even to a docs file) resets that clock.
+# Why the retry loop: GitHub defers schedule crons under load, so this does NOT
+# run every 10 minutes - observed gaps are 2-3 hours, which is long enough for
+# the instance to sleep AND for a wake-up attempt to hit a 502 while the
+# process boots. A single curl then reported failure while the instance was
+# actually coming back. So: poll up to N times (sleeping between tries) until
+# the storefront answers 200; only then report success/failure. Also wired to
+# workflow_dispatch so it can be triggered on demand (e.g. from an alert).
 #
-# The 120s timeout matters: if the instance did sleep, this ping is the one
-# that pays the ~60s cold start, and it must not abort before the app answers.
+# Durable fix: an external uptime monitor (e.g. UptimeRobot free tier, 5-minute
+# HTTP checks) pinging https://www.westhome.in/api/products?limit=1 keeps the
+# instance permanently warm independent of GitHub's scheduler.
 
 name: Keep warm
 
@@ -22,10 +30,19 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping the storefront catalogue
+      - name: Wake and verify the storefront
         run: |
           set -euo pipefail
-          code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 120 \
-            'https://www.westhome.in/api/products?limit=1')"
-          echo "GET /api/products -> HTTP $code"
-          test "$code" = "200"
+          URL='https://www.westhome.in/api/products?limit=1'
+          code=000
+          for i in $(seq 1 8); do
+            code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 120 "$URL" || true)"
+            echo "attempt $i: GET /api/products -> HTTP $code"
+            if [ "$code" = "200" ]; then
+              exit 0
+            fi
+            # 502/503 usually means the instance is mid-wake; give it a beat
+            sleep 20
+          done
+          echo "storefront did not return 200 after 8 attempts (last: $code)"
+          exit 1
