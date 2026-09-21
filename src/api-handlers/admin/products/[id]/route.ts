@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import db from "@/lib/db";
 import { requireAuthRole } from "@/lib/apiAuth";
 import { logAdminAction } from "@/lib/audit";
+import { memoInvalidateCatalog } from "@/lib/memoCache";
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const authResult = await requireAuthRole(["ADMIN", "MANAGER", "PRODUCT_MANAGER"]);
@@ -30,6 +31,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   revalidatePath("/", "page");
   revalidatePath("/collections/[slug]", "page");
   revalidatePath("/collections/[slug]/[subcategory]", "page");
+  memoInvalidateCatalog();
 
   return NextResponse.json({ product: updated });
 }

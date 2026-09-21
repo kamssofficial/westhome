@@ -4,6 +4,7 @@ import db from "@/lib/db";
 import { CATEGORIES } from "@/lib/data";
 import { requireAuthRole } from "@/lib/apiAuth";
 import { normalizeImageUrl } from "@/lib/categoryImages";
+import { memoGet, memoSet, memoInvalidateCatalog, CATALOG_TTL_MS, NS } from "@/lib/memoCache";
 
 const PLACEHOLDER_RE = /placeholder\.svg$/;
 
@@ -56,6 +57,11 @@ async function resolveCategoryImage(cat: CategoryTileSource): Promise<string | n
 }
 
 export async function GET() {
+  // 60-second memo cache: category tiles ship on every page load.
+  const cached = memoGet<{ categories: unknown }>(NS.categories);
+  if (cached) {
+    return NextResponse.json(cached, { headers: { "Cache-Control": "no-store" } });
+  }
   try {
     const categories = await db.category.findMany({
       where: { isActive: true },
@@ -96,7 +102,9 @@ export async function GET() {
       };
     }));
 
-    return NextResponse.json({ categories: transformed }, { headers: { "Cache-Control": "no-store" } });
+    const payload = { categories: transformed };
+    memoSet(NS.categories, CATALOG_TTL_MS, payload);
+    return NextResponse.json(payload, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("Categories API error:", error);
     return NextResponse.json({ categories: CATEGORIES });
@@ -117,6 +125,7 @@ export async function POST(request: NextRequest) {
     // Invalidate cached pages so storefront picks up the new category
     revalidatePath("/shop");
     revalidatePath("/search");
+    memoInvalidateCatalog();
 
     return NextResponse.json({ category }, { status: 201 });
   } catch (error) {

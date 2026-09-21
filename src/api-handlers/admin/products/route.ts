@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { requireAuthRole } from "@/lib/apiAuth";
 import { logAdminAction } from "@/lib/audit";
+import { memoInvalidateCatalog } from "@/lib/memoCache";
 
 export async function GET(request: NextRequest) {
   const authResult = await requireAuthRole(["ADMIN", "MANAGER", "PRODUCT_MANAGER"]);
@@ -183,6 +184,7 @@ export async function POST(request: NextRequest) {
     }
 
     await logAdminAction({ action: "IMPORT", entity: "PRODUCT", entityId: null, details: { count: results.length }, request });
+    memoInvalidateCatalog();
     return NextResponse.json({ success: true, results });
   } catch (error) {
     console.error("Admin product import error:", error);

@@ -8,6 +8,7 @@ import { logAdminAction } from "@/lib/audit";
 import { deleteMedia } from "@/lib/media";
 import { deriveParentPriceFromVariants, syncParentPriceFromVariants } from "@/lib/deriveProductPrice";
 import { normalizeImageUrl } from "@/lib/categoryImages";
+import { memoGet, memoSet, memoInvalidateCatalog, CATALOG_TTL_MS, NS } from "@/lib/memoCache";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -15,6 +16,13 @@ export const revalidate = 0;
 export async function GET(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   try {
     const { slug } = await params;
+    // 60-second storefront memo cache: product pages fetch this payload on
+    // every view; admin edits invalidate it, so freshness is preserved.
+    const cacheKey = `${NS.product}:${slug}`;
+    const cached = memoGet<{ product: unknown }>(cacheKey);
+    if (cached) {
+      return NextResponse.json(cached, { headers: { "Cache-Control": "no-store, max-age=0" } });
+    }
     // Try slug first, then ID
     let product = await db.product.findUnique({
       where: { slug },
@@ -96,8 +104,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         })),
       })),
     };
+    const payload = { product: transformed };
+    memoSet(cacheKey, CATALOG_TTL_MS, payload);
     return NextResponse.json(
-      { product: transformed },
+      payload,
       { headers: { "Cache-Control": "no-store, max-age=0" } }
     );
   } catch (error) {
@@ -297,6 +307,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     revalidatePath("/products/[slug]", "page");
     revalidatePath("/", "page");
     revalidatePath("/collections/[slug]", "page");
+    memoInvalidateCatalog();
 
     return NextResponse.json({ product: updated });
 } catch (error: any) {
@@ -354,6 +365,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     revalidatePath("/", "page");
     revalidatePath("/collections/[slug]", "page");
     revalidatePath("/collections/[slug]/[subcategory]", "page");
+    memoInvalidateCatalog();
 
     return NextResponse.json({ success: true });
   } catch (error) {

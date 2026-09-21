@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import db from "@/lib/db";
 import { blogArticles } from "@/lib/blog";
+import { memo, SEO_XML_TTL_MS, NS } from "@/lib/memoCache";
 
 // Must match layout.tsx SITE_URL: the indexed www host, not the redirecting bare domain.
 const SITE_URL = "https://www.westhome.in";
@@ -12,6 +13,12 @@ const SITE_URL = "https://www.westhome.in";
 export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  // 5-minute in-memory cache on top of ISR: crawlers hitting the XML between
+  // isolates share one pair of catalog queries per window per isolate.
+  return memo(`${NS.sitemap}:v1`, SEO_XML_TTL_MS, buildSitemap);
+}
+
+async function buildSitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
   const staticEntries: MetadataRoute.Sitemap = [
