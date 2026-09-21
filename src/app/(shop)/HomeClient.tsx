@@ -132,7 +132,7 @@ export default function HomePage() {
       {/* HERO */}
       <section className="container-shop relative mt-5 overflow-hidden rounded-[2rem] bg-[#1f2521] text-white shadow-[0_20px_70px_rgba(31,33,31,.18)] md:mt-7">
         <Image
-          src="/images/banners/hero-living-room.png"
+          src="/images/banners/hero-living-room.webp"
           alt=""
           fill
           priority

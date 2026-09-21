@@ -130,7 +130,7 @@ async function toWebp(
 function resolveFilePath(req: NextRequest): string | null {
   const raw = req.nextUrl.pathname.replace(/^\/api\/images\//, "");
   if (!raw || raw.includes("..") || raw.startsWith("/") || raw.includes("\0")) return null;
-  // allow slashes so legacy local paths like "banners/hero-living-room.png" work
+  // allow slashes so legacy local paths like "banners/hero-living-room.webp" work
   return raw;
 }
 

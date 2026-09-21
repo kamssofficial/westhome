@@ -73,7 +73,7 @@ requireText(collection, 'aria-label="List view"', "Collection list view is named
 
 const homepage = await source("src/app/(shop)/HomeClient.tsx");
 assert.ok(!homepage.includes("HomepageRenderer"), "Customer homepage does not render the incomplete CMS text-card fallback");
-requireText(homepage, "hero-living-room.png", "Customer homepage renders the real hero asset on first load");
+requireText(homepage, "hero-living-room.webp", "Customer homepage renders the real hero asset on first load");
 
 const checkout = await source("src/app/(shop)/checkout/page.tsx");
 const paymentIndex = checkout.indexOf('{step === 2 && (');

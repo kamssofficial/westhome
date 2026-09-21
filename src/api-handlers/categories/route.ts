@@ -10,22 +10,22 @@ const PLACEHOLDER_RE = /placeholder\.svg$/;
 // used when the DB has no usable image for the category itself.
 const STATIC_CATEGORY_IMAGES: Record<string, string> = {
   // Main categories
-  "wall-decor": "/collections/frames/frame-abstract-art-green-sofa.png",
-  laundry: "/collections/basket/basket-natural-cylindrical-woven-set.png",
-  comforters: "/collections/comforters/comforter-set.png",
-  lamps: "/collections/lamps/modern-lamp.png",
-  carpets: "/collections/carpets/gray-distressed-rug.png",
-  clocks: "/collections/clocks/dark-roman-numeral-clock.png",
+  "wall-decor": "/collections/frames/frame-abstract-art-green-sofa.webp",
+  laundry: "/collections/basket/basket-natural-cylindrical-woven-set.webp",
+  comforters: "/collections/comforters/comforter-set.webp",
+  lamps: "/collections/lamps/modern-lamp.webp",
+  carpets: "/collections/carpets/gray-distressed-rug.webp",
+  clocks: "/collections/clocks/dark-roman-numeral-clock.webp",
   accessories: "/collections/soap-dispensers/set/soap-dispenser-cream-white-collection.png",
   // Sub-category fallbacks
-  frames: "/collections/frames/frame-abstract-art-green-sofa.png",
+  frames: "/collections/frames/frame-abstract-art-green-sofa.webp",
   "cushion-covers": "/collections/cushion-covers/cushion-cover-4532-1.png",
   "soap-dispensers": "/collections/soap-dispensers/set/soap-dispenser-cream-white-collection.png",
   vases: "/collections/soap-dispensers/set/soap-dispenser-cream-white-collection.png",
   "flower-pots": "/collections/soap-dispensers/set/soap-dispenser-cream-white-collection.png",
   "tissue-boxes": "/collections/soap-dispensers/set/soap-dispenser-cream-white-collection.png",
   dustbin: "/collections/soap-dispensers/set/soap-dispenser-cream-white-collection.png",
-  basket: "/collections/basket/basket-natural-cylindrical-woven-set.png",
+  basket: "/collections/basket/basket-natural-cylindrical-woven-set.webp",
 };
 
 interface CategoryTileSource {
