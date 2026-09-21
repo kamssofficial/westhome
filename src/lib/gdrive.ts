@@ -37,7 +37,24 @@ async function driveClient(auth: Awaited<ReturnType<typeof getAuth>>) {
 
 const SCOPE_DRIVE = "https://www.googleapis.com/auth/drive";
 
-async function getAuth() {
+// Every image-proxy miss previously re-ran GoogleAuth construction (and for
+// service accounts, token fetching) before the download. Memoize the client
+// per credential shape so a gallery of cold images pays auth once, not per
+// file.
+let authPromise: Promise<Awaited<ReturnType<typeof buildAuth>>> | null = null;
+let authKey = "";
+
+function currentAuthKey(): string {
+  return [
+    process.env.GOOGLE_OAUTH_CLIENT_ID || "",
+    process.env.GOOGLE_OAUTH_CLIENT_SECRET ? "set" : "",
+    process.env.GOOGLE_OAUTH_REFRESH_TOKEN ? "set" : "",
+    process.env.GOOGLE_CREDENTIALS_PATH || "",
+    process.env.GOOGLE_CREDENTIALS_JSON ? "set" : "",
+  ].join("|");
+}
+
+async function buildAuth() {
   if (
     process.env.GOOGLE_OAUTH_CLIENT_ID &&
     process.env.GOOGLE_OAUTH_CLIENT_SECRET &&
@@ -76,6 +93,19 @@ async function getAuth() {
   return new google.auth.GoogleAuth({
     scopes: [SCOPE_DRIVE],
   });
+}
+
+async function getAuth() {
+  const key = currentAuthKey();
+  if (!authPromise || key !== authKey) {
+    authPromise = buildAuth();
+    authKey = key;
+    authPromise.catch(() => {
+      // Allow a retry on the next call if construction failed.
+      if (authKey === key) authPromise = null;
+    });
+  }
+  return authPromise;
 }
 
 // ---------------------------------------------------------------------------

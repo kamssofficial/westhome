@@ -2,7 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 import { driveDownload } from "@/lib/gdrive";
-import { acceptsWebp as acceptsWebpHeader, toWebp as toWebpPure, WEBP_MIN_BYTES, IMMUTABLE_MEDIA_CACHE, LEGACY_MEDIA_CACHE } from "@/lib/imageProxy";
+import sharp from "sharp";
+import {
+  acceptsWebp as acceptsWebpHeader,
+  toWebp as toWebpPure,
+  WEBP_QUALITY,
+  WEBP_MIN_BYTES,
+  IMMUTABLE_MEDIA_CACHE,
+  LEGACY_MEDIA_CACHE,
+} from "@/lib/imageProxy";
 
 const PROJECT_ROOT = process.cwd();
 const PUBLIC_IMAGES_DIR = path.join(PROJECT_ROOT, "public", "images");
@@ -56,8 +64,32 @@ async function downloadPublicDriveImage(
 // hammer the Drive API quota. FIFO eviction when the byte budget is exceeded.
 type CachedBinary = { data: Buffer; mimeType: string; expires: number };
 const BINARY_CACHE = new Map<string, CachedBinary>();
-const BINARY_CACHE_TTL_MS = 10 * 60 * 1000;
-const BINARY_CACHE_MAX_BYTES = 64 * 1024 * 1024;
+// Uploaded product photos are immutable; a longer source TTL keeps the
+// multi-second Drive download + sharp encode off the hot path for hours
+// instead of minutes. (Admin image replacement generates a new file id, so
+// staleness is bounded by the URL change, not by this TTL.)
+const BINARY_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+const BINARY_CACHE_MAX_BYTES = 128 * 1024 * 1024;
+
+// Negative cache: Drive 404s/gone files previously re-attempted the full
+// authenticated download on EVERY request (~9s per bad id), which stalls the
+// single origin thread. Remember misses briefly instead.
+const NEGATIVE_CACHE = new Map<string, number>();
+const NEGATIVE_CACHE_TTL_MS = 5 * 60 * 1000;
+
+function negativeCacheHas(key: string): boolean {
+  const until = NEGATIVE_CACHE.get(key);
+  if (until === undefined) return false;
+  if (until <= Date.now()) {
+    NEGATIVE_CACHE.delete(key);
+    return false;
+  }
+  return true;
+}
+
+function negativeCacheSet(key: string): void {
+  NEGATIVE_CACHE.set(key, Date.now() + NEGATIVE_CACHE_TTL_MS);
+}
 let binaryCacheBytes = 0;
 
 function binaryCacheEvict(key: string) {
@@ -114,6 +146,42 @@ async function toWebp(
     binaryCacheSet(`${cacheKey}#webp`, result.data, result.mimeType);
   }
   return result;
+}
+
+// Bound the encode cost: product photos render at card/gallery sizes, so
+// re-encoding a 4000px-wide Drive upload at full resolution burns seconds of
+// CPU per miss on the small origin for pixels nobody displays. Downscale to
+// MAX_ENCODE_WIDTH during the WebP encode — visual quality is unaffected at
+// typical display sizes, and encode time drops by an order of magnitude.
+const MAX_ENCODE_WIDTH = 2000;
+
+async function toWebpBounded(
+  cacheKey: string,
+  data: Buffer,
+  mimeType: string,
+): Promise<{ data: Buffer; mimeType: string }> {
+  if (!/^image\/(png|jpe?g)$/i.test(mimeType) || data.byteLength < WEBP_MIN_BYTES) {
+    return toWebp(cacheKey, data, mimeType);
+  }
+  const cached = binaryCacheGet(`${cacheKey}#webp`);
+  if (cached) return { data: cached.data, mimeType: cached.mimeType };
+  try {
+    const converted = await sharp(data)
+      .rotate()
+      .resize({ width: MAX_ENCODE_WIDTH, withoutEnlargement: true })
+      .webp({ quality: WEBP_QUALITY, effort: 4 })
+      .toBuffer();
+    if (converted.byteLength >= data.byteLength) {
+      // Original is smaller/equal — serve and cache it as-is.
+      binaryCacheSet(`${cacheKey}#webp`, data, mimeType);
+      return { data, mimeType };
+    }
+    binaryCacheSet(`${cacheKey}#webp`, converted, "image/webp");
+    return { data: converted, mimeType: "image/webp" };
+  } catch {
+    // A transcode failure must never break an image — fall back to the original.
+    return { data, mimeType };
+  }
 }
 
 function resolveFilePath(req: NextRequest): string | null {
@@ -196,6 +264,9 @@ export async function GET(req: NextRequest) {
 
     // Drive files are served via the authenticated API (no slash in the id).
     if (!key.includes("/")) {
+      if (negativeCacheHas(key)) {
+        return NextResponse.json({ error: "Image not found" }, { status: 404 });
+      }
       let source = binaryCacheGet(key);
       if (!source) {
         try {
@@ -217,9 +288,12 @@ export async function GET(req: NextRequest) {
           console.warn("public Drive image fallback failed for", key, err);
         }
       }
+      if (!source) {
+        negativeCacheSet(key);
+      }
       if (source) {
         const body = wantsWebp
-          ? await toWebp(key, source.data, source.mimeType)
+          ? await toWebpBounded(key, source.data, source.mimeType)
           : { data: source.data, mimeType: source.mimeType };
         return binaryResponse(body.data, body.mimeType);
       }

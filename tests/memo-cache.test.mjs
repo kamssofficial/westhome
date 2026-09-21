@@ -43,24 +43,68 @@ describe("memoCache — memo()", () => {
     assert.equal(calls, 1);
   });
 
-  it("reloads after the TTL expires (fake clock via short TTL)", async () => {
+  it("serves stale instantly on expiry, then refreshes in the background", async () => {
     let calls = 0;
-    const loader = async () => (calls += 1);
-    await memo("k3", 5, loader);
+    const loader = async () => {
+      calls += 1;
+      return `value-${calls}`;
+    };
+    assert.equal(await memo("k3", 5, loader), "value-1");
     await new Promise((r) => setTimeout(r, 12));
-    await memo("k3", 5, loader);
+    // Expired: the caller gets the previous value immediately (nobody pays
+    // the rebuild latency) while a background refresh runs.
+    assert.equal(await memo("k3", 5, loader), "value-1");
+    for (let i = 0; i < 30 && calls < 2; i++) {
+      await new Promise((r) => setTimeout(r, 10));
+    }
     assert.equal(calls, 2);
+    assert.equal(await memo("k3", 5, loader), "value-2");
   });
 
-  it("caches rejected loaders as rejections rather than retrying within TTL", async () => {
+  it("single-flights concurrent misses into one loader call", async () => {
+    let calls = 0;
+    const loader = async () => {
+      calls += 1;
+      await new Promise((r) => setTimeout(r, 30));
+      return "slow-value";
+    };
+    const [a, b, c] = await Promise.all([
+      memo("sf", 60_000, loader),
+      memo("sf", 60_000, loader),
+      memo("sf", 60_000, loader),
+    ]);
+    assert.equal(a, "slow-value");
+    assert.equal(b, "slow-value");
+    assert.equal(c, "slow-value");
+    assert.equal(calls, 1);
+  });
+
+  it("backs off after a failed load instead of re-invoking on every request", async () => {
     let calls = 0;
     const loader = async () => {
       calls += 1;
       throw new Error("db down");
     };
-    await assert.rejects(() => memo("k4", 60_000, loader));
-    // A rejected load is not stored — a retry is allowed (safe default).
-    await assert.rejects(() => memo("k4", 60_000, loader));
+    await assert.rejects(() => memo("k4", 5, loader));
+    // Immediate retry fast-fails through the backoff window (loader NOT re-run).
+    await assert.rejects(() => memo("k4", 5, loader));
+    assert.equal(calls, 1);
+    // After the backoff expires, a fresh attempt is allowed.
+    await new Promise((r) => setTimeout(r, 300));
+    await assert.rejects(() => memo("k4", 5, loader));
+    assert.equal(calls, 2);
+  });
+
+  it("namespace invalidation clears the failure backoff so writes retry immediately", async () => {
+    let calls = 0;
+    const loader = async () => {
+      calls += 1;
+      if (calls === 1) throw new Error("transient");
+      return "recovered";
+    };
+    await assert.rejects(() => memo("nsx:k", 60_000, loader));
+    memoInvalidateNamespace("nsx");
+    assert.equal(await memo("nsx:k", 60_000, loader), "recovered");
     assert.equal(calls, 2);
   });
 
@@ -147,8 +191,10 @@ describe("memoCache — invalidation", () => {
 describe("memoCache — constants", () => {
   it("exposes sane TTLs and namespaces", () => {
     assert.equal(typeof CATALOG_TTL_MS, "number");
-    assert.ok(CATALOG_TTL_MS >= 30_000 && CATALOG_TTL_MS <= 300_000);
+    // Long enough to absorb bursts; invalidated explicitly on admin writes.
+    assert.ok(CATALOG_TTL_MS >= 60_000, `CATALOG_TTL_MS too short: ${CATALOG_TTL_MS}`);
     assert.ok(SEO_XML_TTL_MS >= CATALOG_TTL_MS);
+    assert.ok(SEO_XML_TTL_MS >= 600_000, `SEO_XML_TTL_MS too short: ${SEO_XML_TTL_MS}`);
     for (const ns of ["products", "product", "categories", "sitemap", "feed"]) {
       assert.ok(NS[ns], `missing namespace ${ns}`);
     }

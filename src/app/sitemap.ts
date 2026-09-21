@@ -13,8 +13,10 @@ const SITE_URL = "https://www.westhome.in";
 export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  // 5-minute in-memory cache on top of ISR: crawlers hitting the XML between
-  // isolates share one pair of catalog queries per window per isolate.
+  // 30-minute in-memory cache on top of ISR: crawlers hitting the XML between
+  // isolates share one pair of catalog queries per window per isolate. Once an
+  // entry exists, expiry serves stale while a background rebuild runs, so a
+  // crawler never blocks on the multi-second rebuild after the first hit.
   return memo(`${NS.sitemap}:v1`, SEO_XML_TTL_MS, buildSitemap);
 }
 
