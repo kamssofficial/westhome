@@ -17,11 +17,14 @@ const nextConfig: NextConfig = {
   // client code ever ran. Dev-only setting; production ignores it.
   allowedDevOrigins: ["127.0.0.1"],
   images: {
-    // Vercel's hosted image optimizer currently returns 402
-    // OPTIMIZED_IMAGE_REQUEST_PAYMENT_REQUIRED on this deployment. Serve the
-    // existing local and remote image URLs directly so storefront images do
-    // not disappear when the optimizer quota/billing is unavailable.
-    unoptimized: true,
+    // Drive-backed uploads are transcoded by /api/images, which needs to know
+    // the display width to emit a right-sized derivative — a 25vw product card
+    // was previously pulling a 2000px original. The custom loader appends that
+    // width instead of using Next's optimizer, which would fetch the proxy's
+    // output and re-encode it, paying for the same image twice on the origin.
+    // Note `unoptimized: true` must stay off: it bypasses the loader entirely.
+    loader: "custom",
+    loaderFile: "./src/lib/imageLoader.ts",
     formats: ["image/avif", "image/webp"],
     // Category tiles render local SVG placeholders through <Image>; the
     // optimizer rejects them without this. Only our own static SVGs are served.

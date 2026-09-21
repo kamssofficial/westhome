@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 import { driveDownload } from "@/lib/gdrive";
-import { acceptsWebp as acceptsWebpHeader, toWebp as toWebpPure, WEBP_MIN_BYTES, IMMUTABLE_MEDIA_CACHE, LEGACY_MEDIA_CACHE } from "@/lib/imageProxy";
+import { acceptsWebp as acceptsWebpHeader, parseImageWidth, toWebp as toWebpPure, WEBP_MIN_BYTES, IMMUTABLE_MEDIA_CACHE, LEGACY_MEDIA_CACHE } from "@/lib/imageProxy";
 
 const PROJECT_ROOT = process.cwd();
 const PUBLIC_IMAGES_DIR = path.join(PROJECT_ROOT, "public", "images");
@@ -10,6 +10,7 @@ const PUBLIC_IMAGES_DIR = path.join(PROJECT_ROOT, "public", "images");
 async function serveGitHub(
   filePath: string,
   wantsWebp: boolean,
+  width: number | null,
 ): Promise<NextResponse | null> {
   const token = process.env.GITHUB_STORAGE_TOKEN || process.env.GITHUB_TOKEN;
   if (!token) return null;
@@ -33,7 +34,7 @@ async function serveGitHub(
   const ext = path.extname(apiPath).toLowerCase();
   const mimeType = ext === ".png" ? "image/png" : ext === ".webp" ? "image/webp" : ext === ".gif" ? "image/gif" : "image/jpeg";
   const body = wantsWebp
-    ? await toWebp(`github:${apiPath}`, data, mimeType)
+    ? await toWebp(`github:${apiPath}`, data, mimeType, width)
     : { data, mimeType };
   return binaryResponse(body.data, body.mimeType);
 }
@@ -75,6 +76,12 @@ function binaryCacheGet(key: string): CachedBinary | null {
     binaryCacheEvict(key);
     return null;
   }
+  // A Map iterates in insertion order, and binaryCacheSet evicts from the
+  // front — so re-inserting a hit makes this an LRU rather than a FIFO. A FIFO
+  // threw away the images a visitor keeps scrolling back to and kept the ones
+  // they had already passed.
+  BINARY_CACHE.delete(key);
+  BINARY_CACHE.set(key, entry);
   return entry;
 }
 
@@ -101,17 +108,21 @@ function acceptsWebp(req: NextRequest): boolean {
 }
 
 // Wraps the pure toWebp with the in-memory cache so repeated views of the same
-// image don't re-run sharp.
+// image don't re-run sharp. The key carries the requested width: the card and
+// the product page ask for different sizes of the same file, and each is worth
+// caching separately rather than re-encoding one for the other.
 async function toWebp(
   cacheKey: string,
   data: Buffer,
   mimeType: string,
+  width: number | null,
 ): Promise<{ data: Buffer; mimeType: string }> {
-  const cached = binaryCacheGet(`${cacheKey}#webp`);
+  const variantKey = `${cacheKey}#webp@${width ?? "full"}`;
+  const cached = binaryCacheGet(variantKey);
   if (cached) return { data: cached.data, mimeType: cached.mimeType };
-  const result = await toWebpPure(data, mimeType);
+  const result = await toWebpPure(data, mimeType, width);
   if (result.mimeType === "image/webp" && result.data !== data) {
-    binaryCacheSet(`${cacheKey}#webp`, result.data, result.mimeType);
+    binaryCacheSet(variantKey, result.data, result.mimeType);
   }
   return result;
 }
@@ -126,6 +137,7 @@ function resolveFilePath(req: NextRequest): string | null {
 async function serveLocal(
   fileId: string,
   wantsWebp: boolean,
+  width: number | null,
 ): Promise<NextResponse | null> {
   const publicPath = path.join(PUBLIC_IMAGES_DIR, fileId);
   const resolved = path.resolve(publicPath);
@@ -153,7 +165,7 @@ async function serveLocal(
             ? "image/svg+xml"
             : "image/jpeg";
   const body = wantsWebp
-    ? await toWebp(`local:${fileId}`, buf, type)
+    ? await toWebp(`local:${fileId}`, buf, type, width)
     : { data: buf, mimeType: type };
   return binaryResponse(body.data, body.mimeType, LEGACY_MEDIA_CACHE);
 }
@@ -183,9 +195,12 @@ export async function GET(req: NextRequest) {
     }
 
     const wantsWebp = acceptsWebp(req);
+    // ?w= asks for a derivative sized for where it is displayed. Absent or
+    // unusable values fall through to the full-resolution image.
+    const width = parseImageWidth(req.nextUrl.searchParams.get("w"));
 
     if (fileId.startsWith("github/")) {
-      const githubResp = await serveGitHub(fileId, wantsWebp);
+      const githubResp = await serveGitHub(fileId, wantsWebp, width);
       if (githubResp) return githubResp;
     }
 
@@ -214,14 +229,14 @@ export async function GET(req: NextRequest) {
       }
       if (source) {
         const body = wantsWebp
-          ? await toWebp(fileId, source.data, source.mimeType)
+          ? await toWebp(fileId, source.data, source.mimeType, width)
           : { data: source.data, mimeType: source.mimeType };
         return binaryResponse(body.data, body.mimeType);
       }
     }
 
     // Legacy local images: relative path under public/images/.
-    const localResp = await serveLocal(fileId, wantsWebp);
+    const localResp = await serveLocal(fileId, wantsWebp, width);
     if (localResp) return localResp;
 
     return NextResponse.json({ error: "Image not found" }, { status: 404 });

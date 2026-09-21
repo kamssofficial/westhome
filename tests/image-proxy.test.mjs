@@ -133,6 +133,68 @@ describe("toWebp", () => {
   });
 });
 
+// ── Requested-size negotiation ──────────────────────────────────────────────
+
+// Imported from the source (not mirrored) so this suite fails if the real
+// contract drifts. Node runs these tests from the repository root.
+const {
+  parseImageWidth,
+  toWebp: toWebpReal,
+  IMAGE_WIDTH_MIN,
+  IMAGE_WIDTH_MAX,
+} = await import("../src/lib/imageProxy.ts");
+
+// A small PNG (96×96) well below WEBP_MIN_BYTES, used to prove a width
+// request is honoured even when the file would otherwise be skipped.
+const MID_PNG = await sharp(LARGE_PNG).resize(96).png().toBuffer();
+
+describe("parseImageWidth", () => {
+  it("returns null when absent or unusable", () => {
+    assert.equal(parseImageWidth(null), null);
+    assert.equal(parseImageWidth(undefined), null);
+    assert.equal(parseImageWidth(""), null);
+    assert.equal(parseImageWidth("abc"), null);
+    assert.equal(parseImageWidth("0"), null);
+    assert.equal(parseImageWidth("-40"), null);
+  });
+
+  it("passes through a width inside the allowed range", () => {
+    assert.equal(parseImageWidth("640"), 640);
+  });
+
+  it("clamps to the allowed bounds", () => {
+    assert.equal(parseImageWidth("1"), IMAGE_WIDTH_MIN);
+    assert.equal(parseImageWidth("99999"), IMAGE_WIDTH_MAX);
+  });
+});
+
+describe("toWebp with a requested width", () => {
+  it("emits a derivative at the requested width", async () => {
+    const result = await toWebpReal(LARGE_PNG, "image/png", 640);
+    const meta = await sharp(result.data).metadata();
+    assert.equal(result.mimeType, "image/webp");
+    assert.equal(meta.width, 640);
+    assert.ok(result.data.byteLength < LARGE_PNG.byteLength);
+  });
+
+  it("never upscales past the original", async () => {
+    const result = await toWebpReal(LARGE_PNG, "image/png", IMAGE_WIDTH_MAX);
+    const meta = await sharp(result.data).metadata();
+    assert.equal(meta.width, 2000);
+  });
+
+  it("resizes files that would be skipped without a width", async () => {
+    assert.ok(MID_PNG.byteLength < WEBP_MIN_BYTES, "fixture should be under the skip threshold");
+    const untouched = await toWebpReal(MID_PNG, "image/png");
+    assert.equal(untouched.data, MID_PNG, "no width means the small file is left alone");
+
+    const resized = await toWebpReal(MID_PNG, "image/png", 640);
+    assert.equal(resized.mimeType, "image/webp");
+    const meta = await sharp(resized.data).metadata();
+    assert.equal(meta.width, 96, "a width larger than the file must not enlarge it");
+  });
+});
+
 // ── Cache header constants ──────────────────────────────────────────────────
 
 describe("cache headers", () => {
