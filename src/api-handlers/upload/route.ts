@@ -19,7 +19,7 @@ export async function GET() {
       mode: process.env.NODE_ENV,
       recommendation: status.anyConfigured
         ? null
-        : "Configure GOOGLE_OAUTH_* (or GOOGLE_CREDENTIALS_PATH / GOOGLE_CREDENTIALS_JSON) in Vercel Production.",
+        : "Configure GOOGLE_OAUTH_* (or GOOGLE_CREDENTIALS_JSON) in the production environment (Render → Environment).",
     },
   });
 }
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error("Upload error:", error);
     const message = error?.message?.includes("Storage is not configured")
-      ? "Image storage is not configured. Add GOOGLE_OAUTH_* (or GOOGLE_CREDENTIALS_PATH / GOOGLE_CREDENTIALS_JSON) to Vercel Production."
+      ? "Image storage is not configured on the server. Add GOOGLE_OAUTH_* (or GOOGLE_CREDENTIALS_JSON) to the production environment (Render → Environment), then redeploy."
       : "Upload failed. Please try again.";
     return NextResponse.json({ error: message }, { status: 503 });
   }
