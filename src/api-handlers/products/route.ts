@@ -6,6 +6,7 @@ import { requireAuthRole } from "@/lib/apiAuth";
 import { auth } from "@/lib/auth";
 import { logAdminAction } from "@/lib/audit";
 import { syncParentPriceFromVariants } from "@/lib/deriveProductPrice";
+import { normalizeImageUrl } from "@/lib/categoryImages";
 
 export async function GET(request: NextRequest) {
   try {
@@ -159,13 +160,15 @@ export async function GET(request: NextRequest) {
     ]);
     const transformed = products.map((product) => ({
       ...product,
+      // Route legacy raw-Drive image URLs through the WebP proxy (display-only).
+      images: (product.images ?? []).map((img: any) => ({ ...img, url: normalizeImageUrl(img.url) })),
       regularPrice: Number(product.regularPrice),
       salePrice: product.salePrice ? Number(product.salePrice) : null,
       rating: product.reviews.length > 0 ? product.reviews.reduce((s, r) => s + r.rating, 0) / product.reviews.length : null,
       reviewCount: product.reviews.length,
       tags: (product as any).tags?.map((t: any) => t.tag) || [],
       palette: (product as any).tags?.filter((t: any) => t.tag?.startsWith("color:")).map((t: any) => t.tag.slice(6)) || [],
-      variants: product.variants.map((v) => ({ ...v, price: Number(v.price), salePrice: v.salePrice ? Number(v.salePrice) : null, attributes: (v as any).attributes?.map((a: any) => ({ attributeId: a.variantAttributeId, attributeName: a.variantAttribute?.name, value: a.value, colorCode: a.colorCode })) || [] })),
+      variants: product.variants.map((v) => ({ ...v, images: (v.images ?? []).map((img: any) => ({ ...img, url: normalizeImageUrl(img.url) })), price: Number(v.price), salePrice: v.salePrice ? Number(v.salePrice) : null, attributes: (v as any).attributes?.map((a: any) => ({ attributeId: a.variantAttributeId, attributeName: a.variantAttribute?.name, value: a.value, colorCode: a.colorCode })) || [] })),
       // Physical attributes
       height: product.height ? Number(product.height) : null,
       width: product.width ? Number(product.width) : null,

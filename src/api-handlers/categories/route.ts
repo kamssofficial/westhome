@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import db from "@/lib/db";
 import { CATEGORIES } from "@/lib/data";
 import { requireAuthRole } from "@/lib/apiAuth";
+import { normalizeImageUrl } from "@/lib/categoryImages";
 
 const PLACEHOLDER_RE = /placeholder\.svg$/;
 
@@ -41,17 +42,17 @@ async function resolveCategoryImage(cat: CategoryTileSource): Promise<string | n
   // The admin page writes both the legacy category.image field and the
   // normalized CategoryImage row. Prefer the current primary row when it is
   // available, then fall back to the legacy field for older records.
-  if (primaryImage?.url && !PLACEHOLDER_RE.test(primaryImage.url)) return primaryImage.url;
-  if (cat.image && !PLACEHOLDER_RE.test(cat.image)) return cat.image;
+  if (primaryImage?.url && !PLACEHOLDER_RE.test(primaryImage.url)) return normalizeImageUrl(primaryImage.url);
+  if (cat.image && !PLACEHOLDER_RE.test(cat.image)) return normalizeImageUrl(cat.image);
   const product = await db.product.findFirst({
     where: { categoryId: cat.id, isActive: true, status: "ACTIVE" },
     include: { images: { orderBy: [{ isPrimary: "desc" as const }, { position: "asc" as const }] } },
     orderBy: { createdAt: "desc" as const },
   });
   const productImage = product?.images?.[0]?.url;
-  if (productImage) return productImage;
+  if (productImage) return normalizeImageUrl(productImage);
   if (cat.slug && STATIC_CATEGORY_IMAGES[cat.slug]) return STATIC_CATEGORY_IMAGES[cat.slug];
-  return cat.image || primaryImage?.url || null;
+  return normalizeImageUrl(cat.image || primaryImage?.url || null);
 }
 
 export async function GET() {
@@ -88,7 +89,7 @@ export async function GET() {
           name: sub.name,
           slug: sub.slug,
           description: sub.description,
-          image: sub.image || null,
+          image: normalizeImageUrl(sub.image || null),
           position: sub.position,
           productCount: sub._count.products,
         })),

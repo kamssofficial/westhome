@@ -1,3 +1,34 @@
+/**
+ * Normalize legacy image URLs to the WebP image proxy.
+ *
+ * Older catalog rows store raw Google Drive URLs (`lh3.googleusercontent.com/d/<id>`
+ * or `drive.google.com/uc?id=<id>`). Those are multi-MB PNGs served from a
+ * third-party host with no caching control and no WebP negotiation. Every
+ * Drive-hosted file is also reachable through our own proxy at
+ * `/api/images/<id>` (see src/api-handlers/images/route.ts), which serves
+ * content-negotiated WebP (~95% smaller) with immutable cache headers.
+ *
+ * This is a pure display-URL rewrite: uploads continue to store `/api/images/*`
+ * and nothing in the database changes.
+ */
+export function normalizeImageUrl(url?: string | null): string | null {
+  if (!url) return url ?? null;
+
+  // Already proxied (new uploads) or another app-local asset — leave as is.
+  if (url.startsWith("/")) return url;
+
+  // Raw Drive delivery host: https://lh3.googleusercontent.com/d/<fileId>[=wNNN]
+  const driveDirect = url.match(/^https:\/\/lh3\.googleusercontent\.com\/d\/([A-Za-z0-9_-]{10,})(?:[=?].*)?$/);
+  if (driveDirect) return `/api/images/${driveDirect[1]}`;
+
+  // Legacy share shape: https://drive.google.com/uc?id=<fileId>&export=view|download
+  const driveUc = url.match(/^https:\/\/drive\.google\.com\/uc\?id=([A-Za-z0-9_-]{10,})(?:&.*)?$/);
+  if (driveUc) return `/api/images/${driveUc[1]}`;
+
+  // Any other absolute URL (e.g. Cloudflare-hosted media) stays untouched.
+  return url;
+}
+
 const CATEGORY_IMAGES: Record<string, string> = {
   carpets: "/images/categories/drive-replacements/carpets.png",
   clocks: "/images/categories/drive-replacements/clocks.png",
@@ -29,13 +60,17 @@ export function resolveProductImage(
 ): string | null {
   const localFallback = productLocalFallback(productSlug);
 
+  // Route legacy raw-Drive URLs through the WebP proxy so JSON-LD, OG tags
+  // and the Merchant feed advertise fast, cacheable image URLs.
+  const normalized = normalizeImageUrl(image);
+
   // The catalog import historically stored Google Drive proxy URLs. Those
   // IDs are no longer resolvable in production, while the corresponding
   // catalog images are committed under /public/collections. Prefer the local
   // asset for that legacy shape so cards never render a broken image.
-  if (image?.startsWith("/api/images/") && localFallback) return localFallback;
-  if (isPlaceholderImage(image)) return localFallback || categoryFallbackImage(categorySlug) || image || null;
-  if (image) return image;
+  if (normalized?.startsWith("/api/images/") && localFallback) return localFallback;
+  if (isPlaceholderImage(normalized)) return localFallback || categoryFallbackImage(categorySlug) || normalized || null;
+  if (normalized) return normalized;
   return localFallback || categoryFallbackImage(categorySlug) || null;
 }
 

@@ -7,6 +7,7 @@ import { auth } from "@/lib/auth";
 import { logAdminAction } from "@/lib/audit";
 import { deleteMedia } from "@/lib/media";
 import { deriveParentPriceFromVariants, syncParentPriceFromVariants } from "@/lib/deriveProductPrice";
+import { normalizeImageUrl } from "@/lib/categoryImages";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -36,8 +37,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
     const reviews = product.reviews;
     const avgRating = reviews.length > 0 ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : null;
+    // Rewrite legacy raw-Drive image URLs to the WebP proxy (display-only).
+    const normalizeImages = (images: { url: string }[] | undefined | null) =>
+      (images ?? []).map((img: any) => ({ ...img, url: normalizeImageUrl(img.url) }));
+
     const transformed = {
       ...product,
+      images: normalizeImages(product.images),
       regularPrice: Number(product.regularPrice),
       salePrice: product.salePrice ? Number(product.salePrice) : null,
       rating: avgRating,
@@ -79,6 +85,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       customSizeRequiresApproval: product.customSizeRequiresApproval,
       variants: product.variants.map((v) => ({
         ...v,
+        images: normalizeImages(v.images),
         price: Number(v.price),
         salePrice: v.salePrice ? Number(v.salePrice) : null,
         attributes: v.attributes.map((a) => ({

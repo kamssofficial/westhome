@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import db from "@/lib/db";
 import ProductDetailClient from "./ProductDetailClient";
-import { resolveProductImage } from "@/lib/categoryImages";
+import { normalizeImageUrl, resolveProductImage } from "@/lib/categoryImages";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -59,8 +59,15 @@ async function getProduct(slug: string) {
         ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length
         : null;
 
+    // Rewrite legacy raw-Drive image URLs to the WebP proxy so the rendered
+    // gallery (and every card built from it) serves ~100 KB WebP instead of
+    // multi-MB third-party PNGs. Pure display-URL rewrite — DB is untouched.
+    const normalizeImages = (images: { url: string }[] | undefined | null) =>
+      (images ?? []).map((img: any) => ({ ...img, url: normalizeImageUrl(img.url) }));
+
     return {
       ...product,
+      images: normalizeImages(product.images),
       regularPrice: Number(product.regularPrice),
       salePrice: product.salePrice ? Number(product.salePrice) : null,
       rating: avgRating,
@@ -82,6 +89,7 @@ async function getProduct(slug: string) {
       customSizeMaxHeight: product.customSizeMaxHeight ? Number(product.customSizeMaxHeight) : null,
       variants: product.variants.map((v: any) => ({
         ...v,
+        images: normalizeImages(v.images),
         price: Number(v.price),
         salePrice: v.salePrice ? Number(v.salePrice) : null,
         attributes: v.attributes.map((a: any) => ({
@@ -116,6 +124,7 @@ async function getRelatedProducts(categorySlug: string, excludeId: string) {
     });
     return products.map((p: any) => ({
       ...p,
+      images: (p.images ?? []).map((img: any) => ({ ...img, url: normalizeImageUrl(img.url) })),
       regularPrice: Number(p.regularPrice),
       salePrice: p.salePrice ? Number(p.salePrice) : null,
     }));
