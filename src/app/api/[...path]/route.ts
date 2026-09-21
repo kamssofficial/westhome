@@ -59,6 +59,7 @@ import * as handler_55 from "@/api-handlers/promotions/route";
 import * as handler_56 from "@/api-handlers/reviews/route";
 import * as handler_57 from "@/api-handlers/settings/route";
 import * as handler_58 from "@/api-handlers/upload/route";
+import * as handler_59 from "@/api-handlers/orders/track/route";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -106,6 +107,7 @@ const routes: RouteEntry[] = [
   { pattern: new RegExp("^coupons/([^/]+)$"), params: (capture) => ({ id: capture[1] }), module: handler_36 },
   { pattern: new RegExp("^homepage/([^/]+)$"), params: (capture) => ({ id: capture[1] }), module: handler_37 },
   { pattern: new RegExp("^notifications/([^/]+)$"), params: (capture) => ({ id: capture[1] }), module: handler_38 },
+  { pattern: new RegExp("^orders/track$"), params: (capture) => ({  }), module: handler_59 },
   { pattern: new RegExp("^orders/([^/]+)$"), params: (capture) => ({ id: capture[1] }), module: handler_39 },
   { pattern: new RegExp("^products/([^/]+)$"), params: (capture) => ({ slug: capture[1] }), module: handler_40 },
   { pattern: new RegExp("^auth/(.+)$"), params: (capture) => ({ nextauth: capture[1].split("/") }), module: handler_41 },

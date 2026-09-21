@@ -114,15 +114,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // ── Checkout routes: any authenticated user ──
-  if (pathname.startsWith("/checkout")) {
-    if (!token) {
-      const loginUrl = new URL("/login", request.url);
-      loginUrl.searchParams.set("callbackUrl", pathname);
-      return NextResponse.redirect(loginUrl);
-    }
-    return NextResponse.next();
-  }
+  // ── Checkout routes: open to guests ──
+  // Guest checkout is supported end to end: the checkout page collects contact
+  // + address details, orders are created with a null userId, and payment is
+  // authorized with a per-order guest claim token instead of a session.
+  // Deliberately no login redirect here.
 
   return NextResponse.next();
 }
