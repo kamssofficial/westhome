@@ -3,6 +3,15 @@
 Everything below is click-by-click and cannot be done from code. Budget ~45 minutes
 total, then let Google work (feed approval: days; product indexing: 1–3 weeks).
 
+> **Status 2026-09-21 — server side is DONE and live.** robots.txt now allows
+> `/api/images/` (product photos crawlable by Googlebot-Image), sitemap declares
+> 278 product URLs, the Merchant feed serves 292 items with healthy images
+> (18/20 sample verified + local catalogue files), all JSON-LD (Store / Product /
+> Breadcrumb / FAQ) parses, canonicals are absolute www URLs, apex 301s to www,
+> trailing slashes 308 to the canonical form. **Only the Google-account steps in
+> sections 1–3 below remain** — they need the business Google login and cannot
+> be done from the repo.
+
 Feed URL to use everywhere: **https://www.westhome.in/products.xml**
 Sitemap URL to use everywhere: **https://www.westhome.in/sitemap.xml**
 
@@ -37,6 +46,8 @@ Sitemap URL to use everywhere: **https://www.westhome.in/sitemap.xml**
    - *Missing recommended attribute* (GTIN): safe to ignore — the feed declares
      `identifier_exists=no` since these are unbranded curated goods.
    - *Image quality*: replace the flagged product photos in the admin panel.
+     (Known: 1 product — "Elysian Greek Key Cut-Pile Carpet 6\*4fts" — points at a
+     deleted Drive file and 404s; re-upload its photo in Admin → Products.)
    - *Price mismatch*: means a `salePrice` changed after the last fetch — self-corrects
      on the next daily fetch.
 6. **Free listings** (Shopping tab, no cost) activate automatically once the feed is
