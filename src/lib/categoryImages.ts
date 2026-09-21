@@ -10,7 +10,15 @@
  *
  * This is a pure display-URL rewrite: uploads continue to store `/api/images/*`
  * and nothing in the database changes.
+ *
+ * Proxy URLs are emitted with a deterministic `.webp` suffix: shared CDN caches
+ * (Cloudflare's default rules cache by file extension, not Cache-Control) then
+ * treat them as static assets instead of round-tripping every request to the
+ * origin. The proxy strips the suffix before resolving the Drive file and
+ * always serves content-negotiated WebP for this URL shape.
  */
+const PROXY_WEBP_SUFFIX = ".webp";
+
 export function normalizeImageUrl(url?: string | null): string | null {
   if (!url) return url ?? null;
 
@@ -19,11 +27,11 @@ export function normalizeImageUrl(url?: string | null): string | null {
 
   // Raw Drive delivery host: https://lh3.googleusercontent.com/d/<fileId>[=wNNN]
   const driveDirect = url.match(/^https:\/\/lh3\.googleusercontent\.com\/d\/([A-Za-z0-9_-]{10,})(?:[=?].*)?$/);
-  if (driveDirect) return `/api/images/${driveDirect[1]}`;
+  if (driveDirect) return `/api/images/${driveDirect[1]}${PROXY_WEBP_SUFFIX}`;
 
   // Legacy share shape: https://drive.google.com/uc?id=<fileId>&export=view|download
   const driveUc = url.match(/^https:\/\/drive\.google\.com\/uc\?id=([A-Za-z0-9_-]{10,})(?:&.*)?$/);
-  if (driveUc) return `/api/images/${driveUc[1]}`;
+  if (driveUc) return `/api/images/${driveUc[1]}${PROXY_WEBP_SUFFIX}`;
 
   // Any other absolute URL (e.g. Cloudflare-hosted media) stays untouched.
   return url;

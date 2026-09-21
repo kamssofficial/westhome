@@ -182,46 +182,51 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Invalid image path" }, { status: 400 });
     }
 
-    const wantsWebp = acceptsWebp(req);
+    // Deterministic ".webp" URLs (emitted by normalizeImageUrl) always serve
+    // WebP and key every cache on the bare id, so both URL shapes share the
+    // in-memory cache and downstream CDN entries.
+    const forceWebp = fileId.toLowerCase().endsWith(".webp");
+    const key = forceWebp ? fileId.slice(0, -".webp".length) : fileId;
+    const wantsWebp = forceWebp || acceptsWebp(req);
 
-    if (fileId.startsWith("github/")) {
-      const githubResp = await serveGitHub(fileId, wantsWebp);
+    if (key.startsWith("github/")) {
+      const githubResp = await serveGitHub(key, wantsWebp);
       if (githubResp) return githubResp;
     }
 
     // Drive files are served via the authenticated API (no slash in the id).
-    if (!fileId.includes("/")) {
-      let source = binaryCacheGet(fileId);
+    if (!key.includes("/")) {
+      let source = binaryCacheGet(key);
       if (!source) {
         try {
-          const { data, mimeType } = await driveDownload(fileId);
-          binaryCacheSet(fileId, data, mimeType || "image/png");
-          source = binaryCacheGet(fileId);
+          const { data, mimeType } = await driveDownload(key);
+          binaryCacheSet(key, data, mimeType || "image/png");
+          source = binaryCacheGet(key);
         } catch (err) {
-          console.warn("driveDownload failed for", fileId, err);
+          console.warn("driveDownload failed for", key, err);
         }
       }
       if (!source) {
         try {
-          const publicImage = await downloadPublicDriveImage(fileId);
+          const publicImage = await downloadPublicDriveImage(key);
           if (publicImage) {
-            binaryCacheSet(fileId, publicImage.data, publicImage.mimeType);
-            source = binaryCacheGet(fileId);
+            binaryCacheSet(key, publicImage.data, publicImage.mimeType);
+            source = binaryCacheGet(key);
           }
         } catch (err) {
-          console.warn("public Drive image fallback failed for", fileId, err);
+          console.warn("public Drive image fallback failed for", key, err);
         }
       }
       if (source) {
         const body = wantsWebp
-          ? await toWebp(fileId, source.data, source.mimeType)
+          ? await toWebp(key, source.data, source.mimeType)
           : { data: source.data, mimeType: source.mimeType };
         return binaryResponse(body.data, body.mimeType);
       }
     }
 
     // Legacy local images: relative path under public/images/.
-    const localResp = await serveLocal(fileId, wantsWebp);
+    const localResp = await serveLocal(key, wantsWebp);
     if (localResp) return localResp;
 
     return NextResponse.json({ error: "Image not found" }, { status: 404 });
