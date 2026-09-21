@@ -137,10 +137,9 @@ async function buildFeedXml(): Promise<string> {
     });
   } catch (error) {
     console.error("products.xml: failed to load products", error);
-    return new Response(
-      `<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">\n<channel>\n<title>${BRAND}</title>\n<link>${SITE_URL}</link>\n<description>Product feed temporarily unavailable</description>\n</channel>\n</rss>`,
-      { status: 200, headers: { "Content-Type": "application/xml; charset=utf-8" } },
-    );
+    // buildFeedXml() returns a string; on DB failure emit an empty-channel feed
+    // (same shape as before — Merchant Center tolerates an empty feed).
+    return `<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">\n<channel>\n<title>${BRAND}</title>\n<link>${SITE_URL}</link>\n<description>Product feed temporarily unavailable</description>\n</channel>\n</rss>`;
   }
 
   const items: string[] = [];
