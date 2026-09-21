@@ -12,7 +12,9 @@ import Image from "next/image";
  *   3. Tagline "by BM Distributors" fades in
  *   4. White wipe reveals the page
  *
- * Total duration ~3 s. Tap anywhere to skip instantly.
+ * Total duration ~1.6 s (was ~3 s — the splash was the single largest
+ * perceived-latency cost on the storefront: every new session stared at a
+ * full-screen overlay before any content was visible). Tap anywhere to skip.
  */
 const INTRO_KEY = "westhome-intro-seen";
 
@@ -42,11 +44,11 @@ export default function IntroAnimation({ children }: { children: React.ReactNode
       timers.current.push(setTimeout(fn, ms));
     };
 
-    at(() => setPhase("logo"), 50);
-    at(() => setPhase("line"), 700);
-    at(() => setPhase("tagline"), 1200);
-    at(() => setPhase("wipe"), 2500);
-    at(() => setPhase("done"), 3000);
+    at(() => setPhase("logo"), 30);
+    at(() => setPhase("line"), 380);
+    at(() => setPhase("tagline"), 650);
+    at(() => setPhase("wipe"), 1250);
+    at(() => setPhase("done"), 1600);
 
     return () => timers.current.forEach(clearTimeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps

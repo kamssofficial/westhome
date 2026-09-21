@@ -38,11 +38,14 @@ export function normalizeImageUrl(url?: string | null): string | null {
 }
 
 const CATEGORY_IMAGES: Record<string, string> = {
-  carpets: "/images/categories/drive-replacements/carpets.png",
-  clocks: "/images/categories/drive-replacements/clocks.png",
-  comforters: "/images/categories/drive-replacements/comforters.png",
-  lamps: "/images/categories/drive-replacements/lamps.png",
-  "wall-decor": "/images/categories/drive-replacements/wall-decor.png",
+  // These point at the canonical committed assets under /collections/<category>/
+  // (byte-identical duplicates used to live under drive-replacements/ and were
+  // shipped twice — every category tile downloaded both copies on some pages).
+  carpets: "/collections/carpets/gray-distressed-rug.png",
+  clocks: "/collections/clocks/dark-roman-numeral-clock.png",
+  comforters: "/collections/comforters/comforter-set.png",
+  lamps: "/collections/lamps/modern-lamp.png",
+  "wall-decor": "/collections/frames/frame-abstract-art-green-sofa.png",
 };
 
 export function categoryFallbackImage(slug?: string | null): string | null {
