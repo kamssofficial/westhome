@@ -1,11 +1,16 @@
-const CACHE_NAME = "westhome-v5";
+const CACHE_NAME = "westhome-v6";
 
-// Only committed, immutable static assets are cached. API responses —
-// including /api/images/<id> Drive proxies — must always hit the network:
-// they are mutable backend data, and a poisoned cache entry there (e.g. an
-// HTML fallback served with 200 during a deploy window) used to persist
-// forever because the cache name never changed.
+// Immutable, content-addressed assets are cached cache-first. App data and
+// everything else must always hit the network.
+//
+// /api/images/<id>.webp is safe to cache: the .webp suffix URLs are emitted by
+// normalizeImageUrl, always resolve to the same Drive file for a given id,
+// and are always served as WebP (no content negotiation → no Vary poisoning).
+// The old v5 rule excluded all of /api/* because plain /api/images/<id> URLs
+// are Accept-negotiated and a poisoned entry used to persist forever; the
+// suffix-only rule plus the image/ Content-Type guard below keep that safety.
 const CACHEABLE_PREFIXES = ["/images/", "/collections/"];
+const CACHEABLE_IMAGE_SUFFIX = "/api/images/";
 
 self.addEventListener("install", () => self.skipWaiting());
 
@@ -22,13 +27,17 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  // Static assets only — never /api/*, never app shell, never Next bundles.
-  if (!CACHEABLE_PREFIXES.some((prefix) => url.pathname.startsWith(prefix))) return;
+  const isStatic = CACHEABLE_PREFIXES.some((prefix) => url.pathname.startsWith(prefix));
+  // Only the deterministic .webp form of proxy images — never the negotiated
+  // plain-id form, never any other /api/* route.
+  const isDeterministicProxyImage =
+    url.pathname.startsWith(CACHEABLE_IMAGE_SUFFIX) && url.pathname.endsWith(".webp");
+  if (!isStatic && !isDeterministicProxyImage) return;
 
   event.respondWith(
     caches.match(request).then((cached) => cached || fetch(request).then((response) => {
       // Guard: only cache real image responses, never an HTML fallback page
-      // that happens to answer 200.
+      // or JSON error that happens to answer 200.
       const type = response.headers.get("Content-Type") || "";
       if (response.ok && type.startsWith("image/")) {
         const copy = response.clone();

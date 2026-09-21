@@ -5,13 +5,14 @@
 # GitHub disables scheduled workflows on repos with no activity for 60 days -
 # any commit (even to a docs file) resets that clock.
 #
-# Why the retry loop: GitHub defers schedule crons under load, so this does NOT
-# run every 10 minutes - observed gaps are 2-3 hours, which is long enough for
-# the instance to sleep AND for a wake-up attempt to hit a 502 while the
-# process boots. A single curl then reported failure while the instance was
-# actually coming back. So: poll up to N times (sleeping between tries) until
-# the storefront answers 200; only then report success/failure. Also wired to
-# workflow_dispatch so it can be triggered on demand (e.g. from an alert).
+# Why the staggered loop: GitHub defers schedule crons under load, so the
+# */10 cron actually fires every 2-3 hours - far longer than the 15-minute
+# sleep timeout, so the instance still went to sleep between runs and shoppers
+# hit 502/503 windows (observed Sep 21). A single run can't change the cron
+# schedule, but it CAN spread its own pings across the gap: each run performs
+# 9 pings roughly 20 minutes apart (~2.5h of coverage per run), succeeding if
+# ANY ping gets a 200 and failing only when every ping failed. Combined with
+# the deferred 2-3h schedule this keeps the instance warm continuously.
 #
 # Durable fix: an external uptime monitor (e.g. UptimeRobot free tier, 5-minute
 # HTTP checks) pinging https://www.westhome.in/api/products?limit=1 keeps the
@@ -26,23 +27,33 @@ on:
 
 permissions: {}
 
+concurrency:
+  group: keep-warm
+  cancel-in-progress: true
+
 jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Wake and verify the storefront
+      - name: Keep pinging the storefront across the cron gap
         run: |
           set -euo pipefail
           URL='https://www.westhome.in/api/products?limit=1'
-          code=000
-          for i in $(seq 1 8); do
+          ok=0
+          for i in $(seq 1 9); do
             code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 120 "$URL" || true)"
-            echo "attempt $i: GET /api/products -> HTTP $code"
+            echo "ping $i/9: GET /api/products -> HTTP $code"
             if [ "$code" = "200" ]; then
-              exit 0
+              ok=1
             fi
-            # 502/503 usually means the instance is mid-wake; give it a beat
-            sleep 20
+            # 20-minute stagger: covers the cron-deferral gap (15 min idle
+            # timeout on the instance), and a 502/503 usually means the
+            # instance is mid-wake, so the next ping catches it up.
+            if [ "$i" -lt 9 ]; then
+              sleep 1200
+            fi
           done
-          echo "storefront did not return 200 after 8 attempts (last: $code)"
-          exit 1
+          if [ "$ok" != "1" ]; then
+            echo "storefront never returned 200 across all 9 pings"
+            exit 1
+          fi
