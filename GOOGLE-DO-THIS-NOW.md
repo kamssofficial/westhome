@@ -11,6 +11,14 @@
 
 **Only these three steps remain (~12 minutes):**
 
+> **Progress 2026-09-21**
+> - ✅ Sitemap submitted — "Success", **303 pages discovered**
+> - ✅ Request indexing 2/10: `antique-gold-standing-clock`, `woven-wave-rug-64fts`
+>   (retry succeeded, confirmed in the priority crawl queue)
+> - ⏳ Remaining 8 requests — do them in a fresh session (list in step 2)
+> - ⏳ Merchant Center blocked on "doesn't have access to any Merchant Center
+>   account" — see step 3 for the fix
+
 ---
 
 ## 1. Submit the sitemap (2 minutes)
@@ -21,13 +29,12 @@
 
 ## 2. Request indexing on the top 10 products (5 minutes)
 
-GSC → top bar **URL Inspection** → paste each URL → **Request Indexing**
-(one per product type: clocks, rugs, carpets, cushions, comforters, lamps,
-baskets, frames, dispensers, wall art):
+GSC → top bar **URL Inspection** → paste each URL → **Request Indexing**.
+Google caps these per day for new properties; if it refuses, finish the rest
+the next morning. **Done:** antique-gold-standing-clock, woven-wave-rug-64fts.
+**Still to submit (8):**
 
 ```
-https://www.westhome.in/products/antique-gold-standing-clock
-https://www.westhome.in/products/woven-wave-rug-64fts
 https://www.westhome.in/products/sculpted-wave-off-white-carpet-64fts
 https://www.westhome.in/products/teal-velvet-cushion-cover
 https://www.westhome.in/products/mocha-leaf-embossed-comforter-set
@@ -40,19 +47,30 @@ https://www.westhome.in/products/velvet-terrain-black-wall-art-80120cm
 
 ## 3. Merchant Center + product feed (5 minutes)
 
-1. https://merchants.google.com → same Google account
-2. Business info: country **India**, currency **INR**, store
-   "WEST HOME by BM Distributors", phone +91 98950 71144
-3. Settings → Business info → Website: enter `https://www.westhome.in`
-   → **Verify via Search Console** (one click — the Domain property makes this
-   instant) → **Claim**
-4. Products → Feeds → **+**:
-   - Country `India`, currency `INR`, name `westhome-products`
-   - Schedule: **Daily fetch**, 3:00 AM IST
-   - URL: `https://www.westhome.in/products.xml`
-   - Format: XML
-5. After the first fetch (minutes), check **Diagnostics** — GTIN warnings are
-   safe to ignore (feed declares `identifier_exists=no`)
+**If you see "your current account doesn't have access to any Merchant Center
+account"**, the signup stalled halfway (it tried to join an existing account
+that doesn't exist). Fix — in this order:
+
+1. Open an **incognito window**, sign in only with **westhomebybmd@gmail.com**
+2. Go straight to **https://merchants.google.com/onboarding** (not the
+   dashboard URL) and pick **Create a new account** if offered
+3. **Complete every step in one sitting** — the account is only provisioned
+   after the last screen:
+   - Business info: "WEST HOME by BM Distributors", India, INR
+   - Website: `https://www.westhome.in` → Verify via Search Console → Claim
+   - **Shipping**: free over ₹999, flat ₹49 below (matches the site)
+   - **Returns policy**: as per the store policy page
+4. If the error persists after that, it is usually new-account propagation —
+   wait 24 h and retry the same onboarding URL before contacting support
+
+Once created: Products → Feeds → **+** →
+- Country `India`, currency `INR`, name `westhome-products`
+- Schedule: **Daily fetch**, 3:00 AM IST
+- URL: `https://www.westhome.in/products.xml`
+- Format: XML
+
+After the first fetch, check **Diagnostics** — GTIN warnings are safe to
+ignore (feed declares `identifier_exists=no`).
 
 ## 4. Product images — nothing to do ✅
 
