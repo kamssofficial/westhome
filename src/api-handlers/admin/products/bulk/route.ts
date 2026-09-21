@@ -4,6 +4,7 @@ import db from "@/lib/db";
 import { requireAuthRole } from "@/lib/apiAuth";
 import { logAdminAction } from "@/lib/audit";
 import { deleteMedia } from "@/lib/media";
+import { memoInvalidateCatalog } from "@/lib/memoCache";
 
 export async function POST(request: NextRequest) {
   const authResult = await requireAuthRole(["ADMIN", "MANAGER", "PRODUCT_MANAGER"]);
@@ -62,6 +63,7 @@ export async function POST(request: NextRequest) {
     revalidatePath("/", "page");
     revalidatePath("/collections/[slug]", "page");
     revalidatePath("/collections/[slug]/[subcategory]", "page");
+    memoInvalidateCatalog();
   }
 
   return NextResponse.json({ successCount, failCount });

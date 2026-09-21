@@ -1,5 +1,6 @@
 import db from "@/lib/db";
 import { resolveProductImage } from "@/lib/categoryImages";
+import { memo, SEO_XML_TTL_MS, NS } from "@/lib/memoCache";
 
 /**
  * Google Merchant Center product feed (free Shopping listings).
@@ -79,6 +80,20 @@ type FeedProduct = {
 };
 
 export async function GET() {
+  const xml = await memo(`${NS.feed}:v1`, SEO_XML_TTL_MS, buildFeedXml);
+  return new Response(xml, {
+    status: 200,
+    headers: {
+      "Content-Type": "application/xml; charset=utf-8",
+      // Browsers: refetch hourly; shared/CDN cache: serve stale for a day
+      // while regenerating in the background, so crawls never block on origin.
+      "Cache-Control":
+        "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400",
+    },
+  });
+}
+
+async function buildFeedXml(): Promise<string> {
   let products: FeedProduct[] = [];
   try {
     // Same visibility rule as the sitemap and product pages: isActive only.
@@ -241,7 +256,7 @@ export async function GET() {
     items.push(lines.join("\n"));
   }
 
-  const xml = [
+  return [
     `<?xml version="1.0" encoding="UTF-8"?>`,
     `<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">`,
     `  <channel>`,
@@ -252,15 +267,4 @@ export async function GET() {
     `  </channel>`,
     `</rss>`,
   ].join("\n");
-
-  return new Response(xml, {
-    status: 200,
-    headers: {
-      "Content-Type": "application/xml; charset=utf-8",
-      // Browsers: refetch hourly; shared/CDN cache: serve stale for a day
-      // while regenerating in the background, so crawls never block on origin.
-      "Cache-Control":
-        "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400",
-    },
-  });
 }

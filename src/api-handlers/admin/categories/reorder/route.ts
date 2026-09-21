@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import db from '@/lib/db';
 import { requireAuthRole } from '@/lib/apiAuth';
 import { logAdminAction } from "@/lib/audit";
+import { memoInvalidateCatalog } from "@/lib/memoCache";
 
 export async function PATCH(request: NextRequest) {
   const authResult = await requireAuthRole(['ADMIN', 'MANAGER']);
@@ -24,6 +25,7 @@ export async function PATCH(request: NextRequest) {
     await db.$transaction(updates);
     await logAdminAction({ action: "REORDER", entity: "CATEGORY", entityId: null, details: { categoryIds }, request });
 
+    memoInvalidateCatalog();
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Reorder categories error:', error);

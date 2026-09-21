@@ -7,8 +7,9 @@ import { auth } from "@/lib/auth";
 import { logAdminAction } from "@/lib/audit";
 import { syncParentPriceFromVariants } from "@/lib/deriveProductPrice";
 import { normalizeImageUrl } from "@/lib/categoryImages";
+import { memoGet, memoSet, memoInvalidateCatalog, CATALOG_TTL_MS, NS } from "@/lib/memoCache";
 
-export async function GET(request: NextRequest) {
+async function getProductsUncached(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const query = searchParams.get("q") || searchParams.get("query") || "";
@@ -230,9 +231,38 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// Wrap the GET with a 60-second response-level memo cache (storefront requests
+// only — admin views and search-as-you-type bypass it via the cache key).
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const cacheable =
+    !searchParams.get("status") &&
+    !searchParams.get("all") &&
+    !searchParams.get("ids") &&
+    !searchParams.get("q") &&
+    !searchParams.get("query");
+  const key = `${NS.products}:${request.url}`;
+  if (cacheable) {
+    const cached = memoGet<unknown>(key);
+    if (cached) return NextResponse.json(cached, { headers: { "Cache-Control": "no-store, max-age=0" } });
+  }
+  const res = await getProductsUncached(request);
+  if (cacheable && res.ok) {
+    try {
+      memoSet(key, CATALOG_TTL_MS, await res.clone().json());
+    } catch {
+      // Body unbufferable — skip caching rather than break the response.
+    }
+  }
+  return res;
+}
+
 export async function POST(request: NextRequest) {
   const authResult = await requireAuthRole(["ADMIN", "MANAGER", "PRODUCT_MANAGER"]);
   if (authResult.error) return authResult.error;
+
+  // Drop catalog caches so shoppers see the new product immediately.
+  memoInvalidateCatalog();
 
   try {
     const body = await request.json();
