@@ -9,7 +9,7 @@
 > crawling, sitemap lists 278 product URLs, Merchant feed serves 292 items,
 > all structured data validated.
 
-**Only these four clicks remain (~12 minutes):**
+**Only these three steps remain (~12 minutes):**
 
 ---
 
@@ -54,11 +54,13 @@ https://www.westhome.in/products/velvet-terrain-black-wall-art-80120cm
 5. After the first fetch (minutes), check **Diagnostics** — GTIN warnings are
    safe to ignore (feed declares `identifier_exists=no`)
 
-## 4. One product image to re-upload (30 seconds)
+## 4. Product images — nothing to do ✅
 
-Admin → Products → **"Elysian Greek Key Cut-Pile Carpet 6\*4fts"** →
-re-upload its photo (the current one points at a deleted Drive file and 404s;
-it will fail Merchant Center image review until replaced).
+All 292 feed items verified healthy (re-verified live; the one carpet image
+that briefly 404'd was a transient Drive hiccup cleared by the proxy's
+negative cache — the file is alive and serves a 100 KB WebP again).
+If Merchant Center ever flags a specific image later, re-upload just that
+photo via Admin → Products.
 
 ---
 
