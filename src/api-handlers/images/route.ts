@@ -10,45 +10,11 @@ import {
   WEBP_MIN_BYTES,
   IMMUTABLE_MEDIA_CACHE,
   LEGACY_MEDIA_CACHE,
+  NOT_FOUND_MEDIA_CACHE,
 } from "@/lib/imageProxy";
 
 const PROJECT_ROOT = process.cwd();
 const PUBLIC_IMAGES_DIR = path.join(PROJECT_ROOT, "public", "images");
-
-async function serveGitHub(
-  filePath: string,
-  wantsWebp: boolean,
-): Promise<NextResponse | null> {
-  const token = process.env.GITHUB_STORAGE_TOKEN || process.env.GITHUB_TOKEN;
-  if (!token) return null;
-  const repository = process.env.GITHUB_STORAGE_REPO || "kamssofficial/westhome";
-  const branch = process.env.GITHUB_STORAGE_BRANCH || "main";
-  const apiPath = filePath.replace(/^github\//, "");
-  const response = await fetch(
-    `https://api.github.com/repos/${repository}/contents/${apiPath}?ref=${encodeURIComponent(branch)}`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/vnd.github.raw+json",
-        "X-GitHub-Api-Version": "2022-11-28",
-        "User-Agent": "westhome-image-proxy",
-      },
-      // The route has its own bounded in-memory cache. Do not also place raw
-      // Drive/GitHub binaries into Next's Data Cache: large product photos can
-      // exceed its 2 MB item limit and only generate noisy cache warnings.
-      cache: "no-store",
-      signal: AbortSignal.timeout(8000),
-    },
-  );
-  if (!response.ok) return null;
-  const data = Buffer.from(await response.arrayBuffer());
-  const ext = path.extname(apiPath).toLowerCase();
-  const mimeType = ext === ".png" ? "image/png" : ext === ".webp" ? "image/webp" : ext === ".gif" ? "image/gif" : "image/jpeg";
-  const body = wantsWebp
-    ? await toWebp(`github:${apiPath}`, data, mimeType)
-    : { data, mimeType };
-  return binaryResponse(body.data, body.mimeType);
-}
 
 async function downloadPublicDriveImage(
   fileId: string,
@@ -263,6 +229,9 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Invalid image path" }, { status: 400 });
     }
 
+    const notFound = (message = "Image not found") =>
+      NextResponse.json({ error: message }, { status: 404, headers: { "Cache-Control": NOT_FOUND_MEDIA_CACHE } });
+
     // Deterministic ".webp" URLs (emitted by normalizeImageUrl) always serve
     // WebP and key every cache on the bare id, so both URL shapes share the
     // in-memory cache and downstream CDN entries.
@@ -271,8 +240,7 @@ export async function GET(req: NextRequest) {
     const wantsWebp = forceWebp || acceptsWebp(req);
 
     if (key.startsWith("github/")) {
-      const githubResp = await serveGitHub(key, wantsWebp);
-      if (githubResp) return githubResp;
+      return notFound();
     }
 
     // Drive files are served through the public image endpoint first. This is
@@ -282,7 +250,7 @@ export async function GET(req: NextRequest) {
     // remains the fallback for private/service-account-owned files and uploads.
     if (!key.includes("/")) {
       if (negativeCacheHas(key)) {
-        return NextResponse.json({ error: "Image not found" }, { status: 404 });
+        return notFound();
       }
 
       let source = binaryCacheGet(key);
@@ -346,7 +314,7 @@ export async function GET(req: NextRequest) {
     const localResp = await serveLocal(key, wantsWebp);
     if (localResp) return localResp;
 
-    return NextResponse.json({ error: "Image not found" }, { status: 404 });
+    return notFound();
   } catch (err) {
     console.error("Image proxy error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
