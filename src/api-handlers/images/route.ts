@@ -21,7 +21,7 @@ async function serveGitHub(
 ): Promise<NextResponse | null> {
   const token = process.env.GITHUB_STORAGE_TOKEN || process.env.GITHUB_TOKEN;
   if (!token) return null;
-  const repository = process.env.GITHUB_STORAGE_REPO || "salmansahil2005/westhome";
+  const repository = process.env.GITHUB_STORAGE_REPO || "kamssofficial/westhome";
   const branch = process.env.GITHUB_STORAGE_BRANCH || "main";
   const apiPath = filePath.replace(/^github\//, "");
   const response = await fetch(
@@ -33,7 +33,11 @@ async function serveGitHub(
         "X-GitHub-Api-Version": "2022-11-28",
         "User-Agent": "westhome-image-proxy",
       },
-      next: { revalidate: 3600 },
+      // The route has its own bounded in-memory cache. Do not also place raw
+      // Drive/GitHub binaries into Next's Data Cache: large product photos can
+      // exceed its 2 MB item limit and only generate noisy cache warnings.
+      cache: "no-store",
+      signal: AbortSignal.timeout(8000),
     },
   );
   if (!response.ok) return null;
@@ -51,7 +55,10 @@ async function downloadPublicDriveImage(
 ): Promise<{ data: Buffer; mimeType: string } | null> {
   const response = await fetch(`https://lh3.googleusercontent.com/d/${encodeURIComponent(fileId)}`, {
     headers: { Accept: "image/avif,image/webp,image/png,image/jpeg,image/*" },
-    next: { revalidate: 3600 },
+    // Keep large origin binaries out of Next's Data Cache; BINARY_CACHE below
+    // is the purpose-built cache for this proxy.
+    cache: "no-store",
+    signal: AbortSignal.timeout(8000),
   });
   // Rate limits / server errors are TRANSIENT — signal them by throwing so the
   // caller does not negative-cache the id. Only a clean 404 (or a 2xx response
@@ -268,35 +275,21 @@ export async function GET(req: NextRequest) {
       if (githubResp) return githubResp;
     }
 
-    // Drive files are served via the authenticated API (no slash in the id).
+    // Drive files are served through the public image endpoint first. This is
+    // deliberately the fast path for storefront reads: product image URLs are
+    // already persisted as Drive file ids and public Drive delivery does not
+    // require OAuth/ADC credentials on the web service. The authenticated API
+    // remains the fallback for private/service-account-owned files and uploads.
     if (!key.includes("/")) {
       if (negativeCacheHas(key)) {
         return NextResponse.json({ error: "Image not found" }, { status: 404 });
       }
+
       let source = binaryCacheGet(key);
-      // Skip the authenticated download entirely when no Drive credential is
-      // configured. Without creds, buildAuth falls back to Application-Default
-      // Credentials, which takes ~9s to fail per cold image on hosts like
-      // Render — exactly the load spike that makes the public fallback below
-      // time out. The public endpoint does not need credentials.
-      const hasDriveCreds = Boolean(
-        (process.env.GOOGLE_OAUTH_CLIENT_ID &&
-          process.env.GOOGLE_OAUTH_CLIENT_SECRET &&
-          process.env.GOOGLE_OAUTH_REFRESH_TOKEN) ||
-          (process.env.GOOGLE_CREDENTIALS_PATH &&
-            fs.existsSync(process.env.GOOGLE_CREDENTIALS_PATH)) ||
-          process.env.GOOGLE_CREDENTIALS_JSON,
-      );
-      if (!source && hasDriveCreds) {
-        try {
-          const { data, mimeType } = await driveDownload(key);
-          binaryCacheSet(key, data, mimeType || "image/png");
-          source = binaryCacheGet(key);
-        } catch (err) {
-          console.warn("driveDownload failed for", key, err);
-        }
-      }
-      let downloadPublicDriveImageFailed = false;
+
+      // Fast path: public Drive delivery. This keeps storefront image serving
+      // independent from GOOGLE_* credentials when a Drive file is link-readable.
+      let publicFetchThrew = false;
       if (!source) {
         try {
           const publicImage = await downloadPublicDriveImage(key);
@@ -305,17 +298,42 @@ export async function GET(req: NextRequest) {
             source = binaryCacheGet(key);
           }
         } catch (err) {
-          downloadPublicDriveImageFailed = true;
-          console.warn("public Drive image fallback failed for", key, err);
+          // Thrown = transient (429/5xx/timeout). Remember it so a blip is NOT
+          // negative-cached below — the next request should retry immediately.
+          publicFetchThrew = true;
+          console.warn("public Drive image fetch failed (transient) for", key, err);
         }
       }
-      // Only a definitive miss (no creds + the public endpoint could not serve
-      // it) may enter the negative cache. Transient public-endpoint failures
-      // (rate limits, blips) must NOT poison the URL for 5 minutes for every
-      // visitor — let the next request retry instead.
-      if (!source && (hasDriveCreds || !downloadPublicDriveImageFailed)) {
+
+      // Authenticated fallback: needed for private files, but only when
+      // explicit Google credentials are configured. Never invoke Google ADC
+      // implicitly from a public storefront request.
+      const hasExplicitDriveAuth =
+        Boolean(
+          process.env.GOOGLE_OAUTH_CLIENT_ID &&
+          process.env.GOOGLE_OAUTH_CLIENT_SECRET &&
+          process.env.GOOGLE_OAUTH_REFRESH_TOKEN
+        ) ||
+        Boolean(process.env.GOOGLE_CREDENTIALS_JSON) ||
+        Boolean(process.env.GOOGLE_CREDENTIALS_PATH);
+
+      if (!source && hasExplicitDriveAuth) {
+        try {
+          const { data, mimeType } = await driveDownload(key);
+          binaryCacheSet(key, data, mimeType || "image/png");
+          source = binaryCacheGet(key);
+        } catch (err) {
+          console.warn("driveDownload failed for", key, err);
+        }
+      }
+
+      // Negative-cache only definitive misses. A transient public-endpoint
+      // failure (rate limit, blip) must not poison the URL for 5 minutes for
+      // every visitor — let the next request retry instead.
+      if (!source && (hasExplicitDriveAuth || !publicFetchThrew)) {
         negativeCacheSet(key);
       }
+
       if (source) {
         const body = wantsWebp
           ? await toWebpBounded(key, source.data, source.mimeType)

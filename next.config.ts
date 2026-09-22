@@ -106,20 +106,6 @@ const nextConfig: NextConfig = {
         { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
       ],
     },
-    // Build output is only content-hashed in a production build. In dev the chunk
-    // URLs stay identical across edits, so marking them immutable made the browser
-    // keep running the pre-edit code and every local change looked like it never
-    // applied. Let the dev server manage its own caching.
-    ...(process.env.NODE_ENV === "production"
-      ? [
-          {
-            source: "/_next/static/(.*)",
-            headers: [
-              { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
-            ],
-          },
-        ]
-      : []),
   ],
 };
 

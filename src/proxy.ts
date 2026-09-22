@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   // Exactly one origin may serve the store: https://www.westhome.in. Every other
   // host that still resolves to this app is folded into it with a permanent
   // redirect - the bare apex, any *.onrender.com origin (this app answers there
