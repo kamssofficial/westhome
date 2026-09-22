@@ -1,16 +1,8 @@
 # CI gate for every push to main and every PR targeting main.
-#
-# Why this is not a deploy workflow anymore: production deploys are driven by
-# Cloudflare's native Git integration, not GitHub Actions. Running deploys from
-# Actions never worked here — the workflow failed on every run since Sep 19,
-# first because the `cloudflare/pages-action` was removed from the Marketplace
-# ("Unable to resolve action"), then because a CI deploy needs Actions secrets
-# that don't exist in this repository, and `@cloudflare/next-on-pages`
-# additionally requires every non-static route to export `runtime = 'edge'`.
-# Meanwhile real deploys kept shipping (this PR's guest checkout included).
-#
-# The job keeps the historical check name `deploy` so the existing required-ish
-# context on open PRs updates green instead of leaving a stale failure.
+# Production deploys are handled by Render's Git integration. This workflow only
+# verifies that the npm dependency graph, Prisma client generation, tests and
+# TypeScript compile cleanly before changes are considered healthy.
+
 name: CI
 
 on:
@@ -28,34 +20,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
-          run_install: false
-
-      # Node 22: the pure-logic tests import TypeScript libs directly and rely
-      # on Node's built-in type stripping (Node 20 throws ERR_UNKNOWN_FILE_EXTENSION).
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: pnpm
+          cache: npm
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: npm ci --legacy-peer-deps
 
       - name: Generate Prisma Client
-        run: pnpm db:generate
+        run: npx prisma generate
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
       - name: Tests
-        run: pnpm test
+        run: npm test
 
-      # Full-project typecheck. This exact gate would have caught the
-      # products.xml Response-vs-string type error that broke three Render
-      # deploys (and took the storefront down) before it ever deployed.
-      # Runs on CI's 7GB runner - the local sandbox can't fit tsc in 2GB.
       - name: Typecheck
         run: npx tsc --noEmit
