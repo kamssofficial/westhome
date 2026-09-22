@@ -33,7 +33,11 @@ async function serveGitHub(
         "X-GitHub-Api-Version": "2022-11-28",
         "User-Agent": "westhome-image-proxy",
       },
-      next: { revalidate: 3600 },
+      // The route has its own bounded in-memory cache. Do not also place raw
+      // Drive/GitHub binaries into Next's Data Cache: large product photos can
+      // exceed its 2 MB item limit and only generate noisy cache warnings.
+      cache: "no-store",
+      signal: AbortSignal.timeout(8000),
     },
   );
   if (!response.ok) return null;
@@ -51,7 +55,9 @@ async function downloadPublicDriveImage(
 ): Promise<{ data: Buffer; mimeType: string } | null> {
   const response = await fetch(`https://lh3.googleusercontent.com/d/${encodeURIComponent(fileId)}`, {
     headers: { Accept: "image/avif,image/webp,image/png,image/jpeg,image/*" },
-    next: { revalidate: 3600 },
+    // Keep large origin binaries out of Next's Data Cache; BINARY_CACHE below
+    // is the purpose-built cache for this proxy.
+    cache: "no-store",
   });
   if (!response.ok) return null;
   const mimeType = response.headers.get("content-type")?.split(";", 1)[0] || "";
