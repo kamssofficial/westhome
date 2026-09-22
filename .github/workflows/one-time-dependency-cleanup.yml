@@ -1,0 +1,52 @@
+name: One-time dependency cleanup
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Remove obsolete Cloudflare adapter and update Next.js
+        run: |
+          set -euo pipefail
+          npm pkg delete scripts.build:cf scripts.preview:cf
+          npm uninstall @cloudflare/next-on-pages wrangler --save-dev
+          npm install next@16.3.5 --save-exact
+          npm test
+          npx tsc --noEmit
+
+      - name: Commit dependency cleanup
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git commit -m "security(deps): remove obsolete cloudflare adapter and patch Next.js"
+          git push
+
+      - name: Remove one-time workflow
+        if: \${{ always() }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git pull --rebase origin main || true
+          if [ -f .github/workflows/one-time-dependency-cleanup.yml ]; then
+            git rm .github/workflows/one-time-dependency-cleanup.yml
+            git commit -m "chore: remove one-time dependency cleanup workflow" || true
+            git push || true
+          fi
