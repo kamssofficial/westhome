@@ -53,6 +53,12 @@ async function downloadPublicDriveImage(
     headers: { Accept: "image/avif,image/webp,image/png,image/jpeg,image/*" },
     next: { revalidate: 3600 },
   });
+  // Rate limits / server errors are TRANSIENT — signal them by throwing so the
+  // caller does not negative-cache the id. Only a clean 404 (or a 2xx response
+  // that is not an image) counts as a definitive miss.
+  if (response.status === 429 || response.status >= 500) {
+    throw new Error(`public Drive endpoint unavailable (HTTP ${response.status}) for ${fileId}`);
+  }
   if (!response.ok) return null;
   const mimeType = response.headers.get("content-type")?.split(";", 1)[0] || "";
   if (!mimeType.startsWith("image/")) return null;
@@ -268,7 +274,20 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: "Image not found" }, { status: 404 });
       }
       let source = binaryCacheGet(key);
-      if (!source) {
+      // Skip the authenticated download entirely when no Drive credential is
+      // configured. Without creds, buildAuth falls back to Application-Default
+      // Credentials, which takes ~9s to fail per cold image on hosts like
+      // Render — exactly the load spike that makes the public fallback below
+      // time out. The public endpoint does not need credentials.
+      const hasDriveCreds = Boolean(
+        (process.env.GOOGLE_OAUTH_CLIENT_ID &&
+          process.env.GOOGLE_OAUTH_CLIENT_SECRET &&
+          process.env.GOOGLE_OAUTH_REFRESH_TOKEN) ||
+          (process.env.GOOGLE_CREDENTIALS_PATH &&
+            fs.existsSync(process.env.GOOGLE_CREDENTIALS_PATH)) ||
+          process.env.GOOGLE_CREDENTIALS_JSON,
+      );
+      if (!source && hasDriveCreds) {
         try {
           const { data, mimeType } = await driveDownload(key);
           binaryCacheSet(key, data, mimeType || "image/png");
@@ -277,6 +296,7 @@ export async function GET(req: NextRequest) {
           console.warn("driveDownload failed for", key, err);
         }
       }
+      let downloadPublicDriveImageFailed = false;
       if (!source) {
         try {
           const publicImage = await downloadPublicDriveImage(key);
@@ -285,10 +305,15 @@ export async function GET(req: NextRequest) {
             source = binaryCacheGet(key);
           }
         } catch (err) {
+          downloadPublicDriveImageFailed = true;
           console.warn("public Drive image fallback failed for", key, err);
         }
       }
-      if (!source) {
+      // Only a definitive miss (no creds + the public endpoint could not serve
+      // it) may enter the negative cache. Transient public-endpoint failures
+      // (rate limits, blips) must NOT poison the URL for 5 minutes for every
+      // visitor — let the next request retry instead.
+      if (!source && (hasDriveCreds || !downloadPublicDriveImageFailed)) {
         negativeCacheSet(key);
       }
       if (source) {
