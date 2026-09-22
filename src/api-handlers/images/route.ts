@@ -288,8 +288,19 @@ export async function GET(req: NextRequest) {
         }
       }
 
-      // Authenticated fallback: needed for files that are not publicly readable.
-      if (!source) {
+      // Authenticated fallback: needed for private files, but only when
+      // explicit Google credentials are configured. Never invoke Google ADC
+      // implicitly from a public storefront request.
+      const hasExplicitDriveAuth =
+        Boolean(
+          process.env.GOOGLE_OAUTH_CLIENT_ID &&
+          process.env.GOOGLE_OAUTH_CLIENT_SECRET &&
+          process.env.GOOGLE_OAUTH_REFRESH_TOKEN
+        ) ||
+        Boolean(process.env.GOOGLE_CREDENTIALS_JSON) ||
+        Boolean(process.env.GOOGLE_CREDENTIALS_PATH);
+
+      if (!source && hasExplicitDriveAuth) {
         try {
           const { data, mimeType } = await driveDownload(key);
           binaryCacheSet(key, data, mimeType || "image/png");
