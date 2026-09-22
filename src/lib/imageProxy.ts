@@ -52,3 +52,10 @@ export const IMMUTABLE_MEDIA_CACHE =
 /** Standard cache headers for legacy committed files. */
 export const LEGACY_MEDIA_CACHE =
   "public, max-age=86400, s-maxage=2592000, stale-while-revalidate=86400";
+
+/**
+ * Media files that are no longer found (e.g. a deleted Drive file) must not be
+ * cached as immutable by shared CDNs — Cloudflare's default rules cache by
+ * extension, and a stale 404 would pin a re-uploaded photo as broken for days.
+ */
+export const NOT_FOUND_MEDIA_CACHE = "public, max-age=0, s-maxage=60, stale-while-revalidate=60";

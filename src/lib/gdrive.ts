@@ -206,6 +206,13 @@ async function uploadFile(
   const file = res.data;
   if (!file || !file.id) throw new Error("Drive upload returned no file id");
 
+  // The image proxy's fast path fetches files from the public Drive delivery
+  // host (lh3.googleusercontent.com/d/<id>), which only works for files that
+  // are link-readable. Service-account uploads are private by default, so
+  // grant an anonymous reader permission — without it every newly uploaded
+  // image 404s until an admin opens Drive and enables sharing manually.
+  await makeLinkReadable(drive, file.id);
+
   return {
     id: file.id,
     name: file.name,
@@ -214,6 +221,23 @@ async function uploadFile(
     size: file.size,
     mimeType: file.mimeType ?? mimeType,
   };
+}
+
+/**
+ * Grant "anyone with the link can view" on a Drive file. Best-effort: a
+ * workspace policy that blocks anonymous links must not fail the upload —
+ * the image proxy falls back to authenticated download in that case.
+ */
+async function makeLinkReadable(drive: Awaited<ReturnType<typeof driveClient>>, fileId: string): Promise<void> {
+  try {
+    await drive.permissions.create({
+      fileId,
+      requestBody: { role: "reader", type: "anyone" },
+      supportsAllDrives: true,
+    });
+  } catch (err) {
+    console.warn(`Could not grant link-sharing on Drive file ${fileId}:`, err);
+  }
 }
 
 /**

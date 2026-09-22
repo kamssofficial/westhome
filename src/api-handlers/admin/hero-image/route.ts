@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
     } catch (uploadErr: any) {
       console.error("Hero upload failed:", uploadErr?.message || uploadErr);
       const message = uploadErr?.message?.includes("Storage is not configured")
-        ? "Storage is not configured. Please try again later."
+        ? "Image storage is not configured on the server. Add GOOGLE_OAUTH_* (or GOOGLE_CREDENTIALS_JSON / GOOGLE_CREDENTIALS_PATH) to the production environment, then redeploy."
         : "Image upload failed. Please try again.";
       return NextResponse.json({ error: message }, { status: 503 });
     }
