@@ -1,0 +1,120 @@
+name: One-time final npm normalization
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  normalize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Normalize dependencies and locks
+        run: |
+          set -euo pipefail
+
+          npm pkg set \
+            "dependencies.next=16.3.5" \
+            "dependencies.@prisma/client=7.10.0" \
+            "dependencies.@prisma/adapter-pg=7.10.0" \
+            "devDependencies.prisma=7.10.0" \
+            "devDependencies.eslint-config-next=16.3.5"
+
+          npm pkg delete \
+            "devDependencies.@cloudflare/next-on-pages" \
+            "devDependencies.wrangler" \
+            "scripts.build:cf" \
+            "scripts.preview:cf" \
+            pnpm
+
+          npm pkg set \
+            "overrides.deepmerge-ts=8.0.0" \
+            "overrides.mysql2=3.24.4" \
+            "overrides.fast-uri=3.1.8" \
+            "overrides.js-yaml=4.3.2"
+
+          npm install --package-lock-only --legacy-peer-deps --ignore-scripts
+          npm ci --legacy-peer-deps
+          npx prisma generate
+          npm test
+          npx tsc --noEmit
+
+          echo "=== FULL NPM AUDIT ==="
+          npm audit
+
+      - name: Switch CI to npm and remove pnpm system
+        run: |
+          set -euo pipefail
+
+          cat > .github/workflows/cloudflare-pages.yml <<'YAML'
+          # CI gate for every push to main and every PR targeting main.
+          name: CI
+
+          on:
+            push:
+              branches: [main]
+            pull_request:
+              branches: [main]
+
+          jobs:
+            deploy:
+              runs-on: ubuntu-latest
+              permissions:
+                contents: read
+              steps:
+                - name: Checkout
+                  uses: actions/checkout@v4
+
+                - name: Setup Node.js
+                  uses: actions/setup-node@v4
+                  with:
+                    node-version: 22
+                    cache: npm
+
+                - name: Install dependencies
+                  run: npm ci --legacy-peer-deps
+
+                - name: Generate Prisma Client
+                  run: npx prisma generate
+                  env:
+                    DATABASE_URL: \${{ secrets.DATABASE_URL }}
+
+                - name: Tests
+                  run: npm test
+
+                - name: Typecheck
+                  run: npx tsc --noEmit
+          YAML
+
+          rm -f pnpm-lock.yaml pnpm-workspace.yaml
+
+      - name: Commit normalized production graph
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json .github/workflows/cloudflare-pages.yml
+          git add -A pnpm-lock.yaml pnpm-workspace.yaml
+          git commit -m "security(deps): normalize npm lock and CI"
+          git push
+
+      - name: Remove one-time workflow
+        if: \${{ always() }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+users.noreply.github.com"
+          git rm .github/workflows/one-time-final-npm-normalization.yml
+          git commit -m "chore: remove one-time npm normalization workflow" || true
+          git push || true
