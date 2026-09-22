@@ -5,8 +5,9 @@ import { storageStatus, uploadMedia } from "@/lib/media";
 
 export const runtime = "nodejs";
 
-// Vercel serverless functions reject request bodies over ~4.5 MB at the platform
-// level (before this handler runs), so the effective limit must stay below that.
+// Keep uploads moderate: the client-side uploader downscales photos well below
+// this limit, and every reverse proxy in front of the app (nginx client_max_body_size
+// etc.) is sized to match. See scripts/godaddy-deploy-check.mjs.
 const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 const ALLOWED_FOLDERS = ["products", "categories", "banners", "avatars", "homepage", "staff"];
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];

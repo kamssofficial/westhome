@@ -217,7 +217,7 @@ function binaryResponse(
   headers.set("Cache-Control", cacheControl);
   headers.set("Content-Length", String(data.byteLength));
   // The body depends on the client's Accept header (WebP vs the original), so
-  // every cache in front of this — including Vercel's edge — must key on it.
+  // every cache in front of this — CDN, proxy, or browser — must key on it.
   headers.append("Vary", "Accept");
   return new NextResponse(new Uint8Array(data), { headers });
 }

@@ -4,8 +4,9 @@ import bcrypt from "bcryptjs";
 import db from "./db";
 
 // In-memory rate limiter for login attempts (per phone/email).
-// In production on Vercel each isolate has its own map, so this is a best-effort
-// throttle — enough to slow brute-force without blocking legitimate users.
+// In production on serverless platforms each isolate has its own map, so this
+// is a best-effort throttle — enough to slow brute-force without blocking
+// legitimate users. The app is self-hosted, so the map is process-wide.
 const loginAttempts = new Map<string, { count: number; resetAt: number }>();
 const LOGIN_WINDOW_MS = 60_000; // 1 minute
 const LOGIN_MAX_ATTEMPTS = 8;
@@ -23,7 +24,7 @@ function checkLoginRateLimit(key: string): boolean {
 
 const configuredAuthBase = (process.env.AUTH_URL || process.env.NEXTAUTH_URL || "").toLowerCase();
 if (
-  (process.env.NODE_ENV === "production" || process.env.VERCEL_ENV === "production") &&
+  process.env.NODE_ENV === "production" &&
   configuredAuthBase &&
   configuredAuthBase.includes("vercel.app")
 ) {

@@ -2,8 +2,7 @@ import type { NextConfig } from "next";
 
 // A self-hosted GoDaddy (or other VPS/cPanel Passenger) deploy ships a
 // self-contained bundle at .next/standalone that runs with `node server.js`
-// and no node_modules tree. Vercel builds keep the default output format,
-// so leaving NEXT_OUTPUT_MODE unset changes nothing there.
+// and no node_modules tree. Set NEXT_OUTPUT_MODE=standalone at build time.
 const isStandalone = process.env.NEXT_OUTPUT_MODE === "standalone";
 
 const nextConfig: NextConfig = {
@@ -17,10 +16,10 @@ const nextConfig: NextConfig = {
   // client code ever ran. Dev-only setting; production ignores it.
   allowedDevOrigins: ["127.0.0.1"],
   images: {
-    // Vercel's hosted image optimizer currently returns 402
-    // OPTIMIZED_IMAGE_REQUEST_PAYMENT_REQUIRED on this deployment. Serve the
-    // existing local and remote image URLs directly so storefront images do
-    // not disappear when the optimizer quota/billing is unavailable.
+    // Serve the existing local and remote image URLs directly. The Google Drive
+    // proxy already delivers WebP at the right sizes, and bypassing the built-in
+    // optimizer avoids a second runtime image pipeline (and its sharp memory
+    // footprint) on the self-hosted box.
     unoptimized: true,
     formats: ["image/avif", "image/webp"],
     // Category tiles render local SVG placeholders through <Image>; the
@@ -45,8 +44,7 @@ const nextConfig: NextConfig = {
       source: "/(.*)",
       headers: [
         { key: "X-Frame-Options", value: "DENY" },
-        // Vercel injected this automatically; self-hosted hosts do not, so keep it
-        // explicit or the header silently disappears on a platform move.
+        // Kept explicit so the header survives any platform move.
         { key: "Strict-Transport-Security", value: "max-age=63072000" },
         { key: "X-Content-Type-Options", value: "nosniff" },
         { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
@@ -93,9 +91,9 @@ const nextConfig: NextConfig = {
     },
     // Next.js self-hosted serves prerendered HTML with `s-maxage=31536000`, which
     // only governs shared/CDN caches and leaves browsers on heuristic freshness.
-    // Vercel normalized HTML to no-cache; keep that behavior on every host so
-    // shoppers always get a fresh shell (product data loads client-side anyway).
-    // API routes and hashed static assets are excluded - they manage their own.
+    // Force no-cache so shoppers always get a fresh shell (product data loads
+    // client-side anyway). API routes and hashed static assets are excluded -
+    // they manage their own.
     {
       source: "/((?!api/|_next/|images/).*)",
       headers: [{ key: "Cache-Control", value: "public, max-age=0, must-revalidate" }],
