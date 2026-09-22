@@ -54,7 +54,8 @@ const STATUS_STEPS = ["NEW", "CONFIRMED", "PROCESSING", "SHIPPED", "OUT_FOR_DELI
 export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [order, setOrder] = useState<OrderDetail | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [reordering, setReordering] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
@@ -62,10 +63,21 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const addItem = useCartStore((s) => s.addItem);
 
   useEffect(() => {
+    setLoading(true);
+    setLoadFailed(false);
     fetch(`/api/orders/${id}`)
-      .then((r) => r.json())
-      .then((data) => setOrder(data.order))
-      .catch(console.error)
+      .then((r) => {
+        if (!r.ok) throw new Error(r.status === 404 ? "not found" : "failed");
+        return r.json();
+      })
+      .then((data) => {
+        if (!data?.order) throw new Error("not found");
+        setOrder(data.order);
+      })
+      .catch((err) => {
+        console.error(err);
+        setLoadFailed(true);
+      })
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -149,8 +161,14 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   if (!order) {
     return (
       <div className="container-shop py-20 text-center">
-        <h1 className="text-xl font-semibold mb-2">Order not found</h1>
-        <Link href="/account/orders" className="text-accent hover:underline text-sm">Back to Orders</Link>
+        <h1 className="text-xl font-semibold mb-2">{loadFailed ? "Couldn't load this order" : "Order not found"}</h1>
+        <p className="text-sm text-secondary mb-4">{loadFailed ? "Check your connection and try again." : "This order may have been removed or belongs to another account."}</p>
+        <div className="flex items-center justify-center gap-3">
+          {loadFailed && (
+            <button onClick={() => { setLoading(true); setLoadFailed(false); fetch(`/api/orders/${id}`).then((r) => { if (!r.ok) throw new Error(); return r.json(); }).then((data) => { if (data?.order) setOrder(data.order); else setLoadFailed(true); }).catch(() => setLoadFailed(true)).finally(() => setLoading(false)); }} className="text-sm bg-primary text-white px-4 py-2 rounded-full">Retry</button>
+          )}
+          <Link href="/account/orders" className="text-accent hover:underline text-sm">Back to Orders</Link>
+        </div>
       </div>
     );
   }

@@ -88,11 +88,16 @@ export default function CheckoutPage() {
 
   useEffect(() => { setMounted(true); }, []);
   useEffect(() => {
-    // Check for existing pending order to avoid duplicates on retry
-    // SECURITY: Only reuse if the order items match the current cart
+    // Check for existing pending order to avoid duplicates on retry.
+    // Runs once on mount: re-running on every cart mutation would re-bind the
+    // payment to a stale pending order whenever the customer edits their cart
+    // between placing an order and paying for it.
+    // SECURITY: Only reuse if the order items match the current cart.
+    let cancelled = false;
     fetch("/api/orders?status=NEW&limit=1")
-      .then((r) => r.json())
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("orders fetch failed"))))
       .then((data) => {
+        if (cancelled) return;
         const pending = data.orders?.[0];
         if (pending?.id && pending?.orderNumber && pending?.items) {
           // Compare order items with current cart items by productId+variantId+quantity
@@ -111,26 +116,36 @@ export default function CheckoutPage() {
         }
       })
       .catch(() => {});
-  }, [items]);
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   useEffect(() => {
-    fetch("/api/settings").then((r) => r.json()).then((d) => {
-      if (d.settings) { if (d.settings.freeDeliveryThreshold) setFreeThreshold(Number(d.settings.freeDeliveryThreshold)); if (d.settings.defaultDeliveryCharge) setDeliveryChargeRate(Number(d.settings.defaultDeliveryCharge)); }
-    }).catch(() => {});
+    fetch("/api/settings")
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("settings fetch failed"))))
+      .then((d) => {
+        if (d.settings) { if (d.settings.freeDeliveryThreshold) setFreeThreshold(Number(d.settings.freeDeliveryThreshold)); if (d.settings.defaultDeliveryCharge) setDeliveryChargeRate(Number(d.settings.defaultDeliveryCharge)); }
+      })
+      .catch(() => {});
   }, []);
   useEffect(() => {
     // Signed-in customers load saved addresses; guests fill in the inline form.
-    fetch("/api/auth/session").then((r) => r.json()).then((data) => {
+    fetch("/api/auth/session")
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("session fetch failed"))))
+      .then((data) => {
       if (data?.user?.email) {
         setUserEmail(data.user.email);
         setIsGuest(false);
-        return fetch("/api/addresses").then((r) => r.json()).then((addrData) => {
-          const addrs = addrData.addresses || []; setAddresses(addrs);
-          const preferred = addrs.find((a: Address) => a.isDefault) || addrs[0]; if (preferred) setSelectedAddress(preferred.id);
-        });
+        return fetch("/api/addresses")
+          .then((r) => (r.ok ? r.json() : Promise.reject(new Error("addresses fetch failed"))))
+          .then((addrData) => {
+            const addrs = addrData.addresses || []; setAddresses(addrs);
+            const preferred = addrs.find((a: Address) => a.isDefault) || addrs[0]; if (preferred) setSelectedAddress(preferred.id);
+          })
+          .catch(() => toast.error("Couldn't load your saved addresses. You can add one below or from your account."));
       }
       setIsGuest(true);
       return null;
-    }).catch(() => setIsGuest(true)).finally(() => setLoadingAddresses(false));
+    }).catch(() => { setIsGuest(true); }).finally(() => setLoadingAddresses(false));
   }, []);
 
   // ── Express checkout (?express=1 from the Buy Now button) ──

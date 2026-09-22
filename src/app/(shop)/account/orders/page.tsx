@@ -47,17 +47,27 @@ const STATUS_LABELS: Record<string, string> = {
 export default function OrdersPage() {
   const [activeTab, setActiveTab] = useState("All");
   const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadOrders = () => {
+    setLoading(true);
+    setLoadFailed(false);
     fetch("/api/orders")
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error("Failed to load orders");
+        return r.json();
+      })
       .then((data) => {
         setOrders(data.orders || []);
       })
-      .catch(() => {})
+      .catch(() => setLoadFailed(true))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadOrders();
   }, []);
 
   const handleCancel = async (orderId: string) => {
@@ -65,10 +75,15 @@ export default function OrdersPage() {
     setCancellingId(orderId);
     try {
       const res = await fetch(`/api/orders/${orderId}`, { method: "DELETE" });
+      const data = await res.json().catch(() => null);
       if (res.ok) {
         setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, status: "CANCELLED" } : o));
+      } else {
+        alert(data?.error || "Could not cancel this order.");
       }
-    } catch {} finally {
+    } catch {
+      alert("Could not cancel this order. Please try again.");
+    } finally {
       setCancellingId(null);
     }
   };
@@ -105,8 +120,12 @@ export default function OrdersPage() {
           [1, 2, 3].map((i) => (<div key={i} className="skeleton h-32 rounded-xl" />))
         ) : filtered.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-sm text-secondary">No orders found</p>
-            <Link href="/shop" className="text-sm text-accent hover:underline mt-2 inline-block">Start shopping</Link>
+            <p className="text-sm text-secondary">{loadFailed ? "Couldn't load your orders." : "No orders found"}</p>
+            {loadFailed ? (
+              <button onClick={loadOrders} className="text-sm text-accent hover:underline mt-2 inline-block">Try again</button>
+            ) : (
+              <Link href="/shop" className="text-sm text-accent hover:underline mt-2 inline-block">Start shopping</Link>
+            )}
           </div>
         ) : (
           filtered.map((order) => (
