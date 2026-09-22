@@ -6,9 +6,9 @@ import Providers from "@/components/layout/Providers";
 import ServiceWorkerRegistration from "@/components/ui/ServiceWorkerRegistration";
 
 // The production domain is the only correct base for canonical/OG URLs.
-// NEXTAUTH_URL must NOT drive metadataBase: on Vercel it is set to the
-// deployment host (e.g. westhome.vercel.app), which would corrupt every
-// canonical/og:url with a non-production host.
+// NEXTAUTH_URL must NOT drive metadataBase: hosting platforms can set it to
+// the deployment host, which would corrupt every canonical/og:url with a
+// non-production host.
 // NOTE: this MUST be the www host. Google indexes www.westhome.in; the bare
 // domain only 308-redirects there. A bare-domain canonical makes every page
 // "canonicalize to a redirect", which is a classic indexing suppressor.

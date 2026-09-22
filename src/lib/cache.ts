@@ -1,5 +1,5 @@
 // Simple in-memory cache with TTL support
-// For production, consider using Redis or Vercel KV
+// For production, consider using Redis if multiple instances ever share load
 
 interface CacheEntry<T> {
   data: T;

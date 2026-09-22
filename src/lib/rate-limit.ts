@@ -6,9 +6,10 @@
  *   const allowed = limiter.check(ip);
  *   if (!allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
  *
- * In production on Vercel, each instance has its own memory so limits are
- * per-isolate.  This is sufficient to slow brute-force attacks; for strict
- * global limits use Redis-backed rate limiting.
+ * On serverless platforms, each instance has its own memory so limits are
+ * per-isolate. This app is self-hosted (single long-lived Node process), so
+ * limits are global to the process. For strict multi-instance global limits
+ * use Redis-backed rate limiting.
  */
 
 interface RateLimitEntry {
