@@ -1,0 +1,105 @@
+name: One-time npm hardening and lock cleanup
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  harden:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Make npm the single package manager
+        run: |
+          set -euo pipefail
+
+          node <<'NODE'
+          const fs = require('fs');
+          const p = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+
+          p.dependencies.next = '16.3.5';
+          p.dependencies['@prisma/client'] = '7.10.0';
+          p.dependencies['@prisma/adapter-pg'] = '7.10.0';
+          p.devDependencies.prisma = '7.10.0';
+          p.devDependencies['eslint-config-next'] = '16.3.5';
+
+          delete p.devDependencies['@cloudflare/next-on-pages'];
+          delete p.devDependencies.wrangler;
+          delete p.scripts['build:cf'];
+          delete p.scripts['preview:cf'];
+          delete p.pnpm;
+
+          p.overrides = {
+            ...(p.overrides || {}),
+            'deepmerge-ts': '8.0.0',
+            mysql2: '3.24.4',
+            'fast-uri': '3.1.8',
+            'js-yaml': '4.3.2'
+          };
+
+          fs.writeFileSync('package.json', JSON.stringify(p, null, 2) + '\\n');
+          NODE
+
+          npm install --package-lock-only --legacy-peer-deps --ignore-scripts
+          npm ci --legacy-peer-deps
+          npx prisma generate
+          npm test
+          npx tsc --noEmit
+
+          echo "=== FULL NPM AUDIT ==="
+          npm audit
+
+      - name: Convert GitHub CI from pnpm to npm and remove obsolete files
+        run: |
+          set -euo pipefail
+
+          node <<'NODE'
+          const fs = require('fs');
+          const path = '.github/workflows/cloudflare-pages.yml';
+          let s = fs.readFileSync(path, 'utf8');
+
+          s = s.replace(/pnpm\\/setup-action@v4/g, 'actions/setup-node@v4');
+          s = s.replace(/pnpm install --frozen-lockfile/g, 'npm ci --legacy-peer-deps');
+          s = s.replace(/pnpm db:generate/g, 'npx prisma generate');
+          s = s.replace(/pnpm test/g, 'npm test');
+          s = s.replace(/npx tsc --noEmit/g, 'npx tsc --noEmit');
+
+          if (!s.includes('node-version: 22')) {
+            s = s.replace(/uses: actions\\/checkout@v4\\n/, 'uses: actions/checkout@v4\\n');
+          }
+
+          fs.writeFileSync(path, s);
+          NODE
+
+          rm -f pnpm-lock.yaml pnpm-workspace.yaml
+
+      - name: Commit final npm dependency hardening
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json .github/workflows/cloudflare-pages.yml
+          git add -A pnpm-lock.yaml pnpm-workspace.yaml
+          git commit -m "security(deps): make npm the single source of truth"
+          git push
+
+      - name: Remove one-time workflow
+        if: \${{ always() }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/one-time-npm-hardening-and-lock-cleanup.yml
+          git commit -m "chore: remove one-time npm hardening workflow" || true
+          git push || true
