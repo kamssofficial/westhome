@@ -1,13 +1,8 @@
-# Deploying Westhome on GoDaddy (moving off Vercel)
+# Self-hosting Westhome on GoDaddy
 
-The site currently returns `402 Payment Required / DEPLOYMENT_DISABLED` on Vercel, which
-means Vercel has paused the deployment at the account level. This document is the path to
-hosting it on GoDaddy instead.
-
-**Before you start:** un-pausing Vercel (add a payment method, upgrade, or contact
-`vercel.com/help`) is a five-minute fix, while this migration is a half-day job. They are
-not mutually exclusive — un-pausing gets the store back online today, and you can migrate
-deliberately afterwards without the shop being dark.
+Vercel hosting is retired — the project was paused at the account level and the store
+moved to free managed hosting first. This document is the self-hosted path: running the
+same app on a GoDaddy VPS (or any Ubuntu box) with full root control.
 
 ---
 
@@ -15,7 +10,7 @@ deliberately afterwards without the shop being dark.
 
 | Piece | Where it lives now | After the move |
 | --- | --- | --- |
-| Next.js app (storefront + admin + API) | Vercel | GoDaddy |
+| Next.js app (storefront + admin + API) | Managed free host | GoDaddy |
 | Database (Postgres) | Supabase (`*.pooler.supabase.com`) | **Unchanged** — nothing to migrate |
 | Product/media files | Google Drive + `public/` in git | **Unchanged** |
 | Domain + DNS | GoDaddy (`ns69/ns70.domaincontrol.com`) | GoDaddy, records repointed to the server |
@@ -33,7 +28,7 @@ Sign in at godaddy.com → **My Products**. Then:
 | --- | --- |
 | **VPS** (Linux, root/SSH) | ✅ Yes — use **Path A**. This is the only plan that runs the app exactly as it runs now. |
 | **Web Hosting Plus / cPanel** with a **Node.js version ≥ 20.9** in *Setup Node.js App* | ⚠️ Usually yes — use **Path B**, with caveats. |
-| **Shared hosting (Economy/Deluxe)** with no Node selector, or only Node 18 | ❌ No — Next.js 16 will not start. Use Path A, or keep Vercel for the app. |
+| **Shared hosting (Economy/Deluxe)** with no Node selector, or only Node 18 | ❌ No — Next.js 16 will not start. Use Path A. |
 | Only **Domains** | ❌ You need to buy hosting first. A VPS is the right tier for this app. |
 
 Also worth knowing: a GoDaddy VPS is the only plan where you get root, so it is the only
@@ -57,8 +52,8 @@ mkdir -p /var/www && cd /var/www
 git clone https://github.com/salmansahil2005/westhome.git
 cd westhome
 
-# 3. Secrets — copy the SAME values the Vercel project uses.
-#    Vercel dashboard > Project > Settings > Environment Variables.
+# 3. Secrets — copy the SAME values the managed host uses.
+#    Managed host dashboard > Project > Settings > Environment Variables.
 #    The preflight script checks every required one below.
 nano .env.production
 
@@ -171,7 +166,7 @@ required. It works, but Path A is less fragile.
 
 ## 5. Environment variables to carry over
 
-Copy the values from Vercel → Project → Settings → Environment Variables; these are the
+Copy the values from the managed host's dashboard (or `.env.example`); these are the
 ones the app reads (`npm run deploy:check` verifies them on the server):
 
 | Variable | Notes |
@@ -184,7 +179,7 @@ ones the app reads (`npm run deploy:check` verifies them on the server):
 | `NEXT_PUBLIC_WHATSAPP_NUMBER`, `NEXT_PUBLIC_APP_NAME` | Storefront contact/config |
 | `UPLOAD_DIR`, `MAX_FILE_SIZE` | `public/uploads`, `5242880` |
 | `GOOGLE_OAUTH_CLIENT_ID` / `_CLIENT_SECRET` / `_REFRESH_TOKEN` (or `GOOGLE_CREDENTIALS_JSON`) | Needed for admin uploads to reach Google Drive; without these, uploads fall back to local disk |
-| `GOOGLE_DRIVE_ROOT_FOLDER_ID` | Optional, same as Vercel |
+| `GOOGLE_DRIVE_ROOT_FOLDER_ID` | Optional |
 
 **Build-time gotcha:** `NEXT_PUBLIC_*` values are baked into the client bundle during
 `npm run build`. Set them *before* building — changing them later has no effect until the
@@ -194,10 +189,10 @@ next rebuild.
 
 ## 6. Switch DNS (and how to roll back)
 
-DNS lives at GoDaddy, so this is a record edit, not a transfer. Current values, for
-rollback:
+DNS lives at GoDaddy, so this is a record edit, not a transfer. Legacy Vercel values,
+kept for reference:
 
-| Type | Name | Current value (Vercel) |
+| Type | Name | Retired Vercel value |
 | --- | --- | --- |
 | `A` | `@` | `216.198.79.1` |
 | `CNAME` | `www` | `54711bde4adafc12.vercel-dns-017.com` |
@@ -241,9 +236,9 @@ A short `deploy.sh` with those six lines (plus `set -e`) is worth creating on th
 ## 8. Two things the move does not fix
 
 1. **Image weight.** `public/` holds ~720 MB of full-size PNGs (many 2.5–3.5 MB) and the
-   app serves them unoptimized. On GoDaddy that becomes your bandwidth bill instead of
-   Vercel's allowance — the same traffic pattern that triggered the pause will still be
-   expensive. Shrinking those images is the real fix, independent of host.
+   app serves them unoptimized. On a self-hosted box that becomes your bandwidth bill —
+   the same traffic pattern that strained the old host will still be expensive. Shrinking
+   those images is the real fix, independent of host.
 2. **Keeping Supabase and Drive.** Both are still external dependencies after the move.
    That is deliberate (it is what makes this migration cheap), but it means the app is
    still not fully self-hosted unless those are moved too.

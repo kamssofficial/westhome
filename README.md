@@ -231,22 +231,26 @@ Visit:
 
 ## Deployment
 
-### Vercel (Recommended)
+The store runs on free hosting only — no Vercel. A Node.js host that builds and serves
+with the framework defaults (`npm run build`, then `next start`; Node ≥ 20.9) is all it
+needs. Supabase (Postgres) and Google Drive (media) stay as-is across hosts.
 
-1. Push to GitHub
-2. Import in Vercel
-3. Set environment variables
-4. Deploy
+1. Push to GitHub — the host auto-builds from `main`
+2. Set environment variables from `.env.example`: `DATABASE_URL`, `NEXTAUTH_SECRET`,
+   `NEXTAUTH_URL`, `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET`, and the Google Drive
+   credentials (`GOOGLE_OAUTH_*` or `GOOGLE_CREDENTIALS_*`)
+3. Point `www.westhome.in` at the host (A/CNAME); the apex redirects to www in-app
+   (`src/proxy.ts`)
+4. Free tiers sleep when idle — `keep-warm.yml` pings `/api/health` to stay awake
+
+For a self-hosted VPS path (GoDaddy or any Ubuntu box), see `DEPLOY-GODADDY.md`.
 
 ### GoDaddy DNS
 
-When ready to connect `westhome.in`:
+When connecting `westhome.in`, add in GoDaddy DNS:
 
-1. Deploy to Vercel (or your hosting platform)
-2. In GoDaddy DNS settings, add:
-   - **A Record:** `@` → Vercel IP
-   - **CNAME Record:** `www` → `cname.vercel-dns.com`
-3. Add custom domain in Vercel
+- **A Record:** `@` → the host's IP
+- **CNAME Record:** `www` → the host's target
 
 ---
 

@@ -1,12 +1,14 @@
 import type { NextConfig } from "next";
 
-// A self-hosted GoDaddy (or other VPS/cPanel Passenger) deploy ships a
-// self-contained bundle at .next/standalone that runs with `node server.js`
-// and no node_modules tree. Set NEXT_OUTPUT_MODE=standalone at build time.
+// A self-hosted VPS/cPanel deploy ships a self-contained bundle at
+// .next/standalone that runs with `node server.js` and no node_modules tree.
+// Set NEXT_OUTPUT_MODE=standalone at build time for those. Managed hosts that
+// build and serve with the framework defaults (`next build` + `next start`)
+// must NOT get standalone output — `next start` refuses to serve it.
 const isStandalone = process.env.NEXT_OUTPUT_MODE === "standalone";
 
 const nextConfig: NextConfig = {
-  output: "standalone",
+  ...(isStandalone ? { output: "standalone" as const } : {}),
   serverExternalPackages: ["sharp"],
   devIndicators: false,
   // The dev server only serves dev assets (chunks, HMR, RSC payloads) to the

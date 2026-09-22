@@ -5,17 +5,16 @@ export async function proxy(request: NextRequest) {
   // Exactly one origin may serve the store: https://www.westhome.in. Every other
   // host that still resolves to this app is folded into it with a permanent
   // redirect - the bare apex, any *.onrender.com origin (this app answers there
-  // too), and the legacy *.vercel.app aliases from the old Vercel hosting.
-  // Doing this in the app rather than in a hosting dashboard keeps the canonical
-  // host stable across platform moves.
+  // too), and the legacy westhomebybmd.com aliases. Doing this in the app rather
+  // than in a hosting dashboard keeps the canonical host stable across platform
+  // moves.
   const host = request.nextUrl.hostname;
   const isCanonicalHost = host === "www.westhome.in";
   const isFoldableHost =
     host === "westhome.in" ||
     host === "westhomebybmd.com" ||
     host.endsWith(".westhomebybmd.com") ||
-    host.endsWith(".onrender.com") ||
-    host.endsWith(".vercel.app");
+    host.endsWith(".onrender.com");
   if (!isCanonicalHost && isFoldableHost) {
     const target = new URL(request.nextUrl.pathname + request.nextUrl.search, "https://www.westhome.in");
     return NextResponse.redirect(target, 301);
