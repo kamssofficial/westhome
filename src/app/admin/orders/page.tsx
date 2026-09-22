@@ -90,13 +90,21 @@ function AdminOrdersPageContent() {
         if (statusFilter) params.set("status", statusFilter);
 
         const res = await fetch(`/api/orders?${params.toString()}`);
+        if (res.status === 401 || res.status === 403) {
+          // Stale/expired session — bounce to login instead of a stuck empty table.
+          window.location.href = "/login";
+          return;
+        }
         if (res.ok) {
           const data = await res.json();
-          setOrders(data.orders);
-          setTotal(data.total);
+          setOrders(data.orders || []);
+          setTotal(data.total || 0);
+        } else {
+          toast.error("Failed to load orders");
         }
       } catch (err) {
         console.error(err);
+        toast.error("Failed to load orders");
       } finally {
         setLoading(false);
       }
@@ -201,7 +209,7 @@ function AdminOrdersPageContent() {
               ) : (
                 <tr>
                   <td colSpan={7} className="px-4 py-12 text-center text-text-muted">
-                    {loading ? "Loading..." : "No orders found"}
+                    No orders found
                   </td>
                 </tr>
               )}
