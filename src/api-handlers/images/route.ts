@@ -58,6 +58,7 @@ async function downloadPublicDriveImage(
     // Keep large origin binaries out of Next's Data Cache; BINARY_CACHE below
     // is the purpose-built cache for this proxy.
     cache: "no-store",
+    signal: AbortSignal.timeout(8000),
   });
   if (!response.ok) return null;
   const mimeType = response.headers.get("content-type")?.split(";", 1)[0] || "";
