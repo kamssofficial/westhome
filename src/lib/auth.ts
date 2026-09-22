@@ -22,15 +22,6 @@ function checkLoginRateLimit(key: string): boolean {
   return entry.count <= LOGIN_MAX_ATTEMPTS;
 }
 
-const configuredAuthBase = (process.env.AUTH_URL || process.env.NEXTAUTH_URL || "").toLowerCase();
-if (
-  process.env.NODE_ENV === "production" &&
-  configuredAuthBase &&
-  configuredAuthBase.includes("vercel.app")
-) {
-  process.env.AUTH_URL = "https://westhome.in";
-}
-
 declare module "next-auth" {
   interface Session {
     user: {
