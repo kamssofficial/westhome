@@ -38,11 +38,11 @@ jobs:
       - name: Keep pinging the storefront across the cron gap
         run: |
           set -euo pipefail
-          URL='https://www.westhome.in/api/products?limit=1'
+          URL='https://www.westhome.in/api/health'
           ok=0
           for i in $(seq 1 9); do
             code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 120 "$URL" || true)"
-            echo "ping $i/9: GET /api/products -> HTTP $code"
+            echo "ping $i/9: GET /api/health -> HTTP $code"
             if [ "$code" = "200" ]; then
               ok=1
             fi
