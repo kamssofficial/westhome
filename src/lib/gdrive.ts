@@ -88,11 +88,9 @@ async function buildAuth() {
     });
   }
 
-  // Fallback: application default credentials (gcloud/ADC).
-  const { google } = await import("googleapis");
-  return new google.auth.GoogleAuth({
-    scopes: [SCOPE_DRIVE],
-  });
+  throw new Error(
+    "Google Drive credentials are not configured. Set GOOGLE_OAUTH_CLIENT_ID/SECRET/REFRESH_TOKEN or GOOGLE_CREDENTIALS_JSON/PATH."
+  );
 }
 
 async function getAuth() {
