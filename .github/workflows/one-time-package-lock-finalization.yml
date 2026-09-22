@@ -1,0 +1,71 @@
+name: One-time package lock finalization
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Update package manifest and npm lock
+        run: |
+          set -euo pipefail
+
+          npm pkg set \
+            "dependencies.next=16.3.5" \
+            "dependencies.@prisma/client=7.10.0" \
+            "dependencies.@prisma/adapter-pg=7.10.0" \
+            "devDependencies.prisma=7.10.0" \
+            "devDependencies.eslint-config-next=16.3.5"
+
+          npm pkg delete \
+            "devDependencies.@cloudflare/next-on-pages" \
+            "devDependencies.wrangler" \
+            "scripts.build:cf" \
+            "scripts.preview:cf" \
+            pnpm
+
+          npm pkg set \
+            "overrides.deepmerge-ts=8.0.0" \
+            "overrides.mysql2=3.24.4" \
+            "overrides.fast-uri=3.1.8" \
+            "overrides.js-yaml=4.3.2"
+
+          npm install --package-lock-only --legacy-peer-deps --ignore-scripts
+          npm ci --legacy-peer-deps
+          npx prisma generate
+          npm test
+          npx tsc --noEmit
+          npm audit
+
+      - name: Commit dependency changes only
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git commit -m "security(deps): finalize npm dependency graph"
+          git push
+
+      - name: Remove one-time workflow
+        if: \${{ always() }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git.config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/one-time-package-lock-finalization.yml
+          git commit -m "chore: remove one-time package lock workflow" || true
+          git push || true
