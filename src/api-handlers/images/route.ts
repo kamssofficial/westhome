@@ -60,6 +60,12 @@ async function downloadPublicDriveImage(
     cache: "no-store",
     signal: AbortSignal.timeout(8000),
   });
+  // Rate limits / server errors are TRANSIENT — signal them by throwing so the
+  // caller does not negative-cache the id. Only a clean 404 (or a 2xx response
+  // that is not an image) counts as a definitive miss.
+  if (response.status === 429 || response.status >= 500) {
+    throw new Error(`public Drive endpoint unavailable (HTTP ${response.status}) for ${fileId}`);
+  }
   if (!response.ok) return null;
   const mimeType = response.headers.get("content-type")?.split(";", 1)[0] || "";
   if (!mimeType.startsWith("image/")) return null;
@@ -283,6 +289,7 @@ export async function GET(req: NextRequest) {
 
       // Fast path: public Drive delivery. This keeps storefront image serving
       // independent from GOOGLE_* credentials when a Drive file is link-readable.
+      let publicFetchThrew = false;
       if (!source) {
         try {
           const publicImage = await downloadPublicDriveImage(key);
@@ -291,7 +298,10 @@ export async function GET(req: NextRequest) {
             source = binaryCacheGet(key);
           }
         } catch (err) {
-          console.warn("public Drive image fallback failed for", key, err);
+          // Thrown = transient (429/5xx/timeout). Remember it so a blip is NOT
+          // negative-cached below — the next request should retry immediately.
+          publicFetchThrew = true;
+          console.warn("public Drive image fetch failed (transient) for", key, err);
         }
       }
 
@@ -317,7 +327,10 @@ export async function GET(req: NextRequest) {
         }
       }
 
-      if (!source) {
+      // Negative-cache only definitive misses. A transient public-endpoint
+      // failure (rate limit, blip) must not poison the URL for 5 minutes for
+      // every visitor — let the next request retry instead.
+      if (!source && (hasExplicitDriveAuth || !publicFetchThrew)) {
         negativeCacheSet(key);
       }
 

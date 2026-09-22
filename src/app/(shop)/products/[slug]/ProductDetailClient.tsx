@@ -15,11 +15,42 @@ import PriceDisplay from "@/components/ui/PriceDisplay";
 import { useCartStore } from "@/store/cart";
 import { trackEvent } from "@/components/ui/AnalyticsTracker";
 import { reportImageError } from "@/lib/reportImageError";
+import { useImageRetry } from "@/lib/useImageRetry";
 import { useWishlistStore } from "@/store/wishlist";
 import toast from "react-hot-toast";
 import type { ProductVariant } from "@/types";
 import { resolveProductImage } from "@/lib/categoryImages";
 import { basketSizeChartFor } from "@/lib/basketSizeChart";
+
+/** One gallery slide: silently retries transient proxy failures before
+ *  reporting (see useImageRetry). Lives outside the map loop because hooks
+ *  cannot be called inside callbacks/loops. */
+function GalleryImage({
+  image,
+  productId,
+  productName,
+  priority,
+}: {
+  image: { url: string; alt?: string | null };
+  productId: string;
+  productName: string;
+  priority: boolean;
+}) {
+  const [retrySrc, handleImgError] = useImageRetry(image.url, () =>
+    reportImageError({ url: image.url, productId, productName }),
+  );
+  return (
+    <Image
+      src={retrySrc || ""}
+      alt={image.alt || productName}
+      fill
+      className="object-cover"
+      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+      priority={priority}
+      onError={handleImgError}
+    />
+  );
+}
 
 
 interface ProductDetailProps {
@@ -258,14 +289,11 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
           >
             {images.map((image: any, i: number) => (
               <div key={i} className="min-w-full h-full relative snap-center shrink-0">
-                <Image
-                  src={image.url || ""}
-                  alt={image.alt || product.name}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                <GalleryImage
+                  image={image}
+                  productId={product.id}
+                  productName={product.name}
                   priority={i === 0}
-                  onError={() => reportImageError({ url: image.url, productId: product.id, productName: product.name })}
                 />
               </div>
             ))}
