@@ -21,7 +21,7 @@ async function serveGitHub(
 ): Promise<NextResponse | null> {
   const token = process.env.GITHUB_STORAGE_TOKEN || process.env.GITHUB_TOKEN;
   if (!token) return null;
-  const repository = process.env.GITHUB_STORAGE_REPO || "salmansahil2005/westhome";
+  const repository = process.env.GITHUB_STORAGE_REPO || "kamssofficial/westhome";
   const branch = process.env.GITHUB_STORAGE_BRANCH || "main";
   const apiPath = filePath.replace(/^github\//, "");
   const response = await fetch(
@@ -262,21 +262,20 @@ export async function GET(req: NextRequest) {
       if (githubResp) return githubResp;
     }
 
-    // Drive files are served via the authenticated API (no slash in the id).
+    // Drive files are served through the public image endpoint first. This is
+    // deliberately the fast path for storefront reads: product image URLs are
+    // already persisted as Drive file ids and public Drive delivery does not
+    // require OAuth/ADC credentials on the web service. The authenticated API
+    // remains the fallback for private/service-account-owned files and uploads.
     if (!key.includes("/")) {
       if (negativeCacheHas(key)) {
         return NextResponse.json({ error: "Image not found" }, { status: 404 });
       }
+
       let source = binaryCacheGet(key);
-      if (!source) {
-        try {
-          const { data, mimeType } = await driveDownload(key);
-          binaryCacheSet(key, data, mimeType || "image/png");
-          source = binaryCacheGet(key);
-        } catch (err) {
-          console.warn("driveDownload failed for", key, err);
-        }
-      }
+
+      // Fast path: public Drive delivery. This keeps storefront image serving
+      // independent from GOOGLE_* credentials when a Drive file is link-readable.
       if (!source) {
         try {
           const publicImage = await downloadPublicDriveImage(key);
@@ -288,9 +287,22 @@ export async function GET(req: NextRequest) {
           console.warn("public Drive image fallback failed for", key, err);
         }
       }
+
+      // Authenticated fallback: needed for files that are not publicly readable.
+      if (!source) {
+        try {
+          const { data, mimeType } = await driveDownload(key);
+          binaryCacheSet(key, data, mimeType || "image/png");
+          source = binaryCacheGet(key);
+        } catch (err) {
+          console.warn("driveDownload failed for", key, err);
+        }
+      }
+
       if (!source) {
         negativeCacheSet(key);
       }
+
       if (source) {
         const body = wantsWebp
           ? await toWebpBounded(key, source.data, source.mimeType)
