@@ -1,0 +1,98 @@
+name: One-time final dependency hardening
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  harden:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Normalize locks and apply safe transitive security fixes
+        env:
+          DATABASE_URL: \${{ secrets.DATABASE_URL }}
+        run: |
+          set -euo pipefail
+
+          node <<'NODE'
+          const fs = require('fs');
+          const p = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+
+          p.dependencies.next = '16.3.5';
+          p.dependencies['@prisma/client'] = '7.10.0';
+          p.dependencies['@prisma/adapter-pg'] = '7.10.0';
+          p.devDependencies.prisma = '7.10.0';
+          p.devDependencies['eslint-config-next'] = '16.3.5';
+
+          delete p.devDependencies['@cloudflare/next-on-pages'];
+          delete p.devDependencies.wrangler;
+          delete p.scripts['build:cf'];
+          delete p.scripts['preview:cf'];
+
+          p.overrides = {
+            ...(p.overrides || {}),
+            'deepmerge-ts': '8.0.0',
+            mysql2: '3.24.4',
+            'fast-uri': '3.1.8',
+            'js-yaml': '4.3.2'
+          };
+
+          p.pnpm = {
+            ...(p.pnpm || {}),
+            onlyBuiltDependencies: p.pnpm?.onlyBuiltDependencies || [],
+            overrides: {
+              ...(p.pnpm?.overrides || {}),
+              'deepmerge-ts': '8.0.0',
+              mysql2: '3.24.4',
+              'fast-uri': '3.1.8',
+              'js-yaml': '4.3.2'
+            }
+          };
+
+          fs.writeFileSync('package.json', JSON.stringify(p, null, 2) + '\\n');
+          NODE
+
+          corepack enable
+          corepack prepare pnpm@10.15.0 --activate
+
+          pnpm install --lockfile-only
+          npm install --package-lock-only --legacy-peer-deps --ignore-scripts
+
+          pnpm install --frozen-lockfile
+          pnpm exec prisma generate
+          pnpm test
+          pnpm exec tsc --noEmit
+
+          echo "=== FULL NPM AUDIT ==="
+          npm audit
+
+      - name: Commit normalized dependency graph
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json pnpm-lock.yaml
+          git commit -m "security(deps): harden transitive URI and YAML dependencies"
+          git push
+
+      - name: Remove one-time workflow
+        if: \${{ always() }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/one-time-final-dependency-hardening.yml
+          git commit -m "chore: remove one-time final dependency hardening workflow" || true
+          git push || true
