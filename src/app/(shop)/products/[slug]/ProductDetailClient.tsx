@@ -45,7 +45,7 @@ function GalleryImage({
       alt={image.alt || productName}
       fill
       className="object-cover"
-      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+      sizes="(max-width: 1024px) 100vw, 45vw"
       priority={priority}
       onError={handleImgError}
     />
@@ -270,8 +270,11 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
         </nav>
       </div>
 
-      {/* Main image */}
-      <div className="container-shop">
+      {/* Main image + product info: stacked on mobile; from lg up the gallery
+          sticks on the left while details scroll on the right — previously a
+          single mobile column stretched the square gallery ~1200px tall. */}
+      <div className="container-shop lg:grid lg:grid-cols-[1.05fr_1fr] lg:gap-12 lg:items-start">
+        <div className="lg:sticky lg:top-24">
         <div className="relative aspect-square bg-white rounded-2xl overflow-hidden group">
           {/* Scrollable track */}
           <div
@@ -315,9 +318,9 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
             </>
           )}
         </div>
-        {/* Image dots */}
+        {/* Image dots (mobile) + thumbnail rail (desktop) */}
         {images.length > 1 && (
-          <div className="flex items-center justify-center gap-1.5 mt-3">
+          <div className="flex items-center justify-center gap-1.5 mt-3 lg:hidden">
             {images.map((_, i) => (
               <button
                 key={i}
@@ -332,11 +335,30 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
             ))}
           </div>
         )}
-      </div>
+        {images.length > 1 && (
+          <div className="hidden lg:grid grid-cols-6 gap-2.5 mt-4">
+            {images.map((image, i) => (
+              <button
+                key={i}
+                onClick={() => handleScrollToImage(i)}
+                aria-label={`View image ${i + 1}`}
+                className={cn(
+                  "relative aspect-square rounded-xl overflow-hidden border-2 bg-white transition-all",
+                  i === selectedImageIndex
+                    ? "border-primary"
+                    : "border-transparent opacity-70 hover:opacity-100"
+                )}
+              >
+                <Image src={image.url} alt="" fill className="object-cover" sizes="90px" />
+              </button>
+            ))}
+          </div>
+        )}
+        </div>
 
       {/* Product Info */}
-      <div className="container-shop mt-4">
-        <h1 className="text-xl font-semibold text-primary leading-tight">{product.name}</h1>
+      <div className="mt-4 lg:mt-0">
+        <h1 className="text-xl lg:text-3xl font-semibold text-primary leading-tight">{product.name}</h1>
         <PriceDisplay regularPrice={selectedVariant ? Number(selectedVariant.price) : product.regularPrice} salePrice={selectedVariant ? (selectedVariant.salePrice ? Number(selectedVariant.salePrice) : null) : product.salePrice} size="lg" className="mt-1" />
 
         {/* Rating */}
@@ -950,6 +972,7 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
             </div>
           </div>
         )}
+      </div>
       </div>
     </div>
   );

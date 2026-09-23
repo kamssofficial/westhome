@@ -7,10 +7,9 @@ name: CI
 # lockfile, the production Next build compiles (which includes the TypeScript
 # pass), the unit suite and both QA audits pass, and ESLint runs.
 #
-# Deliberately NOT in CI: the Cloudflare Pages deploy. Deploy stays on Render,
-# which builds main itself; the deploy step here was unverifiable without
-# Cloudflare secrets ever having been set (the old workflow never got past job
-# setup to prove otherwise).
+# Deliberately NOT in CI: any deploy step. Deploys are handled by Freebuff
+# managed hosting (westhome.freebuff.app serving www.westhome.in); there is
+# no Cloudflare/Vercel/Render deploy to drive from here.
 
 on:
   push:
@@ -64,8 +63,14 @@ jobs:
       - name: Generate Prisma Client
         run: npx prisma generate
 
-      - name: Apply migrations to the CI database
-        run: npx prisma migrate deploy
+      - name: Push schema to the CI database
+        # The migration chain is not replayable from scratch (the baseline
+        # migration references tables the chain never creates — the schema has
+        # evolved via `prisma db push` since long before migrations were
+        # introduced, so `migrate deploy` fails on a fresh database with
+        # P3018 / relation "Product" does not exist). The workflow comment
+        # above already specifies a db-push database; make the step match it.
+        run: npx prisma db push --accept-data-loss
 
       - name: Build (includes TypeScript)
         run: npx next build

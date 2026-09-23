@@ -221,9 +221,17 @@ async function getProductsUncached(request: NextRequest) {
         return (priceA - priceB) * dir;
       });
     }
+    // Edge-cacheable for 30s + SWR: identical storefront catalog requests
+    // within half a minute share one origin computation. Admin writes call
+    // memoInvalidateCatalog() for the instance cache; the 30s CDN window only
+    // bounds out-of-band DB edits (price/stock changes appear within 30s).
+    // Admin views stay no-store so the admin list is always fresh after a save.
+    const EDGE_CACHE = isAdminView
+      ? "no-store, max-age=0"
+      : "public, s-maxage=30, stale-while-revalidate=120";
     return NextResponse.json(
       { products: filteredProducts, total: minRatingNum > 0 ? filteredProducts.length : total, page, totalPages: Math.ceil((minRatingNum > 0 ? filteredProducts.length : total) / limit) },
-      { headers: { "Cache-Control": "no-store, max-age=0" } }
+      { headers: { "Cache-Control": EDGE_CACHE } }
     );
   } catch (error) {
     console.error("GET /api/products error:", error);
@@ -244,7 +252,7 @@ export async function GET(request: NextRequest) {
   const key = `${NS.products}:${request.url}`;
   if (cacheable) {
     const cached = memoGet<unknown>(key);
-    if (cached) return NextResponse.json(cached, { headers: { "Cache-Control": "no-store, max-age=0" } });
+    if (cached) return NextResponse.json(cached, { headers: { "Cache-Control": "public, s-maxage=30, stale-while-revalidate=120" } });
   }
   const res = await getProductsUncached(request);
   if (cacheable && res.ok) {

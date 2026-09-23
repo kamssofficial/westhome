@@ -58,9 +58,14 @@ async function resolveCategoryImage(cat: CategoryTileSource): Promise<string | n
 
 export async function GET() {
   // 60-second memo cache: category tiles ship on every page load.
+  // The response is also edge-cacheable (60s + SWR): admin writes call
+  // memoInvalidateCatalog() for the instance cache, and a 60s CDN window is
+  // an acceptable lag for out-of-band DB edits — far better than forcing
+  // every shopper's category request through the origin on a cold start.
+  const EDGE_CACHE = "public, s-maxage=60, stale-while-revalidate=300";
   const cached = memoGet<{ categories: unknown }>(NS.categories);
   if (cached) {
-    return NextResponse.json(cached, { headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json(cached, { headers: { "Cache-Control": EDGE_CACHE } });
   }
   try {
     const categories = await db.category.findMany({
@@ -104,7 +109,7 @@ export async function GET() {
 
     const payload = { categories: transformed };
     memoSet(NS.categories, CATALOG_TTL_MS, payload);
-    return NextResponse.json(payload, { headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json(payload, { headers: { "Cache-Control": EDGE_CACHE } });
   } catch (error) {
     console.error("Categories API error:", error);
     return NextResponse.json({ categories: CATEGORIES });
