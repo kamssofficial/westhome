@@ -4,6 +4,7 @@ import db from "@/lib/db";
 import fs from "fs";
 import path from "path";
 import { CollectionContentClient } from "./CollectionContentClient";
+import { normalizeImageUrl } from "@/lib/categoryImages";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -102,6 +103,8 @@ async function getInitialProducts(categorySlug: string) {
     return {
       products: products.map((p: any) => ({
         ...p,
+        // Route legacy raw-Drive image URLs through the WebP proxy (display-only).
+        images: (p.images ?? []).map((img: any) => ({ ...img, url: normalizeImageUrl(img.url) })),
         regularPrice: Number(p.regularPrice),
         salePrice: p.salePrice ? Number(p.salePrice) : null,
         rating: p.reviews.length > 0 ? p.reviews.reduce((s: number, r: any) => s + r.rating, 0) / p.reviews.length : null,

@@ -5,8 +5,9 @@ import { storageStatus, uploadMedia } from "@/lib/media";
 
 export const runtime = "nodejs";
 
-// Vercel serverless functions reject request bodies over ~4.5 MB at the platform
-// level (before this handler runs), so the effective limit must stay below that.
+// Keep uploads moderate: the client-side uploader downscales photos well below
+// this limit, and every reverse proxy in front of the app (nginx client_max_body_size
+// etc.) is sized to match. See scripts/godaddy-deploy-check.mjs.
 const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 const ALLOWED_FOLDERS = ["products", "categories", "banners", "avatars", "homepage", "staff"];
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
@@ -19,7 +20,7 @@ export async function GET() {
       mode: process.env.NODE_ENV,
       recommendation: status.anyConfigured
         ? null
-        : "Configure GOOGLE_OAUTH_* (or GOOGLE_CREDENTIALS_PATH / GOOGLE_CREDENTIALS_JSON) in Vercel Production.",
+        : "Configure GOOGLE_OAUTH_* (or GOOGLE_CREDENTIALS_JSON / GOOGLE_CREDENTIALS_PATH) in the production environment.",
     },
   });
 }
@@ -29,11 +30,6 @@ export async function POST(request: NextRequest) {
   if (authResult.error) return authResult.error;
 
   try {
-    const contentLength = Number(request.headers.get("content-length"));
-    if (Number.isFinite(contentLength) && contentLength > MAX_UPLOAD_BYTES) {
-      return NextResponse.json({ error: "Image is too large. Maximum size is 4 MB." }, { status: 413 });
-    }
-
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
     const rawFolder = String(formData.get("folder") || "products");
@@ -55,7 +51,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error("Upload error:", error);
     const message = error?.message?.includes("Storage is not configured")
-      ? "Image storage is not configured. Add GOOGLE_OAUTH_* (or GOOGLE_CREDENTIALS_PATH / GOOGLE_CREDENTIALS_JSON) to Vercel Production."
+      ? "Image storage is not configured on the server. Add GOOGLE_OAUTH_* (or GOOGLE_CREDENTIALS_JSON / GOOGLE_CREDENTIALS_PATH) to the production environment, then redeploy."
       : "Upload failed. Please try again.";
     return NextResponse.json({ error: message }, { status: 503 });
   }

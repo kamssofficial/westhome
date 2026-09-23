@@ -15,10 +15,42 @@ import PriceDisplay from "@/components/ui/PriceDisplay";
 import { useCartStore } from "@/store/cart";
 import { trackEvent } from "@/components/ui/AnalyticsTracker";
 import { reportImageError } from "@/lib/reportImageError";
+import { useImageRetry } from "@/lib/useImageRetry";
 import { useWishlistStore } from "@/store/wishlist";
 import toast from "react-hot-toast";
 import type { ProductVariant } from "@/types";
 import { resolveProductImage } from "@/lib/categoryImages";
+import { basketSizeChartFor } from "@/lib/basketSizeChart";
+
+/** One gallery slide: silently retries transient proxy failures before
+ *  reporting (see useImageRetry). Lives outside the map loop because hooks
+ *  cannot be called inside callbacks/loops. */
+function GalleryImage({
+  image,
+  productId,
+  productName,
+  priority,
+}: {
+  image: { url: string; alt?: string | null };
+  productId: string;
+  productName: string;
+  priority: boolean;
+}) {
+  const [retrySrc, handleImgError] = useImageRetry(image.url, () =>
+    reportImageError({ url: image.url, productId, productName }),
+  );
+  return (
+    <Image
+      src={retrySrc || ""}
+      alt={image.alt || productName}
+      fill
+      className="object-cover"
+      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+      priority={priority}
+      onError={handleImgError}
+    />
+  );
+}
 
 
 interface ProductDetailProps {
@@ -66,7 +98,11 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
   useEffect(() => {
     if (product?.id) trackEvent("VIEW", { productId: product.id, categoryId: product.categoryId || undefined });
   }, [product?.id, product?.categoryId]);
-  const [openAccordion, setOpenAccordion] = useState<string | null>(null);
+  // The size chart opens by default when present — buyers pick a size by its
+  // dimensions, so show the table without requiring a tap.
+  const [openAccordion, setOpenAccordion] = useState<string | null>(
+    basketSizeChartFor(product?.slug) ? "sizechart" : null
+  );
   const [reviews, setReviews] = useState<any[]>(initialReviews || []);
   const [reviewAvg, setReviewAvg] = useState<number | null>(initialReviewAvg);
   const [realReviewCount, setRealReviewCount] = useState(initialReviewCount || 0);
@@ -145,6 +181,7 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
 
   // Use variant images if available, otherwise fall back to product images
   const variantImages = selectedVariant?.images?.length ? selectedVariant.images : [];
+  const sizeChart = basketSizeChartFor(product?.slug);
   const rawImages = variantImages.length > 0 ? variantImages : (product.images?.length ? product.images : []);
   const images = rawImages.map((image: any) => ({
     ...image,
@@ -252,14 +289,11 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
           >
             {images.map((image: any, i: number) => (
               <div key={i} className="min-w-full h-full relative snap-center shrink-0">
-                <Image
-                  src={image.url || ""}
-                  alt={image.alt || product.name}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                <GalleryImage
+                  image={image}
+                  productId={product.id}
+                  productName={product.name}
                   priority={i === 0}
-                  onError={() => reportImageError({ url: image.url, productId: product.id, productName: product.name })}
                 />
               </div>
             ))}
@@ -430,6 +464,57 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
 
         {/* Accordion sections */}
         <div className="mt-6 border-t border-border">
+          {/* Size chart: per-size dimensions from the supplier catalogue, for
+              products in the woven-basket families. Opens by default so the
+              buyer sees concrete H × W before choosing a size. */}
+          {sizeChart && (
+            <div className="border-b border-border">
+              <button
+                onClick={() => setOpenAccordion(openAccordion === "sizechart" ? null : "sizechart")}
+                className="w-full flex items-center justify-between py-4 text-sm font-medium text-primary"
+              >
+                Size &amp; Dimensions
+                <ChevronDown
+                  size={16}
+                  className={cn("transition-transform", openAccordion === "sizechart" && "rotate-180")}
+                />
+              </button>
+              <div
+                className={cn(
+                  "overflow-hidden transition-all duration-300",
+                  openAccordion === "sizechart" ? "max-h-96 pb-4" : "max-h-0"
+                )}
+              >
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-xs uppercase tracking-wide text-text-muted">
+                      <th className="py-1.5 pr-2 font-medium">Size</th>
+                      <th className="py-1.5 pr-2 font-medium">H × W (cm)</th>
+                      <th className="py-1.5 font-medium text-right">Price</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sizeChart.rows.map((row) => (
+                      <tr
+                        key={row.sku}
+                        className={cn(
+                          "border-t border-border/60",
+                          selectedVariant?.name === row.size && "font-semibold text-primary"
+                        )}
+                      >
+                        <td className="py-1.5 pr-2">{row.size}</td>
+                        <td className="py-1.5 pr-2 tabular-nums">{row.dims}</td>
+                        <td className="py-1.5 text-right tabular-nums">{formatPrice(row.price)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <p className="mt-2 text-xs text-text-muted">
+                  Handwoven — each piece may vary by 1–2 cm.
+                </p>
+              </div>
+            </div>
+          )}
           {/* Product Details */}
           <div className="border-b border-border">
             <button

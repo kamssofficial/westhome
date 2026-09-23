@@ -1,5 +1,6 @@
 import db from "@/lib/db";
 import { resolveProductImage } from "@/lib/categoryImages";
+import { memo, SEO_XML_TTL_MS, NS } from "@/lib/memoCache";
 
 /**
  * Google Merchant Center product feed (free Shopping listings).
@@ -18,7 +19,10 @@ import { resolveProductImage } from "@/lib/categoryImages";
 const SITE_URL = "https://www.westhome.in";
 const BRAND = "WEST HOME by BM Distributors";
 
-export const dynamic = "force-dynamic";
+// Regenerated at most once an hour (ISR). Recomputing per request was costing
+// a full catalog serialization on every fetch — multi-second responses on a
+// small origin. Merchant Center fetches daily; one-hour freshness is ample.
+export const revalidate = 3600;
 
 function xmlEscape(input: string): string {
   return input
@@ -76,6 +80,20 @@ type FeedProduct = {
 };
 
 export async function GET() {
+  const xml = await memo(`${NS.feed}:v1`, SEO_XML_TTL_MS, buildFeedXml);
+  return new Response(xml, {
+    status: 200,
+    headers: {
+      "Content-Type": "application/xml; charset=utf-8",
+      // Browsers: refetch hourly; shared/CDN cache: serve stale for a day
+      // while regenerating in the background, so crawls never block on origin.
+      "Cache-Control":
+        "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400",
+    },
+  });
+}
+
+async function buildFeedXml(): Promise<string> {
   let products: FeedProduct[] = [];
   try {
     // Same visibility rule as the sitemap and product pages: isActive only.
@@ -119,10 +137,9 @@ export async function GET() {
     });
   } catch (error) {
     console.error("products.xml: failed to load products", error);
-    return new Response(
-      `<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">\n<channel>\n<title>${BRAND}</title>\n<link>${SITE_URL}</link>\n<description>Product feed temporarily unavailable</description>\n</channel>\n</rss>`,
-      { status: 200, headers: { "Content-Type": "application/xml; charset=utf-8" } },
-    );
+    // buildFeedXml() returns a string; on DB failure emit an empty-channel feed
+    // (same shape as before — Merchant Center tolerates an empty feed).
+    return `<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">\n<channel>\n<title>${BRAND}</title>\n<link>${SITE_URL}</link>\n<description>Product feed temporarily unavailable</description>\n</channel>\n</rss>`;
   }
 
   const items: string[] = [];
@@ -238,7 +255,7 @@ export async function GET() {
     items.push(lines.join("\n"));
   }
 
-  const xml = [
+  return [
     `<?xml version="1.0" encoding="UTF-8"?>`,
     `<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">`,
     `  <channel>`,
@@ -249,13 +266,4 @@ export async function GET() {
     `  </channel>`,
     `</rss>`,
   ].join("\n");
-
-  return new Response(xml, {
-    status: 200,
-    headers: {
-      "Content-Type": "application/xml; charset=utf-8",
-      // Merchant Center fetches on a schedule; a short shared cache is fine.
-      "Cache-Control": "public, max-age=3600",
-    },
-  });
 }

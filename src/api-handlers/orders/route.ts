@@ -5,6 +5,12 @@ import { requireAdmin } from "@/lib/apiAuth";
 import { logAdminAction } from "@/lib/audit";
 import { restoreOrderStock } from "@/lib/inventory";
 import { notifyNewOrder } from "@/lib/notifications";
+import { rateLimit } from "@/lib/rate-limit";
+import { isGuestClaimEnabled, mintGuestClaimToken, verifyGuestClaimToken } from "@/lib/guestOrder";
+
+// Guest checkout abuse control: a small burst allowance per IP per window.
+// Authenticated customers are exempt — they are already rate-limited by auth.
+const guestOrderLimiter = rateLimit({ windowMs: 60_000, max: 5 });
 
 export async function GET(request: NextRequest) {
   try {
@@ -26,7 +32,16 @@ export async function GET(request: NextRequest) {
         where.userId = (session.user as any).id;
       }
     } else {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      // Guest order tracking: orderNumber + phone must both match, so a leaked
+      // order number alone reveals nothing and guessing is impractical.
+      const guestOrderNumber = searchParams.get("guestOrderNumber");
+      const guestPhone = (searchParams.get("guestPhone") || "").replace(/\D/g, "");
+      if (guestOrderNumber && guestPhone.length >= 10) {
+        where.orderNumber = guestOrderNumber;
+        where.customerPhone = { endsWith: guestPhone.slice(-10) };
+      } else {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
     }
     if (status) where.status = status;
     const [orders, total] = await Promise.all([
@@ -43,12 +58,18 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const isGuest = !session?.user;
+    if (isGuest) {
+      if (!isGuestClaimEnabled()) {
+        return NextResponse.json({ error: "Guest checkout is temporarily unavailable. Please sign in to place your order." }, { status: 503 });
+      }
+      if (!guestOrderLimiter.check(request)) {
+        return NextResponse.json({ error: "Too many order attempts. Please wait a minute and try again." }, { status: 429 });
+      }
     }
 
     const body = await request.json();
-    const userId = (session.user as any).id;
+    const userId: string | null = isGuest ? null : (session!.user as any).id;
 
     const {
       customerName,
@@ -78,6 +99,18 @@ export async function POST(request: NextRequest) {
     // Validate required fields
     if (!customerName || !customerPhone || !addressLine1 || !city || !state || !pinCode) {
       return NextResponse.json({ error: "Missing required address information" }, { status: 400 });
+    }
+
+    // Guests place orders with just contact + address details. The phone number
+    // is the primary contact channel and doubles (with the order number) as the
+    // guest order-lookup key; email is optional and only used for confirmations.
+    const phoneDigits = String(customerPhone || "").replace(/\D/g, "");
+    if (phoneDigits.length < 10 || phoneDigits.length > 13) {
+      return NextResponse.json({ error: "Please enter a valid phone number (10-digit mobile preferred)." }, { status: 400 });
+    }
+    const guestEmail = String(customerEmail || "").trim();
+    if (guestEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail)) {
+      return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
     }
 
     // SECURITY: Server-side price validation — recalculate from database
@@ -224,7 +257,7 @@ export async function POST(request: NextRequest) {
             userId,
             status: "NEW",
         customerName,
-        customerEmail,
+        customerEmail: guestEmail,
         customerPhone,
         addressLine1,
         addressLine2: addressLine2 || null,
@@ -290,7 +323,14 @@ export async function POST(request: NextRequest) {
     // Create notification (fire-and-forget)
     notifyNewOrder(order.id, orderNumber, customerName, finalTotal).catch(() => {});
 
-    return NextResponse.json({ order: { id: order.id, orderNumber: order.orderNumber } }, { status: 201 });
+    // Guests receive a one-time claim token bound to this order id. It authorizes
+    // payment for exactly this order and enables token-based order tracking.
+    const guestClaimToken = userId ? null : mintGuestClaimToken(order.id);
+
+    return NextResponse.json(
+      { order: { id: order.id, orderNumber: order.orderNumber, ...(guestClaimToken ? { guestClaimToken } : {}) } },
+      { status: 201 }
+    );
   } catch (error) {
     console.error("Order creation error:", error);
     return NextResponse.json({ error: "Failed to create order" }, { status: 500 });

@@ -3,6 +3,11 @@
 Everything automatable has been done. What's left needs **your browser login** —
 click-by-click below. Total time: ~45 min. Cost: ₹0.
 
+> **Superseded (2026-09-22):** Vercel is retired — the store runs on free managed
+> hosting, so the "send the Vercel appeal" section below no longer applies and is kept
+> only as history. Everything else in this document (Search Console, Merchant Center,
+> Business Profile) still applies.
+
 ## Already done (by Buffy)
 
 - ✅ SEO commit `b9d15c1` (www-canonical fix + `/products.xml` Merchant Center feed) — on GitHub

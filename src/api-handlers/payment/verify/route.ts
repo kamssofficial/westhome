@@ -3,7 +3,8 @@ import crypto from "crypto";
 import { Prisma } from "@prisma/client";
 import db from "@/lib/db";
 import { notifyLowStock, createNotification } from "@/lib/notifications";
-import { requireAuth } from "@/lib/auth";
+import { auth } from "@/lib/auth";
+import { verifyGuestClaimToken } from "@/lib/guestOrder";
 
 async function getRazorpay() {
   const keyId = process.env.RAZORPAY_KEY_ID;
@@ -13,7 +14,7 @@ async function getRazorpay() {
   return new Razorpay({ key_id: keyId, key_secret: keySecret });
 }
 
-async function verifyPaymentOnce(params: { orderId: string; razorpayOrderId: string; razorpayPaymentId: string; razorpaySignature: string; userId: string }) {
+async function verifyPaymentOnce(params: { orderId: string; razorpayOrderId: string; razorpayPaymentId: string; razorpaySignature: string; userId: string | null }) {
   const { orderId, razorpayOrderId, razorpayPaymentId, razorpaySignature, userId } = params;
   const expectedSignature = crypto.createHmac("sha256", process.env.RAZORPAY_KEY_SECRET || "").update(`${razorpayOrderId}|${razorpayPaymentId}`).digest("hex");
   const sigBuffer = Buffer.from(razorpaySignature || "", "utf8");
@@ -25,7 +26,9 @@ async function verifyPaymentOnce(params: { orderId: string; razorpayOrderId: str
   const [rpOrder, rpPayment] = await Promise.all([razorpay.orders.fetch(razorpayOrderId), razorpay.payments.fetch(razorpayPaymentId)]);
 
   const expectedOrder = await db.order.findUnique({ where: { id: orderId }, include: { payment: true } });
-  if (!expectedOrder || expectedOrder.userId !== userId) throw new Error("Forbidden");
+  if (!expectedOrder) throw new Error("Forbidden");
+  if (userId !== null && expectedOrder.userId !== userId) throw new Error("Forbidden");
+  if (userId === null && expectedOrder.userId !== null) throw new Error("Forbidden");
   if (!expectedOrder.payment) throw new Error("Payment record not found");
   if (expectedOrder.payment.razorpayOrderId !== razorpayOrderId) throw new Error("Razorpay order does not match this order");
   if (rpOrder.receipt !== expectedOrder.orderNumber) throw new Error("Razorpay receipt does not match this order");
@@ -77,20 +80,36 @@ async function verifyPaymentOnce(params: { orderId: string; razorpayOrderId: str
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await requireAuth();
+    // Guests (userId null) verify with the per-order claim token; signed-in
+    // customers verify through their session.
+    const session = await auth().catch(() => null);
     const body = await request.json();
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, orderId } = body;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, orderId, guestClaimToken, guestPhone } = body;
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !orderId) return NextResponse.json({ error: "Missing payment verification fields" }, { status: 400 });
 
-    const existingOrder = await db.order.findUnique({ where: { id: orderId }, select: { userId: true, paymentStatus: true, paymentId: true } });
+    const existingOrder = await db.order.findUnique({ where: { id: orderId }, select: { userId: true, customerPhone: true, paymentStatus: true, paymentId: true } });
     if (!existingOrder) return NextResponse.json({ error: "Order not found" }, { status: 404 });
-    if (!existingOrder.userId || existingOrder.userId !== session.user.id) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    let verifyingUserId: string | null;
+    if (existingOrder.userId) {
+      if (!session?.user || existingOrder.userId !== (session.user as any).id) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+      verifyingUserId = existingOrder.userId;
+    } else {
+      const tokenOk = verifyGuestClaimToken(orderId, guestClaimToken);
+      const phoneOk = typeof guestPhone === "string" && guestPhone.replace(/\D/g, "").slice(-10).length === 10 && existingOrder.customerPhone.replace(/\D/g, "").endsWith(guestPhone.replace(/\D/g, "").slice(-10));
+      if (!tokenOk || !phoneOk) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+      verifyingUserId = null;
+    }
     if (existingOrder.paymentStatus === "COMPLETED" && existingOrder.paymentId === razorpay_payment_id) return NextResponse.json({ verified: true, message: "Payment already verified" });
 
     let processedOrder;
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
-        processedOrder = await verifyPaymentOnce({ orderId, razorpayOrderId: razorpay_order_id, razorpayPaymentId: razorpay_payment_id, razorpaySignature: razorpay_signature, userId: session.user.id });
+        processedOrder = await verifyPaymentOnce({ orderId, razorpayOrderId: razorpay_order_id, razorpayPaymentId: razorpay_payment_id, razorpaySignature: razorpay_signature, userId: verifyingUserId });
         break;
       } catch (error) {
         if ((error as { code?: string } | null)?.code === "P2034" && attempt < 2) continue;

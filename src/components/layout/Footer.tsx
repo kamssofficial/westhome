@@ -20,6 +20,7 @@ const COMPANY_LINKS = [
   { label: "Blog", href: "/blog" },
 ];
 const POLICY_LINKS = [
+  { label: "Track order", href: "/track-order" },
   { label: "Privacy", href: "/policies/privacy" },
   { label: "Terms", href: "/policies/terms" },
   { label: "Shipping", href: "/policies/shipping" },

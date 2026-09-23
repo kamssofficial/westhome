@@ -6,9 +6,9 @@ import Providers from "@/components/layout/Providers";
 import ServiceWorkerRegistration from "@/components/ui/ServiceWorkerRegistration";
 
 // The production domain is the only correct base for canonical/OG URLs.
-// NEXTAUTH_URL must NOT drive metadataBase: on Vercel it is set to the
-// deployment host (e.g. westhome.vercel.app), which would corrupt every
-// canonical/og:url with a non-production host.
+// NEXTAUTH_URL must NOT drive metadataBase: hosting platforms can set it to
+// the deployment host, which would corrupt every canonical/og:url with a
+// non-production host.
 // NOTE: this MUST be the www host. Google indexes www.westhome.in; the bare
 // domain only 308-redirects there. A bare-domain canonical makes every page
 // "canonicalize to a redirect", which is a classic indexing suppressor.
@@ -57,6 +57,17 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  // Google Search Console URL-prefix verification via HTML meta tag. The token
+  // is issued per-property in GSC (Add property → HTML tag); it is a public
+  // value by design. Set NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION in the deploy
+  // environment (the "google-site-verification=<token>" string) and it goes
+  // live on every page after the next deploy — no DNS access required. This
+  // matters because the domain already carries an older Google TXT record in
+  // GoDaddy that belongs to a previous property; a meta-tag verification lets
+  // the current business account claim the site without touching DNS.
+  verification: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+    ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }
+    : undefined,
 };
 
 export const viewport: Viewport = {

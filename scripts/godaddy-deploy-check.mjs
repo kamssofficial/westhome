@@ -5,7 +5,7 @@
 //
 //   node scripts/godaddy-deploy-check.mjs      (or: npm run deploy:check)
 //
-// It checks the things that actually break the move off Vercel: the Node
+// It checks the things that actually break a self-hosted move: the Node
 // version, the runtime environment variables, database reachability (Supabase
 // stays exactly where it is), media-storage configuration, the upload
 // directory, and that the build output for your chosen output mode exists.

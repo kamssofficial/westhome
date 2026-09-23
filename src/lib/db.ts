@@ -14,8 +14,13 @@ function createPrismaClient(): PrismaClient {
     throw new Error("DATABASE_URL environment variable is not set");
   }
 
+  // Prisma 7's pg adapter defaults to a 10-connection pool. Keep the
+  // Render/pooled Postgres footprint deliberately small and bounded.
   const adapter = new PrismaPg({
     connectionString,
+    max: 3,
+    connectionTimeoutMillis: 15_000,
+    idleTimeoutMillis: 30_000,
     ssl: { rejectUnauthorized: false },
   });
 

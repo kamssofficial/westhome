@@ -37,7 +37,24 @@ async function driveClient(auth: Awaited<ReturnType<typeof getAuth>>) {
 
 const SCOPE_DRIVE = "https://www.googleapis.com/auth/drive";
 
-async function getAuth() {
+// Every image-proxy miss previously re-ran GoogleAuth construction (and for
+// service accounts, token fetching) before the download. Memoize the client
+// per credential shape so a gallery of cold images pays auth once, not per
+// file.
+let authPromise: Promise<Awaited<ReturnType<typeof buildAuth>>> | null = null;
+let authKey = "";
+
+function currentAuthKey(): string {
+  return [
+    process.env.GOOGLE_OAUTH_CLIENT_ID || "",
+    process.env.GOOGLE_OAUTH_CLIENT_SECRET ? "set" : "",
+    process.env.GOOGLE_OAUTH_REFRESH_TOKEN ? "set" : "",
+    process.env.GOOGLE_CREDENTIALS_PATH || "",
+    process.env.GOOGLE_CREDENTIALS_JSON ? "set" : "",
+  ].join("|");
+}
+
+async function buildAuth() {
   if (
     process.env.GOOGLE_OAUTH_CLIENT_ID &&
     process.env.GOOGLE_OAUTH_CLIENT_SECRET &&
@@ -71,11 +88,22 @@ async function getAuth() {
     });
   }
 
-  // Fallback: application default credentials (gcloud/ADC).
-  const { google } = await import("googleapis");
-  return new google.auth.GoogleAuth({
-    scopes: [SCOPE_DRIVE],
-  });
+  throw new Error(
+    "Google Drive credentials are not configured. Set GOOGLE_OAUTH_CLIENT_ID/SECRET/REFRESH_TOKEN or GOOGLE_CREDENTIALS_JSON/PATH."
+  );
+}
+
+async function getAuth() {
+  const key = currentAuthKey();
+  if (!authPromise || key !== authKey) {
+    authPromise = buildAuth();
+    authKey = key;
+    authPromise.catch(() => {
+      // Allow a retry on the next call if construction failed.
+      if (authKey === key) authPromise = null;
+    });
+  }
+  return authPromise;
 }
 
 // ---------------------------------------------------------------------------
@@ -178,6 +206,13 @@ async function uploadFile(
   const file = res.data;
   if (!file || !file.id) throw new Error("Drive upload returned no file id");
 
+  // The image proxy's fast path fetches files from the public Drive delivery
+  // host (lh3.googleusercontent.com/d/<id>), which only works for files that
+  // are link-readable. Service-account uploads are private by default, so
+  // grant an anonymous reader permission — without it every newly uploaded
+  // image 404s until an admin opens Drive and enables sharing manually.
+  await makeLinkReadable(drive, file.id);
+
   return {
     id: file.id,
     name: file.name,
@@ -186,6 +221,23 @@ async function uploadFile(
     size: file.size,
     mimeType: file.mimeType ?? mimeType,
   };
+}
+
+/**
+ * Grant "anyone with the link can view" on a Drive file. Best-effort: a
+ * workspace policy that blocks anonymous links must not fail the upload —
+ * the image proxy falls back to authenticated download in that case.
+ */
+async function makeLinkReadable(drive: Awaited<ReturnType<typeof driveClient>>, fileId: string): Promise<void> {
+  try {
+    await drive.permissions.create({
+      fileId,
+      requestBody: { role: "reader", type: "anyone" },
+      supportsAllDrives: true,
+    });
+  } catch (err) {
+    console.warn(`Could not grant link-sharing on Drive file ${fileId}:`, err);
+  }
 }
 
 /**

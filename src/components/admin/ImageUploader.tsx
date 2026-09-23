@@ -85,20 +85,28 @@ export default function ImageUploader({
           toast.error(`${file.name}: Please choose an image file`);
           continue;
         }
+        // Downscale first: large photos get re-encoded well below the 4 MB
+        // server limit, so the size check must run on the prepared file or
+        // otherwise-valid photos are rejected in the UI.
+        file = await prepareFile(file);
         if (file.size > 4 * 1024 * 1024) {
           toast.error(`${file.name}: Maximum file size is 4 MB`);
           continue;
         }
-        file = await prepareFile(file);
         try {
           const formData = new FormData();
           formData.append("file", file);
           formData.append("folder", folder);
 
-          const res = await fetch("/api/upload", {
+          let res = await fetch("/api/upload", {
             method: "POST",
             body: formData,
           });
+          // One-shot retry for transient network blips; validation and
+          // storage-config errors are returned as JSON and not retried.
+          if (!res.ok && !res.headers.get("content-type")?.includes("application/json")) {
+            res = await fetch("/api/upload", { method: "POST", body: formData });
+          }
 
           if (res.ok) {
             const data = await res.json();
@@ -112,11 +120,11 @@ export default function ImageUploader({
             });
           } else {
             const data = await res.json().catch(() => null);
-            const msg = data?.error || "Upload failed (storage not configured)";
+            const msg = data?.error || `Upload failed (${res.status})`;
             toast.error(`${file.name}: ${msg}`);
           }
         } catch {
-          toast.error(`Upload error — server may be unreachable`);
+          toast.error(`${file.name}: Upload error — server may be unreachable`);
         }
       }
 

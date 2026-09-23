@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
-import { requireAuth } from "@/lib/auth";
+import { auth } from "@/lib/auth";
+import { verifyGuestClaimToken } from "@/lib/guestOrder";
 
 async function getRazorpay() {
   const keyId = process.env.RAZORPAY_KEY_ID;
@@ -12,8 +13,10 @@ async function getRazorpay() {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await requireAuth();
-    const { orderId } = await request.json();
+    // Guests (userId null) authorize with the one-time claim token minted at
+    // order creation; signed-in customers authorize through their session.
+    const session = await auth().catch(() => null);
+    const { orderId, guestClaimToken } = await request.json();
     if (!orderId) return NextResponse.json({ error: "Order ID is required" }, { status: 400 });
 
     const order = await db.order.findUnique({
@@ -21,7 +24,11 @@ export async function POST(request: NextRequest) {
       include: { payment: true },
     });
     if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
-    if (!order.userId || order.userId !== session.user.id) {
+    if (order.userId) {
+      if (!session?.user || order.userId !== (session.user as any).id) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+    } else if (!verifyGuestClaimToken(order.id, guestClaimToken)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     if (order.status === "CANCELLED" || order.status === "REFUNDED") {

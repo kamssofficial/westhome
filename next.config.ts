@@ -1,13 +1,14 @@
 import type { NextConfig } from "next";
 
-// A self-hosted GoDaddy (or other VPS/cPanel Passenger) deploy ships a
-// self-contained bundle at .next/standalone that runs with `node server.js`
-// and no node_modules tree. Vercel builds keep the default output format,
-// so leaving NEXT_OUTPUT_MODE unset changes nothing there.
+// A self-hosted VPS/cPanel deploy ships a self-contained bundle at
+// .next/standalone that runs with `node server.js` and no node_modules tree.
+// Set NEXT_OUTPUT_MODE=standalone at build time for those. Managed hosts that
+// build and serve with the framework defaults (`next build` + `next start`)
+// must NOT get standalone output — `next start` refuses to serve it.
 const isStandalone = process.env.NEXT_OUTPUT_MODE === "standalone";
 
 const nextConfig: NextConfig = {
-  output: "standalone",
+  ...(isStandalone ? { output: "standalone" as const } : {}),
   serverExternalPackages: ["sharp"],
   devIndicators: false,
   // The dev server only serves dev assets (chunks, HMR, RSC payloads) to the
@@ -17,14 +18,11 @@ const nextConfig: NextConfig = {
   // client code ever ran. Dev-only setting; production ignores it.
   allowedDevOrigins: ["127.0.0.1"],
   images: {
-    // Drive-backed uploads are transcoded by /api/images, which needs to know
-    // the display width to emit a right-sized derivative — a 25vw product card
-    // was previously pulling a 2000px original. The custom loader appends that
-    // width instead of using Next's optimizer, which would fetch the proxy's
-    // output and re-encode it, paying for the same image twice on the origin.
-    // Note `unoptimized: true` must stay off: it bypasses the loader entirely.
-    loader: "custom",
-    loaderFile: "./src/lib/imageLoader.ts",
+    // Serve the existing local and remote image URLs directly. The Google Drive
+    // proxy already delivers WebP at the right sizes, and bypassing the built-in
+    // optimizer avoids a second runtime image pipeline (and its sharp memory
+    // footprint) on the self-hosted box.
+    unoptimized: true,
     formats: ["image/avif", "image/webp"],
     // Category tiles render local SVG placeholders through <Image>; the
     // optimizer rejects them without this. Only our own static SVGs are served.
@@ -48,8 +46,7 @@ const nextConfig: NextConfig = {
       source: "/(.*)",
       headers: [
         { key: "X-Frame-Options", value: "DENY" },
-        // Vercel injected this automatically; self-hosted hosts do not, so keep it
-        // explicit or the header silently disappears on a platform move.
+        // Kept explicit so the header survives any platform move.
         { key: "Strict-Transport-Security", value: "max-age=63072000" },
         { key: "X-Content-Type-Options", value: "nosniff" },
         { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
@@ -88,9 +85,7 @@ const nextConfig: NextConfig = {
     {
       source: "/api/(.*)",
       headers: [
-        // Must match layout.tsx SITE_URL: the site is served and indexed on www,
-        // so a bare-domain ACAO would not match the origin the browser sends.
-        { key: "Access-Control-Allow-Origin", value: "https://www.westhome.in" },
+        { key: "Access-Control-Allow-Origin", value: "https://westhome.in" },
         { key: "Access-Control-Allow-Methods", value: "GET, POST, PUT, PATCH, DELETE, OPTIONS" },
         { key: "Access-Control-Allow-Headers", value: "Content-Type, Authorization" },
         { key: "Access-Control-Max-Age", value: "86400" },
@@ -98,9 +93,9 @@ const nextConfig: NextConfig = {
     },
     // Next.js self-hosted serves prerendered HTML with `s-maxage=31536000`, which
     // only governs shared/CDN caches and leaves browsers on heuristic freshness.
-    // Vercel normalized HTML to no-cache; keep that behavior on every host so
-    // shoppers always get a fresh shell (product data loads client-side anyway).
-    // API routes and hashed static assets are excluded - they manage their own.
+    // Force no-cache so shoppers always get a fresh shell (product data loads
+    // client-side anyway). API routes and hashed static assets are excluded -
+    // they manage their own.
     {
       source: "/((?!api/|_next/|images/).*)",
       headers: [{ key: "Cache-Control", value: "public, max-age=0, must-revalidate" }],
@@ -111,20 +106,6 @@ const nextConfig: NextConfig = {
         { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
       ],
     },
-    // Build output is only content-hashed in a production build. In dev the chunk
-    // URLs stay identical across edits, so marking them immutable made the browser
-    // keep running the pre-edit code and every local change looked like it never
-    // applied. Let the dev server manage its own caching.
-    ...(process.env.NODE_ENV === "production"
-      ? [
-          {
-            source: "/_next/static/(.*)",
-            headers: [
-              { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
-            ],
-          },
-        ]
-      : []),
   ],
 };
 

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Search, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import toast from "react-hot-toast";
 
 interface Order { id: string; orderNumber: string; customerName: string; status: string; total: number; createdAt: string; items: { productName: string; quantity: number }[]; }
 
@@ -31,9 +32,15 @@ export default function StaffOrdersPage() {
       if (statusFilter) params.set("status", statusFilter);
       params.set("limit", "50");
       const res = await fetch(`/api/orders?${params.toString()}`);
-      const data = await res.json();
-      setOrders(data.orders || []);
-    } catch {} finally { setLoading(false); }
+      const data = await res.json().catch(() => null);
+      if (res.ok) {
+        setOrders(data?.orders || []);
+      } else {
+        toast.error(data?.error || "Failed to load orders");
+      }
+    } catch {
+      toast.error("Failed to load orders");
+    } finally { setLoading(false); }
   };
 
   useEffect(() => { fetchOrders(); }, [statusFilter]);
@@ -45,8 +52,16 @@ export default function StaffOrdersPage() {
         method: "PATCH", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
       });
-      if (res.ok) setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
-    } catch {} finally { setUpdatingId(null); }
+      const data = await res.json().catch(() => null);
+      if (res.ok) {
+        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+        toast.success("Order updated");
+      } else {
+        toast.error(data?.error || "Failed to update order");
+      }
+    } catch {
+      toast.error("Failed to update order");
+    } finally { setUpdatingId(null); }
   };
 
   return (
@@ -66,7 +81,7 @@ export default function StaffOrdersPage() {
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
             className="px-3 py-2.5 pr-8 bg-white border border-black/[.08] rounded-xl text-sm focus:outline-none appearance-none text-[#1a1917]">
             <option value="">All Status</option>
-            <option value="PENDING">Pending</option>
+            <option value="NEW">New</option>
             <option value="CONFIRMED">Confirmed</option>
             <option value="PROCESSING">Processing</option>
             <option value="SHIPPED">Shipped</option>
@@ -115,7 +130,7 @@ export default function StaffOrdersPage() {
                         <select value={order.status} onChange={(e) => updateStatus(order.id, e.target.value)}
                           disabled={updatingId === order.id}
                           className="px-2 py-1 pr-6 border border-black/[.08] rounded-lg text-xs focus:outline-none appearance-none bg-white text-[#1a1917]">
-                          <option value="PENDING">Pending</option>
+                          <option value="NEW">New</option>
                           <option value="CONFIRMED">Confirmed</option>
                           <option value="PROCESSING">Processing</option>
                           <option value="SHIPPED">Shipped</option>

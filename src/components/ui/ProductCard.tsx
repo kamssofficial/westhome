@@ -11,6 +11,7 @@ import toast from "react-hot-toast";
 import type { Product } from "@/types";
 import { resolveProductImage } from "@/lib/categoryImages";
 import { reportImageError } from "@/lib/reportImageError";
+import { useImageRetry } from "@/lib/useImageRetry";
 
 // Swatch hex per palette name (mirrors scripts/add-palette-tags.mjs NAMED palette)
 const COLOR_HEX: Record<string, string> = {
@@ -39,6 +40,12 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
     product.slug,
   );
   const discount = calculateDiscount(product.regularPrice, product.salePrice || 0);
+  // Silently retry transient proxy failures before showing the fallback /
+  // reporting (see useImageRetry — most "broken" images heal on retry 1).
+  const [retrySrc, handleImgError] = useImageRetry(displayImage, () => {
+    setImageError(true);
+    reportImageError({ url: displayImage, productId: product.id, productName: product.name });
+  });
   // Mirror the detail page's buyability exactly. Stock 0 is always out of
   // stock regardless of trackInventory. For variant products the variants
   // decide (e.g. basket set: product stock 0, S/M/L stocked = buyable; or
@@ -72,18 +79,15 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
       <div className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-card-hover transition-all duration-300">
         {/* Image */}
         <div className="relative aspect-square bg-surface-muted overflow-hidden">
-          {displayImage && !imageError ? (
+          {retrySrc && !imageError ? (
             <Image
-              src={displayImage}
+              src={retrySrc}
               alt={primaryImage?.alt || variantImage?.alt || product.name}
               fill
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
               className="object-cover group-hover:scale-105 transition-transform duration-500"
               priority={priority}
-              onError={() => {
-                setImageError(true);
-                reportImageError({ url: displayImage, productId: product.id, productName: product.name });
-              }}
+              onError={handleImgError}
             />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center text-text-muted">
