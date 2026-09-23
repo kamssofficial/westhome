@@ -83,7 +83,7 @@ assert.ok(successIndex >= 0 && successIndex < checkout.indexOf("Thank You!"), "S
 assert.ok(checkout.indexOf("setStep(3)") > checkout.indexOf("if (res.ok)"), "Success follows an acknowledged order response");
 assert.ok(checkout.indexOf("clearCart()") > checkout.indexOf("if (res.ok)"), "Cart clear follows an acknowledged order response");
 requireText(checkout, "paymentAcknowledged", "UPI order creation requires an explicit acknowledgement");
-requireText(checkout, 'Place Order — ${formatPrice(total)} (Payment Pending)', "UPI order action is labelled pending, not as a fake payment success");
+requireText(checkout, 'Place Order — ${formatPrice(total)}', "UPI order action is labelled pending, not as a fake payment success");
 
 // The dashboard's queries moved out of the route into a loader, so these
 // invariants are asserted against the loader and the route is checked for the

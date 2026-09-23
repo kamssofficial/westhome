@@ -6,7 +6,7 @@ const files = [
   "src/api-handlers/categories/route.ts",
   "src/lib/auth.ts",
   "src/lib/apiAuth.ts",
-  "src/middleware.ts",
+  "src/proxy.ts",
   "src/api-handlers/orders/route.ts",
   "src/api-handlers/admin/dashboard/route.ts",
 ];
@@ -26,7 +26,7 @@ if (!secureCookiePattern.test(auth)) throw new Error("Auth cookies must use secu
 if (auth.includes("secure: true") && !secureCookiePattern.test(auth)) throw new Error("Auth cookies hardcode secure:true instead of the NODE_ENV-conditional flag");
 if (!auth.includes("strategy: \"jwt\"")) throw new Error("JWT session strategy is required");
 
-const middleware = source["src/middleware.ts"];
+const middleware = source["src/proxy.ts"];
 if (!middleware.includes("role !== \"ADMIN\"")) throw new Error("Admin role boundary is missing");
 // Staff boundary evolved from a STAFF_ROLES constant to a local can([...]) helper;
 // accept either spelling so the check survives both.
