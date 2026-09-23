@@ -4,6 +4,11 @@ Premium mobile-first ecommerce platform for home décor and lifestyle products.
 
 **Live domain:** [www.westhome.in](https://www.westhome.in) (the bare domain 308s here)
 
+**Hosting:** Freebuff managed hosting — `www.westhome.in` (apex 307s to www) with
+`westhome.freebuff.app` as the platform URL. Prod-only env (`NEXTAUTH_URL`,
+`AUTH_URL`, `NEXT_PUBLIC_APP_URL`) is managed in the Freebuff deploy settings,
+not in `.env`. Legacy self-hosting path: see `DEPLOY-GODADDY.md`.
+
 ---
 
 ## Tech Stack
