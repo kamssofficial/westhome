@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
 import { auth } from "@/lib/auth";
 import db from "@/lib/db";
 
@@ -83,7 +84,6 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Verify password
-    const bcrypt = require("bcryptjs");
     const valid = await bcrypt.compare(body.password, user.passwordHash);
     if (!valid) {
       return NextResponse.json({ error: "Incorrect password" }, { status: 400 });

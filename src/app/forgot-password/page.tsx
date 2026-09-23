@@ -37,7 +37,7 @@ export default function ForgotPasswordPage() {
         <div className="text-center mb-8">
           <h1 className="text-xl font-serif">Reset Password</h1>
           <p className="text-sm text-secondary mt-1">
-            Enter your email address and we'll send you a link to reset your password.
+            Enter your email address and we&apos;ll send you a link to reset your password.
           </p>
         </div>
 
@@ -46,7 +46,7 @@ export default function ForgotPasswordPage() {
             <Mail size={32} className="text-accent mx-auto mb-3" />
             <h2 className="text-sm font-semibold text-primary mb-2">Check your email</h2>
             <p className="text-xs text-secondary mb-4">
-              We've sent a password reset link to <strong>{email}</strong>. Please check your inbox and follow the instructions.
+              We&apos;ve sent a password reset link to <strong>{email}</strong>. Please check your inbox and follow the instructions.
             </p>
             <Link href="/login" className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary text-white rounded-full text-sm font-medium">
               Return to Sign In

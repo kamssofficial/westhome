@@ -350,7 +350,7 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
           {customerOrders.length > 0 && (
             <div className="bg-surface rounded-[1.35rem] border border-border p-5">
               <h2 className="font-semibold text-sm mb-4 flex items-center gap-2">
-                <Eye size={14} /> Customer's Other Orders ({customerOrders.length})
+                <Eye size={14} /> Customer&apos;s Other Orders ({customerOrders.length})
               </h2>
               <div className="space-y-2">
                 {customerOrders.map((co) => (

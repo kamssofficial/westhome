@@ -702,7 +702,7 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
                 onClick={() => setOpenAccordion(openAccordion === "packaging" ? null : "packaging")}
                 className="w-full flex items-center justify-between py-4 text-sm font-medium text-primary"
               >
-                What's in the Box
+                What&apos;s in the Box
                 <ChevronDown
                   size={16}
                   className={cn("transition-transform", openAccordion === "packaging" && "rotate-180")}
