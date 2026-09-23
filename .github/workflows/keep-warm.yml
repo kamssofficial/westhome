@@ -1,24 +1,23 @@
-# Keeps the Render free-tier instance awake. Free instances spin down after
-# 15 minutes without inbound traffic and then take ~60s to wake; the storefront
-# then hangs or 502s for real shoppers. A recurring ping resets the idle timer
-# and wakes it. Free on GitHub because this repository is public. Note that
-# GitHub disables scheduled workflows on repos with no activity for 60 days -
-# any commit (even to a docs file) resets that clock.
+# Uptime check for the Freebuff managed deployment.
 #
-# Why the staggered loop: GitHub defers schedule crons under load, so the
-# */10 cron actually fires every 2-3 hours - far longer than the 15-minute
-# sleep timeout, so the instance still went to sleep between runs and shoppers
-# hit 502/503 windows (observed Sep 21). A single run can't change the cron
-# schedule, but it CAN spread its own pings across the gap: each run performs
-# 9 pings roughly 20 minutes apart (~2.5h of coverage per run), succeeding if
-# ANY ping gets a 200 and failing only when every ping failed. Combined with
-# the deferred 2-3h schedule this keeps the instance warm continuously.
+# History: this workflow was "Keep warm" — it pinged the storefront every few
+# minutes because the old Render free-tier instance spun down after 15 idle
+# minutes and took ~60s to wake. The store now runs on Freebuff managed
+# hosting (www.westhome.in), which serves from an always-on edge and never
+# sleeps, so warm-keeping is obsolete.
 #
-# Durable fix: an external uptime monitor (e.g. UptimeRobot free tier, 5-minute
-# HTTP checks) pinging https://www.westhome.in/api/products?limit=1 keeps the
-# instance permanently warm independent of GitHub's scheduler.
+# The schedule is kept as an uptime ALARM: if the storefront stops returning
+# 200, the run fails and the repo shows a red X as the signal. GitHub defers
+# schedule crons under load (fires every 2-3h instead of every 10 min); a
+# couple of spaced retries inside the run avoid false alarms from a transient
+# blip or a mid-deploy window. For continuous 5-minute monitoring, point a
+# free external uptime monitor (e.g. UptimeRobot) at
+# https://www.westhome.in/api/health.
+#
+# Note: GitHub disables scheduled workflows on repos with no activity for 60
+# days — any commit (even to a docs file) resets that clock.
 
-name: Keep warm
+name: Uptime check
 
 on:
   schedule:
@@ -28,32 +27,28 @@ on:
 permissions: {}
 
 concurrency:
-  group: keep-warm
+  group: uptime-check
   cancel-in-progress: true
 
 jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Keep pinging the storefront across the cron gap
+      - name: Verify the storefront answers
         run: |
           set -euo pipefail
           URL='https://www.westhome.in/api/health'
           ok=0
-          for i in $(seq 1 9); do
-            code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 120 "$URL" || true)"
-            echo "ping $i/9: GET /api/health -> HTTP $code"
+          for i in 1 2 3; do
+            code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 60 "$URL" || true)"
+            echo "attempt $i/3: GET /api/health -> HTTP $code"
             if [ "$code" = "200" ]; then
               ok=1
+              break
             fi
-            # 20-minute stagger: covers the cron-deferral gap (15 min idle
-            # timeout on the instance), and a 502/503 usually means the
-            # instance is mid-wake, so the next ping catches it up.
-            if [ "$i" -lt 9 ]; then
-              sleep 1200
-            fi
+            [ "$i" -lt 3 ] && sleep 30
           done
           if [ "$ok" != "1" ]; then
-            echo "storefront never returned 200 across all 9 pings"
+            echo "storefront never returned 200 — the Freebuff deployment looks down"
             exit 1
           fi

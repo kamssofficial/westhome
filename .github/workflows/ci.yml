@@ -7,10 +7,9 @@ name: CI
 # lockfile, the production Next build compiles (which includes the TypeScript
 # pass), the unit suite and both QA audits pass, and ESLint runs.
 #
-# Deliberately NOT in CI: the Cloudflare Pages deploy. Deploy stays on Render,
-# which builds main itself; the deploy step here was unverifiable without
-# Cloudflare secrets ever having been set (the old workflow never got past job
-# setup to prove otherwise).
+# Deliberately NOT in CI: any deploy step. Deploys are handled by Freebuff
+# managed hosting (westhome.freebuff.app serving www.westhome.in); there is
+# no Cloudflare/Vercel/Render deploy to drive from here.
 
 on:
   push:
