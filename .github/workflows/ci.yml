@@ -71,7 +71,7 @@ jobs:
         # introduced, so `migrate deploy` fails on a fresh database with
         # P3018 / relation "Product" does not exist). The workflow comment
         # above already specifies a db-push database; make the step match it.
-        run: npx prisma db push --skip-generate --accept-data-loss
+        run: npx prisma db push --accept-data-loss
 
       - name: Build (includes TypeScript)
         run: npx next build
