@@ -27,11 +27,27 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
-      # The production build reads these at build time; only placeholders are
-      # needed to compile (no DB connection is made during `next build`).
-      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+      # A hermetic database: the static build's generateStaticParams, the
+      # image audit and qa:regression all read the DB. Schema comes from
+      # prisma db push (no seed needed — every build-time query tolerates an
+      # empty database).
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/westhome
       NEXTAUTH_SECRET: ci-secret
       NEXTAUTH_URL: https://www.westhome.in
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: westhome
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -47,6 +63,9 @@ jobs:
 
       - name: Generate Prisma Client
         run: npx prisma generate
+
+      - name: Apply migrations to the CI database
+        run: npx prisma migrate deploy
 
       - name: Build (includes TypeScript)
         run: npx next build
