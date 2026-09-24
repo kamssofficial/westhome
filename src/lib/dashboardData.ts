@@ -70,14 +70,157 @@ export async function loadDashboardData(range: string) {
     const now = new Date();
     const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
     const weekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);    // ── Parallel wave 1 ──
+    // Every query below is independent of every other one, so they are issued
+    // together. The database is remote (Supabase pooler), so each round trip
+    // costs ~150ms; running them one after another made the dashboard take
+    // 6-8s. Fanning them out turns ~30 serial round trips into one wave.
+    const customerFilter = { OR: [{ role: "CUSTOMER" as const }, { orders: { some: {} } }], isActive: true };
+    const fiveMinAgo = new Date(now.getTime() - 5 * 60 * 1000);
+    const days = range === "today" ? 1 : range === "7d" ? 7 : range === "90d" ? 90 : 30;
+    const chartStart = new Date(now.getTime() - (days - 1) * 24 * 60 * 60 * 1000);
+    chartStart.setHours(0, 0, 0, 0);
 
-    // ── Revenue & Orders ──
-    const [revenueData, prevRevenueData, totalOrders, prevTotalOrders] = await Promise.all([
+    const [
+      revenueData, prevRevenueData, totalOrders, prevTotalOrders,
+      statusCounts, ordersToday, weekOrders, monthOrders,
+      unitsData, prevUnitsData,
+      totalCustomers, newCustomers, prevNewCustomers,
+      totalProducts, activeProducts, outOfStock, lowStockProductsAtRisk,
+      productsSold,
+      refundCount, cancelledCount, pendingPayments,
+      liveSessions, liveDevices,
+      eventCounts,
+      topByRevenue, topByViews, topByWishlist, topByCart,
+      chartOrders,
+      categories, categorySales, categoryProductCounts,
+      customerOrders,
+      geoDataRaw,
+      recentOrders, recentPayments, recentUsers,
+      searchEvents,
+      devices,
+      totalWishlist, wishlistToday,
+      uniqueVisitorsRows,
+      paymentSuccess, paymentFailed,
+    ] = await Promise.all([
+      // Revenue & orders
       db.order.aggregate({ _sum: { total: true }, _count: { id: true }, where: { paymentStatus: "COMPLETED", createdAt: sinceClause } }),
       db.order.aggregate({ _sum: { total: true }, _count: { id: true }, where: { paymentStatus: "COMPLETED", createdAt: { gte: prevStart, lte: prevEnd } } }),
       db.order.count({ where: { createdAt: sinceClause } }),
       db.order.count({ where: { createdAt: { gte: prevStart, lte: prevEnd } } }),
+
+      // Order status breakdown + order counts
+      db.order.groupBy({ by: ["status"], _count: { id: true }, where: { createdAt: sinceClause } }),
+      db.order.count({ where: { createdAt: { gte: todayStart } } }),
+      db.order.count({ where: { createdAt: { gte: weekStart } } }),
+      db.order.count({ where: { createdAt: { gte: monthStart } } }),
+
+      // Units sold
+      db.orderItem.aggregate({ _sum: { quantity: true }, where: { order: { createdAt: sinceClause, paymentStatus: "COMPLETED" } } }),
+      db.orderItem.aggregate({ _sum: { quantity: true }, where: { order: { createdAt: { gte: prevStart, lte: prevEnd }, paymentStatus: "COMPLETED" } } }),
+
+      // Customers
+      db.user.count({ where: customerFilter }),
+      db.user.count({ where: { ...customerFilter, createdAt: sinceClause } }),
+      db.user.count({ where: { ...customerFilter, createdAt: { gte: prevStart, lte: prevEnd } } }),
+
+      // Products
+      db.product.count(),
+      db.product.count({ where: { status: "ACTIVE" } }),
+      db.product.count({ where: { trackInventory: true, stockQuantity: 0 } }),
+      db.product.findMany({ where: { trackInventory: true, stockQuantity: { gt: 0, lte: 5 } }, select: { id: true, name: true, stockQuantity: true, lowStockThreshold: true }, take: 50 }),
+
+      // Products sold (distinct)
+      db.orderItem.groupBy({ by: ["productId"], where: { order: { createdAt: sinceClause, paymentStatus: "COMPLETED" } } }),
+
+      // Refunds / cancelled / pending
+      db.order.count({ where: { paymentStatus: "REFUNDED", createdAt: sinceClause } }),
+      db.order.count({ where: { status: "CANCELLED", createdAt: sinceClause } }),
+      db.order.count({ where: { paymentStatus: "PENDING", createdAt: sinceClause } }),
+
+      // Live sessions
+      db.liveSession.count({ where: { lastActive: { gte: fiveMinAgo }, isStaff: false } }),
+      db.liveSession.groupBy({ by: ["deviceType"], _count: { id: true }, where: { lastActive: { gte: fiveMinAgo }, isStaff: false } }),
+
+      // Analytics events
+      db.analyticsEvent.groupBy({ by: ["eventType"], _count: { id: true }, where: { createdAt: sinceClause } }),
+
+      // Top products
+      db.orderItem.groupBy({
+        by: ["productId"], _sum: { totalPrice: true, quantity: true }, _count: { id: true },
+        where: { order: { createdAt: sinceClause, paymentStatus: "COMPLETED" } },
+        orderBy: { _sum: { totalPrice: "desc" } }, take: 10,
+      }),
+      db.analyticsEvent.groupBy({
+        by: ["productId"], _count: { id: true },
+        where: { eventType: { in: ["VIEW", "PRODUCT_VIEW"] }, productId: { not: null }, createdAt: sinceClause },
+        orderBy: { _count: { id: "desc" } }, take: 10,
+      }),
+      db.analyticsEvent.groupBy({
+        by: ["productId"], _count: { id: true },
+        where: { eventType: { in: ["WISHLIST_ADD", "WISHLIST"] }, productId: { not: null }, createdAt: sinceClause },
+        orderBy: { _count: { id: "desc" } }, take: 10,
+      }),
+      db.analyticsEvent.groupBy({
+        by: ["productId"], _count: { id: true },
+        where: { eventType: "ADD_TO_CART", productId: { not: null }, createdAt: sinceClause },
+        orderBy: { _count: { id: "desc" } }, take: 10,
+      }),
+
+      // Revenue over time
+      db.order.findMany({
+        where: { paymentStatus: "COMPLETED", createdAt: { gte: chartStart, lte: now } },
+        select: { total: true, createdAt: true },
+      }),
+
+      // Category analytics
+      db.category.findMany({ select: { id: true, name: true, slug: true } }),
+      db.orderItem.groupBy({
+        by: ["productId"],
+        _count: { id: true },
+        _sum: { totalPrice: true, quantity: true },
+        where: { order: { createdAt: sinceClause, paymentStatus: "COMPLETED" } },
+      }),
+      db.product.groupBy({ by: ["categoryId"], _count: { id: true } }),
+
+      // Top customers
+      db.order.groupBy({
+        by: ["userId"], _count: { id: true }, _sum: { total: true },
+        where: { createdAt: sinceClause, userId: { not: null } },
+        orderBy: { _sum: { total: "desc" } }, take: 20,
+      }),
+
+      // Geographic
+      db.order.groupBy({
+        by: ["state"], _count: { id: true }, _sum: { total: true },
+        where: { createdAt: sinceClause },
+        orderBy: { _count: { id: "desc" } }, take: 30,
+      }),
+
+      // Recent activity
+      db.order.findMany({ orderBy: { createdAt: "desc" }, take: 10, select: { id: true, orderNumber: true, total: true, status: true, paymentStatus: true, createdAt: true, customerName: true } }),
+      db.payment.findMany({ orderBy: { createdAt: "desc" }, take: 10, select: { id: true, status: true, amount: true, createdAt: true, orderId: true } }),
+      db.user.findMany({ where: { role: "CUSTOMER" }, orderBy: { createdAt: "desc" }, take: 5, select: { id: true, name: true, email: true, createdAt: true } }),
+
+      // Search terms
+      db.analyticsEvent.findMany({
+        where: { eventType: "SEARCH", metadata: { not: null }, createdAt: sinceClause },
+        select: { metadata: true }, take: 2000,
+      }),
+
+      // Device breakdown
+      db.analyticsEvent.groupBy({ by: ["deviceType"], _count: { id: true }, where: { createdAt: sinceClause } }),
+
+      // Wishlist stats
+      db.wishlist.count(),
+      db.analyticsEvent.count({ where: { eventType: { in: ["WISHLIST_ADD", "WISHLIST"] }, createdAt: { gte: todayStart } } }),
+
+      // Unique visitors
+      db.analyticsEvent.findMany({ where: { createdAt: sinceClause }, select: { sessionId: true }, distinct: ["sessionId"] }),
+
+      // Payment stats
+      db.payment.count({ where: { status: "COMPLETED", createdAt: sinceClause } }),
+      db.payment.count({ where: { status: "FAILED", createdAt: sinceClause } }),
     ]);
 
     const revenue = Number(revenueData._sum.total || 0);
@@ -87,55 +230,13 @@ export async function loadDashboardData(range: string) {
     const avgOrderValue = completedOrders > 0 ? Math.round(revenue / completedOrders) : 0;
     const prevAvgOrderValue = prevCompletedOrders > 0 ? Math.round(prevRevenue / prevCompletedOrders) : 0;
 
-    // ── Order Status Breakdown ──
-    const statusCounts = await db.order.groupBy({ by: ["status"], _count: { id: true }, where: { createdAt: sinceClause } });
     const statusMap: Record<string, number> = {};
     statusCounts.forEach(s => { statusMap[s.status] = s._count.id; });
 
-    const ordersToday = await db.order.count({ where: { createdAt: { gte: todayStart } } });
-    const weekOrders = await db.order.count({ where: { createdAt: { gte: weekStart } } });
-    const monthOrders = await db.order.count({ where: { createdAt: { gte: monthStart } } });
-
-    // ── Units Sold ──
-    const unitsData = await db.orderItem.aggregate({ _sum: { quantity: true }, where: { order: { createdAt: sinceClause, paymentStatus: "COMPLETED" } } });
     const unitsSold = Number(unitsData._sum.quantity || 0);
-    const prevUnitsData = await db.orderItem.aggregate({ _sum: { quantity: true }, where: { order: { createdAt: { gte: prevStart, lte: prevEnd }, paymentStatus: "COMPLETED" } } });
     const prevUnitsSold = Number(prevUnitsData._sum.quantity || 0);
-
-    // ── Customers ──
-    const customerFilter = { OR: [{ role: "CUSTOMER" as const }, { orders: { some: {} } }], isActive: true };
-    const [totalCustomers, newCustomers, prevNewCustomers] = await Promise.all([
-db.user.count({ where: customerFilter }),
-      db.user.count({ where: { ...customerFilter, createdAt: sinceClause } }),
-      db.user.count({ where: { ...customerFilter, createdAt: { gte: prevStart, lte: prevEnd } } }),
-    ]);
     const returningCustomers = totalCustomers - newCustomers;
 
-    // ── Products ──
-    const [totalProducts, activeProducts, outOfStock, lowStockProductsAtRisk] = await Promise.all([
-      db.product.count(),
-      db.product.count({ where: { status: "ACTIVE" } }),
-      db.product.count({ where: { trackInventory: true, stockQuantity: 0 } }),
-      db.product.findMany({ where: { trackInventory: true, stockQuantity: { gt: 0, lte: 5 } }, select: { id: true, name: true, stockQuantity: true, lowStockThreshold: true }, take: 50 }),
-    ]);
-
-    // ── Products Sold (distinct) ──
-    const productsSold = await db.orderItem.groupBy({ by: ["productId"], where: { order: { createdAt: sinceClause, paymentStatus: "COMPLETED" } } });
-
-    // ── Refunds / Cancelled ──
-    const [refundCount, cancelledCount, pendingPayments] = await Promise.all([
-      db.order.count({ where: { paymentStatus: "REFUNDED", createdAt: sinceClause } }),
-      db.order.count({ where: { status: "CANCELLED", createdAt: sinceClause } }),
-      db.order.count({ where: { paymentStatus: "PENDING", createdAt: sinceClause } }),
-    ]);
-
-    // ── Live Sessions ──
-    const fiveMinAgo = new Date(now.getTime() - 5 * 60 * 1000);
-    const liveSessions = await db.liveSession.count({ where: { lastActive: { gte: fiveMinAgo }, isStaff: false } });
-    const liveDevices = await db.liveSession.groupBy({ by: ["deviceType"], _count: { id: true }, where: { lastActive: { gte: fiveMinAgo }, isStaff: false } });
-
-    // ── Analytics Events ──
-    const eventCounts = await db.analyticsEvent.groupBy({ by: ["eventType"], _count: { id: true }, where: { createdAt: sinceClause } });
     const events: Record<string, number> = {};
     eventCounts.forEach(e => { events[e.eventType] = e._count.id; });
 
@@ -152,47 +253,32 @@ db.user.count({ where: customerFilter }),
       orderCompleted: completedOrders,
     };
 
-    // ── Top Products ──
-    const topByRevenue = await db.orderItem.groupBy({
-      by: ["productId"], _sum: { totalPrice: true, quantity: true }, _count: { id: true },
-      where: { order: { createdAt: sinceClause, paymentStatus: "COMPLETED" } },
-      orderBy: { _sum: { totalPrice: "desc" } }, take: 10,
-    });
-    const topByViews = await db.analyticsEvent.groupBy({
-      by: ["productId"], _count: { id: true },
-      where: { eventType: { in: ["VIEW", "PRODUCT_VIEW"] }, productId: { not: null }, createdAt: sinceClause },
-      orderBy: { _count: { id: "desc" } }, take: 10,
-    });
-    const topByWishlist = await db.analyticsEvent.groupBy({
-      by: ["productId"], _count: { id: true },
-      where: { eventType: { in: ["WISHLIST_ADD", "WISHLIST"] }, productId: { not: null }, createdAt: sinceClause },
-      orderBy: { _count: { id: "desc" } }, take: 10,
-    });
-    const topByCart = await db.analyticsEvent.groupBy({
-      by: ["productId"], _count: { id: true },
-      where: { eventType: "ADD_TO_CART", productId: { not: null }, createdAt: sinceClause },
-      orderBy: { _count: { id: "desc" } }, take: 10,
-    });
-
-    // Fetch product details for all top lists
+    // ── Parallel wave 2 ──
+    // These three depend only on the wave-1 rows above (their id lists), so
+    // they run together rather than one after another.
     const allProductIds = new Set<string>();
     [...topByRevenue, ...topByViews, ...topByWishlist, ...topByCart].forEach(t => { if (t.productId) allProductIds.add(t.productId); });
-    const productDetails = allProductIds.size > 0
-      ? await db.product.findMany({ where: { id: { in: [...allProductIds] } }, select: { id: true, name: true, slug: true, regularPrice: true, salePrice: true, stockQuantity: true, trackInventory: true, images: { take: 1, select: { url: true } } } })
-      : [];
+    const categorySaleProductIds = categorySales.map((sale) => sale.productId);
+    const custIds = customerOrders.map(c => c.userId).filter(Boolean) as string[];
+
+    const [productDetails, categoryProducts, custDetails] = await Promise.all([
+      allProductIds.size > 0
+        ? db.product.findMany({ where: { id: { in: [...allProductIds] } }, select: { id: true, name: true, slug: true, regularPrice: true, salePrice: true, stockQuantity: true, trackInventory: true, images: { take: 1, select: { url: true } } } })
+        : Promise.resolve([]),
+      categorySaleProductIds.length > 0
+        ? db.product.findMany({ where: { id: { in: categorySaleProductIds } }, select: { id: true, categoryId: true } })
+        : Promise.resolve([]),
+      custIds.length > 0
+        ? db.user.findMany({ where: { id: { in: custIds } }, select: { id: true, name: true, email: true, createdAt: true } })
+        : Promise.resolve([]),
+    ]);
+
     const pMap = Object.fromEntries(productDetails.map(p => [p.id, p]));
 
     const enrich = (items: any[], valueField: string, countField = "_count") =>
       items.map(t => ({ ...t, product: pMap[t.productId || ""] || null, [valueField]: Number(t._sum?.[valueField] || 0), orders: t[countField]?.id || 0 }));
 
     // ── Revenue Over Time ──
-    const days = range === "today" ? 1 : range === "7d" ? 7 : range === "90d" ? 90 : 30;
-    const chartStart = new Date(now.getTime() - (days - 1) * 24 * 60 * 60 * 1000);
-    chartStart.setHours(0, 0, 0, 0);
-    const chartOrders = await db.order.findMany({
-      where: { paymentStatus: "COMPLETED", createdAt: { gte: chartStart, lte: now } },
-      select: { total: true, createdAt: true },
-    });
     const dayKey = (date: Date) => `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
     const dailyTotals = new Map<string, { revenue: number; orders: number }>();
     chartOrders.forEach((order) => {
@@ -211,20 +297,6 @@ db.user.count({ where: customerFilter }),
     }
 
     // ── Category Analytics ──
-    const categories = await db.category.findMany({ select: { id: true, name: true, slug: true } });
-    const [categorySales, categoryProductCounts] = await Promise.all([
-      db.orderItem.groupBy({
-        by: ["productId"],
-        _count: { id: true },
-        _sum: { totalPrice: true, quantity: true },
-where: { order: { createdAt: sinceClause, paymentStatus: "COMPLETED" } },
-      }),
-      db.product.groupBy({ by: ["categoryId"], _count: { id: true } }),
-    ]);
-    const categorySaleProductIds = categorySales.map((sale) => sale.productId);
-    const categoryProducts = categorySaleProductIds.length > 0
-      ? await db.product.findMany({ where: { id: { in: categorySaleProductIds } }, select: { id: true, categoryId: true } })
-      : [];
     const categoryByProduct = Object.fromEntries(categoryProducts.map((product) => [product.id, product.categoryId]));
     const categorySalesById = new Map<string, { orders: number; revenue: number; units: number }>();
     categorySales.forEach((sale) => {
@@ -243,37 +315,12 @@ where: { order: { createdAt: sinceClause, paymentStatus: "COMPLETED" } },
     });
 
     // ── Customer List (top) ──
-    const customerOrders = await db.order.groupBy({
-      by: ["userId"], _count: { id: true }, _sum: { total: true },
-      where: { createdAt: sinceClause, userId: { not: null } },
-      orderBy: { _sum: { total: "desc" } }, take: 20,
-    });
-    const custIds = customerOrders.map(c => c.userId).filter(Boolean) as string[];
-    const custDetails = custIds.length > 0
-      ? await db.user.findMany({ where: { id: { in: custIds } }, select: { id: true, name: true, email: true, createdAt: true } })
-      : [];
     const cMap = Object.fromEntries(custDetails.map(c => [c.id, c]));
 
     // ── Geographic ──
-    const geoDataRaw = await db.order.groupBy({
-      by: ["state"], _count: { id: true }, _sum: { total: true },
-      where: { createdAt: sinceClause },
-      orderBy: { _count: { id: "desc" } }, take: 30,
-    });
     const geoData = geoDataRaw.filter(g => g.state != null);
 
-    // ── Recent Activity ──
-    const [recentOrders, recentPayments, recentUsers] = await Promise.all([
-      db.order.findMany({ orderBy: { createdAt: "desc" }, take: 10, select: { id: true, orderNumber: true, total: true, status: true, paymentStatus: true, createdAt: true, customerName: true } }),
-      db.payment.findMany({ orderBy: { createdAt: "desc" }, take: 10, select: { id: true, status: true, amount: true, createdAt: true, orderId: true } }),
-      db.user.findMany({ where: { role: "CUSTOMER" }, orderBy: { createdAt: "desc" }, take: 5, select: { id: true, name: true, email: true, createdAt: true } }),
-    ]);
-
     // ── Search Terms ──
-    const searchEvents = await db.analyticsEvent.findMany({
-      where: { eventType: "SEARCH", metadata: { not: null }, createdAt: sinceClause },
-      select: { metadata: true }, take: 2000,
-    });
     const searchTerms: Record<string, number> = {};
     searchEvents.forEach(e => {
       const q = (e.metadata as any)?.query;
@@ -281,24 +328,9 @@ where: { order: { createdAt: sinceClause, paymentStatus: "COMPLETED" } },
     });
     const topSearches = Object.entries(searchTerms).sort((a, b) => b[1] - a[1]).slice(0, 15);
 
-    // ── Device Breakdown ──
-    const devices = await db.analyticsEvent.groupBy({ by: ["deviceType"], _count: { id: true }, where: { createdAt: sinceClause } });
-
-    // ── Wishlist Stats ──
-    const [totalWishlist, wishlistToday] = await Promise.all([
-      db.wishlist.count(),
-      db.analyticsEvent.count({ where: { eventType: { in: ["WISHLIST_ADD", "WISHLIST"] }, createdAt: { gte: todayStart } } }),
-    ]);
-
     // ── Conversion Rate ──
-    const uniqueVisitors = (await db.analyticsEvent.findMany({ where: { createdAt: sinceClause }, select: { sessionId: true }, distinct: ["sessionId"] })).length;
+    const uniqueVisitors = uniqueVisitorsRows.length;
     const conversionRate = uniqueVisitors > 0 ? Math.round((completedOrders / uniqueVisitors) * 10000) / 100 : 0;
-
-    // ── Payment Stats ──
-    const [paymentSuccess, paymentFailed] = await Promise.all([
-      db.payment.count({ where: { status: "COMPLETED", createdAt: sinceClause } }),
-      db.payment.count({ where: { status: "FAILED", createdAt: sinceClause } }),
-    ]);
 
     // Insights
     const insights: string[] = [];

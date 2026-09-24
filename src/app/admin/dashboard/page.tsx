@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import toast from "react-hot-toast";
 import { toCsv as buildCsv } from "@/lib/csv";
+import { readCached, writeCached } from "@/lib/clientCache";
 import DashboardView, {
   EMPTY_LIVE,
   type DashboardData,
@@ -13,6 +14,13 @@ function toCsv(rows: any[]): string {
   return buildCsv(rows);
 }
 
+const dashboardUrl = (range: string, force = false) =>
+  `/api/admin/dashboard?range=${range}${force ? "&force=1" : ""}`;
+
+// Long enough to cover a normal working session between manual refreshes, short
+// enough that an order placed elsewhere shows up on its own within a minute.
+const CACHE_TTL_MS = 60_000;
+
 /**
  * Data container for the admin dashboard.
  *
@@ -21,10 +29,17 @@ function toCsv(rows: any[]): string {
  * worth reading.
  */
 export default function AdminDashboardPage() {
-  const [data, setData] = useState<DashboardData | null>(null);
+  // Seed from the session cache so returning to the dashboard paints the last
+  // known figures immediately instead of showing a skeleton for the length of
+  // a multi-second aggregate query. The effect below revalidates right after.
+  const [data, setData] = useState<DashboardData | null>(() =>
+    readCached<DashboardData>(dashboardUrl("30d"))
+  );
   const [live, setLive] = useState<LiveState>(EMPTY_LIVE);
   const [range, setRange] = useState("30d");
-  const [loading, setLoading] = useState(true);
+  // Only block on the network when there is nothing to show. With a cache hit
+  // the skeleton never appears, so switching ranges refreshes in place.
+  const [loading, setLoading] = useState(() => !readCached<DashboardData>(dashboardUrl("30d")));
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [liveError, setLiveError] = useState(false);
@@ -33,14 +48,15 @@ export default function AdminDashboardPage() {
   // Stamps each request so a slow response can't overwrite fresher data.
   const requestId = useRef(0);
 
-  const fetchData = useCallback(async (r: string, silent = false) => {
+  const fetchData = useCallback(async (r: string, opts: { silent?: boolean; force?: boolean } = {}) => {
+    const { silent = false, force = false } = opts;
     const id = ++requestId.current;
     if (!silent) setLoading(true);
     // Background refreshes stay quiet: the "Live · updated" badge shows progress
     // instead, so the refresh button doesn't spin every 20 seconds.
     if (!silent) setRefreshing(true);
     try {
-      const res = await fetch(`/api/admin/dashboard?range=${r}`);
+      const res = await fetch(dashboardUrl(r, force));
       if (res.status === 401 || res.status === 403) {
         // Stale/expired session — bounce to login instead of showing a fake zero dashboard.
         window.location.href = "/login";
@@ -50,7 +66,11 @@ export default function AdminDashboardPage() {
       // one, so a slow response can never overwrite fresher numbers.
       if (id !== requestId.current) return;
       if (res.ok) {
-        setData(await res.json());
+        const json = (await res.json()) as DashboardData;
+        setData(json);
+        // Keep the payload for the next visit. Silent polls refresh this entry,
+        // so returning to the tab is instant even after the server TTL lapses.
+        writeCached(dashboardUrl(r), json, CACHE_TTL_MS);
         setLastUpdated(Date.now());
         setError(null);
       } else if (!silent) {
@@ -81,11 +101,15 @@ export default function AdminDashboardPage() {
       .catch(() => setLiveError(true));
   }, []);
 
+  // One interval owns the live-visitor poll. Previously a second interval (the
+  // figures poll below) also called fetchLive, so the endpoint was hit roughly
+  // every 7s instead of every 15s.
   useEffect(() => {
     fetchLive();
-    const tick = () => { if (document.visibilityState === "visible") fetchLive(); };
-    const i = setInterval(tick, 15000);
-    return () => clearInterval(i);
+    const tick = setInterval(() => {
+      if (document.visibilityState === "visible") fetchLive();
+    }, 15000);
+    return () => clearInterval(tick);
   }, [fetchLive]);
 
   // Keep the figures live as well as the visitor count, so the dashboard never
@@ -94,10 +118,14 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     const refresh = () => {
       if (document.visibilityState !== "visible") return;
-      fetchData(range, true);
+      fetchData(range, { silent: true });
+      // A returning tab may have missed several ticks, so top the live count up
+      // right away rather than waiting out the interval.
       fetchLive();
     };
-    const i = setInterval(refresh, 20000);
+    const i = setInterval(() => {
+      if (document.visibilityState === "visible") fetchData(range, { silent: true });
+    }, 20000);
     document.addEventListener("visibilitychange", refresh);
     window.addEventListener("focus", refresh);
     return () => {
@@ -136,7 +164,8 @@ export default function AdminDashboardPage() {
       live={live}
       range={range}
       onRangeChange={setRange}
-      onRefresh={() => fetchData(range)}
+      // An explicit refresh always bypasses the server cache.
+      onRefresh={() => fetchData(range, { force: true })}
       onExport={exportCsv}
       loading={loading}
       refreshing={refreshing}
