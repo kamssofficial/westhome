@@ -140,6 +140,11 @@ export function memoInvalidateCatalog(): void {
   memoInvalidateNamespace(NS.categories);
   memoInvalidateNamespace(NS.sitemap);
   memoInvalidateNamespace(NS.feed);
+  // The Redis shared cache (GCP Memorystore) holds catalog responses too;
+  // drop that layer as well. Fire-and-forget: the in-process caches above
+  // are the correctness-critical ones, and Redis keys carry their own TTLs
+  // so a failed flush only lengthens staleness to the cache window.
+  void import("./redis.ts").then(({ cacheFlushAll }) => cacheFlushAll()).catch(() => {});
 }
 
 /** Test helper: drop everything. */
