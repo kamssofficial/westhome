@@ -87,8 +87,18 @@ export default function RootLayout({
   // `data-scroll-behavior` pairs with the `scroll-behavior: smooth` in globals.css:
   // Next needs it declared so it can turn smooth scrolling off during route
   // transitions instead of animating every navigation.
+  //
+  // suppressHydrationWarning is deliberate and load-bearing. Our host injects an
+  // extra attribute into the served <html> before React sees it
+  // (data-dpl-id="dpl_...", deployment-skew protection — the same id shows up as
+  // ?dpl= on every asset URL). That attribute exists in the server HTML but not in
+  // our client render, so React reports a root-element hydration mismatch and
+  // throws away the server-rendered tree, re-rendering the whole page in the
+  // browser (React error #418 in prod builds) — wasted main-thread work on every
+  // first visit. The flag only silences attribute/text diffs on this one element;
+  // it does not disable hydration anywhere else.
   return (
-    <html lang="en" data-scroll-behavior="smooth">
+    <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning>
       <body className="min-h-screen bg-background text-foreground antialiased">
         <script
           type="application/ld+json"
