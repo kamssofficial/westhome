@@ -210,7 +210,7 @@ function CategoryContent({ category: initialCategory, initialProducts, initialTo
       {/* Subcategory grid (when applicable) */}
       {hasSubcategories && showSubcategories && (
         <div className="container-shop pb-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 lg:grid-cols-4">
             {category!.subcategories.map((sub) => {
               return (
                 <Link
@@ -229,7 +229,7 @@ function CategoryContent({ category: initialCategory, initialProducts, initialTo
                         alt={sub.name}
                         fill
                         className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                        sizes="(max-width: 640px) 50vw, 33vw"
+                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                       />
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-[#f7f5f2]">
@@ -264,14 +264,14 @@ function CategoryContent({ category: initialCategory, initialProducts, initialTo
         ) : products.length > 0 ? (
           <div className={cn(
             "gap-3",
-            viewMode === "grid" ? "grid grid-cols-2" : "flex flex-col"
+            viewMode === "grid" ? "grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 lg:grid-cols-4" : "flex flex-col"
           )}>
             {products.map((product, i) => (
               <ProductCard key={product.id} product={product} priority={i < 4} />
             ))}
           </div>
         ) : staticImages.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-5 lg:grid-cols-4">
             {staticImages.map((img, i) => (
               <div key={i} className="relative aspect-square bg-surface-muted rounded-2xl overflow-hidden">
                 <img src={img} alt={`${category?.name || "Collection"} ${i + 1}`} className="w-full h-full object-cover" loading="lazy" />

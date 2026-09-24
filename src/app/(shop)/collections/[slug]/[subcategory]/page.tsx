@@ -221,7 +221,7 @@ function SubcategoryContent() {
           <>
             <div className={cn(
               "gap-3",
-              viewMode === "grid" ? "grid grid-cols-2" : "flex flex-col"
+              viewMode === "grid" ? "grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 lg:grid-cols-4" : "flex flex-col"
             )}>
               {products.map((product, i) => (
                 <ProductCard key={product.id} product={product} priority={i < 4} />

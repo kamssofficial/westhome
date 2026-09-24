@@ -14,6 +14,9 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Agent-skill assets: CommonJS by design, not shipped app code.
     "skills/**",
+    // Untracked local scratch (user notes, its own eslint config) — never
+    // app code. Ignored so `npm run lint` works in workspaces that have it.
+    "isolate/**",
   ]),
   {
     rules: {

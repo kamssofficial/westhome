@@ -25,9 +25,14 @@ const COLOR_HEX: Record<string, string> = {
 interface ProductCardProps {
   product: Product;
   priority?: boolean;
+  /**
+   * "default" is tuned for dense catalog grids (3-4 columns on desktop);
+   * "compact" suits the narrower related-products grid on product pages.
+   */
+  size?: "default" | "compact";
 }
 
-export default function ProductCard({ product, priority = false }: ProductCardProps) {
+export default function ProductCard({ product, priority = false, size = "default" }: ProductCardProps) {
   const [imageError, setImageError] = useState(false);
   const toggleWishlist = useWishlistStore((s) => s.toggleItem);
   const isInWishlist = useWishlistStore((s) => s.isInWishlist(product.id));
@@ -84,7 +89,7 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
               src={retrySrc}
               alt={primaryImage?.alt || variantImage?.alt || product.name}
               fill
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              sizes={size === "compact" ? "(max-width: 640px) 50vw, 33vw" : "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"}
               className="object-cover group-hover:scale-105 transition-transform duration-500"
               priority={priority}
               onError={handleImgError}
@@ -132,15 +137,18 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
         </div>
 
         {/* Info */}
-        <div className="p-2.5">
+        <div className={size === "compact" ? "p-2.5" : "p-2.5 md:p-3.5"}>
           <p className="font-label text-[9px] tracking-[0.15em] text-accent mb-0.5">
             {product.subcategory?.name || product.category?.name}
           </p>
-          <h3 className="text-[13px] font-medium text-primary line-clamp-1 leading-snug">
+          <h3 className={cn(
+            "text-[13px] font-medium text-primary leading-snug",
+            size === "compact" ? "line-clamp-1" : "line-clamp-1 md:line-clamp-2 md:min-h-[36px]"
+          )}>
             {product.name}
           </h3>
           <div className="mt-1 flex items-center justify-between gap-2">
-            <PriceDisplay regularPrice={product.regularPrice} salePrice={product.salePrice} size="md" />
+            <PriceDisplay regularPrice={product.regularPrice} salePrice={product.salePrice} size={size === "compact" ? "sm" : "md"} />
             {(product as any).palette?.length > 0 && (
               <div className="flex items-center gap-1 shrink-0" title={(product as any).palette.join(" / ")}>
                 {(product as any).palette.slice(0, 4).map((c: string) => (
