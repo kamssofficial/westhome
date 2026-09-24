@@ -110,7 +110,11 @@ export function PageViewTracker() {
   }, [pathname]);
 
   useEffect(() => {
-    trackEvent("PAGE_VIEW", { path: pathname });
+    // Fire the initial page view once on mount. Read the path from the ref
+    // (which is seeded with the mount pathname) rather than depending on
+    // `pathname`, otherwise this would double-fire on every client navigation
+    // alongside the route-change effect above.
+    trackEvent("PAGE_VIEW", { path: lastPath.current });
   }, []);
 
   return null;

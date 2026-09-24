@@ -69,7 +69,9 @@ export default function FilterPanel({ open, onClose, onApply, initialFilters, ca
       setDynamicSubs(cat.subcategories.map((s:any) => ({ name: s.name, slug: s.slug, count: s.productCount || 0 })));
     } else {
       setDynamicSubs([]);
-      if (f.subcategory) setF(p => ({ ...p, subcategory: "" }));
+      // Clear a stale subcategory via the functional updater so the effect
+      // does not need to read (and depend on) `f.subcategory`.
+      setF(p => (p.subcategory ? { ...p, subcategory: "" } : p));
     }
   }, [open, f.category, categories]);
 

@@ -122,7 +122,7 @@ export default function ReceiptPrinter({ className }: ReceiptPrinterProps) {
       }
     }, 5000);
     timerRef.current.push(safetyTimer);
-  }, [busy, printDuration, totalLines]);
+  }, [printDuration, totalLines]);
 
   /* ─── Tear ─── */
   const handleTear = useCallback(() => {
@@ -138,7 +138,7 @@ export default function ReceiptPrinter({ className }: ReceiptPrinterProps) {
       clearTimeouts();
     }, prefersReduced ? 100 : 700);
     timerRef.current.push(t);
-  }, [busy, prefersReduced, clearTimeouts]);
+  }, [prefersReduced, clearTimeouts]);
 
   const receipts = Array.from({ length: printedCount }, (_, i) => i);
 

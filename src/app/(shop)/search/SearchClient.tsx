@@ -58,12 +58,18 @@ function SearchContent() {
     fetch("/api/categories").then(r => r.json()).then(d => setCategories(d.categories || [])).catch(() => {});
   }, []);
 
-  const saveRecentSearch = (q: string) => {
-    if (!q.trim()) return;
-    const updated = [q, ...recentSearches.filter(s => s !== q)].slice(0, 5);
-    setRecentSearches(updated);
-    try { localStorage.setItem("westhome-recent-searches", JSON.stringify(updated)); } catch {}
-  };
+  // Stable across renders (empty dep list) via a functional state update, so
+  // it is safe to list in the fetch effect's dependencies without re-triggering
+  // that effect on every render.
+  const saveRecentSearch = useCallback((q: string) => {
+    const trimmed = q.trim();
+    if (!trimmed) return;
+    setRecentSearches(prev => {
+      const updated = [trimmed, ...prev.filter(s => s !== trimmed)].slice(0, 5);
+      try { localStorage.setItem("westhome-recent-searches", JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+  }, []);
 
   // Fetch products
   const fetchProducts = useCallback(async (pageNum: number, append = false) => {
@@ -89,7 +95,7 @@ function SearchContent() {
     finally { setLoading(false); setLoadingMore(false); }
   }, [initialQuery, filters.category, filters.subcategory, filters.minPrice, filters.maxPrice, filters.inStock, sort]);
 
-  useEffect(() => { setPage(1); setHasMore(true); fetchProducts(1, false); if (initialQuery) saveRecentSearch(initialQuery); }, [fetchProducts]);
+  useEffect(() => { setPage(1); setHasMore(true); fetchProducts(1, false); if (initialQuery) saveRecentSearch(initialQuery); }, [fetchProducts, initialQuery, saveRecentSearch]);
 
   // Real SEARCH analytics event when a query is actually searched
   useEffect(() => {

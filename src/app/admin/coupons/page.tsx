@@ -36,10 +36,6 @@ export default function AdminCouponsPage() {
     expiresAt: "",
   });
 
-  useEffect(() => {
-    fetchCoupons();
-  }, []);
-
   const fetchCoupons = async () => {
     try {
       const res = await fetch("/api/coupons");
@@ -53,6 +49,10 @@ export default function AdminCouponsPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchCoupons();
+  }, []);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();

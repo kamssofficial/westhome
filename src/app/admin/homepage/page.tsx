@@ -23,10 +23,6 @@ export default function AdminHomepagePage() {
   const [sections, setSections] = useState<Section[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchSections();
-  }, []);
-
   const fetchSections = async () => {
     try {
       const res = await fetch("/api/homepage");
@@ -40,6 +36,10 @@ export default function AdminHomepagePage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchSections();
+  }, []);
 
   const handleToggleSection = async (id: string, isActive: boolean) => {
     try {

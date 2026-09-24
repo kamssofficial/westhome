@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, use, useCallback } from "react";
 import Link from "next/link";
 import { ArrowLeft, Edit2, Save, X, Mail, Phone, Package, ShoppingCart, Clock, User, Shield, CheckCircle, CreditCard, ChevronDown, Eye, Trash2 } from "lucide-react";
 import Button from "@/components/ui/Button";
@@ -29,10 +29,10 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
   const [deleting, setDeleting] = useState(false);
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
 
-  useEffect(() => { fetchCustomer(); }, [id]);
-  const fetchCustomer = async () => {
+  const fetchCustomer = useCallback(async () => {
     try { const res = await fetch("/api/admin/customers/" + id); if (res.ok) { const data = await res.json(); setCustomer(data.customer); setEditForm({ name: data.customer.name || "", email: data.customer.email, phone: data.customer.phone || "", isActive: data.customer.isActive }); } } catch (err) { console.error(err); } finally { setLoading(false); }
-  };
+  }, [id]);
+  useEffect(() => { fetchCustomer(); }, [fetchCustomer]);
   const handleSave = async () => {
     setSaving(true);
     try { const res = await fetch("/api/admin/customers/" + id, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(editForm) }); if (res.ok) { toast.success("Customer updated"); setEditing(false); fetchCustomer(); } else { const err = await res.json(); toast.error(err.error || "Failed to update"); } } catch { toast.error("Failed to update customer"); } finally { setSaving(false); }

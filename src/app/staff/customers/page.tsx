@@ -25,6 +25,9 @@ export default function StaffCustomersPage() {
     } catch {} finally { setLoading(false); }
   };
 
+  // Mount-once load: `search` is submitted explicitly via the form, so it is
+  // deliberately not a dependency here.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchCustomers(); }, []);
 
   return (

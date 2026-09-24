@@ -93,7 +93,7 @@ function CategoryContent({ category: initialCategory, initialProducts, initialTo
   useEffect(() => {
     if (page === 1) return;
     setLoadingMore(false);
-  }, [products.length]);
+  }, [products.length, page]);
 
   useEffect(() => {
     const sentinel = sentinelRef.current;

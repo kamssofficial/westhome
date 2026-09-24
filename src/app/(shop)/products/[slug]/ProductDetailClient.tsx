@@ -134,11 +134,17 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
     : null) as ProductVariant | null;
   const selectedVariant = activeVariant;
 
+  // Hoisted so the memo/callback dependencies are plain identifiers. Depending
+  // on the optional-chained `product?.variants` prevented the React Compiler
+  // from preserving this memoization, so it silently skipped optimizing the
+  // component.
+  const variants = product?.variants;
+
   // Compute grouped attributes for the selector UI
   const attributeGroups: Record<string, string[]> = useMemo(() => {
     const groups: Record<string, string[]> = {};
-    if (product?.variants) {
-      for (const v of product.variants) {
+    if (variants) {
+      for (const v of variants) {
         for (const attr of v.attributes) {
           if (!groups[attr.attributeName]) {
             groups[attr.attributeName] = [];
@@ -150,13 +156,13 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
       }
     }
     return groups;
-  }, [product?.variants])
+  }, [variants])
 
   // Compute available attribute values given current selections
   const getAvailableValues = useCallback(
     (attrName: string): string[] => {
-      if (!product?.variants) return [];
-      return product.variants
+      if (!variants) return [];
+      return variants
         .filter((v: any) =>
           v.attributes.every((a: any) =>
             a.attributeName === attrName || selectedAttributes[a.attributeName] === a.value
@@ -169,7 +175,7 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
         .filter((val): val is string => !!val)
         .filter((val, i, arr) => arr.indexOf(val) === i);
     },
-    [product?.variants, selectedAttributes]
+    [variants, selectedAttributes]
   );
 
   const handleAttributeSelect = (attrName: string, value: string) => {

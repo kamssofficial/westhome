@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Plus, Search, Edit, Trash2, Users, Shield, X, Eye, EyeOff } from "lucide-react";
 import Button from "@/components/ui/Button";
@@ -53,7 +53,7 @@ export default function AdminStaffPage() {
     role: "MANAGER",
   });
 
-  const fetchStaff = async () => {
+  const fetchStaff = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -70,11 +70,11 @@ export default function AdminStaffPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [search, roleFilter]);
 
   useEffect(() => {
     fetchStaff();
-  }, [search, roleFilter]);
+  }, [fetchStaff]);
 
   const openAddModal = () => {
     setEditingStaff(null);

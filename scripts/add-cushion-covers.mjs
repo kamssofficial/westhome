@@ -115,7 +115,8 @@ for (const { mrp, sku, files } of products.values()) {
     } else {
       console.log(`  · [dry] ${name} — MRP ₹${mrp}, SKU ${finalSku || "—"}, ${imageRows.length} image(s)`);
     }
-    APPLY ? created++ : wouldCreate++;
+    if (APPLY) created++;
+    else wouldCreate++;
   } catch (e) {
     await client.query("ROLLBACK").catch(() => {});
     console.error(`  ✗ FAILED ${name}: ${e.message}`);
