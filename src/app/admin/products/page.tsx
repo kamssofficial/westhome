@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { invalidateCache } from "@/lib/clientCache";
+import { mergeProductPage } from "@/lib/mergeProductPage";
 import { cn } from "@/lib/utils";
 import PriceDisplay from "@/components/ui/PriceDisplay";
 import toast from "react-hot-toast";
@@ -262,12 +263,7 @@ export default function AdminProductsPage() {
         const d = await res.json(); 
         // De-duplicate on append: a retried or overlapping page must never
         // render the same product twice.
-        setProducts(prev => {
-          if (!isLoadMore) return d.products;
-          const seen = new Set(prev.map((p: { id: string }) => p.id));
-          const freshRows = (d.products || []).filter((p: { id: string }) => !seen.has(p.id));
-          return freshRows.length ? [...prev, ...freshRows] : prev;
-        });
+        setProducts(prev => mergeProductPage(prev, d.products || [], !isLoadMore));
         setTotal(d.total); 
       }
       else { setLoadError("Failed to load products."); if (!isLoadMore) setProducts([]); }
