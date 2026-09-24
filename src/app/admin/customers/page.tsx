@@ -57,8 +57,9 @@ export default function AdminCustomersPage() {
     <div className="space-y-4">
       <h1 className="text-xl font-semibold">Customers</h1>
 
-      <div className="bg-surface rounded-[1.35rem] border border-border overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="overflow-hidden rounded-[1.35rem] border border-border bg-surface">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[560px] text-sm">
           <thead>
             <tr className="border-b border-border bg-surface-muted/50">
               <th className="text-left px-4 py-3 font-medium text-text-secondary">Name</th>
@@ -100,6 +101,7 @@ export default function AdminCustomersPage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

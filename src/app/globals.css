@@ -61,53 +61,157 @@
   --shadow-modal: 0 30px 90px rgba(31, 33, 31, 0.22);
 }
 
-/* The admin panel runs its own skin: cool slate surfaces under a deep-teal accent,
-   so it reads as a working tool rather than a storefront page. Re-pointing the
-   tokens — rather than overriding utilities — recolours every panel surface,
-   hairline, border and text tone at once and keeps them in step with the accent
-   tints, focus rings and ::selection. It also pulls the shell's chrome (sidebar,
-   header, active nav pill, panel mark) along with it, because those read the same
-   tokens. /staff (.staff-theme) and the shop keep the warm brand palette. */
-.admin-theme {
-  /* accent */
-  --color-accent: #0F766E;
-  --color-accent-hover: #115E59;
+/* The admin panel runs its own skin. Re-pointing the tokens — rather than
+   overriding utilities — recolours every panel surface, hairline, border and
+   text tone at once and keeps them in step with the accent tints, focus rings
+   and ::selection. It also pulls the shell's chrome (sidebar, header, active
+   nav pill, panel mark) along with it, because those read the same tokens.
 
-  /* Neutral family — warm cream becomes cool slate. */
-  --color-background: #EFF3F6;   /* page behind the panel */
-  --color-surface: #FFFFFF;      /* cards */
-  --color-surface-hover: #EAF0F4;
-  --color-surface-muted: #E1E9EF;
-  --color-border: rgba(15, 23, 42, 0.12);
-  --color-border-light: rgba(15, 23, 42, 0.07);
-  --color-primary: #0F1D29;      /* headings and body ink */
-  --color-primary-hover: #08131B;
-  --color-foreground: #0F1D29;   /* what unclassed text inherits */
-  --color-secondary: #5A6673;
-  --color-secondary-hover: #3F4A56;
-  --color-text-primary: #0F1D29;
-  --color-text-secondary: #5A6673;
-  --color-text-muted: #8493A1;
-  --color-text-inverse: #F8FAFC;
+   The panel is WARM: a parchment workspace with a clay accent, so managing the
+   store feels like it belongs to the same house as the storefront rather than a
+   borrowed cool-grey admin template. The second block re-points the Tailwind
+   palette variables themselves, which is what catches the hard-coded
+   `bg-white` / `bg-gray-100` / `border-black/10` utilities used across the
+   panel pages; because Tailwind v4 compiles those to `var(--color-*)`, the
+   override lands on all of them without touching a single call site.
+
+   /staff (.staff-theme) inherits this and adds its own badge colour. */
+.admin-theme {
+  /* accent — terracotta clay */
+  --color-accent: #B4552D;
+  --color-accent-hover: #97431F;
+
+  /* Neutral family — parchment and clay, not cool grey. */
+  --color-background: #F5F0E9;   /* page behind the panel */
+  --color-surface: #FFFCF8;      /* cards */
+  --color-surface-hover: #F6EFE6;
+  --color-surface-muted: #EDE3D7;
+  --color-border: rgba(74, 57, 45, 0.14);
+  --color-border-light: rgba(74, 57, 45, 0.08);
+  --color-primary: #33261E;      /* headings and body ink */
+  --color-primary-hover: #1F1712;
+  --color-foreground: #33261E;   /* what unclassed text inherits */
+  --color-secondary: #6B5747;
+  --color-secondary-hover: #4E3E32;
+  --color-text-primary: #33261E;
+  --color-text-secondary: #6B5747;
+  --color-text-muted: #96816F;
+  --color-text-inverse: #FBF6F0;
 
   /* Shell chrome. */
-  --color-panel: #EFF3F6;
-  --color-panel-surface: #F7FAFC;   /* sidebar */
-  --color-panel-header: #F7FAFC;    /* sticky top bar */
-  --color-panel-border: rgba(15, 23, 42, 0.08);
-  --color-panel-hover: rgba(15, 118, 110, 0.07);
-  --color-panel-text: #55606D;      /* inactive nav text */
-  --color-panel-text-strong: #0F1D29;
-  --color-panel-icon: #98A5B2;
-  --color-panel-label: #7C8794;
-  --color-panel-active: #0F766E;    /* active nav pill */
-  --color-panel-active-text: #FFFFFF;
-  --color-panel-mark: #0F766E;
-  --color-panel-popover: #FFFFFF;
-  --color-panel-avatar: #0F1D29;
-  --color-panel-avatar-ring: #0F766E;
-  --color-panel-badge: #0F766E;
-  --color-panel-danger: #BD4A42;
+  --color-panel: #F5F0E9;
+  --color-panel-surface: #FAF5EE;   /* sidebar */
+  --color-panel-header: #FAF5EE;    /* sticky top bar */
+  --color-panel-border: rgba(74, 57, 45, 0.10);
+  --color-panel-hover: rgba(180, 85, 45, 0.08);
+  --color-panel-text: #6B5747;      /* inactive nav text */
+  --color-panel-text-strong: #33261E;
+  --color-panel-icon: #B09B87;
+  --color-panel-label: #8C7663;
+  --color-panel-active: #33261E;    /* active nav pill */
+  --color-panel-active-text: #FBF6F0;
+  --color-panel-mark: #B4552D;
+  --color-panel-popover: #FFFCF8;
+  --color-panel-avatar: #33261E;
+  --color-panel-avatar-ring: #B4552D;
+  --color-panel-badge: #B4552D;
+  --color-panel-danger: #B3402F;
+
+  /* ──────────────────────────────────────────────────────────────────────
+     Palette re-point. Tailwind v4 compiles `bg-white`, `bg-gray-100`,
+     `border-black/10` and friends to `var(--color-white)`, `var(--color-gray-100)`
+     … so redefining the scale here re-tints every hard-coded utility used by
+     the panel pages in one place. Only the neutral families move: the
+     red/amber/emerald families stay semantic (they mean error, warning, success
+     and must not drift with the brand).
+     ────────────────────────────────────────────────────────────────────── */
+  --color-white: #FFFCF8;
+  --color-black: #33261E;
+
+  --color-gray-50: #FAF6F0;
+  --color-gray-100: #F1EAE0;
+  --color-gray-200: #E5DACB;
+  --color-gray-300: #CDBCA8;
+  --color-gray-400: #A99681;
+  --color-gray-500: #8C7663;
+  --color-gray-600: #6B5747;
+  --color-gray-700: #4E3E32;
+  --color-gray-800: #3A2D24;
+  --color-gray-900: #2A2019;
+  --color-gray-950: #1F1712;
+
+  --color-slate-50: #FAF6F0;
+  --color-slate-100: #F1EAE0;
+  --color-slate-200: #E5DACB;
+  --color-slate-300: #CDBCA8;
+  --color-slate-400: #A99681;
+  --color-slate-500: #8C7663;
+  --color-slate-600: #6B5747;
+  --color-slate-700: #4E3E32;
+  --color-slate-800: #3A2D24;
+  --color-slate-900: #2A2019;
+  --color-slate-950: #1F1712;
+
+  --color-stone-50: #FAF6F0;
+  --color-stone-100: #F1EAE0;
+  --color-stone-200: #E5DACB;
+  --color-stone-300: #CDBCA8;
+  --color-stone-400: #A99681;
+  --color-stone-500: #8C7663;
+  --color-stone-600: #6B5747;
+  --color-stone-700: #4E3E32;
+  --color-stone-800: #3A2D24;
+  --color-stone-900: #2A2019;
+  --color-stone-950: #1F1712;
+
+  --color-neutral-50: #FAF6F0;
+  --color-neutral-100: #F1EAE0;
+  --color-neutral-200: #E5DACB;
+  --color-neutral-300: #CDBCA8;
+  --color-neutral-400: #A99681;
+  --color-neutral-500: #8C7663;
+  --color-neutral-600: #6B5747;
+  --color-neutral-700: #4E3E32;
+  --color-neutral-800: #3A2D24;
+  --color-neutral-900: #2A2019;
+  --color-neutral-950: #1F1712;
+
+  --color-zinc-50: #FAF6F0;
+  --color-zinc-100: #F1EAE0;
+  --color-zinc-200: #E5DACB;
+  --color-zinc-300: #CDBCA8;
+  --color-zinc-400: #A99681;
+  --color-zinc-500: #8C7663;
+  --color-zinc-600: #6B5747;
+  --color-zinc-700: #4E3E32;
+  --color-zinc-800: #3A2D24;
+  --color-zinc-900: #2A2019;
+  --color-zinc-950: #1F1712;
+
+  /* Cyan/teal were the old accent; point them at the clay accent so any
+     leftover brand-coloured chip lands in the warm family too. */
+  --color-teal-50: #FBF1EA;
+  --color-teal-100: #F6E1D2;
+  --color-teal-200: #EDC4AC;
+  --color-teal-300: #E0A483;
+  --color-teal-400: #D07F57;
+  --color-teal-500: #C46539;
+  --color-teal-600: #B4552D;
+  --color-teal-700: #97431F;
+  --color-teal-800: #79351A;
+  --color-teal-900: #5D2914;
+  --color-teal-950: #33150B;
+
+  --color-cyan-50: #FBF1EA;
+  --color-cyan-100: #F6E1D2;
+  --color-cyan-200: #EDC4AC;
+  --color-cyan-300: #E0A483;
+  --color-cyan-400: #D07F57;
+  --color-cyan-500: #C46539;
+  --color-cyan-600: #B4552D;
+  --color-cyan-700: #97431F;
+  --color-cyan-800: #79351A;
+  --color-cyan-900: #5D2914;
 }
 
 /* Only the values that genuinely differ from the defaults above. */

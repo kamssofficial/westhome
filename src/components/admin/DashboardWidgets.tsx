@@ -306,13 +306,13 @@ export function LiveUpdated({ at, onDark = false }: { at: number | null; onDark?
     <span
       className={cn(
         "inline-flex items-center gap-1.5 whitespace-nowrap text-[11px] font-medium",
-        onDark ? "text-[#8FD8C6]" : "text-success"
+        onDark ? "text-[#E8A87C]" : "text-success"
       )}
       title="This dashboard refreshes by itself — no need to reload"
     >
       <span className="relative flex h-1.5 w-1.5" aria-hidden="true">
-        <span className={cn("absolute inline-flex h-full w-full animate-ping rounded-full opacity-60", onDark ? "bg-[#8FD8C6]" : "bg-success")} />
-        <span className={cn("relative inline-flex h-1.5 w-1.5 rounded-full", onDark ? "bg-[#8FD8C6]" : "bg-success")} />
+        <span className={cn("absolute inline-flex h-full w-full animate-ping rounded-full opacity-60", onDark ? "bg-[#E8A87C]" : "bg-success")} />
+        <span className={cn("relative inline-flex h-1.5 w-1.5 rounded-full", onDark ? "bg-[#E8A87C]" : "bg-success")} />
       </span>
       Live
       <span className={cn("font-normal tabular-nums", onDark ? "text-white/60" : "text-text-muted")}>· updated {ago}</span>

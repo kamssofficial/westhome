@@ -149,8 +149,9 @@ export default function AdminCouponsPage() {
         </form>
       )}
 
-      <div className="bg-surface rounded-[1.35rem] border border-border overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="overflow-hidden rounded-[1.35rem] border border-border bg-surface">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[560px] text-sm">
           <thead>
             <tr className="border-b border-border bg-surface-muted/50">
               <th className="text-left px-4 py-3 font-medium text-text-secondary">Code</th>
@@ -193,6 +194,7 @@ export default function AdminCouponsPage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

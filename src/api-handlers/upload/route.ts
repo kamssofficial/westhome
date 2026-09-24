@@ -12,22 +12,53 @@ const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 const ALLOWED_FOLDERS = ["products", "categories", "banners", "avatars", "homepage", "staff"];
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
+// The declared Content-Type is a hint, not evidence. A mislabelled or
+// hand-crafted upload must not be able to push a non-image into the media
+// bucket, so the first bytes have to agree with the extension.
+const MAGIC: { mime: string; bytes: number[]; offset: number }[] = [
+  { mime: "image/jpeg", bytes: [0xff, 0xd8, 0xff], offset: 0 },
+  { mime: "image/png", bytes: [0x89, 0x50, 0x4e, 0x47], offset: 0 },
+  { mime: "image/gif", bytes: [0x47, 0x49, 0x46, 0x38], offset: 0 },
+];
+
+function sniff(buffer: Buffer): string | null {
+  for (const sig of MAGIC) {
+    if (sig.bytes.every((b, i) => buffer[sig.offset + i] === b)) return sig.mime;
+  }
+  // WebP: "RIFF" .... "WEBP"
+  if (
+    buffer.subarray(0, 4).toString("ascii") === "RIFF" &&
+    buffer.subarray(8, 12).toString("ascii") === "WEBP"
+  ) {
+    return "image/webp";
+  }
+  return null;
+}
+
+const EXT_FOR_TYPE: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/gif": "gif",
+};
+
 export async function GET() {
-  const status = storageStatus();
-  return NextResponse.json({
-    storage: {
-      ...status,
-      mode: process.env.NODE_ENV,
-      recommendation: status.anyConfigured
-        ? null
-        : "Configure GOOGLE_OAUTH_* (or GOOGLE_CREDENTIALS_JSON / GOOGLE_CREDENTIALS_PATH) in the production environment.",
-    },
-  });
+  return NextResponse.json({ storage: storageStatus() });
 }
 
 export async function POST(request: NextRequest) {
   const authResult = await requireAuthRole(["ADMIN", "MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER"]);
   if (authResult.error) return authResult.error;
+
+  const status = storageStatus();
+  // Fail fast, and say exactly what to set. Previously this surfaced as a
+  // 503 with a Drive-specific hint after the bytes had already been uploaded.
+  if (!status.anyConfigured) {
+    return NextResponse.json(
+      { error: `Image storage is not configured. ${status.missing}`, storage: status },
+      { status: 503 }
+    );
+  }
 
   try {
     const formData = await request.formData();
@@ -35,24 +66,46 @@ export async function POST(request: NextRequest) {
     const rawFolder = String(formData.get("folder") || "products");
     const folder = ALLOWED_FOLDERS.includes(rawFolder) ? rawFolder : "products";
 
-    if (!file) return NextResponse.json({ error: "No file provided" }, { status: 400 });
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json({ error: "Unsupported image format. Please upload JPG, PNG, WebP, or GIF." }, { status: 400 });
+    if (!file || typeof file === "string") {
+      return NextResponse.json({ error: "No file provided" }, { status: 400 });
+    }
+    if (file.size === 0) {
+      return NextResponse.json({ error: "The selected file is empty" }, { status: 400 });
     }
     if (file.size > MAX_UPLOAD_BYTES) {
       return NextResponse.json({ error: "Image is too large. Maximum size is 4 MB." }, { status: 413 });
     }
 
-    const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const detected = sniff(buffer);
+    if (!detected || !ALLOWED_TYPES.includes(detected)) {
+      return NextResponse.json(
+        { error: "That file is not a valid image. Please upload a JPG, PNG, WebP or GIF." },
+        { status: 415 }
+      );
+    }
+    // The extension is derived from the bytes, not the filename, so a .png
+    // that is really a JPEG is still stored with a correct extension.
+    const ext = EXT_FOR_TYPE[detected] || "jpg";
     const filename = `${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
+
     const media = await uploadMedia(folder, file, filename);
 
-    return NextResponse.json({ url: media.url, pathname: media.pathname, fileId: media.fileId ?? undefined, folder, provider: media.provider }, { status: 201 });
+    return NextResponse.json(
+      { url: media.url, pathname: media.pathname, fileId: media.fileId ?? undefined, folder, provider: media.provider },
+      { status: 201 }
+    );
   } catch (error: any) {
     console.error("Upload error:", error);
-    const message = error?.message?.includes("Storage is not configured")
-      ? "Image storage is not configured on the server. Add GOOGLE_OAUTH_* (or GOOGLE_CREDENTIALS_JSON / GOOGLE_CREDENTIALS_PATH) to the production environment, then redeploy."
-      : "Upload failed. Please try again.";
-    return NextResponse.json({ error: message }, { status: 503 });
+    // Only pass through messages we wrote ourselves. Everything else could
+    // carry internal paths or driver detail, so it gets a generic reply and
+    // the full error stays in the server log.
+    const raw = typeof error?.message === "string" ? error.message : "";
+    const isKnownConfigError =
+      /not configured/i.test(raw) || /R2_PUBLIC_URL/i.test(raw) || /bucket/i.test(raw);
+    return NextResponse.json(
+      { error: isKnownConfigError ? raw : "Upload failed. Please try again.", storage: storageStatus() },
+      { status: 503 }
+    );
   }
 }

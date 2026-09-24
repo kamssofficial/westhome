@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuthRole } from "@/lib/apiAuth";
 import db from "@/lib/db";
-import { uploadMedia, deleteMedia } from "@/lib/media";
+import { uploadMedia, deleteMedia, storageStatus } from "@/lib/media";
 
 const HERO_ACTIVE_KEY = "hero_active";
 const HERO_HISTORY_KEY = "hero_history";
@@ -17,6 +17,7 @@ interface HeroImage {
   size?: number;
   createdAt: string;
   fileId?: string; // Drive file id for clean deletes
+  storageKey?: string; // R2 object key for clean deletes
 }
 
 // GET — get active hero + history (requires auth)
@@ -96,22 +97,31 @@ export async function POST(request: NextRequest) {
       }
     } catch {}
 
-    // Upload to storage — Google Drive, local filesystem in dev only.
+    // Upload to storage — R2, Google Drive, or local filesystem in dev only.
     const ext = file.name.split(".").pop() || "png";
     const filename = `hero-${Date.now()}.${ext}`;
     let imageUrl: string;
     let fileId: string | undefined;
+    let storageKey: string | undefined;
 
     try {
       const media = await uploadMedia("banners", file, filename);
       imageUrl = media.url;
       fileId = media.fileId;
+      storageKey = media.storageKey;
     } catch (uploadErr: any) {
       console.error("Hero upload failed:", uploadErr?.message || uploadErr);
-      const message = uploadErr?.message?.includes("Storage is not configured")
-        ? "Image storage is not configured on the server. Add GOOGLE_OAUTH_* (or GOOGLE_CREDENTIALS_JSON / GOOGLE_CREDENTIALS_PATH) to the production environment, then redeploy."
-        : "Image upload failed. Please try again.";
-      return NextResponse.json({ error: message }, { status: 503 });
+      const raw = typeof uploadErr?.message === "string" ? uploadErr.message : "";
+      const isConfigError = /not configured|R2_PUBLIC_URL|bucket/i.test(raw);
+      return NextResponse.json(
+        {
+          error: isConfigError
+            ? raw
+            : "Image upload failed. Please try again.",
+          storage: storageStatus(),
+        },
+        { status: 503 }
+      );
     }
 
     // Build new hero image record
@@ -126,6 +136,7 @@ export async function POST(request: NextRequest) {
       size: file.size,
       createdAt: new Date().toISOString(),
       fileId,
+      storageKey,
     };
 
     // Get current active and history
@@ -229,7 +240,7 @@ export async function DELETE() {
     const active: HeroImage | null = activeSetting ? (activeSetting.value as any) : null;
 
     // Best-effort storage cleanup (Drive file id or legacy /api/images URL).
-    await deleteMedia({ fileId: active?.fileId, url: active?.url });
+    await deleteMedia({ fileId: active?.fileId, storageKey: active?.storageKey, url: active?.url });
 
     if (active) {
       const historySetting = await db.siteSetting.findUnique({ where: { key: HERO_HISTORY_KEY } });

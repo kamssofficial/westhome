@@ -82,9 +82,10 @@ export default function AdminShell({
       {/* Mobile overlay */}
       <div
         className={cn(
-          "fixed inset-0 z-40 lg:hidden transition-all duration-300",
-          sidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+          "fixed inset-0 z-40 transition-all duration-300 lg:hidden",
+          sidebarOpen ? "opacity-100" : "pointer-events-none opacity-0"
         )}
+        aria-hidden={!sidebarOpen}
       >
         <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
       </div>
@@ -92,10 +93,11 @@ export default function AdminShell({
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed top-0 left-0 z-50 h-full bg-panel-surface border-r border-panel-border transition-transform duration-300 lg:translate-x-0 flex flex-col",
+          "fixed left-0 top-0 z-50 flex h-full flex-col border-r border-panel-border bg-panel-surface transition-transform duration-300 lg:translate-x-0",
           sidebarWidthClass,
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
+        aria-label="Admin navigation"
       >
         {/* Brand header */}
         <div className="px-5 py-5 border-b border-panel-border">
@@ -109,7 +111,7 @@ export default function AdminShell({
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
+        <nav className="flex-1 space-y-5 overflow-y-auto overscroll-contain px-3 py-4">
           {visibleGroups.map((group) => (
             <div key={group.title || "nav"}>
               {group.title && (
@@ -163,30 +165,34 @@ export default function AdminShell({
       {/* Main content */}
       <div className={contentMarginClass}>
         {/* Top bar */}
-        <header className="sticky top-0 z-30 backdrop-blur-lg border-b border-panel-border h-14 flex items-center px-4 md:px-6 gap-4 bg-panel-header/80">
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-panel-border bg-panel-header/85 px-3 backdrop-blur-lg sm:gap-4 sm:px-4 md:px-6">
           <button
+            type="button"
             onClick={() => setSidebarOpen(true)}
-            className="lg:hidden p-2 hover:bg-panel-hover rounded-xl transition-colors"
+            aria-label="Open navigation menu"
+            aria-expanded={sidebarOpen}
+            className="-ml-1 rounded-xl p-2 text-panel-text transition-colors hover:bg-panel-hover lg:hidden"
           >
             <Menu size={18} />
           </button>
 
-          {/* Breadcrumb */}
-          <div className="flex-1 flex items-center gap-1.5 text-sm">
-            <span className="text-panel-icon">{breadcrumbRoot}</span>
-            <ChevronRight size={12} className="text-panel-icon/70" />
-            <span className="font-medium text-panel-text-strong">{currentPageLabel}</span>
+          {/* Breadcrumb — the root is decoration, so it yields to the page
+              label on the narrowest screens instead of wrapping. */}
+          <div className="flex min-w-0 flex-1 items-center gap-1.5 text-sm">
+            <span className="hidden shrink-0 text-panel-icon sm:inline">{breadcrumbRoot}</span>
+            <ChevronRight size={12} className="hidden shrink-0 text-panel-icon/70 sm:block" />
+            <span className="truncate font-medium text-panel-text-strong">{currentPageLabel}</span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             <NotificationBell />
-            <div className="w-px h-6 bg-panel-border mx-1" />
+            <div className="mx-0.5 hidden h-6 w-px bg-panel-border sm:block" />
             <ProfileMenu userName={userName} userRole={userRole} userInitials={initials} basePath={`/${breadcrumbRoot.toLowerCase()}`} />
           </div>
         </header>
 
         {/* Page content */}
-        <main className="p-4 md:p-6 lg:p-8 max-w-[1400px]">
+        <main className="mx-auto w-full max-w-[1400px] p-3 sm:p-4 md:p-6 lg:p-8">
           {children}
         </main>
       </div>
