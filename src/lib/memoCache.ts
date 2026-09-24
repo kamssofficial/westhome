@@ -173,12 +173,26 @@ export const CATALOG_TTL_MS = 300_000;
  */
 export const SEO_XML_TTL_MS = 1_800_000;
 
+/**
+ * Admin dashboard aggregate: 30 seconds.
+ *
+ * The loader fans ~45 reads across a 3-connection pool against a remote
+ * Postgres, so a cold load costs seconds. The dashboard also re-polls every
+ * 20s, which meant paying that cost on every poll and every page visit. At a
+ * 30s TTL almost all polls are served from memory, and the stale-while-
+ * revalidate path means an expiring entry is still returned instantly while the
+ * rebuild happens out of band. Short enough that the figures stay effectively
+ * live; the manual refresh button bypasses it via `force`.
+ */
+export const DASHBOARD_TTL_MS = 30_000;
+
 export const NS = {
   products: "products",
   product: "product",
   categories: "categories",
   sitemap: "sitemap",
   feed: "feed",
+  dashboard: "dashboard",
 } as const;
 
 // Hard cap so pathological cache-key variance can't grow memory unbounded.

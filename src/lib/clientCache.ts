@@ -72,6 +72,26 @@ export function readCached<T>(url: string): T | null {
 }
 
 /**
+ * Store a value the caller fetched itself.
+ *
+ * `cachedFetch` couples fetching and storing, which does not suit callers that
+ * need their own request handling (auth redirects, silent background refreshes,
+ * custom error states). Those fetch normally and hand the result here.
+ */
+export function writeCached<T>(url: string, data: T, ttl?: number): void {
+  const entry: CacheEntry<T> = { data, expires: Date.now() + (ttl ?? DEFAULT_TTL) };
+  try {
+    sessionStorage.setItem(PREFIX + url, JSON.stringify(entry));
+  } catch {
+    // Quota exceeded — drop expired entries and retry once before giving up.
+    clearExpiredCache();
+    try {
+      sessionStorage.setItem(PREFIX + url, JSON.stringify(entry));
+    } catch {}
+  }
+}
+
+/**
  * Clear all expired cache entries
  */
 function clearExpiredCache() {

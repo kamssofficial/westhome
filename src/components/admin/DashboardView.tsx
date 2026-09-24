@@ -225,14 +225,58 @@ export default function DashboardView({
   }
 
   if (loading && !data) {
+    // Mirrors the real layout — dark command band with four headline cells,
+    // then the light live-store card and a chart row. The old skeleton was six
+    // unrelated light cards in a 4-column grid, so every load reshuffled the
+    // whole page the moment data arrived.
     return (
-      <div className="space-y-4" aria-busy="true" aria-label="Loading dashboard">
-        <div className="h-40 animate-pulse rounded-2xl bg-surface-muted" />
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-28 animate-pulse rounded-2xl bg-surface-muted" />
-          ))}
-        </div>
+      <div className="space-y-6 lg:space-y-8" aria-busy="true" aria-label="Loading dashboard">
+        <section className="overflow-hidden rounded-[1.75rem] bg-[#2C1F17] text-white shadow-sm">
+          <div className="relative">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <div className="h-2.5 w-16 animate-pulse rounded bg-white/20" />
+                <div className="mt-3 h-8 w-40 animate-pulse rounded bg-white/15 sm:h-9" />
+                <div className="mt-3 h-2.5 w-44 animate-pulse rounded bg-white/10" />
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="h-9 w-28 animate-pulse rounded-full bg-white/10" />
+                <div className="h-9 w-9 animate-pulse rounded-full bg-white/10" />
+              </div>
+            </div>
+
+            <div className="mt-6 grid grid-cols-2 border-t border-white/10 lg:grid-cols-4">
+              {[0, 1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    "border-b border-white/10 px-5 py-5 sm:px-7 lg:border-b-0",
+                    i === 0 && "border-r",
+                    i === 1 && "lg:border-r",
+                    i === 2 && "border-r lg:border-r-0",
+                  )}
+                >
+                  <div className="h-2.5 w-24 animate-pulse rounded bg-white/20" />
+                  <div className="mt-4 h-7 w-28 animate-pulse rounded bg-white/25 sm:h-8" />
+                  <div className="mt-2.5 h-2.5 w-20 animate-pulse rounded bg-white/10" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
+          <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
+            <div className="h-4 w-28 animate-pulse rounded bg-surface-muted" />
+            <div className="h-2.5 w-32 animate-pulse rounded bg-surface-muted" />
+          </div>
+          <div className="grid grid-cols-2 gap-3 p-5 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-16 animate-pulse rounded-xl bg-surface-muted" />
+            ))}
+          </div>
+        </section>
+
         <div className="h-80 animate-pulse rounded-2xl bg-surface-muted" />
       </div>
     );
