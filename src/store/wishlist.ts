@@ -59,7 +59,9 @@ export const useWishlistStore = create<WishlistStore>()(
       getItemCount: () => get().items.length,
     }),
     {
+      // See cart.ts — same hydration-mismatch mechanism, same fix.
       name: "westhome-wishlist",
+      skipHydration: true,
     }
   )
 );

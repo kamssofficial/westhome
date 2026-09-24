@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import Providers from "@/components/layout/Providers";
 import ServiceWorkerRegistration from "@/components/ui/ServiceWorkerRegistration";
+import StoreHydrator from "@/components/ui/StoreHydrator";
 
 // The production domain is the only correct base for canonical/OG URLs.
 // NEXTAUTH_URL must NOT drive metadataBase: hosting platforms can set it to
@@ -180,6 +181,7 @@ export default function RootLayout({
           }}
         />
         <ServiceWorkerRegistration />
+        <StoreHydrator />
         <Providers>
           {children}
         </Providers>

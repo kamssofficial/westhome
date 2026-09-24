@@ -40,7 +40,9 @@ export const useRecentlyViewedStore = create<RecentlyViewedStore>()(
       },
     }),
     {
+      // See cart.ts — same hydration-mismatch mechanism, same fix.
       name: "westhome-recently-viewed",
+      skipHydration: true,
     }
   )
 );

@@ -106,7 +106,14 @@ export const useCartStore = create<CartStore>()(
       },
     }),
     {
+      // skipHydration is load-bearing. Without it, zustand rehydrates from
+      // localStorage at module load — i.e. during hydration — so the header cart
+      // badge renders the persisted count on the client while the server
+      // rendered an empty cart, and React 19 throws #418 and re-renders the
+      // whole SSR tree for every returning shopper. StoreHydrator rehydrates
+      // after first paint instead.
       name: "westhome-cart",
+      skipHydration: true,
     }
   )
 );
