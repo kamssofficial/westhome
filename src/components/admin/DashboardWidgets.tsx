@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
  */
 export type Tone = "neutral" | "accent" | "success" | "warning" | "error" | "info";
 
-const TONE_TINT: Record<Tone, string> = {
+export const TONE_TINT: Record<Tone, string> = {
   neutral: "bg-surface-muted text-text-secondary",
   accent: "bg-accent/10 text-accent",
   success: "bg-success/10 text-success",
@@ -292,7 +292,7 @@ export function EmptyState({
  * the data behind it was fetched. Owns its own one-second ticker so the clock
  * doesn't re-render the whole dashboard every second.
  */
-export function LiveUpdated({ at }: { at: number | null }) {
+export function LiveUpdated({ at, onDark = false }: { at: number | null; onDark?: boolean }) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const i = setInterval(() => setNow(Date.now()), 1000);
@@ -304,15 +304,18 @@ export function LiveUpdated({ at }: { at: number | null }) {
   const ago = seconds < 5 ? "just now" : seconds < 60 ? `${seconds}s ago` : `${Math.floor(seconds / 60)}m ago`;
   return (
     <span
-      className="inline-flex items-center gap-1.5 whitespace-nowrap text-[11px] font-medium text-success"
+      className={cn(
+        "inline-flex items-center gap-1.5 whitespace-nowrap text-[11px] font-medium",
+        onDark ? "text-[#8FD8C6]" : "text-success"
+      )}
       title="This dashboard refreshes by itself — no need to reload"
     >
       <span className="relative flex h-1.5 w-1.5" aria-hidden="true">
-        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-60" />
-        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-success" />
+        <span className={cn("absolute inline-flex h-full w-full animate-ping rounded-full opacity-60", onDark ? "bg-[#8FD8C6]" : "bg-success")} />
+        <span className={cn("relative inline-flex h-1.5 w-1.5 rounded-full", onDark ? "bg-[#8FD8C6]" : "bg-success")} />
       </span>
       Live
-      <span className="font-normal text-text-muted tabular-nums">· updated {ago}</span>
+      <span className={cn("font-normal tabular-nums", onDark ? "text-white/60" : "text-text-muted")}>· updated {ago}</span>
     </span>
   );
 }
