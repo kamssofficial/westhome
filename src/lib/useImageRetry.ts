@@ -32,7 +32,12 @@ export function useImageRetry(
   const [attempt, setAttempt] = useState(0);
   const timer = useRef<number | null>(null);
   const onExhaustedRef = useRef(onExhausted);
-  onExhaustedRef.current = onExhausted;
+
+  // Keep the latest callback without writing a ref during render (which the
+  // React Compiler rejects, and which is unsafe under concurrent rendering).
+  useEffect(() => {
+    onExhaustedRef.current = onExhausted;
+  }, [onExhausted]);
 
   // A different source (variant switch, product change) resets the cycle.
   useEffect(() => {

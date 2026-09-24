@@ -58,7 +58,8 @@ function checkNode() {
   const [major, minor] = process.versions.node.split(".").map(Number);
   const ok = major > 20 || (major === 20 && minor >= 9);
   const detail = `running v${process.versions.node} (Next.js 16 needs >= 20.9)`;
-  ok ? pass("Node version", detail) : fail("Node version", detail);
+  if (ok) pass("Node version", detail);
+  else fail("Node version", detail);
 }
 
 // ── Environment variables ───────────────────────────────────────────────────
@@ -70,7 +71,8 @@ function checkEnv(loadedFiles) {
   }
 
   for (const key of ["DATABASE_URL", "NEXTAUTH_SECRET", "RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET"]) {
-    process.env[key] ? pass(`env ${key}`, "set") : fail(`env ${key}`, "missing — the app will not work without it");
+    if (process.env[key]) pass(`env ${key}`, "set");
+    else fail(`env ${key}`, "missing — the app will not work without it");
   }
 
   const publicUrl = process.env.NEXTAUTH_URL || "";
@@ -87,19 +89,22 @@ function checkEnv(loadedFiles) {
   // NEXT_PUBLIC_* values are baked into the client bundle at build time, so a
   // value only present at runtime has no effect on an already-built app.
   for (const key of ["NEXT_PUBLIC_APP_URL", "NEXT_PUBLIC_WHATSAPP_NUMBER"]) {
-    process.env[key] ? pass(`env ${key}`, "set (build-time value)") : warn(`env ${key}`, "unset — set it before building");
+    if (process.env[key]) pass(`env ${key}`, "set (build-time value)");
+    else warn(`env ${key}`, "unset — set it before building");
   }
 
   const hasDrive =
     (process.env.GOOGLE_OAUTH_CLIENT_ID && process.env.GOOGLE_OAUTH_REFRESH_TOKEN) ||
     process.env.GOOGLE_CREDENTIALS_JSON ||
     process.env.GOOGLE_CREDENTIALS_PATH;
-  hasDrive
-    ? pass("Media storage", "Google Drive credentials present")
-    : warn(
-        "Media storage",
-        "no Google Drive credentials — admin uploads will write to the local disk (UPLOAD_DIR) instead of Drive",
-      );
+  if (hasDrive) {
+    pass("Media storage", "Google Drive credentials present");
+  } else {
+    warn(
+      "Media storage",
+      "no Google Drive credentials — admin uploads will write to the local disk (UPLOAD_DIR) instead of Drive",
+    );
+  }
 }
 
 // ── Database (Supabase) ─────────────────────────────────────────────────────
@@ -153,12 +158,14 @@ function checkBuildOutput() {
     return;
   }
   if (standaloneExpected) {
-    fs.existsSync(standaloneServer)
-      ? pass("Build output", ".next/standalone/server.js present")
-      : fail(
-          "Build output",
-          "NEXT_OUTPUT_MODE=standalone but .next/standalone/server.js is missing — rebuild with that variable set",
-        );
+    if (fs.existsSync(standaloneServer)) {
+      pass("Build output", ".next/standalone/server.js present");
+    } else {
+      fail(
+        "Build output",
+        "NEXT_OUTPUT_MODE=standalone but .next/standalone/server.js is missing — rebuild with that variable set",
+      );
+    }
   } else {
     pass("Build output", ".next/BUILD_ID present (default output mode)");
   }
@@ -167,12 +174,14 @@ function checkBuildOutput() {
   if (standaloneExpected) {
     for (const rel of ["public", path.join(".next", "static")]) {
       const target = path.join(process.cwd(), ".next", "standalone", rel);
-      fs.existsSync(target)
-        ? pass(`standalone ${rel}`, "copied")
-        : warn(
-            `standalone ${rel}`,
-            `missing at .next/standalone/${rel} — cp -r it there or images and CSS will 404`,
-          );
+      if (fs.existsSync(target)) {
+        pass(`standalone ${rel}`, "copied");
+      } else {
+        warn(
+          `standalone ${rel}`,
+          `missing at .next/standalone/${rel} — cp -r it there or images and CSS will 404`,
+        );
+      }
     }
   }
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, use, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Package, Truck, Save, CheckCircle, CreditCard, XCircle, Clock, User, MapPin, FileText, ChevronDown, Eye, ShoppingCart, Phone, Mail, Trash2 } from "lucide-react";
@@ -71,9 +71,7 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [paymentNote, setPaymentNote] = useState("");
 
-  useEffect(() => { fetchOrder(); }, [id]);
-
-  const fetchOrder = async () => {
+  const fetchOrder = useCallback(async () => {
     try {
       const res = await fetch(`/api/admin/orders/${id}`);
       if (res.ok) {
@@ -86,7 +84,9 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
       }
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
-  };
+  }, [id]);
+
+  useEffect(() => { fetchOrder(); }, [fetchOrder]);
 
   const handleQuickAction = async (action: string, note?: string, extra?: any) => {
     setUpdating(true);

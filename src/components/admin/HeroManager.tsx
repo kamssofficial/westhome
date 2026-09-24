@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { Upload, Save, Trash2, RotateCcw, Image, Check, X, Loader2, Maximize2, Clock } from "lucide-react";
+import { Upload, Save, Trash2, RotateCcw, Image as ImageIcon, Check, X, Loader2, Maximize2, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface HeroImage {
@@ -143,7 +143,7 @@ export default function HeroManager({ embedded = false }: { embedded?: boolean }
       {!embedded && (
         <div className="flex items-center justify-between px-6 py-4 border-b border-black/[.06]">
           <div className="flex items-center gap-2.5">
-            <Image size={16} className="text-[#d4a574]" />
+            <ImageIcon size={16} className="text-[#d4a574]" />
             <h2 className="font-semibold text-sm text-[#1a1917]">Hero Image</h2>
             {active && <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> LIVE</span>}
           </div>

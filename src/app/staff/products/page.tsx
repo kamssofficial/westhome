@@ -35,6 +35,9 @@ export default function StaffProductsPage() {
     fetch("/api/categories").then(r => r.json()).then(d => setCategories(d.categories || [])).catch(() => {});
   }, []);
 
+  // Intentionally keyed on the category filter only: `search` is submitted
+  // explicitly via the form, so refetching on each keystroke would be wrong.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchProducts(); }, [categoryFilter]);
 
   return (

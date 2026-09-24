@@ -139,8 +139,16 @@ export default function AdminProductsPage() {
     } catch {}
     return [];
   });
-  const hasProductsCache = (() => { try { const r = sessionStorage.getItem(adminProductsCacheKey); return r ? JSON.parse(r).expires > Date.now() : false; } catch { return false; } })();
-  const [loading, setLoading] = useState(!hasProductsCache);
+  // Seed `loading` from the session cache. Reading it in a lazy useState
+  // initializer (rather than a bare render-time IIFE) keeps the Date.now()
+  // call out of the render body, which the React Compiler purity rule rejects.
+  const [loading, setLoading] = useState(() => {
+    try {
+      const raw = sessionStorage.getItem(adminProductsCacheKey);
+      if (raw) { const e = JSON.parse(raw); if (e.expires > Date.now()) return false; }
+    } catch {}
+    return true;
+  });
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   // Seed the filters from the last visit so the first fetch already uses them
@@ -276,12 +284,12 @@ export default function AdminProductsPage() {
         requestAnimationFrame(() => requestAnimationFrame(() => window.scrollTo(0, y)));
       }
     }
-  }, [debouncedSearch, statusFilter, categoryFilter, sort, page]);
+  }, [debouncedSearch, statusFilter, categoryFilter, sort, page, router]);
 
   useEffect(() => { fetchProducts(); setSelectedIds(new Set()); }, [fetchProducts]);
 
   const toggleAll = () => { if (selectedIds.size === products.length) setSelectedIds(new Set()); else setSelectedIds(new Set(products.map(p => p.id))); };
-  const toggleOne = (id: string) => { const s = new Set(selectedIds); s.has(id) ? s.delete(id) : s.add(id); setSelectedIds(s); };
+  const toggleOne = (id: string) => { const s = new Set(selectedIds); if (s.has(id)) s.delete(id); else s.add(id); setSelectedIds(s); };
 
   // Save scroll position before destructive actions so we can restore after fetch
   const saveScrollForRestore = () => { scrollRestoreRef.current = window.scrollY; };

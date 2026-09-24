@@ -23,10 +23,6 @@ export default function AdminContentPage() {
     { slug: "faq", title: "FAQ" },
   ];
 
-  useEffect(() => {
-    fetchPages();
-  }, []);
-
   const fetchPages = async () => {
     try {
       const res = await fetch("/api/content");
@@ -40,6 +36,10 @@ export default function AdminContentPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchPages();
+  }, []);
 
   const handleSave = async () => {
     if (!editing) return;

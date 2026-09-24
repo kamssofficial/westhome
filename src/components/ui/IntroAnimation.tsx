@@ -51,7 +51,6 @@ export default function IntroAnimation({ children }: { children: React.ReactNode
     at(() => setPhase("done"), 1600);
 
     return () => timers.current.forEach(clearTimeout);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Mark the intro as seen when it completes so it never replays this session.
