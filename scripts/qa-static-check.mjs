@@ -1,7 +1,28 @@
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 
 const root = process.cwd();
+
+/** Every .tsx under src/app that is a Server Component (no "use client"). */
+async function collectServerComponents() {
+  const found = [];
+  async function walk(dir) {
+    const entries = await readdir(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        await walk(full);
+        continue;
+      }
+      if (!entry.name.endsWith(".tsx")) continue;
+      const source = await readFile(full, "utf8");
+      if (/^\s*["']use client["']/.test(source)) continue;
+      found.push({ file: full.slice(root.length + 1), source });
+    }
+  }
+  await walk(join(root, "src", "app"));
+  return found;
+}
 const files = [
   "src/api-handlers/categories/route.ts",
   "src/lib/auth.ts",
@@ -44,5 +65,25 @@ if (!apiAuth.includes("getLiveSession") && !apiAuth.includes("requireAuthRole"))
 const orders = source["src/api-handlers/orders/route.ts"];
 if (!orders.includes("Server-side price validation")) throw new Error("Order price validation missing");
 if (!orders.includes("const finalDeliveryCharge = serverDeliveryCharge")) throw new Error("Delivery charge validation missing");
+
+// --- Server -> Client Decimal boundary ------------------------------------
+// Prisma returns class instances for every `Decimal` column. Passing one to a
+// Client Component makes React throw "Only plain objects can be passed to
+// Client Components from Server Components. Decimal objects are not supported",
+// which blanked the collection pages. Any Server Component that reads Prisma
+// must convert its result before handing it to a client component.
+const serverFiles = await collectServerComponents();
+const prismaReaders = serverFiles.filter((file) => /from ["']@\/lib\/db["']/.test(file.source));
+if (prismaReaders.length === 0) {
+  throw new Error("Expected to find Server Components reading Prisma; the scan is broken");
+}
+for (const { file, source } of prismaReaders) {
+  if (!source.includes("serializeForClient")) {
+    throw new Error(
+      `${file} reads Prisma from a Server Component but never calls serializeForClient; ` +
+        "Decimal columns (price/height/width/...) will break the Server -> Client payload",
+    );
+  }
+}
 
 console.log("Static security/data-integrity checks passed.");

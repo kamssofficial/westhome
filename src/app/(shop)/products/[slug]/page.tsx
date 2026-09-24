@@ -4,6 +4,7 @@ import db from "@/lib/db";
 import ProductDetailClient from "./ProductDetailClient";
 import { normalizeImageUrl, resolveProductImage } from "@/lib/categoryImages";
 import { basketSizeChartFor } from "@/lib/basketSizeChart";
+import { serializeForClient } from "@/lib/serializeForClient";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -66,7 +67,12 @@ async function getProduct(slug: string) {
     const normalizeImages = (images: { url: string }[] | undefined | null) =>
       (images ?? []).map((img: any) => ({ ...img, url: normalizeImageUrl(img.url) }));
 
-    return {
+    // Every value here is handed to <ProductDetailClient />, so the whole
+    // object must be plain. serializeForClient converts any Decimal the
+    // explicit field mapping below missed (costPrice, promotionalPrice,
+    // frameSizeWidth/Height, variant costPrice/weight, ...) and keeps the
+    // already-converted numbers untouched.
+    return serializeForClient({
       ...product,
       images: normalizeImages(product.images),
       regularPrice: Number(product.regularPrice),
@@ -100,7 +106,7 @@ async function getProduct(slug: string) {
           colorCode: a.colorCode,
         })),
       })),
-    };
+    });
   } catch (error) {
     console.error("getProduct error:", error);
     return null;
@@ -123,12 +129,16 @@ async function getRelatedProducts(categorySlug: string, excludeId: string) {
       },
       take: 4,
     });
-    return products.map((p: any) => ({
-      ...p,
-      images: (p.images ?? []).map((img: any) => ({ ...img, url: normalizeImageUrl(img.url) })),
-      regularPrice: Number(p.regularPrice),
-      salePrice: p.salePrice ? Number(p.salePrice) : null,
-    }));
+    // Related products render inside <ProductDetailClient /> too, so they need
+    // the same Decimal -> plain-number conversion as the main product row.
+    return serializeForClient(
+      products.map((p: any) => ({
+        ...p,
+        images: (p.images ?? []).map((img: any) => ({ ...img, url: normalizeImageUrl(img.url) })),
+        regularPrice: Number(p.regularPrice),
+        salePrice: p.salePrice ? Number(p.salePrice) : null,
+      })),
+    );
   } catch {
     return [];
   }
@@ -146,11 +156,11 @@ async function getReviews(productId: string) {
       _avg: { rating: true },
       _count: true,
     });
-    return {
+    return serializeForClient({
       reviews,
       avgRating: agg._avg.rating,
       reviewCount: agg._count,
-    };
+    });
   } catch {
     return { reviews: [], avgRating: null, reviewCount: 0 };
   }
