@@ -45,13 +45,19 @@ async function getClient(): Promise<S3Client | null> {
   if (!cfg) return null;
   // Re-create only when the credential set changes (env can be edited in
   // development without a full restart).
-  const key = `${cfg.accountId}|${cfg.accessKeyId}`;
+  const key = `${cfg.accountId}|${cfg.accessKeyId}|${process.env.R2_ENDPOINT || ""}`;
   if (client && clientKey === key) return client;
   const { S3Client: Ctor } = await import("@aws-sdk/client-s3");
+  // R2_ENDPOINT is an escape hatch for any other S3-compatible endpoint
+  // (MinIO, another provider, or a local server in tests). Custom endpoints
+  // need path-style addressing, because `bucket.<custom-host>` is not
+  // resolvable outside R2's own DNS.
+  const customEndpoint = process.env.R2_ENDPOINT;
   client = new Ctor({
     region: "auto",
-    endpoint: `https://${cfg.accountId}.r2.cloudflarestorage.com`,
+    endpoint: customEndpoint || `https://${cfg.accountId}.r2.cloudflarestorage.com`,
     credentials: { accessKeyId: cfg.accessKeyId, secretAccessKey: cfg.secretAccessKey },
+    forcePathStyle: !!customEndpoint,
   });
   clientKey = key;
   return client;
@@ -75,7 +81,6 @@ export async function uploadToR2(
 
   const key = `${folder.replace(/^\/+|\/+$/g, "")}/${filename.replace(/^\/+/, "")}`;
   const body = file instanceof File ? Buffer.from(await file.arrayBuffer()) : file;
-
   const { PutObjectCommand } = await import("@aws-sdk/client-s3");
   await s3.send(
     new PutObjectCommand({

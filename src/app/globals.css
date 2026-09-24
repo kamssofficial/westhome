@@ -75,7 +75,10 @@
    panel pages; because Tailwind v4 compiles those to `var(--color-*)`, the
    override lands on all of them without touching a single call site.
 
-   /staff (.staff-theme) inherits this and adds its own badge colour. */
+   Scope note: /staff wraps its shell in `.staff-theme` *without* `.admin-theme`,
+   so it continues to read the storefront's warm tokens and is unaffected by
+   this block (it already shared the warm family). /login lives in the (shop)
+   group and likewise keeps the storefront palette. */
 .admin-theme {
   /* accent — terracotta clay */
   --color-accent: #B4552D;
