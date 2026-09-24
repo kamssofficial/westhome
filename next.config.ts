@@ -67,10 +67,10 @@ const nextConfig: NextConfig = {
                           "img-src 'self' data: blob: https:",
                           "font-src 'self' data:",
                           "media-src 'self' data: blob: https:",
-                          // R2 public base URL is added at build time when configured.
-                          `connect-src 'self' https://*.razorpay.com${
-                            process.env.R2_PUBLIC_BASE_URL ? " " + process.env.R2_PUBLIC_BASE_URL.replace(/\/+$/, "") : ""
-                          }`,
+                          // Catalog media is delivered via Google Drive (the
+                          // /api/images proxy or Google's CDN host), and admin
+                          // image pickers may pass blob: previews.
+                          "connect-src 'self' https://*.razorpay.com https://lh3.googleusercontent.com",
                           "frame-src 'self' https://*.razorpay.com",
                           "object-src 'none'",
                           "base-uri 'self'",

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuthRole } from "@/lib/apiAuth";
 import db from "@/lib/db";
-import { uploadMedia, deleteMedia, storageStatus } from "@/lib/media";
+import { uploadMedia, storageStatus } from "@/lib/media";
+import { sniffImageType, imageExtensionFor } from "@/lib/imageMagic";
 
 const HERO_ACTIVE_KEY = "hero_active";
 const HERO_HISTORY_KEY = "hero_history";
@@ -17,7 +18,35 @@ interface HeroImage {
   size?: number;
   createdAt: string;
   fileId?: string; // Drive file id for clean deletes
-  storageKey?: string; // R2 object key for clean deletes
+  storageKey?: string; // legacy storage key from previous backends; unused by Drive
+}
+
+const MAX_HERO_BYTES = 10 * 1024 * 1024;
+
+/**
+ * Pixel size from the file header, for the "1024 x 768" caption in the panel.
+ * PNG (IHDR) and JPEG (SOF0/SOF2) cover everything the uploader accepts; a
+ * header we cannot read yields zeros, and the caption is display-only anyway.
+ */
+function imageDimensions(buffer: Buffer): { width: number; height: number } {
+  try {
+    if (buffer.length >= 24 && buffer[0] === 0x89 && buffer[1] === 0x50) {
+      return { width: buffer.readUInt32BE(16), height: buffer.readUInt32BE(20) };
+    }
+    if (buffer.length >= 4 && buffer[0] === 0xff && buffer[1] === 0xd8) {
+      let i = 2;
+      while (i + 9 < buffer.length) {
+        if (buffer[i] !== 0xff) { i += 1; continue; }
+        const marker = buffer[i + 1];
+        if (marker === 0xc0 || marker === 0xc2) {
+          return { width: buffer.readUInt16BE(i + 7), height: buffer.readUInt16BE(i + 5) };
+        }
+        const segmentLength = buffer.readUInt16BE(i + 2);
+        i += segmentLength > 0 ? segmentLength + 2 : 2;
+      }
+    }
+  } catch {}
+  return { width: 0, height: 0 };
 }
 
 // GET — get active hero + history (requires auth)
@@ -28,28 +57,31 @@ export async function GET() {
   try {
     const activeSetting = await db.siteSetting.findUnique({ where: { key: HERO_ACTIVE_KEY } });
     const historySetting = await db.siteSetting.findUnique({ where: { key: HERO_HISTORY_KEY } });
+    const currentActive: HeroImage | null = activeSetting ? (activeSetting.value as any) : null;
+    const existingHistory: HeroImage[] = historySetting ? ((historySetting.value as any)?.images || []) : [];
 
-    const active: HeroImage | null = activeSetting ? (activeSetting.value as any) : null;
-    const history: HeroImage[] = historySetting ? ((historySetting.value as any)?.images || []) : [];
-
-    return NextResponse.json({ active, history });
+    return NextResponse.json({
+      active: currentActive,
+      history: existingHistory,
+      storage: storageStatus(),
+    });
   } catch (error) {
-    console.error("Hero GET error:", error);
-    return NextResponse.json({ error: "Failed to fetch hero images" }, { status: 500 });
+    console.error("Admin hero-image GET error:", error);
+    return NextResponse.json({ error: "Failed to load hero images" }, { status: 500 });
   }
 }
 
-// POST — upload and publish new hero image
+// POST — upload a hero image, replacing the current one
 export async function POST(request: NextRequest) {
   const authResult = await requireAuthRole(["ADMIN", "MANAGER", "CONTENT_MANAGER", "STAFF"]);
   if (authResult.error) return authResult.error;
 
   try {
-    const userId = (authResult.session?.user as any)?.id || "unknown";
-    const userName = (authResult.session?.user as any)?.name || "Staff";
-
+    // The panel posts multipart form data (HeroManager.handlePublish), so the
+    // image arrives as bytes. It can never arrive as a JSON field: JSON cannot
+    // carry a File, and uploadMedia needs the real thing.
     const contentLength = Number(request.headers.get("content-length"));
-    if (Number.isFinite(contentLength) && contentLength > 10 * 1024 * 1024) {
+    if (Number.isFinite(contentLength) && contentLength > MAX_HERO_BYTES) {
       return NextResponse.json({ error: "Image must be under 10MB" }, { status: 413 });
     }
 
@@ -57,69 +89,38 @@ export async function POST(request: NextRequest) {
     const file = formData.get("file") as File | null;
     const position = (formData.get("position") as string) || "center";
 
-    if (!file) {
+    if (!file || typeof file === "string") {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
-
-    // Validate file type
-    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
-    if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json({ error: "Image must be JPG, PNG, or WEBP" }, { status: 400 });
+    if (file.size === 0) {
+      return NextResponse.json({ error: "The selected file is empty" }, { status: 400 });
+    }
+    if (file.size > MAX_HERO_BYTES) {
+      return NextResponse.json({ error: "Image must be under 10MB" }, { status: 413 });
     }
 
-    // Validate file size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      return NextResponse.json({ error: "Image must be under 10MB" }, { status: 400 });
+    const buffer = Buffer.from(await file.arrayBuffer());
+    // Validate the bytes instead of the declared Content-Type, and take the
+    // extension from them, so a mislabelled upload is still stored correctly.
+    if (!sniffImageType(buffer)) {
+      return NextResponse.json({ error: "Image must be JPG, PNG, WEBP or GIF" }, { status: 415 });
     }
-
-    // Get image dimensions
-    let width = 0;
-    let height = 0;
-    try {
-      const bytes = await file.arrayBuffer();
-      // Simple PNG/JPEG header dimension reading
-      const arr = new Uint8Array(bytes);
-      if (arr[0] === 0x89 && arr[1] === 0x50) {
-        // PNG
-        width = (arr[16] << 24) | (arr[17] << 16) | (arr[18] << 8) | arr[19];
-        height = (arr[20] << 24) | (arr[21] << 16) | (arr[22] << 8) | arr[23];
-      } else if (arr[0] === 0xff && arr[1] === 0xd8) {
-        // JPEG — scan for SOF marker
-        let i = 2;
-        while (i < arr.length - 9) {
-          if (arr[i] === 0xff && (arr[i + 1] === 0xc0 || arr[i + 1] === 0xc2)) {
-            height = (arr[i + 5] << 8) | arr[i + 6];
-            width = (arr[i + 7] << 8) | arr[i + 8];
-            break;
-          }
-          i += ((arr[i + 2] << 8) | arr[i + 3]) + 2;
-        }
-      }
-    } catch {}
-
-    // Upload to storage — R2, Google Drive, or local filesystem in dev only.
-    const ext = file.name.split(".").pop() || "png";
+    const { width, height } = imageDimensions(buffer);
+    const ext = imageExtensionFor(buffer) || "jpg";
     const filename = `hero-${Date.now()}.${ext}`;
+    const userId = (authResult.session?.user as any)?.id || "unknown";
+    const userName = (authResult.session?.user as any)?.name || "Admin";
     let imageUrl: string;
     let fileId: string | undefined;
-    let storageKey: string | undefined;
 
     try {
       const media = await uploadMedia("banners", file, filename);
       imageUrl = media.url;
       fileId = media.fileId;
-      storageKey = media.storageKey;
     } catch (uploadErr: any) {
       console.error("Hero upload failed:", uploadErr?.message || uploadErr);
-      const raw = typeof uploadErr?.message === "string" ? uploadErr.message : "";
-      const isConfigError = /not configured|R2_PUBLIC_URL|bucket/i.test(raw);
       return NextResponse.json(
-        {
-          error: isConfigError
-            ? raw
-            : "Image upload failed. Please try again.",
-          storage: storageStatus(),
-        },
+        { error: uploadErr.message, storage: storageStatus() },
         { status: 503 }
       );
     }
@@ -136,7 +137,6 @@ export async function POST(request: NextRequest) {
       size: file.size,
       createdAt: new Date().toISOString(),
       fileId,
-      storageKey,
     };
 
     // Get current active and history
@@ -219,18 +219,17 @@ export async function PATCH(request: NextRequest) {
         update: { value: { images: updatedHistory as any } },
         create: { key: HERO_HISTORY_KEY, value: { images: updatedHistory as any }, group: "hero" },
       });
-
       return NextResponse.json({ active: restore, success: true });
     }
 
-    return NextResponse.json({ error: "No valid action provided" }, { status: 400 });
+    return NextResponse.json({ error: "No action specified" }, { status: 400 });
   } catch (error) {
     console.error("Hero PATCH error:", error);
-    return NextResponse.json({ error: "Failed to update" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to update hero image" }, { status: 500 });
   }
 }
 
-// DELETE — remove active hero image
+// DELETE — take the active hero down, keeping it in history so it can be restored
 export async function DELETE() {
   const authResult = await requireAuthRole(["ADMIN", "MANAGER", "CONTENT_MANAGER"]);
   if (authResult.error) return authResult.error;
@@ -239,21 +238,28 @@ export async function DELETE() {
     const activeSetting = await db.siteSetting.findUnique({ where: { key: HERO_ACTIVE_KEY } });
     const active: HeroImage | null = activeSetting ? (activeSetting.value as any) : null;
 
-    // Best-effort storage cleanup (Drive file id or legacy /api/images URL).
-    await deleteMedia({ fileId: active?.fileId, storageKey: active?.storageKey, url: active?.url });
+    // Nothing is live, so "removed" already holds — clicking remove twice is safe.
+    if (!active) return NextResponse.json({ success: true, active: null });
 
-    if (active) {
-      const historySetting = await db.siteSetting.findUnique({ where: { key: HERO_HISTORY_KEY } });
-      const history: HeroImage[] = historySetting ? ((historySetting.value as any)?.images || []) : [];
-      const updatedHistory = [active, ...history].slice(0, 20);
-      await db.siteSetting.upsert({
-        where: { key: HERO_HISTORY_KEY },
-        update: { value: { images: updatedHistory as any } },
-        create: { key: HERO_HISTORY_KEY, value: { images: updatedHistory as any }, group: "hero" },
-      });
-    }
+    const historySetting = await db.siteSetting.findUnique({ where: { key: HERO_HISTORY_KEY } });
+    const history: HeroImage[] = historySetting ? ((historySetting.value as any)?.images || []) : [];
 
-    await db.siteSetting.delete({ where: { key: HERO_ACTIVE_KEY } }).catch(() => {});
+    // The removed image — and its Drive file — stays at the top of history,
+    // because that is what the panel's Restore button works from. Deleting the
+    // file here would leave a dead thumbnail and a restore that cannot work.
+    const updatedHistory = [active, ...history.filter((h) => h.url !== active.url)].slice(0, 20);
+
+    await db.siteSetting.upsert({
+      where: { key: HERO_HISTORY_KEY },
+      update: { value: { images: updatedHistory as any } },
+      create: { key: HERO_HISTORY_KEY, value: { images: updatedHistory as any }, group: "hero" },
+    });
+    await db.siteSetting.upsert({
+      where: { key: HERO_ACTIVE_KEY },
+      update: { value: null as any },
+      create: { key: HERO_ACTIVE_KEY, value: null as any, group: "hero" },
+    });
+
     return NextResponse.json({ success: true, active: null });
   } catch (error) {
     console.error("Hero DELETE error:", error);

@@ -4,57 +4,53 @@
  * Covers the two pieces that make admin image upload actually work in
  * production, neither of which has live credentials in CI:
  *
- *  1. src/lib/r2.ts — Cloudflare R2 (S3-compatible) client wiring: endpoint
- *     construction, the PutObject/DeleteObject payloads, public URL building
- *     and key extraction. Exercised against a mocked @aws-sdk/client-s3.
- *  2. src/lib/imageMagic.ts — content-based type detection, so a file that
+ *  1. src/lib/imageMagic.ts - content-based type detection, so a file that
  *     merely *claims* to be an image is rejected.
+ *  2. src/lib/media.ts - the storage-status report plus the Drive-first /
+ *     local-disk upload path (uploadToDrive/deleteFromDrive are mocked).
  *
  * Run: node --experimental-test-module-mocks --test tests/media-upload.test.mjs
  */
-import { describe, it, beforeEach, afterEach, mock } from "node:test";
+import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert/strict";
 
-// --- Mock the AWS SDK before r2.ts is imported ------------------------------
-const sent = [];
-class FakeS3Client {
-  constructor(config) {
-    this.config = config;
-    sent.push({ type: "construct", config });
-  }
-  async send(command) {
-    sent.push({ type: "send", name: command.constructor.name, input: command.input });
-    return {};
-  }
-}
-class PutObjectCommand {
-  constructor(input) { this.input = input; }
-}
-class DeleteObjectCommand {
-  constructor(input) { this.input = input; }
-}
-mock.module("@aws-sdk/client-s3", {
-  namedExports: { S3Client: FakeS3Client, PutObjectCommand, DeleteObjectCommand },
+// Mock the Drive layer before media.ts is imported. The specifier has to
+// resolve to the same file media.ts imports (./gdrive.ts), because node:test
+// mocks by resolved URL and the runner knows nothing about the "@/" alias.
+const driveCalls = { uploaded: [], deleted: [] };
+
+mock.module("../src/lib/gdrive.ts", {
+  namedExports: {
+    uploadToDrive: async (folder, file, filename) => {
+      driveCalls.uploaded.push({ folder, filename });
+      return {
+        fileId: "drive-" + filename,
+        url: "/api/images/" + filename,
+        filename,
+      };
+    },
+    deleteFromDrive: async (id) => {
+      driveCalls.deleted.push(id);
+    },
+  },
 });
 
-const r2 = await import("../src/lib/r2.ts");
+const media = await import("../src/lib/media.ts");
 const magic = await import("../src/lib/imageMagic.ts");
 
-const R2_ENV = {
-  CLOUDFLARE_ACCOUNT_ID: "acct123",
-  CLOUDFLARE_R2_ACCESS_KEY_ID: "ak-test",
-  CLOUDFLARE_R2_SECRET_ACCESS_KEY: "sk-test",
-  R2_BUCKET_NAME: "westhome-media",
-  R2_PUBLIC_URL: "https://media.westhome.in/",
+const DRIVE_ENV = {
+  GOOGLE_OAUTH_CLIENT_ID: "test-client-id.apps.googleusercontent.com",
+  GOOGLE_OAUTH_CLIENT_SECRET: "test-client-secret",
+  GOOGLE_OAUTH_REFRESH_TOKEN: "test-refresh-token",
 };
 
-function setEnv(keys) {
+function setEnv(keys = {}) {
   for (const k of [
-    "CLOUDFLARE_ACCOUNT_ID",
-    "CLOUDFLARE_R2_ACCESS_KEY_ID",
-    "CLOUDFLARE_R2_SECRET_ACCESS_KEY",
-    "R2_BUCKET_NAME",
-    "R2_PUBLIC_URL",
+    "GOOGLE_OAUTH_CLIENT_ID",
+    "GOOGLE_OAUTH_CLIENT_SECRET",
+    "GOOGLE_OAUTH_REFRESH_TOKEN",
+    "GOOGLE_CREDENTIALS_PATH",
+    "GOOGLE_CREDENTIALS_JSON",
   ]) {
     if (keys[k] === undefined) delete process.env[k];
     else process.env[k] = keys[k];
@@ -68,7 +64,7 @@ const PNG = Buffer.from(
   "hex"
 );
 
-describe("imageMagic — content-based detection", () => {
+describe("imageMagic - content-based detection", () => {
   it("detects PNG from its signature", () => {
     assert.equal(magic.sniffImageType(PNG), "image/png");
     assert.equal(magic.imageExtensionFor(PNG), "png");
@@ -99,134 +95,113 @@ describe("imageMagic — content-based detection", () => {
   });
 });
 
-describe("r2 — configuration detection", () => {
-  beforeEach(() => { sent.length = 0; });
-  afterEach(() => setEnv({}));
+describe("storageStatus", () => {
+  beforeEach(() => setEnv(undefined));
 
-  it("reports unconfigured when no keys are present", () => {
-    setEnv({});
-    assert.equal(r2.r2Configured(), false);
+  it("reports Google Drive as configured when the OAuth trio is present", () => {
+    setEnv(DRIVE_ENV);
+    assert.equal(media.storageStatus().anyConfigured, true);
+    assert.equal(media.storageStatus().drive.configured, true);
+    assert.equal(media.storageStatus().missing, null);
   });
 
-  it("requires the full credential set", () => {
-    for (const key of [
-      "CLOUDFLARE_ACCOUNT_ID",
-      "CLOUDFLARE_R2_ACCESS_KEY_ID",
-      "CLOUDFLARE_R2_SECRET_ACCESS_KEY",
-      "R2_BUCKET_NAME",
-    ]) {
-      sent.length = 0;
-      setEnv({ ...R2_ENV, [key]: undefined });
-      assert.equal(r2.r2Configured(), false, `${key} is required`);
+  it("reports Google Drive as not configured when no Drive credentials are set", () => {
+    setEnv(undefined);
+    assert.equal(media.storageStatus().anyConfigured, false);
+    assert.equal(media.storageStatus().drive.configured, false);
+    assert.match(media.storageStatus().missing ?? "", /GOOGLE_OAUTH/);
+  });
+
+  it("reports Drive as configured from a service-account credential file or JSON", () => {
+    setEnv({
+      GOOGLE_CREDENTIALS_PATH: "/tmp/service-account.json",
+    });
+    assert.equal(media.storageStatus().drive.configured, true);
+  });
+});
+
+describe("uploadMedia - Drive path", () => {
+  beforeEach(() => setEnv(DRIVE_ENV));
+
+  it("returns a Drive-backed proxy URL (/api/images/<fileId>)", async () => {
+    const file = new File([PNG], "test.png", { type: "image/png" });
+    const mediaItem = await media.uploadMedia("products", file, "shot.png");
+    assert.equal(mediaItem.provider, "drive");
+    assert.equal(mediaItem.fileId, "drive-shot.png");
+    assert.equal(mediaItem.url, "/api/images/drive-shot.png");
+  });
+
+  it("returns the same fileId when the same filename is uploaded twice", async () => {
+    const file = new File([PNG], "same.png", { type: "image/png" });
+    const first = await media.uploadMedia("banners", file, "same.png");
+    const second = await media.uploadMedia("banners", file, "same.png");
+    assert.equal(first.fileId, second.fileId);
+  });
+});
+
+describe("uploadMedia - dev-local path (Drive not configured, non-production)", () => {
+  beforeEach(() => setEnv(undefined));
+
+  it("writes the file to public/images/<folder> on disk", async () => {
+    const file = new File([PNG], "dev.png", { type: "image/png" });
+    const mediaItem = await media.uploadMedia("products", file, "dev.png");
+    assert.equal(mediaItem.provider, "local");
+    assert.match(mediaItem.url, /\/images\/products\/dev.png$/);
+
+    const fs = await import("fs");
+    const exists = fs.existsSync("public/images/products/dev.png");
+    assert.equal(exists, true);
+    fs.unlinkSync("public/images/products/dev.png");
+  });
+
+  it("throws in production when nothing is configured (never falls back to disk)", async () => {
+    const file = new File([PNG], "prod.png", { type: "image/png" });
+    // Force production while credentials are absent. NODE_ENV itself has to be
+    // set to "production" — deleting it leaves it undefined, which is the
+    // development branch and would let the upload quietly land on local disk.
+    const originalEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = "production";
+    // Clear the target path first, so the assertion below can only pass because
+    // this call wrote nothing — not because an earlier run left a file behind.
+    const fs = await import("fs");
+    fs.rmSync("public/images/products/prod.png", { force: true });
+    try {
+      await assert.rejects(
+        () => media.uploadMedia("products", file, "prod.png"),
+        /GOOGLE_OAUTH|not configured/i
+      );
+      assert.equal(fs.existsSync("public/images/products/prod.png"), false);
+    } finally {
+      if (originalEnv === undefined) delete process.env.NODE_ENV;
+      else process.env.NODE_ENV = originalEnv;
     }
   });
-
-  it("treats a missing R2_PUBLIC_URL as configured but undeliverable", () => {
-    // Deliberate split: the object can still be written, so uploads are
-    // attempted, but uploadToR2 refuses to return an unserveable URL. This
-    // keeps a half-configured bucket from silently 404-ing every image.
-    const { R2_PUBLIC_URL: _drop, ...noPublic } = R2_ENV;
-    setEnv(noPublic);
-    assert.equal(r2.r2Configured(), true);
-  });
-
-  it("is configured when every key is present", () => {
-    setEnv(R2_ENV);
-    assert.equal(r2.r2Configured(), true);
-  });
 });
 
-describe("r2 — public URL building", () => {
-  beforeEach(() => { sent.length = 0; });
-  afterEach(() => setEnv({}));
-
-  it("joins the public base with the object key", () => {
-    setEnv(R2_ENV);
-    assert.equal(r2.r2PublicUrl("products/123-abc.png"), "https://media.westhome.in/products/123-abc.png");
+describe("deleteMedia - Drive", () => {
+  beforeEach(() => {
+    driveCalls.deleted.length = 0;
   });
 
-  it("tolerates a trailing slash on the base and a leading slash on the key", () => {
-    setEnv(R2_ENV);
-    assert.equal(r2.r2PublicUrl("/products/x.png"), "https://media.westhome.in/products/x.png");
-  });
-});
-
-describe("r2 — uploadToR2", () => {
-  beforeEach(() => { sent.length = 0; });
-  afterEach(() => setEnv({}));
-
-  it("PUTs the object to the account endpoint and returns the public URL", async () => {
-    setEnv(R2_ENV);
-    const result = await r2.uploadToR2("products", PNG, "shot.png", "image/png");
-
-    const constructed = sent.find((s) => s.type === "construct");
-    assert.ok(constructed, "S3 client was constructed");
-    assert.equal(constructed.config.region, "auto");
-    assert.equal(
-      constructed.config.endpoint,
-      "https://acct123.r2.cloudflarestorage.com",
-      "endpoint is derived from the account id"
-    );
-    assert.equal(constructed.config.credentials.accessKeyId, "ak-test");
-
-    const put = sent.find((s) => s.type === "send");
-    assert.equal(put.name, "PutObjectCommand");
-    assert.equal(put.input.Bucket, "westhome-media");
-    assert.equal(put.input.Key, "products/shot.png");
-    assert.equal(put.input.ContentType, "image/png");
-    assert.ok(put.input.CacheControl.includes("immutable"), "catalog images are cached hard");
-
-    assert.equal(result.url, "https://media.westhome.in/products/shot.png");
-    assert.equal(result.key, "products/shot.png");
+  it("delegates the id from a /api/images proxy URL to deleteFromDrive", async () => {
+    await media.deleteMedia({ url: "/api/images/drive-removed.png" });
+    assert.deepEqual(driveCalls.deleted, ["drive-removed.png"]);
   });
 
-  it("strips leading/trailing slashes from the folder", async () => {
-    setEnv(R2_ENV);
-    await r2.uploadToR2("/banners/", PNG, "hero.png", "image/png");
-    const put = sent.find((s) => s.type === "send");
-    assert.equal(put.input.Key, "banners/hero.png");
+  it("delegates the id from a direct Drive CDN URL too", async () => {
+    await media.deleteMedia({ url: "https://lh3.googleusercontent.com/d/cdn-removed" });
+    assert.deepEqual(driveCalls.deleted, ["cdn-removed"]);
   });
 
-  it("throws a clear error when the bucket public URL is missing", async () => {
-    const { R2_PUBLIC_URL: _drop, ...noPublic } = R2_ENV;
-    setEnv(noPublic);
-    // Still "configured" for the client, but undeliverable — this must not
-    // silently return a broken URL.
-    await assert.rejects(
-      () => r2.uploadToR2("products", PNG, "x.png", "image/png"),
-      /R2_PUBLIC_URL/
-    );
+  it("uses an explicit fileId without re-parsing the url", async () => {
+    await media.deleteMedia({ fileId: "explicit-id", url: "https://lh3.googleusercontent.com/d/other" });
+    assert.deepEqual(driveCalls.deleted, ["explicit-id"]);
   });
 
-  it("refuses to run unconfigured", async () => {
-    setEnv({});
-    await assert.rejects(() => r2.uploadToR2("products", PNG, "x.png", "image/png"), /not configured/i);
-  });
-});
-
-describe("r2 — deleteFromR2", () => {
-  beforeEach(() => { sent.length = 0; });
-  afterEach(() => setEnv({}));
-
-  it("deletes by bare key", async () => {
-    setEnv(R2_ENV);
-    await r2.deleteFromR2("products/old.png");
-    const del = sent.find((s) => s.type === "send");
-    assert.equal(del.name, "DeleteObjectCommand");
-    assert.equal(del.input.Key, "products/old.png");
-    assert.equal(del.input.Bucket, "westhome-media");
-  });
-
-  it("derives the key from a full public URL (the shape callers persist)", async () => {
-    setEnv(R2_ENV);
-    await r2.deleteFromR2("https://media.westhome.in/products/old.png");
-    const del = sent.find((s) => s.type === "send");
-    assert.equal(del.input.Key, "products/old.png");
-  });
-
-  it("is a no-op when R2 is not configured", async () => {
-    setEnv({});
-    await r2.deleteFromR2("products/old.png");
-    assert.equal(sent.length, 0, "nothing sent when storage is absent");
+  it("does nothing for a legacy local /api/images path (no Drive file id)", async () => {
+    await media.deleteMedia({ url: "/api/images/banners/hero-living-room.png" });
+    // No Drive file id -> nothing to delete. Legacy local paths are served
+    // off disk by the proxy and must not be forwarded to the API.
+    assert.deepEqual(driveCalls.deleted, []);
   });
 });
