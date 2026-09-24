@@ -17,7 +17,7 @@ interface HeroImage {
   size?: number;
   createdAt: string;
   fileId?: string; // Drive file id for clean deletes
-  storageKey?: string; // R2 object key for clean deletes
+  storageKey?: string; // legacy storage key from previous backends; unused by Drive
 }
 
 // GET — get active hero + history (requires auth)
@@ -28,98 +28,47 @@ export async function GET() {
   try {
     const activeSetting = await db.siteSetting.findUnique({ where: { key: HERO_ACTIVE_KEY } });
     const historySetting = await db.siteSetting.findUnique({ where: { key: HERO_HISTORY_KEY } });
+    const currentActive: HeroImage | null = activeSetting ? (activeSetting.value as any) : null;
+    const existingHistory: HeroImage[] = historySetting ? ((historySetting.value as any)?.images || []) : [];
 
-    const active: HeroImage | null = activeSetting ? (activeSetting.value as any) : null;
-    const history: HeroImage[] = historySetting ? ((historySetting.value as any)?.images || []) : [];
-
-    return NextResponse.json({ active, history });
+    return NextResponse.json({
+      active: currentActive,
+      history: existingHistory,
+      storage: storageStatus(),
+    });
   } catch (error) {
-    console.error("Hero GET error:", error);
-    return NextResponse.json({ error: "Failed to fetch hero images" }, { status: 500 });
+    console.error("Admin hero-image GET error:", error);
+    return NextResponse.json({ error: "Failed to load hero images" }, { status: 500 });
   }
 }
 
-// POST — upload and publish new hero image
+// POST — upload a hero image, replacing the current one
 export async function POST(request: NextRequest) {
-  const authResult = await requireAuthRole(["ADMIN", "MANAGER", "CONTENT_MANAGER", "STAFF"]);
+  const authResult = await requireAuthRole(["ADMIN", "MANAGER", "CONTENT_MANAGER"]);
   if (authResult.error) return authResult.error;
 
   try {
-    const userId = (authResult.session?.user as any)?.id || "unknown";
-    const userName = (authResult.session?.user as any)?.name || "Staff";
+    const body = await request.json();
+    const { position, fileName, file, width, height, size, uploadedBy, uploadedByName } = body;
 
-    const contentLength = Number(request.headers.get("content-length"));
-    if (Number.isFinite(contentLength) && contentLength > 10 * 1024 * 1024) {
-      return NextResponse.json({ error: "Image must be under 10MB" }, { status: 413 });
+    if (!position || !file) {
+      return NextResponse.json({ error: "Missing required fields (position, file)" }, { status: 400 });
     }
 
-    const formData = await request.formData();
-    const file = formData.get("file") as File | null;
-    const position = (formData.get("position") as string) || "center";
-
-    if (!file) {
-      return NextResponse.json({ error: "No file provided" }, { status: 400 });
-    }
-
-    // Validate file type
-    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
-    if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json({ error: "Image must be JPG, PNG, or WEBP" }, { status: 400 });
-    }
-
-    // Validate file size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      return NextResponse.json({ error: "Image must be under 10MB" }, { status: 400 });
-    }
-
-    // Get image dimensions
-    let width = 0;
-    let height = 0;
-    try {
-      const bytes = await file.arrayBuffer();
-      // Simple PNG/JPEG header dimension reading
-      const arr = new Uint8Array(bytes);
-      if (arr[0] === 0x89 && arr[1] === 0x50) {
-        // PNG
-        width = (arr[16] << 24) | (arr[17] << 16) | (arr[18] << 8) | arr[19];
-        height = (arr[20] << 24) | (arr[21] << 16) | (arr[22] << 8) | arr[23];
-      } else if (arr[0] === 0xff && arr[1] === 0xd8) {
-        // JPEG — scan for SOF marker
-        let i = 2;
-        while (i < arr.length - 9) {
-          if (arr[i] === 0xff && (arr[i + 1] === 0xc0 || arr[i + 1] === 0xc2)) {
-            height = (arr[i + 5] << 8) | arr[i + 6];
-            width = (arr[i + 7] << 8) | arr[i + 8];
-            break;
-          }
-          i += ((arr[i + 2] << 8) | arr[i + 3]) + 2;
-        }
-      }
-    } catch {}
-
-    // Upload to storage — R2, Google Drive, or local filesystem in dev only.
+    // Upload to storage — Google Drive, or local filesystem in dev only.
     const ext = file.name.split(".").pop() || "png";
     const filename = `hero-${Date.now()}.${ext}`;
     let imageUrl: string;
     let fileId: string | undefined;
-    let storageKey: string | undefined;
 
     try {
       const media = await uploadMedia("banners", file, filename);
       imageUrl = media.url;
       fileId = media.fileId;
-      storageKey = media.storageKey;
     } catch (uploadErr: any) {
       console.error("Hero upload failed:", uploadErr?.message || uploadErr);
-      const raw = typeof uploadErr?.message === "string" ? uploadErr.message : "";
-      const isConfigError = /not configured|R2_PUBLIC_URL|bucket/i.test(raw);
       return NextResponse.json(
-        {
-          error: isConfigError
-            ? raw
-            : "Image upload failed. Please try again.",
-          storage: storageStatus(),
-        },
+        { error: uploadErr.message, storage: storageStatus() },
         { status: 503 }
       );
     }
@@ -129,14 +78,13 @@ export async function POST(request: NextRequest) {
       url: imageUrl,
       filename,
       position,
-      uploadedBy: userId,
-      uploadedByName: userName,
+      uploadedBy: uploadedBy || "admin",
+      uploadedByName: uploadedByName || "Admin",
       width,
       height,
-      size: file.size,
+      size,
       createdAt: new Date().toISOString(),
       fileId,
-      storageKey,
     };
 
     // Get current active and history
@@ -219,44 +167,60 @@ export async function PATCH(request: NextRequest) {
         update: { value: { images: updatedHistory as any } },
         create: { key: HERO_HISTORY_KEY, value: { images: updatedHistory as any }, group: "hero" },
       });
-
       return NextResponse.json({ active: restore, success: true });
     }
 
-    return NextResponse.json({ error: "No valid action provided" }, { status: 400 });
+    return NextResponse.json({ error: "No action specified" }, { status: 400 });
   } catch (error) {
     console.error("Hero PATCH error:", error);
-    return NextResponse.json({ error: "Failed to update" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to update hero image" }, { status: 500 });
   }
 }
 
-// DELETE — remove active hero image
-export async function DELETE() {
+// DELETE — remove a hero image and its storage file
+export async function DELETE(request: NextRequest) {
   const authResult = await requireAuthRole(["ADMIN", "MANAGER", "CONTENT_MANAGER"]);
   if (authResult.error) return authResult.error;
 
   try {
+    const { searchParams } = new URL(request.url);
+    const fileId = searchParams.get("fileId");
+    const url = searchParams.get("url");
+
+    if (!fileId && !url) {
+      return NextResponse.json({ error: "Missing fileId or url" }, { status: 400 });
+    }
+
+    // Delete the underlying storage file; the DB row is removed by the caller.
+    await deleteMedia({ fileId, url });
+
+    // Remove from active hero
     const activeSetting = await db.siteSetting.findUnique({ where: { key: HERO_ACTIVE_KEY } });
     const active: HeroImage | null = activeSetting ? (activeSetting.value as any) : null;
 
-    // Best-effort storage cleanup (Drive file id or legacy /api/images URL).
-    await deleteMedia({ fileId: active?.fileId, storageKey: active?.storageKey, url: active?.url });
-
-    if (active) {
+    if (active && ((fileId && active.fileId === fileId) || (url && active.url === url))) {
       const historySetting = await db.siteSetting.findUnique({ where: { key: HERO_HISTORY_KEY } });
       const history: HeroImage[] = historySetting ? ((historySetting.value as any)?.images || []) : [];
-      const updatedHistory = [active, ...history].slice(0, 20);
       await db.siteSetting.upsert({
-        where: { key: HERO_HISTORY_KEY },
-        update: { value: { images: updatedHistory as any } },
-        create: { key: HERO_HISTORY_KEY, value: { images: updatedHistory as any }, group: "hero" },
+        where: { key: HERO_ACTIVE_KEY },
+        update: { value: null as any },
+        create: { key: HERO_ACTIVE_KEY, value: null as any, group: "hero" },
       });
+
+      if (history.length > 0) {
+        await db.siteSetting.upsert({
+          where: { key: HERO_HISTORY_KEY },
+          update: { value: { images: history as any } },
+          create: { key: HERO_HISTORY_KEY, value: { images: history as any }, group: "hero" },
+        });
+      }
+
+      return NextResponse.json({ success: true });
     }
 
-    await db.siteSetting.delete({ where: { key: HERO_ACTIVE_KEY } }).catch(() => {});
-    return NextResponse.json({ success: true, active: null });
+    return NextResponse.json({ error: "Hero image not found" }, { status: 404 });
   } catch (error) {
     console.error("Hero DELETE error:", error);
-    return NextResponse.json({ error: "Failed to remove hero image" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to delete hero image" }, { status: 500 });
   }
 }
