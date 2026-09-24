@@ -1,0 +1,59 @@
+# Media storage alarm for the Freebuff managed deployment.
+#
+# Why this exists: image uploads depend on a Google Drive OAuth refresh token
+# that lives in the deploy environment. When that token dies, nothing visible
+# breaks — the storefront serves, orders flow, and only admin uploads fail with
+# a 503. An OAuth client whose consent screen is still in "Testing" issues
+# tokens that expire after 7 days, so this class of failure recurs on a clock
+# unless somebody is watching for it.
+#
+# GET /api/upload is public and answers with the storage status the upload path
+# itself uses: {"storage":{"drive":{"configured":true|false},...}}. This job
+# fails when no provider is configured, which turns the expiry into a red X and
+# a notification instead of a silent 503 for whoever uploads next.
+#
+# Fix when it fires:
+#   GOOGLE_OAUTH_CLIENT_ID=... GOOGLE_OAUTH_CLIENT_SECRET=... npm run drive:token
+#   → paste GOOGLE_OAUTH_REFRESH_TOKEN into the Freebuff project's Production
+#     environment variables (Settings → Environment & API keys) → Redeploy.
+#   The durable fix is publishing the OAuth app so tokens stop expiring at all.
+
+name: Storage health
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch: {}
+
+permissions: {}
+
+concurrency:
+  group: storage-health
+  cancel-in-progress: true
+
+jobs:
+  storage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify production still has a media-storage backend
+        run: |
+          set -euo pipefail
+          URL='https://westhome.freebuff.app/api/upload'
+          body=''
+          ok=0
+          for i in 1 2 3; do
+            body="$(curl -sS --max-time 60 "$URL" || true)"
+            echo "attempt $i/3: $body"
+            if echo "$body" | grep -q '"anyConfigured":true'; then
+              ok=1
+              break
+            fi
+            [ "$i" -lt 3 ] && sleep 30
+          done
+          if [ "$ok" != "1" ]; then
+            echo "::error::Production has no configured media storage — admin image uploads will 503."
+            echo "Most likely the Drive refresh token expired (a 'Testing' OAuth client issues 7-day tokens)."
+            echo "Re-mint it with: npm run drive:token, then update the deploy env and redeploy."
+            exit 1
+          fi
+          echo "storage backend configured ✓"
