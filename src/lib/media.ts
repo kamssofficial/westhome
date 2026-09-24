@@ -1,5 +1,8 @@
-import { uploadToDrive, deleteFromDrive } from "@/lib/gdrive";
-import { driveFileIdFromUrl } from "@/lib/driveUrl";
+// Relative with an explicit extension, like src/lib/rate-limit.ts -> ./redis.ts:
+// these modules are imported directly by the node test runner, which does not
+// know the "@/" tsconfig alias.
+import { uploadToDrive, deleteFromDrive } from "./gdrive.ts";
+import { driveFileIdFromUrl } from "./driveUrl.ts";
 
 export interface UploadedMedia {
   /**

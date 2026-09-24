@@ -20,8 +20,9 @@ export async function POST(request: NextRequest) {
   const authResult = await requireAuthRole(["ADMIN", "MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER"]);
   if (authResult.error) return authResult.error;
 
-  const status = storageStatus();    // Fail fast, and say exactly what to set. Previously this surfaced as a
-    // 503 with a Cloudflare-R2 hint after the bytes had already been uploaded.
+  // Fail fast, and say exactly what to set. Previously this surfaced as a 503
+  // with a Cloudflare-R2 hint after the bytes had already been uploaded.
+  const status = storageStatus();
   if (!status.anyConfigured) {
     return NextResponse.json(
       { error: `Image storage is not configured. ${status.missing}`, storage: status },

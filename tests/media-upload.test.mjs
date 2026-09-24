@@ -11,19 +11,27 @@
  *
  * Run: node --experimental-test-module-mocks --test tests/media-upload.test.mjs
  */
-import { describe, it, beforeEach, afterEach, mock } from "node:test";
+import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert/strict";
 
-// Mock the Drive layer before media.ts is imported (it is imported as
-// "@/lib/gdrive", so the mock must match that specifier).
-mock.module("@/lib/gdrive", {
+// Mock the Drive layer before media.ts is imported. The specifier has to
+// resolve to the same file media.ts imports (./gdrive.ts), because node:test
+// mocks by resolved URL and the runner knows nothing about the "@/" alias.
+const driveCalls = { uploaded: [], deleted: [] };
+
+mock.module("../src/lib/gdrive.ts", {
   namedExports: {
-    uploadToDrive: async (_folder, file, filename) => ({
-      fileId: "drive-" + filename,
-      url: "/api/images/" + filename,
-      filename,
-    }),
-    deleteFromDrive: async (_id) => {},
+    uploadToDrive: async (folder, file, filename) => {
+      driveCalls.uploaded.push({ folder, filename });
+      return {
+        fileId: "drive-" + filename,
+        url: "/api/images/" + filename,
+        filename,
+      };
+    },
+    deleteFromDrive: async (id) => {
+      driveCalls.deleted.push(id);
+    },
   },
 });
 
@@ -36,7 +44,7 @@ const DRIVE_ENV = {
   GOOGLE_OAUTH_REFRESH_TOKEN: "test-refresh-token",
 };
 
-function setEnv(keys) {
+function setEnv(keys = {}) {
   for (const k of [
     "GOOGLE_OAUTH_CLIENT_ID",
     "GOOGLE_OAUTH_CLIENT_SECRET",
@@ -146,32 +154,54 @@ describe("uploadMedia - dev-local path (Drive not configured, non-production)", 
     fs.unlinkSync("public/images/products/dev.png");
   });
 
-  it("throws in production when nothing is configured", async () => {
+  it("throws in production when nothing is configured (never falls back to disk)", async () => {
     const file = new File([PNG], "prod.png", { type: "image/png" });
-    // Force production while credentials are absent
+    // Force production while credentials are absent. NODE_ENV itself has to be
+    // set to "production" — deleting it leaves it undefined, which is the
+    // development branch and would let the upload quietly land on local disk.
     const originalEnv = process.env.NODE_ENV;
-    delete process.env.NODE_ENV;
+    process.env.NODE_ENV = "production";
+    // Clear the target path first, so the assertion below can only pass because
+    // this call wrote nothing — not because an earlier run left a file behind.
+    const fs = await import("fs");
+    fs.rmSync("public/images/products/prod.png", { force: true });
     try {
       await assert.rejects(
         () => media.uploadMedia("products", file, "prod.png"),
-        /GOOGLE_OAUTH|\.env|\.ENV/i
+        /GOOGLE_OAUTH|not configured/i
       );
+      assert.equal(fs.existsSync("public/images/products/prod.png"), false);
     } finally {
-      process.env.NODE_ENV = originalEnv;
+      if (originalEnv === undefined) delete process.env.NODE_ENV;
+      else process.env.NODE_ENV = originalEnv;
     }
   });
 });
 
 describe("deleteMedia - Drive", () => {
-  it("delegates to deleteFromDrive for a proxy URL", async () => {
-    const mod = await import("../src/lib/media.ts");
-    assert.equal(mod.deleteMedia({ fileId: "drive-removed.png" }), undefined);
+  beforeEach(() => {
+    driveCalls.deleted.length = 0;
+  });
+
+  it("delegates the id from a /api/images proxy URL to deleteFromDrive", async () => {
+    await media.deleteMedia({ url: "/api/images/drive-removed.png" });
+    assert.deepEqual(driveCalls.deleted, ["drive-removed.png"]);
+  });
+
+  it("delegates the id from a direct Drive CDN URL too", async () => {
+    await media.deleteMedia({ url: "https://lh3.googleusercontent.com/d/cdn-removed" });
+    assert.deepEqual(driveCalls.deleted, ["cdn-removed"]);
+  });
+
+  it("uses an explicit fileId without re-parsing the url", async () => {
+    await media.deleteMedia({ fileId: "explicit-id", url: "https://lh3.googleusercontent.com/d/other" });
+    assert.deepEqual(driveCalls.deleted, ["explicit-id"]);
   });
 
   it("does nothing for a legacy local /api/images path (no Drive file id)", async () => {
-    const mod = await import("../src/lib/media.ts");
-    mod.deleteMedia({ url: "/api/images/banners/hero-living-room.png" });
+    await media.deleteMedia({ url: "/api/images/banners/hero-living-room.png" });
     // No Drive file id -> nothing to delete. Legacy local paths are served
     // off disk by the proxy and must not be forwarded to the API.
+    assert.deepEqual(driveCalls.deleted, []);
   });
 });
