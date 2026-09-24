@@ -6,11 +6,12 @@ import {
   AlertTriangle, BarChart3, Boxes, CheckCircle, Clock, CreditCard, Download,
   ExternalLink, Globe, Heart, IndianRupee, Layers, Map as MapIcon, Monitor,
   Package, Percent, RefreshCw, Search, Shield, ShoppingCart,
-  Smartphone, Tablet, Target, Users, XCircle, Zap,
+  Smartphone, Tablet, Target, TrendingDown, TrendingUp, Users, XCircle, Zap,
 } from "lucide-react";
 import { formatPrice, cn } from "@/lib/utils";
 import {
   KPICard, Section, MiniBar, LiveUpdated, StatTile, StatusPill, EmptyState,
+  TONE_TINT,
 } from "@/components/admin/DashboardWidgets";
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
@@ -134,6 +135,28 @@ function BarList({
 }
 const money = (n: number | undefined) => formatPrice(n || 0);
 
+/* Trend chip for the dark command band — same honesty rules as <Trend>
+   (no previous period means "New", never a fake +100%), light skin. */
+function DarkTrend({ current, previous, trendLabel }: { current: number; previous: number; trendLabel?: string }) {
+  if (previous === 0) {
+    if (current <= 0) return null;
+    return <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-medium text-white/70">New</span>;
+  }
+  const pct = Math.round(((current - previous) / previous) * 100);
+  if (pct === 0) return <span className="text-[11px] text-white/50">0%</span>;
+  const up = pct > 0;
+  return (
+    <span
+      className={cn("flex items-center gap-0.5 text-[11px] font-medium", up ? "text-[#5EEAD4]" : "text-[#F0A8A0]")}
+      title={trendLabel ? `${Math.abs(pct)}% vs ${trendLabel}` : undefined}
+    >
+      {up ? <TrendingUp size={11} aria-hidden="true" /> : <TrendingDown size={11} aria-hidden="true" />}
+      {Math.abs(pct)}%
+      {trendLabel ? <span className="sr-only"> vs {trendLabel}</span> : null}
+    </span>
+  );
+}
+
 /* ─── Dashboard view ─────────────────────────────────────────────────────────
    Pure presentation: no fetch, no timers, no database access. Every figure
    arrives as a prop, so the view renders with fixtures and can be
@@ -204,10 +227,10 @@ export default function DashboardView({
   if (loading && !data) {
     return (
       <div className="space-y-4" aria-busy="true" aria-label="Loading dashboard">
-        <div className="h-24 animate-pulse rounded-2xl bg-surface-muted" />
+        <div className="h-40 animate-pulse rounded-2xl bg-surface-muted" />
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="h-32 animate-pulse rounded-2xl bg-surface-muted" />
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="h-28 animate-pulse rounded-2xl bg-surface-muted" />
           ))}
         </div>
         <div className="h-80 animate-pulse rounded-2xl bg-surface-muted" />
@@ -289,25 +312,33 @@ export default function DashboardView({
   return (
     <div className="space-y-6 lg:space-y-8">
 
-      {/* ── Page header ─────────────────────────────────────────────────────
-          Not sticky: AdminShell already owns the sticky bar and breadcrumb. */}
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="font-label text-text-muted">Overview</p>
-          <h1 className="font-display mt-2 text-3xl text-primary sm:text-4xl">Dashboard</h1>
-          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-muted">
-            <span>{rangeLabel}</span>
-            <span aria-hidden="true">·</span>
-            <LiveUpdated at={lastUpdated} />
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
+      {/* ── Command band ─────────────────────────────────────────────────────
+          The four numbers that answer "how are we doing?" live in one dark
+          band; the operational layer (catalogue, customers, stock, cancella-
+          tions) stays on light cards below. Not sticky — AdminShell owns the
+          sticky bar and breadcrumb. */}
+      <section
+        className="relative overflow-hidden rounded-[1.75rem] bg-[#102332] text-white shadow-sm"
+      >
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_140%_at_100%_0%,rgba(15,118,110,0.4),transparent_55%)]" />
+        <div className="relative">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="font-label text-[#8FD8C6]">Overview</p>
+              <h1 className="font-display mt-2 text-3xl sm:text-4xl">Dashboard</h1>
+              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-white/60">
+                <span>{rangeLabel}</span>
+                <span aria-hidden="true">·</span>
+                <LiveUpdated at={lastUpdated} onDark />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
           <label htmlFor="dashboard-range" className="sr-only">Date range</label>
           <select
             id="dashboard-range"
             value={range}
             onChange={(e) => onRangeChange(e.target.value)}
-            className="focus-ring rounded-full border border-border bg-surface px-3 py-2 text-xs font-medium text-primary"
+            className="focus-ring rounded-full border border-white/15 bg-white/10 px-3 py-2 text-xs font-medium text-white [&>option]:text-primary"
           >
             {DATE_RANGES.map((r) => (
               <option key={r.value} value={r.value}>{r.label}</option>
@@ -318,12 +349,63 @@ export default function DashboardView({
             onClick={onRefresh}
             disabled={refreshing}
             aria-label="Refresh dashboard"
-            className="focus-ring rounded-full border border-border bg-surface p-2.5 transition-colors hover:bg-surface-hover disabled:opacity-50"
+            className="focus-ring rounded-full border border-white/15 bg-white/10 p-2.5 transition-colors hover:bg-white/20 disabled:opacity-50"
           >
-            <RefreshCw size={15} aria-hidden="true" className={cn("text-text-muted", refreshing && "animate-spin")} />
+            <RefreshCw size={15} aria-hidden="true" className={cn("text-white/70", refreshing && "animate-spin")} />
           </button>
+            </div>
+          </div>
+
+          {/* Headline metrics. Every detail line is real range data, not a
+              decorative caption: completed orders, today's orders, units sold
+              and unique visitors. */}
+          <div className="mt-6 grid grid-cols-2 border-t border-white/10 lg:grid-cols-4">
+            <div className="border-b border-r border-white/10 px-5 py-5 sm:px-7 lg:border-b-0">
+              <div className="flex items-center justify-between gap-2">
+                <span className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-white/55">
+                  <IndianRupee size={12} aria-hidden="true" className="text-[#8FD8C6]" />
+                  Revenue
+                </span>
+                <DarkTrend current={k.revenue || 0} previous={k.prevRevenue || 0} trendLabel="previous period" />
+              </div>
+              <p className="mt-3 text-2xl font-semibold tracking-tight tabular-nums sm:text-3xl">{money(k.revenue)}</p>
+              <p className="mt-1.5 text-[11px] text-white/50">{plural(funnel.orderCompleted, "order")} completed</p>
+            </div>
+            <div className="border-b border-white/10 px-5 py-5 sm:px-7 lg:border-b-0 lg:border-r">
+              <div className="flex items-center justify-between gap-2">
+                <span className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-white/55">
+                  <ShoppingCart size={12} aria-hidden="true" className="text-[#8FD8C6]" />
+                  Orders
+                </span>
+                <DarkTrend current={k.totalOrders || 0} previous={k.prevTotalOrders || 0} trendLabel="previous period" />
+              </div>
+              <p className="mt-3 text-2xl font-semibold tracking-tight tabular-nums sm:text-3xl">{count(k.totalOrders)}</p>
+              <p className="mt-1.5 text-[11px] text-white/50">{count(k.ordersToday)} today</p>
+            </div>
+            <div className="border-r border-white/10 px-5 py-5 sm:px-7">
+              <div className="flex items-center justify-between gap-2">
+                <span className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-white/55">
+                  <BarChart3 size={12} aria-hidden="true" className="text-[#8FD8C6]" />
+                  Avg order value
+                </span>
+                <DarkTrend current={k.avgOrderValue || 0} previous={k.prevAvgOrderValue || 0} trendLabel="previous period" />
+              </div>
+              <p className="mt-3 text-2xl font-semibold tracking-tight tabular-nums sm:text-3xl">{money(k.avgOrderValue)}</p>
+              <p className="mt-1.5 text-[11px] text-white/50">{count(k.unitsSold)} units sold</p>
+            </div>
+            <div className="px-5 py-5 sm:px-7">
+              <div className="flex items-center justify-between gap-2">
+                <span className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-white/55">
+                  <Target size={12} aria-hidden="true" className="text-[#8FD8C6]" />
+                  Conversion rate
+                </span>
+              </div>
+              <p className="mt-3 text-2xl font-semibold tracking-tight tabular-nums sm:text-3xl">{k.conversionRate || 0}%</p>
+              <p className="mt-1.5 text-[11px] text-white/50">{count(data?.uniqueVisitors)} unique visitors</p>
+            </div>
+          </div>
         </div>
-      </header>
+      </section>
 
       {error && data ? (
         <div
@@ -484,7 +566,10 @@ export default function DashboardView({
         </div>
       </section>
 
-      {/* ── Store performance ── */}
+      {/* ── Store performance ──
+          Headline money metrics live in the band above; this row is the
+          operational layer: catalogue, customers and everything that needs
+          a decision rather than a celebration. */}
       <section aria-labelledby="performance-heading">
         <div className="mb-4 flex items-end justify-between gap-3">
           <h2 id="performance-heading" className="font-display text-xl text-primary">Store performance</h2>
@@ -492,47 +577,24 @@ export default function DashboardView({
         </div>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <KPICard
-            label="Revenue" value={money(k.revenue)} icon={IndianRupee} tone="accent"
-            trend={{ current: k.revenue || 0, previous: k.prevRevenue || 0 }} trendLabel="previous period"
-            href="/admin/orders?status=NEW"
-          />
-          <KPICard
-            label="Orders" value={count(k.totalOrders)} icon={ShoppingCart}
-            trend={{ current: k.totalOrders || 0, previous: k.prevTotalOrders || 0 }} trendLabel="previous period"
-            href="/admin/orders"
-          />
-          <KPICard
-            label="Avg order value" value={money(k.avgOrderValue)} icon={BarChart3} tone="info"
-            trend={{ current: k.avgOrderValue || 0, previous: k.prevAvgOrderValue || 0 }} trendLabel="previous period"
-            href="/admin/orders"
-          />
-          <KPICard label="Conversion rate" value={`${k.conversionRate || 0}%`} icon={Target} tone="info" href="/admin/analytics" />
-          <KPICard
             label="Customers" value={count(k.totalCustomers)} icon={Users}
             trend={{ current: k.newCustomers || 0, previous: k.prevNewCustomers || 0 }} trendLabel="previous period"
             href="/admin/customers"
+            hint={`${count(k.newCustomers)} new`}
           />
           <KPICard
-            label="Units sold" value={count(k.unitsSold)} icon={Package} tone="warning"
-            trend={{ current: k.unitsSold || 0, previous: k.prevUnitsSold || 0 }} trendLabel="previous period"
-            href="/admin/orders"
+            label="Products" value={count(k.totalProducts)} icon={Boxes}
+            href="/admin/products"
           />
-          <KPICard label="Products" value={count(k.totalProducts)} icon={Boxes} href="/admin/products" />
           <KPICard
-            label="Cancelled" value={count(k.cancelledOrders)} icon={XCircle} tone="error"
+            label="Low stock" value={count(k.lowStock)} icon={AlertTriangle} tone="warning"
+            href="/admin/products"
+            hint="At or below threshold"
+          />
+          <KPICard
+            label="Cancelled orders" value={count(k.cancelledOrders)} icon={XCircle} tone="error"
             href="/admin/orders?status=CANCELLED"
           />
-        </div>
-        <div className="mt-3 grid grid-cols-3 gap-3">
-          {[
-            { label: "Today", value: k.ordersToday },
-            { label: "This week", value: k.weekOrders },
-            { label: "This month", value: k.monthOrders },
-          ].map((q) => (
-            <Link key={q.label} href="/admin/orders" className="focus-ring block rounded-2xl">
-              <StatTile label={q.label} value={plural(q.value, "order")} />
-            </Link>
-          ))}
         </div>
       </section>
 
@@ -988,21 +1050,23 @@ export default function DashboardView({
         <p className="font-label mb-2 text-text-muted">Quick actions</p>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {[
-            { label: "Add product", href: "/admin/products/new", icon: Package },
-            { label: "Orders", href: "/admin/orders", icon: ShoppingCart },
-            { label: "Customers", href: "/admin/customers", icon: Users },
-            { label: "Inventory", href: "/admin/products", icon: Boxes },
-            { label: "Categories", href: "/admin/categories", icon: Layers },
-            { label: "Promotions", href: "/admin/promotions", icon: Percent },
-            { label: "Settings", href: "/admin/settings", icon: Shield },
-            { label: "View store", href: "/", icon: ExternalLink },
+            { label: "Add product", href: "/admin/products/new", icon: Package, tone: "accent" as const },
+            { label: "Orders", href: "/admin/orders", icon: ShoppingCart, tone: "info" as const },
+            { label: "Customers", href: "/admin/customers", icon: Users, tone: "success" as const },
+            { label: "Inventory", href: "/admin/products", icon: Boxes, tone: "warning" as const },
+            { label: "Categories", href: "/admin/categories", icon: Layers, tone: "neutral" as const },
+            { label: "Promotions", href: "/admin/promotions", icon: Percent, tone: "accent" as const },
+            { label: "Settings", href: "/admin/settings", icon: Shield, tone: "neutral" as const },
+            { label: "View store", href: "/", icon: ExternalLink, tone: "info" as const },
           ].map((action) => (
             <Link
               key={action.label}
               href={action.href}
-              className="focus-ring flex items-center gap-2 rounded-xl bg-surface-muted/60 p-3 transition-colors hover:bg-surface-muted"
+              className="focus-ring flex items-center gap-2.5 rounded-xl border border-border-light bg-surface-muted/40 p-2.5 transition-all hover:-translate-y-0.5 hover:bg-surface-muted"
             >
-              <action.icon size={14} aria-hidden="true" className="text-text-secondary" />
+              <span className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-lg", TONE_TINT[action.tone])}>
+                <action.icon size={13} aria-hidden="true" />
+              </span>
               <span className="text-xs font-medium text-primary">{action.label}</span>
             </Link>
           ))}
