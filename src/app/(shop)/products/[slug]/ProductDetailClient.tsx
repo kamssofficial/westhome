@@ -965,9 +965,9 @@ export default function ProductDetailClient({ product, reviews: initialReviews, 
         {initialRelated.length > 0 && (
           <div className="mt-6 border-t border-border pt-6 pb-4">
             <h2 className="text-lg font-semibold text-primary mb-4">You May Also Like</h2>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 lg:grid-cols-4">
               {initialRelated.map((p) => (
-                <ProductCard key={p.id} product={p} />
+                <ProductCard key={p.id} product={p} size="compact" />
               ))}
             </div>
           </div>

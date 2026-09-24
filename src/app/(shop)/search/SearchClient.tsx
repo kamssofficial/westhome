@@ -279,7 +279,7 @@ function SearchContent() {
       <div className="container-shop pb-8">
         {loading ? <ProductGridSkeleton count={8} /> : products.length > 0 ? (
           <>
-            <div className={cn("gap-3", viewMode === "grid" ? "grid grid-cols-2" : "flex flex-col")}>
+            <div className={cn("gap-3", viewMode === "grid" ? "grid grid-cols-2 md:grid-cols-3 md:gap-5 lg:grid-cols-4" : "flex flex-col")}>
               {products.map((product, i) => <ProductCard key={product.id} product={product} priority={i < 4} />)}
             </div>
             <div ref={sentinelRef} className="py-4">
