@@ -102,13 +102,10 @@ export function serializeForClient<T>(value: T, options: SerializeForClientOptio
 
 function serializeValue(value: unknown, mode: DecimalSerialization): unknown {
   if (value === null || value === undefined) return value;
-
-  const valueType = typeof value;
-  if (valueType === "string" || valueType === "number" || valueType === "boolean") {
-    return value;
-  }
-  if (valueType === "bigint") return value.toString();
-  if (valueType !== "object") return value;
+  if (typeof value === "bigint") return value.toString();
+  // Direct typeof checks (rather than a `const valueType = typeof value`
+  // alias) so TypeScript narrows `unknown` down to `object` below.
+  if (typeof value !== "object") return value;
 
   if (isDecimalLike(value)) return serializeDecimal(value, mode);
   if (isPassThroughObject(value)) return value;
