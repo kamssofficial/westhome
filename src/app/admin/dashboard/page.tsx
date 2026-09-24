@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import toast from "react-hot-toast";
+import { toCsv as buildCsv } from "@/lib/csv";
 import DashboardView, {
   EMPTY_LIVE,
   type DashboardData,
@@ -9,9 +10,7 @@ import DashboardView, {
 } from "@/components/admin/DashboardView";
 
 function toCsv(rows: any[]): string {
-  const headers = Object.keys(rows[0]).filter((k) => typeof rows[0][k] !== "object");
-  const esc = (v: any) => '"' + String(v ?? "").replace(/"/g, '""') + '"';
-  return [headers.join(","), ...rows.map((r) => headers.map((h) => esc(r[h])).join(","))].join("\n");
+  return buildCsv(rows);
 }
 
 /**
