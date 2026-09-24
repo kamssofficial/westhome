@@ -20,7 +20,7 @@ const trackLimiter = rateLimit({ windowMs: 60_000, max: 20 });
  */
 export async function GET(request: NextRequest) {
   try {
-    if (!trackLimiter.check(request)) {
+    if (!(await trackLimiter.checkAsync(request))) {
       return NextResponse.json({ error: "Too many lookups. Please wait a minute and try again." }, { status: 429 });
     }
 

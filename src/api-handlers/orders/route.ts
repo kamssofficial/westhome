@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
       if (!isGuestClaimEnabled()) {
         return NextResponse.json({ error: "Guest checkout is temporarily unavailable. Please sign in to place your order." }, { status: 503 });
       }
-      if (!guestOrderLimiter.check(request)) {
+      if (!(await guestOrderLimiter.checkAsync(request))) {
         return NextResponse.json({ error: "Too many order attempts. Please wait a minute and try again." }, { status: 429 });
       }
     }
