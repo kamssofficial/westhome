@@ -5,6 +5,7 @@ import fs from "fs";
 import path from "path";
 import { CollectionContentClient } from "./CollectionContentClient";
 import { normalizeImageUrl } from "@/lib/categoryImages";
+import { serializeForClient } from "@/lib/serializeForClient";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -100,7 +101,12 @@ async function getInitialProducts(categorySlug: string) {
       }),
       db.product.count({ where }),
     ]);
-    return {
+    // serializeForClient converts every remaining Prisma Decimal (height,
+    // width, costPrice, promotionalPrice, packagingWeight, customSize*, ...)
+    // into plain numbers. Without it React rejects the props with "Only plain
+    // objects can be passed to Client Components ... Decimal objects are not
+    // supported" and the collection page fails to render.
+    return serializeForClient({
       products: products.map((p: any) => ({
         ...p,
         // Route legacy raw-Drive image URLs through the WebP proxy (display-only).
@@ -112,7 +118,7 @@ async function getInitialProducts(categorySlug: string) {
         tags: p.tags?.map((t: any) => t.tag) || [],
       })),
       total,
-    };
+    });
   } catch { return { products: [], total: 0 }; }
 }
 
