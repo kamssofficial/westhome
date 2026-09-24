@@ -147,7 +147,7 @@ function DarkTrend({ current, previous, trendLabel }: { current: number; previou
   const up = pct > 0;
   return (
     <span
-      className={cn("flex items-center gap-0.5 text-[11px] font-medium", up ? "text-[#5EEAD4]" : "text-[#F0A8A0]")}
+      className={cn("flex items-center gap-0.5 text-[11px] font-medium", up ? "text-[#F0B27A]" : "text-[#F2A79A]")}
       title={trendLabel ? `${Math.abs(pct)}% vs ${trendLabel}` : undefined}
     >
       {up ? <TrendingUp size={11} aria-hidden="true" /> : <TrendingDown size={11} aria-hidden="true" />}
@@ -318,13 +318,13 @@ export default function DashboardView({
           tions) stays on light cards below. Not sticky — AdminShell owns the
           sticky bar and breadcrumb. */}
       <section
-        className="relative overflow-hidden rounded-[1.75rem] bg-[#102332] text-white shadow-sm"
+        className="relative overflow-hidden rounded-[1.75rem] bg-[#2C1F17] text-white shadow-sm"
       >
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_140%_at_100%_0%,rgba(15,118,110,0.4),transparent_55%)]" />
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_140%_at_100%_0%,rgba(180,85,45,0.38),transparent_55%)]" />
         <div className="relative">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="font-label text-[#8FD8C6]">Overview</p>
+              <p className="font-label text-[#E8A87C]">Overview</p>
               <h1 className="font-display mt-2 text-3xl sm:text-4xl">Dashboard</h1>
               <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-white/60">
                 <span>{rangeLabel}</span>
@@ -363,7 +363,7 @@ export default function DashboardView({
             <div className="border-b border-r border-white/10 px-5 py-5 sm:px-7 lg:border-b-0">
               <div className="flex items-center justify-between gap-2">
                 <span className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-white/55">
-                  <IndianRupee size={12} aria-hidden="true" className="text-[#8FD8C6]" />
+                  <IndianRupee size={12} aria-hidden="true" className="text-[#E8A87C]" />
                   Revenue
                 </span>
                 <DarkTrend current={k.revenue || 0} previous={k.prevRevenue || 0} trendLabel="previous period" />
@@ -374,7 +374,7 @@ export default function DashboardView({
             <div className="border-b border-white/10 px-5 py-5 sm:px-7 lg:border-b-0 lg:border-r">
               <div className="flex items-center justify-between gap-2">
                 <span className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-white/55">
-                  <ShoppingCart size={12} aria-hidden="true" className="text-[#8FD8C6]" />
+                  <ShoppingCart size={12} aria-hidden="true" className="text-[#E8A87C]" />
                   Orders
                 </span>
                 <DarkTrend current={k.totalOrders || 0} previous={k.prevTotalOrders || 0} trendLabel="previous period" />
@@ -385,7 +385,7 @@ export default function DashboardView({
             <div className="border-r border-white/10 px-5 py-5 sm:px-7">
               <div className="flex items-center justify-between gap-2">
                 <span className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-white/55">
-                  <BarChart3 size={12} aria-hidden="true" className="text-[#8FD8C6]" />
+                  <BarChart3 size={12} aria-hidden="true" className="text-[#E8A87C]" />
                   Avg order value
                 </span>
                 <DarkTrend current={k.avgOrderValue || 0} previous={k.prevAvgOrderValue || 0} trendLabel="previous period" />
@@ -396,7 +396,7 @@ export default function DashboardView({
             <div className="px-5 py-5 sm:px-7">
               <div className="flex items-center justify-between gap-2">
                 <span className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-white/55">
-                  <Target size={12} aria-hidden="true" className="text-[#8FD8C6]" />
+                  <Target size={12} aria-hidden="true" className="text-[#E8A87C]" />
                   Conversion rate
                 </span>
               </div>

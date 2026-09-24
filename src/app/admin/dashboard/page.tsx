@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import toast from "react-hot-toast";
 import DashboardView, {
   EMPTY_LIVE,
   type DashboardData,
@@ -110,17 +111,23 @@ export default function AdminDashboardPage() {
   const exportCsv = useCallback(async (label: string, endpoint: string) => {
     try {
       const res = await fetch(endpoint);
+      if (!res.ok) throw new Error(`Request failed (${res.status})`);
       const json = await res.json();
       const rows = json.orders || json.products || json.customers || [];
-      if (!rows.length) return;
+      if (!rows.length) {
+        // Previously silent: clicking Export on an empty range looked broken.
+        toast.error(`No ${label.toLowerCase().replace(" csv", "")} to export`);
+        return;
+      }
       const url = URL.createObjectURL(new Blob([toCsv(rows)], { type: "text/csv" }));
       const a = document.createElement("a");
       a.href = url;
       a.download = label.toLowerCase().replace(/ /g, "-") + ".csv";
       a.click();
       URL.revokeObjectURL(url);
+      toast.success(`${label} downloaded`);
     } catch {
-      /* export is best-effort; nothing to recover here */
+      toast.error(`Could not export ${label.toLowerCase()}. Please try again.`);
     }
   }, []);
 

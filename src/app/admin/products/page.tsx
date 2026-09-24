@@ -219,13 +219,20 @@ export default function AdminProductsPage() {
   }, [loading, products.length]);
 
     const observerRef = useRef<IntersectionObserver | null>(null);
+  // The observer can fire again before React has re-rendered with
+  // `isFetchingMore = true`, and the callback closes over the previous
+  // products/total. Without this ref guard a fast scroll advanced the page
+  // twice, skipping a page of results and appending a duplicate batch.
+  const pagingRef = useRef(false);
   const lastElementRef = useCallback((node: HTMLDivElement | null) => {
     if (loading || isFetchingMore) return;
     if (observerRef.current) observerRef.current.disconnect();
     observerRef.current = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && products.length < total) {
-        setPage(p => p + 1);
-      }
+      if (!entries[0].isIntersecting) return;
+      if (pagingRef.current) return;
+      if (products.length >= total) return;
+      pagingRef.current = true;
+      setPage(p => p + 1);
     });
     if (node) observerRef.current.observe(node);
   }, [loading, isFetchingMore, products.length, total]);
@@ -253,12 +260,19 @@ export default function AdminProductsPage() {
       }
       if (res.ok) { 
         const d = await res.json(); 
-        setProducts(prev => isLoadMore ? [...prev, ...d.products] : d.products);
+        // De-duplicate on append: a retried or overlapping page must never
+        // render the same product twice.
+        setProducts(prev => {
+          if (!isLoadMore) return d.products;
+          const seen = new Set(prev.map((p: { id: string }) => p.id));
+          const freshRows = (d.products || []).filter((p: { id: string }) => !seen.has(p.id));
+          return freshRows.length ? [...prev, ...freshRows] : prev;
+        });
         setTotal(d.total); 
       }
       else { setLoadError("Failed to load products."); if (!isLoadMore) setProducts([]); }
     } catch { setLoadError("Failed to load products."); if (!isLoadMore) setProducts([]); } finally {
-      setLoading(false); setIsFetchingMore(false);
+      setLoading(false); setIsFetchingMore(false); pagingRef.current = false;
       // Restore scroll position if one was saved before this fetch
       if (scrollRestoreRef.current !== null) {
         const y = scrollRestoreRef.current;
