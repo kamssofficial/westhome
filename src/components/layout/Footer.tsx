@@ -24,6 +24,7 @@ const POLICY_LINKS = [
   { label: "Privacy", href: "/policies/privacy" },
   { label: "Terms", href: "/policies/terms" },
   { label: "Shipping", href: "/policies/shipping" },
+  { label: "Returns", href: "/policies/returns" },
 ];
 
 export default function Footer({ className }: { className?: string }) {

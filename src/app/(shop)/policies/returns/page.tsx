@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 import ReturnsClient from "./ReturnsClient";
 
 export const metadata: Metadata = {
-  title: "Contact & Support",
+  title: "Returns & Refunds Policy",
   description:
-    "Get help with your WESTHOME order — damaged items, returns, and support contact information.",
+    "WESTHOME returns and refunds policy — how to report a damaged or defective item, the 48-hour claim window, and how to reach our support team.",
   alternates: { canonical: "/policies/returns" },
   openGraph: {
-    title: "Contact & Support | WESTHOME",
-    description: "Help with orders, damaged items, and support.",
+    title: "Returns & Refunds Policy | WESTHOME",
+    description: "Returns and refunds for damaged or defective items, and support contact details.",
     url: "/policies/returns",
   },
 };

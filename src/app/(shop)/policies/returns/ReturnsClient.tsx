@@ -5,7 +5,7 @@ export default function ReturnPolicyPage() {
   const { contactEmail, whatsappNumber } = useSettings();
   return (
     <div className="animate-fade-in px-4 py-6 max-w-3xl mx-auto">
-      <h1 className="text-2xl font-semibold text-primary mb-2">Contact &amp; Support</h1>
+      <h1 className="text-2xl font-semibold text-primary mb-2">Returns &amp; Refunds Policy</h1>
       <p className="text-xs text-secondary mb-6">Last updated: August 2026</p>
 
       <div className="space-y-6 text-sm text-secondary leading-relaxed">
@@ -19,11 +19,18 @@ export default function ReturnPolicyPage() {
         </section>
 
         <section>
+          <h2 className="text-base font-semibold text-primary mb-2">Returns &amp; Refunds</h2>
+          <p className="mb-3">
+            We are a small independent home-décor retailer and do not run a general
+            change-of-mind return window. Our returns policy covers items that arrive
+            damaged, defective, or different from what you ordered.
+          </p>
           <h2 className="text-base font-semibold text-primary mb-2">Damaged or Defective Items</h2>
           <p>
-            If you receive a damaged or defective item, please contact us within
-            48 hours with photographic evidence. We will work with you to resolve
-            the issue.
+            If your item arrives damaged or defective, contact us within 48 hours of
+            delivery with photographs of the damage. We will arrange a replacement or a
+            full refund. Claims raised more than 48 hours after delivery may not be
+            accepted.
           </p>
         </section>
 

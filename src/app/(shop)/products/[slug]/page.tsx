@@ -10,6 +10,18 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
+const SITE_URL = "https://www.westhome.in";
+
+/**
+ * Product structured data must expose absolute, crawlable image URLs. The
+ * storefront resolves images to site-relative paths (/api/images/<id>.webp or
+ * /collections/...), which Google rejects with an invalid-URL error.
+ */
+function absoluteJsonLdImage(url: string): string {
+  if (/^https?:\/\//i.test(url)) return url;
+  return `${SITE_URL}${url.startsWith("/") ? "" : "/"}${url}`;
+}
+
 async function getProduct(slug: string) {
   try {
     let product = await db.product.findUnique({
@@ -262,7 +274,11 @@ export default async function ProductPage({ params }: PageProps) {
       product.description?.substring(0, 160) ||
       product.name,
     image: product.images?.length
-      ? product.images.map((img: any) => resolveProductImage(product.category?.slug, img.url, product.slug) || img.url)
+      ? product.images.map((img: any) =>
+          absoluteJsonLdImage(
+            resolveProductImage(product.category?.slug, img.url, product.slug) || img.url,
+          ),
+        )
       : undefined,
     sku: product.sku || undefined,
     brand: {
@@ -278,6 +294,33 @@ export default async function ProductPage({ params }: PageProps) {
         ? "https://schema.org/InStock"
         : "https://schema.org/OutOfStock",
       itemCondition: "https://schema.org/NewCondition",
+      // Merchant listings surface delivery expectations only when the offer
+      // carries shipping details. Mirrors the published shipping policy:
+      // flat ₹49, free above ₹999, delivery in 3–7 business days.
+      shippingDetails: {
+        "@type": "OfferShippingDetails",
+        shippingRate: {
+          "@type": "MonetaryAmount",
+          value: listedPrice > 999 ? "0" : "49",
+          currency: "INR",
+        },
+        shippingDestination: { "@type": "DefinedRegion", addressCountry: "IN" },
+        deliveryTime: {
+          "@type": "ShippingDeliveryTime",
+          handlingTime: {
+            "@type": "QuantitativeValue",
+            minValue: 0,
+            maxValue: 1,
+            unitCode: "DAY",
+          },
+          transitTime: {
+            "@type": "QuantitativeValue",
+            minValue: 3,
+            maxValue: 7,
+            unitCode: "DAY",
+          },
+        },
+      },
       seller: {
         "@type": "Organization",
         name: "WEST HOME by BM Distributors",
