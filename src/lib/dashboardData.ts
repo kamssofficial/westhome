@@ -102,6 +102,7 @@ export async function loadDashboardData(range: string) {
       totalWishlist, wishlistToday,
       uniqueVisitorsRows,
       paymentSuccess, paymentFailed,
+      paymentMethods, orderOwnership, orderTotals, topCoupons,
     ] = await Promise.all([
       // Revenue & orders
       db.order.aggregate({ _sum: { total: true }, _count: { id: true }, where: { paymentStatus: "COMPLETED", createdAt: sinceClause } }),
@@ -221,6 +222,29 @@ export async function loadDashboardData(range: string) {
       // Payment stats
       db.payment.count({ where: { status: "COMPLETED", createdAt: sinceClause } }),
       db.payment.count({ where: { status: "FAILED", createdAt: sinceClause } }),
+
+      // Payment method mix (Razorpay stamps the method on completed payments;
+      // a null method means cash on delivery).
+      db.payment.groupBy({
+        by: ["method"], _count: { id: true }, _sum: { amount: true },
+        where: { status: "COMPLETED", createdAt: sinceClause },
+      }),
+      // Guest checkout vs signed-in accounts.
+      db.order.groupBy({
+        by: ["userId"], _count: { id: true }, _sum: { total: true },
+        where: { createdAt: sinceClause },
+      }),
+      // Order-level money: gross items, discounts given, delivery collected.
+      db.order.aggregate({
+        _sum: { subtotal: true, discount: true, deliveryCharge: true },
+        where: { paymentStatus: "COMPLETED", createdAt: sinceClause },
+      }),
+      // Coupons actually used in the range, most used first.
+      db.order.groupBy({
+        by: ["couponCode"], _count: { id: true }, _sum: { discount: true },
+        where: { paymentStatus: "COMPLETED", createdAt: sinceClause, couponCode: { not: null } },
+        orderBy: { _count: { id: "desc" } }, take: 5,
+      }),
     ]);
 
     const revenue = Number(revenueData._sum.total || 0);
@@ -399,6 +423,27 @@ export async function loadDashboardData(range: string) {
       wishlist: { total: totalWishlist, today: wishlistToday },
       // Payments
       payments: { success: paymentSuccess, failed: paymentFailed, successRate: (paymentSuccess + paymentFailed) > 0 ? Math.round((paymentSuccess / (paymentSuccess + paymentFailed)) * 100) : 0 },
+      // Payment method mix (null method = cash on delivery, labelled not dropped)
+      paymentMethods: paymentMethods.map(m => ({ method: m.method || "COD", count: m._count.id, amount: Number(m._sum.amount || 0) })),
+      // Guest checkout vs signed-in accounts, orders and revenue side by side
+      orderSources: {
+        guest: {
+          orders: orderOwnership.filter(o => !o.userId).reduce((s, o) => s + o._count.id, 0),
+          revenue: orderOwnership.filter(o => !o.userId).reduce((s, o) => s + Number(o._sum.total || 0), 0),
+        },
+        account: {
+          orders: orderOwnership.filter(o => o.userId).reduce((s, o) => s + o._count.id, 0),
+          revenue: orderOwnership.filter(o => o.userId).reduce((s, o) => s + Number(o._sum.total || 0), 0),
+        },
+      },
+      // Where the money goes: gross items, discounts given, delivery collected
+      orderMoney: {
+        subtotal: Number(orderTotals._sum.subtotal || 0),
+        discount: Number(orderTotals._sum.discount || 0),
+        delivery: Number(orderTotals._sum.deliveryCharge || 0),
+      },
+      // Coupons used in the range, most used first
+      topCoupons: topCoupons.map(c => ({ code: c.couponCode || "—", orders: c._count.id, discount: Number(c._sum.discount || 0) })),
       // Low Stock
       lowStockProducts: lowStockProductsAtRisk.map(p => ({ id: p.id, name: p.name, stock: p.stockQuantity, threshold: p.lowStockThreshold || 5 })),
       // Insights

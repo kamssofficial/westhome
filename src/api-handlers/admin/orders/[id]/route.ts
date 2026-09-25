@@ -286,6 +286,52 @@ export async function PATCH(
       return NextResponse.json({ success: true, status: "SHIPPED" });
     }
 
+    // Start processing (CONFIRMED -> PROCESSING)
+    if (body.action === "process") {
+      const order = await db.order.findUnique({ where: { id } });
+      if (!order) {
+        return NextResponse.json({ error: "Order not found" }, { status: 404 });
+      }
+      if (order.status !== "CONFIRMED") {
+        return NextResponse.json({ error: "Order must be CONFIRMED first" }, { status: 400 });
+      }
+
+      await db.order.update({
+        where: { id },
+        data: { status: "PROCESSING" },
+      });
+      await db.orderStatusHistory.create({
+        data: { orderId: id, status: "PROCESSING", note: body.note || "Processing started" },
+      });
+      { const o = await db.order.findUnique({ where: { id }, select: { orderNumber: true } }); if (o) notifyOrderStatusChange(id, o.orderNumber, "PROCESSING").catch(() => {}); }
+      await logAdminAction({ action: "PROCESS", entity: "ORDER", entityId: id, details: { note: body.note || null }, request });
+
+      return NextResponse.json({ success: true, status: "PROCESSING" });
+    }
+
+    // Out for delivery (SHIPPED -> OUT_FOR_DELIVERY)
+    if (body.action === "out_for_delivery") {
+      const order = await db.order.findUnique({ where: { id } });
+      if (!order) {
+        return NextResponse.json({ error: "Order not found" }, { status: 404 });
+      }
+      if (order.status !== "SHIPPED") {
+        return NextResponse.json({ error: "Order must be SHIPPED first" }, { status: 400 });
+      }
+
+      await db.order.update({
+        where: { id },
+        data: { status: "OUT_FOR_DELIVERY" },
+      });
+      await db.orderStatusHistory.create({
+        data: { orderId: id, status: "OUT_FOR_DELIVERY", note: body.note || "Out for delivery" },
+      });
+      { const o = await db.order.findUnique({ where: { id }, select: { orderNumber: true } }); if (o) notifyOrderStatusChange(id, o.orderNumber, "OUT_FOR_DELIVERY").catch(() => {}); }
+      await logAdminAction({ action: "OUT_FOR_DELIVERY", entity: "ORDER", entityId: id, details: { note: body.note || null }, request });
+
+      return NextResponse.json({ success: true, status: "OUT_FOR_DELIVERY" });
+    }
+
     // Quick deliver
     if (body.action === "deliver") {
       const order = await db.order.findUnique({ where: { id } });

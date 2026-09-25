@@ -1,12 +1,13 @@
 "use client";
 
-import type { ComponentType, ReactNode } from "react";
+import { useState, type ComponentType, type ReactNode } from "react";
 import Link from "next/link";
 import {
   AlertTriangle, BarChart3, Boxes, CheckCircle, Clock, CreditCard, Download,
-  ExternalLink, Globe, Heart, IndianRupee, Layers, Map as MapIcon, Monitor,
-  Package, Percent, RefreshCw, Search, Shield, ShoppingCart,
-  Smartphone, Tablet, Target, TrendingDown, TrendingUp, Users, XCircle, Zap,
+  ExternalLink, Globe, Heart, IndianRupee, Layers, LayoutDashboard,
+  Map as MapIcon, Monitor, Package, Percent, RefreshCw, Search, Shield,
+  ShoppingBag, ShoppingCart, Smartphone, Tablet,  Target, Ticket, TrendingDown,
+  TrendingUp, Users, Wallet, XCircle, Zap,
 } from "lucide-react";
 import { formatPrice, cn } from "@/lib/utils";
 import {
@@ -38,6 +39,14 @@ export interface DashboardData {
   lowStockProducts: any[];
   insights: string[];
   uniqueVisitors: number;
+  // Payment method mix from completed payments (null method = COD)
+  paymentMethods?: { method: string; count: number; amount: number }[];
+  // Guest checkout vs signed-in accounts
+  orderSources?: { guest: { orders: number; revenue: number }; account: { orders: number; revenue: number } };
+  // Order-level money: gross items, discounts given, delivery collected
+  orderMoney?: { subtotal: number; discount: number; delivery: number };
+  // Coupons used in the range, most used first
+  topCoupons?: { code: string; orders: number; discount: number }[];
 }
 
 // Every one of these is handled by /api/admin/dashboard.
@@ -67,6 +76,26 @@ export interface LiveState {
   visitors: LiveVisitor[];
 }
 export const EMPTY_LIVE: LiveState = { live: 0, customers: 0, guests: 0, visitors: [] };
+
+/* ─── Tabs ──────────────────────────────────────────────────────────────────
+   One long scroll buried every answer below the fold. Four focused tabs keep
+   each screen to a couple of viewports while the band above stays put, so
+   switching tabs never loses your place. */
+const TABS = [
+  { id: "overview", label: "Overview", icon: LayoutDashboard },
+  { id: "sales", label: "Sales", icon: IndianRupee },
+  { id: "customers", label: "Customers", icon: Users },
+  { id: "catalog", label: "Catalog", icon: Package },
+] as const;
+type TabId = (typeof TABS)[number]["id"];
+
+// Razorpay method codes → human labels. COD arrives as a null method on the
+// payment row, which the loader maps to "COD" so it is counted, not dropped.
+const METHOD_LABELS: Record<string, string> = {
+  upi: "UPI", card: "Card", netbanking: "Net Banking", wallet: "Wallet",
+  cod: "Cash on Delivery", emi: "EMI", paylater: "Pay Later",
+};
+const methodLabel = (m: string) => METHOD_LABELS[m.toLowerCase()] || m;
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 
@@ -157,6 +186,49 @@ function DarkTrend({ current, previous, trendLabel }: { current: number; previou
   );
 }
 
+/* Tab bar for the band. A real tablist: arrow keys move focus, aria-selected
+   marks the open tab — keyboard users get the behaviour a tab implies. */
+function TabBar({ tab, onChange }: { tab: TabId; onChange: (t: TabId) => void }) {
+  return (
+    <div
+      role="tablist"
+      aria-label="Dashboard sections"
+      onKeyDown={(e) => {
+        if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+        e.preventDefault();
+        const i = TABS.findIndex((t) => t.id === tab);
+        const next = e.key === "ArrowRight" ? (i + 1) % TABS.length : (i - 1 + TABS.length) % TABS.length;
+        const id = TABS[next].id;
+        onChange(id);
+        document.getElementById(`dash-tab-${id}`)?.focus();
+      }}
+      className="mt-5 flex gap-1 overflow-x-auto rounded-full bg-white/10 p-1"
+    >
+      {TABS.map((t) => {
+        const active = t.id === tab;
+        return (
+          <button
+            key={t.id}
+            id={`dash-tab-${t.id}`}
+            type="button"
+            role="tab"
+            aria-selected={active}
+            tabIndex={active ? 0 : -1}
+            onClick={() => onChange(t.id)}
+            className={cn(
+              "focus-ring flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors",
+              active ? "bg-white text-[#2C1F17] shadow-sm" : "text-white/70 hover:bg-white/10 hover:text-white"
+            )}
+          >
+            <t.icon size={13} aria-hidden="true" />
+            {t.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 /* ─── Dashboard view ─────────────────────────────────────────────────────────
    Pure presentation: no fetch, no timers, no database access. Every figure
    arrives as a prop, so the view renders with fixtures and can be
@@ -175,6 +247,8 @@ export interface DashboardViewProps {
   lastUpdated: number | null;
   liveError: boolean;
   liveLoaded: boolean;
+  /** Deep-link support: which tab starts open. Defaults to "overview". */
+  initialTab?: TabId;
 }
 
 export default function DashboardView({
@@ -190,6 +264,7 @@ export default function DashboardView({
   lastUpdated,
   liveError,
   liveLoaded,
+  initialTab = "overview",
 }: DashboardViewProps) {
   const k = data?.kpis || {};
   const funnel = data?.funnel || {};
@@ -205,6 +280,12 @@ export default function DashboardView({
     { label: "Products CSV", endpoint: "/api/products?limit=1000" },
     { label: "Customers CSV", endpoint: "/api/customers?limit=1000" },
   ];
+  // The active tab (must be declared before the early returns below).
+  const [tab, setTab] = useState<TabId>(initialTab);
+  // Payment-method bar rows (sales tab)
+  const paymentMethodRows = data?.paymentMethods || [];
+  const methodMax = Math.max(...paymentMethodRows.map(m => m.count), 1);
+  const methodTotal = paymentMethodRows.reduce((s, m) => s + m.count, 0);
 
   /* ── Early states ── */
   if (error && !data) {
@@ -233,7 +314,9 @@ export default function DashboardView({
       <div className="space-y-6 lg:space-y-8" aria-busy="true" aria-label="Loading dashboard">
         <section className="overflow-hidden rounded-[1.75rem] bg-[#2C1F17] text-white shadow-sm">
           <div className="relative">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            {/* Same inset as the loaded band below, so nothing shifts when the
+                real numbers replace the skeleton. */}
+            <div className="flex flex-col gap-4 px-5 pt-6 sm:flex-row sm:items-end sm:justify-between sm:px-7">
               <div>
                 <div className="h-2.5 w-16 animate-pulse rounded bg-white/20" />
                 <div className="mt-3 h-8 w-40 animate-pulse rounded bg-white/15 sm:h-9" />
@@ -253,7 +336,7 @@ export default function DashboardView({
                     "border-b border-white/10 px-5 py-5 sm:px-7 lg:border-b-0",
                     i === 0 && "border-r",
                     i === 1 && "lg:border-r",
-                    i === 2 && "border-r lg:border-r-0",
+                    i === 2 && "border-r",
                   )}
                 >
                   <div className="h-2.5 w-24 animate-pulse rounded bg-white/20" />
@@ -365,8 +448,12 @@ export default function DashboardView({
         className="relative overflow-hidden rounded-[1.75rem] bg-[#2C1F17] text-white shadow-sm"
       >
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_140%_at_100%_0%,rgba(180,85,45,0.38),transparent_55%)]" />
+        {/* The band is rounded-[1.75rem] and overflow-hidden, so the header needs
+            its own inset: without it the eyebrow and the h1 sat in the corner and
+            the 28px radius cut them. The metrics grid below keeps its own per-cell
+            padding so its top rule can stay full-bleed. */}
         <div className="relative">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex flex-col gap-4 px-5 pt-6 sm:flex-row sm:items-end sm:justify-between sm:px-7">
             <div>
               <p className="font-label text-[#E8A87C]">Overview</p>
               <h1 className="font-display mt-2 text-3xl sm:text-4xl">Dashboard</h1>
@@ -377,32 +464,34 @@ export default function DashboardView({
               </div>
             </div>
             <div className="flex items-center gap-2">
-          <label htmlFor="dashboard-range" className="sr-only">Date range</label>
-          <select
-            id="dashboard-range"
-            value={range}
-            onChange={(e) => onRangeChange(e.target.value)}
-            className="focus-ring rounded-full border border-white/15 bg-white/10 px-3 py-2 text-xs font-medium text-white [&>option]:text-primary"
-          >
-            {DATE_RANGES.map((r) => (
-              <option key={r.value} value={r.value}>{r.label}</option>
-            ))}
-          </select>
-          <button
-            type="button"
-            onClick={onRefresh}
-            disabled={refreshing}
-            aria-label="Refresh dashboard"
-            className="focus-ring rounded-full border border-white/15 bg-white/10 p-2.5 transition-colors hover:bg-white/20 disabled:opacity-50"
-          >
-            <RefreshCw size={15} aria-hidden="true" className={cn("text-white/70", refreshing && "animate-spin")} />
-          </button>
+              <label htmlFor="dashboard-range" className="sr-only">Date range</label>
+              <select
+                id="dashboard-range"
+                value={range}
+                onChange={(e) => onRangeChange(e.target.value)}
+                className="focus-ring rounded-full border border-white/15 bg-white/10 px-3 py-2 text-xs font-medium text-white [&>option]:text-primary"
+              >
+                {DATE_RANGES.map((r) => (
+                  <option key={r.value} value={r.value}>{r.label}</option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={onRefresh}
+                disabled={refreshing}
+                aria-label="Refresh dashboard"
+                className="focus-ring rounded-full border border-white/15 bg-white/10 p-2.5 transition-colors hover:bg-white/20 disabled:opacity-50"
+              >
+                <RefreshCw size={15} aria-hidden="true" className={cn("text-white/70", refreshing && "animate-spin")} />
+              </button>
             </div>
           </div>
 
           {/* Headline metrics. Every detail line is real range data, not a
               decorative caption: completed orders, today's orders, units sold
-              and unique visitors. */}
+              and unique visitors. The tabs sit between headline and numbers:
+              they scope everything below the band, never the band itself. */}
+          <TabBar tab={tab} onChange={setTab} />
           <div className="mt-6 grid grid-cols-2 border-t border-white/10 lg:grid-cols-4">
             <div className="border-b border-r border-white/10 px-5 py-5 sm:px-7 lg:border-b-0">
               <div className="flex items-center justify-between gap-2">
@@ -451,6 +540,11 @@ export default function DashboardView({
         </div>
       </section>
 
+      {/* Everything below the band belongs to the active tab. Each tab's
+          sections are wrapped in its own guard so switching never renders
+          hidden work. */}
+      <div id={`dash-panel-${tab}`} role="tabpanel" aria-label={TABS.find(t => t.id === tab)?.label}>
+
       {error && data ? (
         <div
           role="alert"
@@ -463,7 +557,7 @@ export default function DashboardView({
 
       {/* ── Action required ─────────────────────────────────────────────────
           First on the page: it is the only block that needs a human today. */}
-      {actionItems.length > 0 ? (
+      {tab === "overview" && actionItems.length > 0 ? (
         <Section title="Action required" icon={AlertTriangle} badge={actionItems.length}>
           <ul className="space-y-2">
             {actionItems.map((item) => (
@@ -491,7 +585,8 @@ export default function DashboardView({
         </Section>
       ) : null}
 
-      {/* ── Live store ── */}
+      {/* ── Live store (Overview tab) ── */}
+      {tab === "overview" && (
       <section
         aria-labelledby="live-heading"
         className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm"
@@ -609,11 +704,13 @@ export default function DashboardView({
           )}
         </div>
       </section>
+      )}
 
       {/* ── Store performance ──
           Headline money metrics live in the band above; this row is the
           operational layer: catalogue, customers and everything that needs
           a decision rather than a celebration. */}
+      {tab === "overview" && (
       <section aria-labelledby="performance-heading">
         <div className="mb-4 flex items-end justify-between gap-3">
           <h2 id="performance-heading" className="font-display text-xl text-primary">Store performance</h2>
@@ -641,8 +738,10 @@ export default function DashboardView({
           />
         </div>
       </section>
+      )}
 
-      {/* ── Revenue + funnel ── */}
+      {/* ── Revenue + funnel (Sales tab) ── */}
+      {tab === "sales" && (
       <div className="grid gap-4 lg:grid-cols-2">
         {(data?.revenueOverTime?.length || 0) > 0 ? (
           <Section title="Revenue" icon={BarChart3} hint={rangeLabel}>
@@ -651,8 +750,12 @@ export default function DashboardView({
               aria-label={`Revenue per day over ${rangeLabel}. Total ${money(k.revenue)}.`}
               className="flex h-40 items-end gap-1 sm:h-48"
             >
+              {/* h-full gives each column a definite height — without it the
+                  bar's percentage height resolved against an auto-height
+                  parent and every bar collapsed to 0px, leaving the chart
+                  empty. */}
               {data!.revenueOverTime.map((d, i) => (
-                <div key={i} className="group relative flex flex-1 flex-col items-center">
+                <div key={i} className="group relative flex h-full flex-1 flex-col justify-end">
                   <div className="pointer-events-none absolute bottom-full z-10 mb-2 hidden whitespace-nowrap rounded-lg bg-primary px-2 py-1 text-[10px] text-white shadow-dropdown group-hover:block">
                     {d.date}: {money(d.revenue)} ({plural(d.orders, "order")})
                   </div>
@@ -707,8 +810,10 @@ export default function DashboardView({
           </Section>
         ) : null}
       </div>
+      )}
 
-      {/* ── Orders + payments ── */}
+      {/* ── Orders + payments (Sales tab) ── */}
+      {tab === "sales" && (
       <div className="grid gap-4 lg:grid-cols-2">
         <Section title="Orders by status" icon={ShoppingCart} badge={k.totalOrders} hint={rangeLabel}>
           {statusRows.length === 0 ? (
@@ -745,8 +850,73 @@ export default function DashboardView({
           </div>
         </Section>
       </div>
+      )}
 
-      {/* ── Recent activity ── */}
+      {/* ── Payment mix, order sources, discounts & coupons (Sales tab) ──
+          The money questions the KPI band cannot answer: how customers paid,
+          whether orders come from guests or accounts, what discounts cost and
+          which coupons earned their keep. */}
+      {tab === "sales" && (
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Section title="Payment methods" icon={Wallet} hint={rangeLabel}>
+          {paymentMethodRows.length === 0 ? (
+            <EmptyState icon={Wallet} title="No payments yet" hint={`Completed payments in ${rangeLabel.toLowerCase()} show up here.`} />
+          ) : (
+            <BarList
+              rows={paymentMethodRows.map((m) => ({
+                key: m.method,
+                label: <span className="truncate text-xs font-medium text-primary">{methodLabel(m.method)}</span>,
+                meta: `${methodTotal > 0 ? Math.round((m.count / methodTotal) * 100) : 0}% · ${money(m.amount)}`,
+                value: m.count,
+                max: methodMax,
+              }))}
+            />
+          )}
+        </Section>
+
+        <Section title="Guest vs accounts" icon={ShoppingBag} hint={rangeLabel}>
+          <div className="grid grid-cols-2 gap-3">
+            <StatTile label="Guest orders" value={count(data?.orderSources?.guest.orders)} />
+            <StatTile label="Account orders" value={count(data?.orderSources?.account.orders)} />
+            <StatTile label="Guest revenue" value={money(data?.orderSources?.guest.revenue)} tone="accent" />
+            <StatTile label="Account revenue" value={money(data?.orderSources?.account.revenue)} tone="success" />
+          </div>
+        </Section>
+
+        <Section title="Discounts & delivery" icon={Percent} hint={rangeLabel}>
+          <div className="grid grid-cols-2 gap-3">
+            <StatTile label="Items subtotal" value={money(data?.orderMoney?.subtotal)} />
+            <StatTile
+              label="Discounts given"
+              value={money(data?.orderMoney?.discount)}
+              tone={(data?.orderMoney?.discount || 0) > 0 ? "warning" : "neutral"}
+            />
+            <StatTile label="Delivery collected" value={money(data?.orderMoney?.delivery)} tone="accent" />
+            <StatTile label="Net revenue" value={money(k.revenue)} tone="success" />
+          </div>
+        </Section>
+
+        <Section title="Top coupons" icon={Ticket} hint={rangeLabel}>
+          {(data?.topCoupons?.length || 0) === 0 ? (
+            <EmptyState icon={Ticket} title="No coupons used" hint={`No coupon codes were applied in ${rangeLabel.toLowerCase()}.`} />
+          ) : (
+            <BarList
+              tone="accent"
+              rows={data!.topCoupons!.map((c) => ({
+                key: c.code,
+                label: <span className="truncate text-xs font-medium text-primary">{c.code}</span>,
+                meta: `${plural(c.orders, "order")} · ${money(c.discount)} off`,
+                value: c.orders,
+                max: Math.max(...data!.topCoupons!.map((x) => x.orders), 1),
+              }))}
+            />
+          )}
+        </Section>
+      </div>
+      )}
+
+      {/* ── Recent activity (Overview tab) ── */}
+      {tab === "overview" && (
       <Section title="Recent activity" icon={Clock}>
         {recentOrders.length === 0 ? (
           <EmptyState icon={Clock} title="No recent activity" hint="New orders will show up here." />
@@ -790,11 +960,13 @@ export default function DashboardView({
           </ul>
         )}
       </Section>
+      )}
 
       {/* ── Products ────────────────────────────────────────────────────────
           One table carries every product metric. The old page rendered the
           same numbers four times over (by revenue, units, views, wishlists)
           plus a fifth copy in a table. */}
+      {tab === "catalog" && (
       <Section
         title="Product performance"
         icon={Package}
@@ -867,8 +1039,10 @@ export default function DashboardView({
           </div>
         )}
       </Section>
+      )}
 
-      {/* ── Customers + cart/wishlist ── */}
+      {/* ── Customers + cart/wishlist (Customers tab) ── */}
+      {tab === "customers" && (
       <div className="grid gap-4 lg:grid-cols-2">
         <Section title="Customer intelligence" icon={Users} hint={rangeLabel}>
           <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -880,7 +1054,11 @@ export default function DashboardView({
           {(data?.topCustomers?.length || 0) === 0 ? (
             <EmptyState icon={Users} title="No customer orders yet" />
           ) : (
-            <table className="w-full text-xs">
+            // Same escape hatch as the product table below: on phones the three
+            // columns overflow the card, and without a scroll container the
+            // card's overflow-hidden simply amputated the Spent column.
+            <div className="-mx-5 overflow-x-auto px-5">
+            <table className="w-full min-w-[360px] text-xs">
               <thead>
                 <tr className="border-b border-border">
                   <th scope="col" className="py-2 pr-2 text-left font-medium text-text-muted">Customer</th>
@@ -901,6 +1079,7 @@ export default function DashboardView({
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </Section>
 
@@ -949,8 +1128,10 @@ export default function DashboardView({
           ) : null}
         </Section>
       </div>
+      )}
 
-      {/* ── Traffic ── */}
+      {/* ── Traffic (Customers tab) ── */}
+      {tab === "customers" && (
       <div className="grid gap-4 lg:grid-cols-2">
         <Section title="Searches" icon={Search} hint={rangeLabel}>
           {searchRows.length === 0 ? (
@@ -999,12 +1180,17 @@ export default function DashboardView({
           </p>
         </Section>
       </div>
+      )}
 
-      {/* ── Geography + categories ── */}
+      {/* ── Geography (Sales tab) + categories (Catalog tab) ──
+          One grid, two tabs: the wrapper stays, each child guards itself. */}
       <div className="grid gap-4 lg:grid-cols-2">
-        {(data?.geographic?.length || 0) > 0 ? (
+        {(data?.geographic?.length || 0) > 0 && tab === "sales" ? (
           <Section title="Where orders ship" icon={MapIcon} hint={rangeLabel}>
-            <table className="w-full text-xs">
+            {/* Scroll container, not clipping: narrow phones were losing the
+                Revenue column to the card's overflow-hidden. */}
+            <div className="-mx-5 overflow-x-auto px-5">
+            <table className="w-full min-w-[360px] text-xs">
               <thead>
                 <tr className="border-b border-border">
                   <th scope="col" className="py-2 pr-2 text-left font-medium text-text-muted">State</th>
@@ -1022,10 +1208,11 @@ export default function DashboardView({
                 ))}
               </tbody>
             </table>
+            </div>
           </Section>
         ) : null}
 
-        {categories.length > 0 ? (
+        {tab === "catalog" && categories.length > 0 ? (
           <Section title="Category performance" icon={Layers} hint={rangeLabel}>
             <BarList
               tone="accent"
@@ -1041,8 +1228,8 @@ export default function DashboardView({
         ) : null}
       </div>
 
-      {/* ── Insights ── */}
-      {(data?.insights?.length || 0) > 0 ? (
+      {/* ── Insights (Overview tab) ── */}
+      {tab === "overview" && (data?.insights?.length || 0) > 0 ? (
         <Section title="WESTHOME insights" icon={Zap}>
           <ul className="space-y-2">
             {data!.insights.map((insight: string, i: number) => (
@@ -1055,8 +1242,8 @@ export default function DashboardView({
         </Section>
       ) : null}
 
-      {/* ── Inventory watchlist ── */}
-      {(data?.lowStockProducts?.length || 0) > 0 ? (
+      {/* ── Inventory watchlist (Catalog tab) ── */}
+      {tab === "catalog" && (data?.lowStockProducts?.length || 0) > 0 ? (
         <Section title="Inventory watchlist" icon={Boxes} badge={data!.lowStockProducts.length}>
           {/* Capped like every other list on the page — the API returns up to 50
               rows, which pushed the dashboard past 6,900px on its own. */}
@@ -1133,6 +1320,8 @@ export default function DashboardView({
       </Section>
 
       <div className="h-4" />
+
+      </div>
     </div>
   );
 }

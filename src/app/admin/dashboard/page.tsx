@@ -21,6 +21,13 @@ const dashboardUrl = (range: string, force = false) =>
 // enough that an order placed elsewhere shows up on its own within a minute.
 const CACHE_TTL_MS = 60_000;
 
+// Deep-link support: /admin/dashboard?tab=sales opens the Sales tab directly.
+const initialTab = (() => {
+  if (typeof window === "undefined") return undefined as string | undefined;
+  const t = new URLSearchParams(window.location.search).get("tab") || undefined;
+  return t;
+})();
+
 /**
  * Data container for the admin dashboard.
  *
@@ -173,6 +180,7 @@ export default function AdminDashboardPage() {
       lastUpdated={lastUpdated}
       liveError={liveError}
       liveLoaded={liveLoaded}
+      initialTab={initialTab as any}
     />
   );
 }

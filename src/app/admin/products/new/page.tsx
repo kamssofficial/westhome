@@ -2,12 +2,35 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Upload, Plus, X } from "lucide-react";
+import { ArrowLeft, Plus, X } from "lucide-react";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
 import ImageUploader from "@/components/admin/ImageUploader";
+import {
+  type ProductFormState, type SetProductForm,
+  BasicInfoSection, PricingStockSection, CategorySection, StatusSection, AdditionalDetailsSection, Section,
+} from "@/components/admin/ProductFormFields";
 import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
+
+const INITIAL_FORM: ProductFormState = {
+  name: "", sku: "", description: "", shortDescription: "",
+  regularPrice: "", salePrice: "", stockQuantity: "0", lowStockThreshold: "5",
+  trackInventory: true, allowBackorder: false, categoryId: "", subcategoryId: "",
+  isFeatured: false, isBestseller: false, isNewArrival: false, isComingSoon: false,
+  status: "DRAFT", purchaseMethod: "BOTH",
+  height: "", width: "", length: "", depth: "", diameter: "",
+  dimensionUnit: "cm", weight: "", weightUnit: "kg", capacity: "", capacityUnit: "L",
+  material: "", color: "", finish: "", shape: "", pattern: "",
+  style: "", mountingType: "", usageLocation: "",
+  careInstructions: "", warranty: "",
+  packagingType: "", packagingDimensions: "", packagingWeight: "", includedItems: "",
+  allowCustomSize: false, customSizeUnit: "cm",
+  customSizeMinWidth: "", customSizeMinLength: "", customSizeMinHeight: "",
+  customSizeMaxWidth: "", customSizeMaxLength: "", customSizeMaxHeight: "",
+  customSizePricingMethod: "area", customSizeRequiresApproval: false,
+  seoTitle: "", seoDescription: "",
+};
 
 interface Category {
   id: string;
@@ -16,76 +39,17 @@ interface Category {
   subcategories: { id: string; name: string; slug: string }[];
 }
 
+const inputClass = "w-full px-3 py-2.5 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30";
+
 export default function NewProductPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
-
-  const [form, setForm] = useState({
-    name: "",
-    sku: "",
-    description: "",
-    shortDescription: "",
-    regularPrice: "",
-    salePrice: "",
-    stockQuantity: "0",
-    lowStockThreshold: "5",
-    trackInventory: true,
-    allowBackorder: false,
-    categoryId: "",
-    subcategoryId: "",
-    isFeatured: false,
-    isBestseller: false,
-    isNewArrival: false,
-    isComingSoon: false,
-    status: "DRAFT",
-    purchaseMethod: "BOTH",
-    // Physical dimensions
-    height: "",
-    width: "",
-    length: "",
-    depth: "",
-    diameter: "",
-    dimensionUnit: "cm",
-    weight: "",
-    weightUnit: "kg",
-    capacity: "",
-    capacityUnit: "L",
-    // Physical attributes
-    material: "",
-    color: "",
-    finish: "",
-    shape: "",
-    pattern: "",
-    style: "",
-    mountingType: "",
-    usageLocation: "",
-    // Product information
-    careInstructions: "",
-    warranty: "",
-    // Packaging
-    packagingType: "",
-    packagingDimensions: "",
-    packagingWeight: "",
-    includedItems: "",
-    // Custom sizing
-    allowCustomSize: false,
-    customSizeUnit: "cm",
-    customSizeMinWidth: "",
-    customSizeMinLength: "",
-    customSizeMinHeight: "",
-    customSizeMaxWidth: "",
-    customSizeMaxLength: "",
-    customSizeMaxHeight: "",
-    customSizePricingMethod: "area",
-    customSizeRequiresApproval: false,
-    // SEO
-    seoTitle: "",
-    seoDescription: "",
-  });
-
+  const [form, setFormState] = useState<ProductFormState>(INITIAL_FORM);
   const [images, setImages] = useState<any[]>([]);
   const [variants, setVariants] = useState<any[]>([]);
+
+  const setForm: SetProductForm = (patch) => setFormState((f) => ({ ...f, ...patch }));
 
   useEffect(() => {
     fetch("/api/categories")
@@ -93,21 +57,10 @@ export default function NewProductPage() {
       .then((data) => setCategories(data.categories || []));
   }, []);
 
-  const selectedCategory = categories.find((c) => c.id === form.categoryId);
-
   const handleAddVariant = () => {
     setVariants([
       ...variants,
-      {
-        name: "",
-        sku: "",
-        price: "",
-        salePrice: "",
-        stockQuantity: "0",
-        isActive: true,
-        images: [],
-        attributes: [],
-      },
+      { name: "", sku: "", price: "", salePrice: "", stockQuantity: "0", isActive: true, images: [], attributes: [] },
     ]);
   };
 
@@ -207,8 +160,6 @@ export default function NewProductPage() {
     }
   };
 
-  const inputClass = "w-full px-3 py-2.5 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30";
-
   return (
     <div className="max-w-3xl">
       <Link href="/admin/products" className="inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-foreground mb-4">
@@ -218,317 +169,25 @@ export default function NewProductPage() {
       <h1 className="text-xl font-semibold mb-6">Create New Product</h1>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Basic Info */}
-        <div className="bg-surface rounded-[1.35rem] border border-border p-5">
-          <h2 className="font-semibold mb-4">Basic Information</h2>
-          <div className="space-y-4">
-            <div>
-              <label className="text-xs font-medium text-text-secondary mb-1 block">Product Name *</label>
-              <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputClass} required />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-text-secondary mb-1 block">SKU</label>
-              <input type="text" value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} className={inputClass} placeholder="Auto-generated if empty" />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-text-secondary mb-1 block">Short Description</label>
-              <input type="text" value={form.shortDescription} onChange={(e) => setForm({ ...form, shortDescription: e.target.value })} className={inputClass} maxLength={160} />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-text-secondary mb-1 block">Description</label>
-              <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={cn(inputClass, "min-h-[120px] resize-y")} rows={5} />
-            </div>
-          </div>
-        </div>
-
-        {/* Pricing & Stock */}
-        <div className="bg-surface rounded-[1.35rem] border border-border p-5">
-          <h2 className="font-semibold mb-4">Pricing & Stock</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="text-xs font-medium text-text-secondary mb-1 block">Regular Price (₹) *</label>
-              <input type="number" step="0.01" value={form.regularPrice} onChange={(e) => setForm({ ...form, regularPrice: e.target.value })} className={inputClass} required />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-text-secondary mb-1 block">Sale Price (₹)</label>
-              <input type="number" step="0.01" value={form.salePrice} onChange={(e) => setForm({ ...form, salePrice: e.target.value })} className={inputClass} />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-text-secondary mb-1 block">Stock Quantity</label>
-              <input type="number" value={form.stockQuantity} onChange={(e) => setForm({ ...form, stockQuantity: e.target.value })} className={inputClass} />
-            </div>
-          </div>
-          <div className="flex items-center gap-6 mt-4">
-            <label className="flex items-center gap-2 text-sm cursor-pointer">
-              <input type="checkbox" checked={form.allowBackorder} onChange={(e) => setForm({ ...form, allowBackorder: e.target.checked })} className="accent-accent" />
-              Allow backorder
-            </label>
-          </div>
-        </div>
-
-        {/* Category */}
-        <div className="bg-surface rounded-[1.35rem] border border-border p-5">
-          <h2 className="font-semibold mb-4">Category</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-medium text-text-secondary mb-1 block">Category *</label>
-              <select value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value, subcategoryId: "" })} className={cn(inputClass, form.categoryId && "bg-primary text-white border-primary")} required>
-                <option value="" className="text-black bg-white">Select Category</option>
-                {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id} className="text-black bg-white">{cat.name}</option>
-                ))}
-              </select>
-            </div>
-            {selectedCategory?.subcategories && selectedCategory.subcategories.length > 0 && (
-              <div>
-                <label className="text-xs font-medium text-text-secondary mb-1 block">Subcategory</label>
-                <select value={form.subcategoryId} onChange={(e) => setForm({ ...form, subcategoryId: e.target.value })} className={cn(inputClass, form.subcategoryId && "bg-primary text-white border-primary")}>
-                  <option value="" className="text-black bg-white">None</option>
-                  {selectedCategory.subcategories.map((sub) => (
-                    <option key={sub.id} value={sub.id} className="text-black bg-white">{sub.name}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Status & Flags */}
-        <div className="bg-surface rounded-[1.35rem] border border-border p-5">
-          <h2 className="font-semibold mb-4">Status & Visibility</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-medium text-text-secondary mb-1 block">Status</label>
-              <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className={inputClass}>
-                <option value="DRAFT">Draft</option>
-                <option value="ACTIVE">Active</option>
-                <option value="INACTIVE">Inactive</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-medium text-text-secondary mb-1 block">Purchase Method</label>
-              <select value={form.purchaseMethod} onChange={(e) => setForm({ ...form, purchaseMethod: e.target.value })} className={inputClass}>
-                <option value="BUY_ONLINE">Buy Online</option>
-                <option value="WHATSAPP">WhatsApp Only</option>
-                <option value="BOTH">Both</option>
-              </select>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-4 mt-4">
-            <label className="flex items-center gap-2 text-sm cursor-pointer">
-              <input type="checkbox" checked={form.isFeatured} onChange={(e) => setForm({ ...form, isFeatured: e.target.checked })} className="accent-accent" />
-              Featured
-            </label>
-            <label className="flex items-center gap-2 text-sm cursor-pointer">
-              <input type="checkbox" checked={form.isBestseller} onChange={(e) => setForm({ ...form, isBestseller: e.target.checked })} className="accent-accent" />
-              Bestseller
-            </label>
-            <label className="flex items-center gap-2 text-sm cursor-pointer">
-              <input type="checkbox" checked={form.isNewArrival} onChange={(e) => setForm({ ...form, isNewArrival: e.target.checked })} className="accent-accent" />
-              New Arrival
-            </label>
-            <label className="flex items-center gap-2 text-sm cursor-pointer">
-              <input type="checkbox" checked={form.isComingSoon} onChange={(e) => setForm({ ...form, isComingSoon: e.target.checked })} className="accent-accent" />
-              Coming Soon
-            </label>
-          </div>
-        </div>
-
-        {/* Physical Dimensions */}
-        <div className="bg-surface rounded-[1.35rem] border border-border p-5">
-          <h2 className="font-semibold mb-4">Physical Dimensions</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div>
-              <label className="text-xs font-medium text-text-secondary mb-1 block">Height</label>
-              <input type="number" step="0.1" value={form.height} onChange={(e) => setForm({ ...form, height: e.target.value })} className={inputClass} placeholder="0" />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-text-secondary mb-1 block">Width</label>
-              <input type="number" step="0.1" value={form.width} onChange={(e) => setForm({ ...form, width: e.target.value })} className={inputClass} placeholder="0" />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-text-secondary mb-1 block">Length</label>
-              <input type="number" step="0.1" value={form.length} onChange={(e) => setForm({ ...form, length: e.target.value })} className={inputClass} placeholder="0" />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-text-secondary mb-1 block">Depth</label>
-              <input type="number" step="0.1" value={form.depth} onChange={(e) => setForm({ ...form, depth: e.target.value })} className={inputClass} placeholder="0" />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-text-secondary mb-1 block">Diameter</label>
-              <input type="number" step="0.1" value={form.diameter} onChange={(e) => setForm({ ...form, diameter: e.target.value })} className={inputClass} placeholder="0" />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-text-secondary mb-1 block">Dimension Unit</label>
-              <select value={form.dimensionUnit} onChange={(e) => setForm({ ...form, dimensionUnit: e.target.value })} className={inputClass}>
-                <option value="cm">cm</option>
-                <option value="mm">mm</option>
-                <option value="in">inches</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-medium text-text-secondary mb-1 block">Weight</label>
-              <input type="number" step="0.1" value={form.weight} onChange={(e) => setForm({ ...form, weight: e.target.value })} className={inputClass} placeholder="0" />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-text-secondary mb-1 block">Weight Unit</label>
-              <select value={form.weightUnit} onChange={(e) => setForm({ ...form, weightUnit: e.target.value })} className={inputClass}>
-                <option value="kg">kg</option>
-                <option value="g">g</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* Material & Appearance */}
-        <div className="bg-surface rounded-[1.35rem] border border-border p-5">
-          <h2 className="font-semibold mb-4">Material & Appearance</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-medium text-text-secondary mb-1 block">Material</label>
-              <input type="text" value={form.material} onChange={(e) => setForm({ ...form, material: e.target.value })} className={inputClass} placeholder="e.g. Ceramic, Wool, Velvet" />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-text-secondary mb-1 block">Color</label>
-              <input type="text" value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} className={inputClass} placeholder="e.g. Gold, Cream, Black" />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-text-secondary mb-1 block">Finish</label>
-              <input type="text" value={form.finish} onChange={(e) => setForm({ ...form, finish: e.target.value })} className={inputClass} placeholder="e.g. Matte, Gloss, Brushed" />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-text-secondary mb-1 block">Shape</label>
-              <input type="text" value={form.shape} onChange={(e) => setForm({ ...form, shape: e.target.value })} className={inputClass} placeholder="e.g. Round, Rectangular" />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-text-secondary mb-1 block">Pattern</label>
-              <input type="text" value={form.pattern} onChange={(e) => setForm({ ...form, pattern: e.target.value })} className={inputClass} placeholder="e.g. Solid, Geometric" />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-text-secondary mb-1 block">Style</label>
-              <input type="text" value={form.style} onChange={(e) => setForm({ ...form, style: e.target.value })} className={inputClass} placeholder="e.g. Modern, Vintage" />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-text-secondary mb-1 block">Mounting Type</label>
-              <input type="text" value={form.mountingType} onChange={(e) => setForm({ ...form, mountingType: e.target.value })} className={inputClass} placeholder="e.g. Wall-mount, Floor, Table" />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-text-secondary mb-1 block">Usage Location</label>
-              <input type="text" value={form.usageLocation} onChange={(e) => setForm({ ...form, usageLocation: e.target.value })} className={inputClass} placeholder="e.g. Indoor, Bathroom" />
-            </div>
-          </div>
-        </div>
-
-        {/* Care & Packaging */}
-        <div className="bg-surface rounded-[1.35rem] border border-border p-5">
-          <h2 className="font-semibold mb-4">Care & Packaging</h2>
-          <div className="space-y-4">
-            <div>
-              <label className="text-xs font-medium text-text-secondary mb-1 block">Care Instructions</label>
-              <textarea value={form.careInstructions} onChange={(e) => setForm({ ...form, careInstructions: e.target.value })} className={cn(inputClass, "min-h-[80px] resize-y")} rows={3} placeholder="How to care for this product..." />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-text-secondary mb-1 block">Warranty</label>
-              <input type="text" value={form.warranty} onChange={(e) => setForm({ ...form, warranty: e.target.value })} className={inputClass} placeholder="e.g. 1 year manufacturer warranty" />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-text-secondary mb-1 block">Included Items</label>
-              <input type="text" value={form.includedItems} onChange={(e) => setForm({ ...form, includedItems: e.target.value })} className={inputClass} placeholder="What's included in the box" />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="text-xs font-medium text-text-secondary mb-1 block">Packaging Type</label>
-                <input type="text" value={form.packagingType} onChange={(e) => setForm({ ...form, packagingType: e.target.value })} className={inputClass} placeholder="e.g. Corrugated box" />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-text-secondary mb-1 block">Packaging Dimensions</label>
-                <input type="text" value={form.packagingDimensions} onChange={(e) => setForm({ ...form, packagingDimensions: e.target.value })} className={inputClass} placeholder="e.g. 50x40x20 cm" />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-text-secondary mb-1 block">Packaging Weight (kg)</label>
-                <input type="number" step="0.1" value={form.packagingWeight} onChange={(e) => setForm({ ...form, packagingWeight: e.target.value })} className={inputClass} placeholder="0" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Custom Size */}
-        <div className="bg-surface rounded-[1.35rem] border border-border p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold">Custom Size</h2>
-            <label className="flex items-center gap-2 text-sm cursor-pointer">
-              <input type="checkbox" checked={form.allowCustomSize} onChange={(e) => setForm({ ...form, allowCustomSize: e.target.checked })} className="accent-accent" />
-              Enable Custom Sizing
-            </label>
-          </div>
-          {form.allowCustomSize && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="text-xs font-medium text-text-secondary mb-1 block">Min Width</label>
-                  <input type="number" value={form.customSizeMinWidth} onChange={(e) => setForm({ ...form, customSizeMinWidth: e.target.value })} className={inputClass} />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-text-secondary mb-1 block">Min Length</label>
-                  <input type="number" value={form.customSizeMinLength} onChange={(e) => setForm({ ...form, customSizeMinLength: e.target.value })} className={inputClass} />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-text-secondary mb-1 block">Min Height</label>
-                  <input type="number" value={form.customSizeMinHeight} onChange={(e) => setForm({ ...form, customSizeMinHeight: e.target.value })} className={inputClass} />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-text-secondary mb-1 block">Max Width</label>
-                  <input type="number" value={form.customSizeMaxWidth} onChange={(e) => setForm({ ...form, customSizeMaxWidth: e.target.value })} className={inputClass} />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-text-secondary mb-1 block">Max Length</label>
-                  <input type="number" value={form.customSizeMaxLength} onChange={(e) => setForm({ ...form, customSizeMaxLength: e.target.value })} className={inputClass} />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-text-secondary mb-1 block">Max Height</label>
-                  <input type="number" value={form.customSizeMaxHeight} onChange={(e) => setForm({ ...form, customSizeMaxHeight: e.target.value })} className={inputClass} />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-medium text-text-secondary mb-1 block">Unit</label>
-                  <select value={form.customSizeUnit} onChange={(e) => setForm({ ...form, customSizeUnit: e.target.value })} className={inputClass}>
-                    <option value="cm">cm</option>
-                    <option value="mm">mm</option>
-                    <option value="in">inches</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-text-secondary mb-1 block">Pricing Method</label>
-                  <select value={form.customSizePricingMethod} onChange={(e) => setForm({ ...form, customSizePricingMethod: e.target.value })} className={inputClass}>
-                    <option value="area">By Area</option>
-                    <option value="linear">By Length</option>
-                    <option value="fixed">Fixed Price</option>
-                  </select>
-                </div>
-              </div>
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <input type="checkbox" checked={form.customSizeRequiresApproval} onChange={(e) => setForm({ ...form, customSizeRequiresApproval: e.target.checked })} className="accent-accent" />
-                Require admin approval for custom orders
-              </label>
-            </div>
-          )}
-        </div>
-
         {/* Product images */}
-        <div className="bg-surface rounded-[1.35rem] border border-border p-5">
-          <h2 className="font-semibold mb-4">Product Images</h2>
+        <Section title="Product Images">
           <ImageUploader images={images} onChange={setImages} folder="products" />
-        </div>
+        </Section>
+
+        <BasicInfoSection form={form} setForm={setForm} />
+        <PricingStockSection form={form} setForm={setForm} />
+        <CategorySection form={form} setForm={setForm} categories={categories} />
+        <StatusSection form={form} setForm={setForm} />
 
         {/* Variants */}
-        <div className="bg-surface rounded-[1.35rem] border border-border p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold">Variants</h2>
+        <Section
+          title="Variants"
+          headerRight={
             <Button type="button" variant="outline" size="sm" onClick={handleAddVariant}>
               <Plus size={14} /> Add Variant
             </Button>
-          </div>
+          }
+        >
           {variants.length === 0 ? (
             <p className="text-sm text-text-muted">No variants. Add variants for products with multiple options (size, color, etc).</p>
           ) : (
@@ -571,22 +230,9 @@ export default function NewProductPage() {
               ))}
             </div>
           )}
-        </div>
+        </Section>
 
-        {/* SEO */}
-        <div className="bg-surface rounded-[1.35rem] border border-border p-5">
-          <h2 className="font-semibold mb-4">SEO</h2>
-          <div className="space-y-4">
-            <div>
-              <label className="text-xs font-medium text-text-secondary mb-1 block">SEO Title</label>
-              <input type="text" value={form.seoTitle} onChange={(e) => setForm({ ...form, seoTitle: e.target.value })} className={inputClass} maxLength={70} />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-text-secondary mb-1 block">Meta Description</label>
-              <textarea value={form.seoDescription} onChange={(e) => setForm({ ...form, seoDescription: e.target.value })} className={cn(inputClass, "resize-y")} rows={2} maxLength={160} />
-            </div>
-          </div>
-        </div>
+        <AdditionalDetailsSection form={form} setForm={setForm} />
 
         {/* Submit */}
         <div className="flex items-center gap-3">

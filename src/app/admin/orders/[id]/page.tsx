@@ -33,24 +33,27 @@ interface CustomerOrder {
 
 const ALL_STATUSES = ["NEW", "CONFIRMED", "PROCESSING", "SHIPPED", "OUT_FOR_DELIVERY", "DELIVERED", "CANCELLED", "ON_HOLD"];
 
-const STATUS_FLOW: Record<string, { next: string; label: string; icon: any }[]> = {
+// Each entry is self-contained: what the button shows (label/icon), what it
+// sends to PATCH /api/admin/orders/[id] (patch), and what the success toast
+// says (toast) — so a button can never desync from its action or message.
+const STATUS_FLOW: Record<string, { next: string; label: string; icon: any; patch: string; toast: string }[]> = {
   NEW: [
-    { next: "CONFIRMED", label: "Confirm Order", icon: CheckCircle },
+    { next: "CONFIRMED", label: "Confirm Order", icon: CheckCircle, patch: "confirm", toast: "Order confirmed" },
   ],
   CONFIRMED: [
-    { next: "PROCESSING", label: "Start Processing", icon: Package },
-    { next: "CANCELLED", label: "Cancel", icon: XCircle },
+    { next: "PROCESSING", label: "Start Processing", icon: Package, patch: "process", toast: "Order marked as processing" },
+    { next: "CANCELLED", label: "Cancel", icon: XCircle, patch: "cancel", toast: "Order cancelled" },
   ],
   PROCESSING: [
-    { next: "SHIPPED", label: "Ship Order", icon: Truck },
-    { next: "CANCELLED", label: "Cancel", icon: XCircle },
+    { next: "SHIPPED", label: "Ship Order", icon: Truck, patch: "ship", toast: "Order shipped" },
+    { next: "CANCELLED", label: "Cancel", icon: XCircle, patch: "cancel", toast: "Order cancelled" },
   ],
   SHIPPED: [
-    { next: "OUT_FOR_DELIVERY", label: "Out for Delivery", icon: Truck },
-    { next: "DELIVERED", label: "Mark Delivered", icon: CheckCircle },
+    { next: "OUT_FOR_DELIVERY", label: "Out for Delivery", icon: Truck, patch: "out_for_delivery", toast: "Order is out for delivery" },
+    { next: "DELIVERED", label: "Mark Delivered", icon: CheckCircle, patch: "deliver", toast: "Order marked delivered" },
   ],
   OUT_FOR_DELIVERY: [
-    { next: "DELIVERED", label: "Mark Delivered", icon: CheckCircle },
+    { next: "DELIVERED", label: "Mark Delivered", icon: CheckCircle, patch: "deliver", toast: "Order marked delivered" },
   ],
 };
 
@@ -88,7 +91,7 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
 
   useEffect(() => { fetchOrder(); }, [fetchOrder]);
 
-  const handleQuickAction = async (action: string, note?: string, extra?: any) => {
+  const handleQuickAction = async (action: string, note?: string, extra?: any, successToast?: string) => {
     setUpdating(true);
     try {
       const res = await fetch(`/api/admin/orders/${id}`, {
@@ -97,8 +100,7 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
         body: JSON.stringify({ action, note, ...extra }),
       });
       if (res.ok) {
-        const data = await res.json();
-        toast.success(`Order ${action === "confirm_payment" ? "payment confirmed" : data.status?.toLowerCase() + "d" || "updated"}`);
+        toast.success(successToast || "Order updated");
         fetchOrder();
       } else {
         const err = await res.json();
@@ -189,9 +191,10 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
                 size="sm"
                 variant={action.next === "CANCELLED" ? "outline" : "primary"}
                 onClick={() => handleQuickAction(
-                  action.next === "CONFIRMED" ? "confirm" : action.next === "DELIVERED" ? "deliver" : action.next === "CANCELLED" ? "cancel" : action.next === "SHIPPED" ? "ship" : "confirm",
+                  action.patch,
                   action.next === "CANCELLED" ? "Cancelled by staff" : undefined,
-                  action.next === "SHIPPED" ? { trackingNumber } : undefined
+                  action.next === "SHIPPED" ? { trackingNumber } : undefined,
+                  action.toast
                 )}
                 loading={updating}
               >
@@ -199,7 +202,7 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
               </Button>
             ))}
             {order.paymentStatus !== "COMPLETED" && (
-              <Button size="sm" variant="outline" onClick={() => handleQuickAction("confirm_payment", paymentNote)} loading={updating}>
+              <Button size="sm" variant="outline" onClick={() => handleQuickAction("confirm_payment", paymentNote, undefined, "Payment confirmed")} loading={updating}>
                 <CreditCard size={14} /> Confirm Payment
               </Button>
             )}
