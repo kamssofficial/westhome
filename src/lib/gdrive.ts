@@ -107,6 +107,206 @@ async function getAuth() {
 }
 
 // ---------------------------------------------------------------------------
+// Error classification + health probe
+//
+// The upload route can only show the admin something useful if auth failures
+// are recognized in code. storageStatus() reports env-key PRESENCE, which is
+// always true once variables exist — a revoked/expired refresh token still
+// looks "configured" and only an actual Drive call fails. These helpers turn
+// that failure into an actionable message instead of a generic 503.
+// ---------------------------------------------------------------------------
+
+export type DriveErrorKind = "auth" | "api" | "network" | "unknown";
+
+export interface ClassifiedDriveError {
+  kind: DriveErrorKind;
+  error: string;
+  action: string;
+}
+
+const REMINT_ACTION =
+  "Re-run `python scripts/create_drive_credentials.py`, replace the three GOOGLE_OAUTH_* values in the hosting environment, and redeploy.";
+
+/**
+ * Map a googleapis/token-endpoint failure to an admin-actionable message.
+ * Pure function over the error object so it is testable without network.
+ */
+export function classifyDriveError(err: unknown): ClassifiedDriveError {
+  const e = err as {
+    code?: string | number;
+    message?: string;
+    response?: { status?: number; data?: { error?: string; error_description?: string } };
+  };
+  const apiError = e?.response?.data?.error || "";
+  const apiDescription = e?.response?.data?.error_description || "";
+  const msg = `${e?.message || (typeof err === "string" ? err : "")} ${apiError} ${apiDescription}`;
+  const status = e?.response?.status ?? (typeof e?.code === "number" ? e.code : undefined);
+
+  if (/invalid_grant/i.test(msg)) {
+    if (/expired|revoked/i.test(msg)) {
+      return {
+        kind: "auth",
+        error: "The Google Drive refresh token has expired or was revoked.",
+        action: REMINT_ACTION,
+      };
+    }
+    return {
+      kind: "auth",
+      error: "Google rejected the Drive credentials (invalid_grant).",
+      action: REMINT_ACTION,
+    };
+  }
+  if (/invalid_client|unauthorized_client|UNREGISTERED|client_secret/i.test(msg)) {
+    return {
+      kind: "auth",
+      error: "Google rejected the OAuth client (client id/secret mismatch, or the client was deleted).",
+      action: "Recreate the OAuth client with `python scripts/create_drive_credentials.py` and update the GOOGLE_OAUTH_* environment values.",
+    };
+  }
+  if (
+    /could not load the default credentials|could not automatically determine credentials|default credentials were not found|credentials are not configured|storage is not configured|not configured/i.test(
+      msg
+    )
+  ) {
+    return {
+      kind: "auth",
+      error: "No usable Google Drive credentials are configured on this host.",
+      action: "Run `python scripts/create_drive_credentials.py` and add the three GOOGLE_OAUTH_* values to the hosting environment, then redeploy.",
+    };
+  }
+  if (status === 401) {
+    return {
+      kind: "auth",
+      error: "Google Drive rejected the request as unauthenticated.",
+      action: REMINT_ACTION,
+    };
+  }
+  if (/storageQuotaExceeded|storage quota/i.test(msg)) {
+    return {
+      kind: "api",
+      error: "The Google account backing Drive storage is out of quota.",
+      action: "Free up Google Drive storage for the account that owns the uploads (or upgrade its Google One plan), then retry.",
+    };
+  }
+  if (/accessNotConfigured|has not been used|is disabled|SERVICE_DISABLED/i.test(msg)) {
+    return {
+      kind: "api",
+      error: "The Google Drive API is not enabled on the credentials' Google Cloud project.",
+      action: "Enable the Drive API in Google Cloud Console (APIs & Services -> Library), then retry.",
+    };
+  }
+  if (status === 403 || /insufficient permissions|The user does not have sufficient permissions/i.test(msg)) {
+    return {
+      kind: "api",
+      error: "Google Drive denied the operation for this account.",
+      action: `Grant the Drive scope/permission needed for uploads, or check the sharing settings of the target folder. (${msg.trim() || "no detail"})`,
+    };
+  }
+  if (/ENOTFOUND|ECONNREFUSED|ETIMEDOUT|EAI_AGAIN|fetch failed|network/i.test(msg)) {
+    return {
+      kind: "network",
+      error: "Could not reach Google's servers.",
+      action: "This is usually transient — retry the upload in a minute.",
+    };
+  }
+  return {
+    kind: "unknown",
+    error: "Upload failed. Please try again.",
+    action: "If it keeps failing, check the server logs for the underlying error.",
+  };
+}
+
+export interface DriveHealth {
+  ok: boolean;
+  /** Which credential path was exercised. */
+  mode: "oauth" | "service_account" | "adc" | "none";
+  kind?: DriveErrorKind;
+  error?: string;
+  action?: string;
+  checkedAt: number;
+}
+
+let healthCache: DriveHealth | null = null;
+const HEALTH_CACHE_MS = 2 * 60 * 1000;
+
+/**
+ * Actually exercise the credentials (refresh/fetch an access token) instead of
+ * just checking that env keys exist. Cheap, cached for 2 minutes so a dashboard
+ * poll cannot burn Google's token-endpoint quota.
+ */
+export async function driveHealthCheck(force = false): Promise<DriveHealth> {
+  if (!force && healthCache && Date.now() - healthCache.checkedAt < HEALTH_CACHE_MS) {
+    return healthCache;
+  }
+  const probed = await probeDrive();
+  healthCache = { ...probed, checkedAt: Date.now() };
+  return healthCache;
+}
+
+const NO_CREDENTIALS_HEALTH = (): Omit<DriveHealth, "checkedAt"> => ({
+  ok: false,
+  mode: "none",
+  kind: "auth",
+  error: "No Google Drive credentials are configured.",
+  action: "Run `python scripts/create_drive_credentials.py` and add the three GOOGLE_OAUTH_* values to the hosting environment, then redeploy.",
+});
+
+async function probeDrive(): Promise<Omit<DriveHealth, "checkedAt">> {
+  const { google } = await import("googleapis");
+  try {
+    if (
+      process.env.GOOGLE_OAUTH_CLIENT_ID &&
+      process.env.GOOGLE_OAUTH_CLIENT_SECRET &&
+      process.env.GOOGLE_OAUTH_REFRESH_TOKEN
+    ) {
+      const oauth = new google.auth.OAuth2(
+        process.env.GOOGLE_OAUTH_CLIENT_ID,
+        process.env.GOOGLE_OAUTH_CLIENT_SECRET
+      );
+      oauth.setCredentials({ refresh_token: process.env.GOOGLE_OAUTH_REFRESH_TOKEN });
+      const res = await oauth.getAccessToken();
+      if (!res?.token) {
+        return {
+          ok: false,
+          mode: "oauth",
+          kind: "auth",
+          error: "The configured Google credentials returned no access token.",
+          action: REMINT_ACTION,
+        };
+      }
+      return { ok: true, mode: "oauth" };
+    }
+
+    const credsPath = credentialsPath();
+    const credsJson = credentialsJson();
+    const hasServiceAccount =
+      (credsPath && fs.existsSync(credsPath)) || (credsJson && credsJson.type === "service_account");
+    if (!hasServiceAccount) return NO_CREDENTIALS_HEALTH();
+    const mode: DriveHealth["mode"] = "service_account";
+
+    const auth =
+      credsPath && fs.existsSync(credsPath)
+        ? new google.auth.GoogleAuth({ keyFile: credsPath, scopes: [SCOPE_DRIVE] })
+        : new google.auth.GoogleAuth({ credentials: credsJson, scopes: [SCOPE_DRIVE] });
+
+    const client = await auth.getClient();
+    const res = await client.getAccessToken();
+    if (!res?.token) {
+      return {
+        ok: false,
+        mode,
+        kind: "auth",
+        error: "The configured Google service account returned no access token.",
+        action: "Check the service-account key and that the Drive API is enabled for its project.",
+      };
+    }
+    return { ok: true, mode };
+  } catch (err) {
+    return { ok: false, mode: "none", ...classifyDriveError(err) };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Drive helpers
 // ---------------------------------------------------------------------------
 
@@ -290,14 +490,27 @@ export interface UploadResult {
   mimeType: string;
 }
 
+function extMimeType(filename: string): string | null {
+  const ext = filename.split(".").pop()?.toLowerCase();
+  if (ext === "jpg" || ext === "jpeg") return "image/jpeg";
+  if (ext === "png") return "image/png";
+  if (ext === "webp") return "image/webp";
+  if (ext === "gif") return "image/gif";
+  return null;
+}
+
 export async function uploadToDrive(
   folder: string,
   file: File | Buffer,
   filename: string
 ): Promise<UploadResult> {
-  const mimeType = file instanceof File ? file.type : "application/octet-stream";
+  // Browsers occasionally send a File with an empty .type; Drive rejects an
+  // empty mimeType, so fall back to magic-byte sniffing, then the extension.
+  const rawType = file instanceof File ? file.type : "";
   const buffer =
     file instanceof File ? Buffer.from(await file.arrayBuffer()) : file;
+  const mimeType =
+    rawType || sniffMimeType(buffer) || extMimeType(filename) || "application/octet-stream";
 
   const driveFile = await uploadFile(folder, filename, mimeType, buffer);
 

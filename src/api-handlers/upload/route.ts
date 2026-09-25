@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { requireAuthRole } from "@/lib/apiAuth";
 import { storageStatus, uploadMedia } from "@/lib/media";
 import { sniffImageType, imageExtensionFor } from "@/lib/imageMagic";
+import { classifyDriveError, driveHealthCheck } from "@/lib/gdrive";
 
 export const runtime = "nodejs";
 
@@ -12,8 +13,29 @@ export const runtime = "nodejs";
 const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 const ALLOWED_FOLDERS = ["products", "categories", "banners", "avatars", "homepage", "staff"];
 
-export async function GET() {
-  return NextResponse.json({ storage: storageStatus() });
+/**
+ * GET /api/upload          -> env-key presence (cheap, no Google calls; what
+ *                             the storage-health workflow greps).
+ * GET /api/upload?probe=1  -> actually refreshes a token so "configured"
+ *                             means the credentials WORK, not merely exist.
+ *                             A revoked/expired refresh token looks identical
+ *                             to a healthy one under presence-only checks.
+ */
+export async function GET(request: NextRequest) {
+  const status = storageStatus();
+  const wantsProbe = request.nextUrl.searchParams.get("probe") === "1";
+  const health = wantsProbe ? await driveHealthCheck() : null;
+  return NextResponse.json({
+    storage: {
+      ...status,
+      health,
+      recommendation: status.anyConfigured
+        ? health && !health.ok
+          ? `Drive credentials are present but broken: ${health.error} ${health.action}`
+          : null
+        : `Image storage is not configured. ${status.missing ?? "Configure GOOGLE_OAUTH_* (or GOOGLE_CREDENTIALS_PATH / GOOGLE_CREDENTIALS_JSON)."}`,
+    },
+  });
 }
 
 export async function POST(request: NextRequest) {
@@ -68,14 +90,14 @@ export async function POST(request: NextRequest) {
     );
   } catch (error: any) {
     console.error("Upload error:", error);
-    // Only pass through messages we wrote ourselves. Everything else could
-    // carry internal paths or driver detail, so it gets a generic reply and
-    // the full error stays in the server log.
-    const raw = typeof error?.message === "string" ? error.message : "";
-    const isKnownConfigError = /not configured/i.test(raw) || /GOOGLE_OAUTH/i.test(raw);
-    return NextResponse.json(
-      { error: isKnownConfigError ? raw : "Upload failed. Please try again.", storage: storageStatus() },
-      { status: 503 }
-    );
+    // Auth/config failures (expired refresh token, wrong client secret, missing
+    // credentials, quota, disabled API...) get the actionable fix in the message;
+    // everything else keeps the generic reply so we never leak internals.
+    const classified = classifyDriveError(error);
+    const errorBody =
+      classified.kind === "unknown"
+        ? { error: "Upload failed. Please try again.", storage: storageStatus() }
+        : { error: `${classified.error} ${classified.action}`, kind: classified.kind, storage: storageStatus() };
+    return NextResponse.json(errorBody, { status: 503 });
   }
 }
