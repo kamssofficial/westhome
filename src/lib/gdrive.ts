@@ -125,7 +125,7 @@ export interface ClassifiedDriveError {
 }
 
 const REMINT_ACTION =
-  "Re-run `python scripts/create_drive_credentials.py`, replace the three GOOGLE_OAUTH_* values in the hosting environment, and redeploy.";
+  "Re-run `npm run drive:token` (scripts/mint-drive-token.mjs), replace GOOGLE_OAUTH_CLIENT_ID / GOOGLE_OAUTH_CLIENT_SECRET / GOOGLE_OAUTH_REFRESH_TOKEN in the hosting environment, and redeploy.";
 
 /**
  * Map a googleapis/token-endpoint failure to an admin-actionable message.
@@ -160,7 +160,7 @@ export function classifyDriveError(err: unknown): ClassifiedDriveError {
     return {
       kind: "auth",
       error: "Google rejected the OAuth client (client id/secret mismatch, or the client was deleted).",
-      action: "Recreate the OAuth client with `python scripts/create_drive_credentials.py` and update the GOOGLE_OAUTH_* environment values.",
+      action: "Recreate the OAuth client and re-run `npm run drive:token`, then update the GOOGLE_OAUTH_* environment values.",
     };
   }
   if (
@@ -171,7 +171,7 @@ export function classifyDriveError(err: unknown): ClassifiedDriveError {
     return {
       kind: "auth",
       error: "No usable Google Drive credentials are configured on this host.",
-      action: "Run `python scripts/create_drive_credentials.py` and add the three GOOGLE_OAUTH_* values to the hosting environment, then redeploy.",
+      action: "Run `npm run drive:token` and add the three GOOGLE_OAUTH_* values to the hosting environment, then redeploy.",
     };
   }
   if (status === 401) {
@@ -248,7 +248,7 @@ const NO_CREDENTIALS_HEALTH = (): Omit<DriveHealth, "checkedAt"> => ({
   mode: "none",
   kind: "auth",
   error: "No Google Drive credentials are configured.",
-  action: "Run `python scripts/create_drive_credentials.py` and add the three GOOGLE_OAUTH_* values to the hosting environment, then redeploy.",
+  action: "Run `npm run drive:token` and add the three GOOGLE_OAUTH_* values to the hosting environment, then redeploy.",
 });
 
 async function probeDrive(): Promise<Omit<DriveHealth, "checkedAt">> {

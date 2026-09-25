@@ -24,7 +24,7 @@ describe("classifyDriveError", () => {
     const r = classifyDriveError(new Error("invalid_grant: Token has been expired or revoked."));
     assert.equal(r.kind, "auth");
     assert.match(r.error, /expired or was revoked/i);
-    assert.match(r.action, /create_drive_credentials\.py/);
+    assert.match(r.action, /drive:token/);
     assert.match(r.action, /GOOGLE_OAUTH_/);
   });
 
@@ -32,7 +32,7 @@ describe("classifyDriveError", () => {
     const r = classifyDriveError(new Error("invalid_grant"));
     assert.equal(r.kind, "auth");
     assert.match(r.error, /invalid_grant|rejected/i);
-    assert.match(r.action, /create_drive_credentials\.py/);
+    assert.match(r.action, /drive:token/);
   });
 
   it("reads googleapis response.data error fields too", () => {
@@ -47,7 +47,7 @@ describe("classifyDriveError", () => {
     const r = classifyDriveError({ response: { status: 401, data: { error: "invalid_client" } } });
     assert.equal(r.kind, "auth");
     assert.match(r.error, /client id\/secret|OAuth client/i);
-    assert.match(r.action, /create_drive_credentials\.py/);
+    assert.match(r.action, /drive:token/);
   });
 
   it("recognizes the buildAuth 'credentials are not configured' throw", () => {
@@ -56,13 +56,13 @@ describe("classifyDriveError", () => {
     );
     assert.equal(r.kind, "auth");
     assert.match(r.error, /No usable Google Drive credentials/i);
-    assert.match(r.action, /create_drive_credentials\.py/);
+    assert.match(r.action, /drive:token/);
   });
 
   it("maps a 401 from Drive to re-mint guidance", () => {
     const r = classifyDriveError({ code: 401, message: "Request had invalid authentication credentials." });
     assert.equal(r.kind, "auth");
-    assert.match(r.action, /create_drive_credentials\.py/);
+    assert.match(r.action, /drive:token/);
   });
 
   it("maps storageQuotaExceeded to a storage-quota fix", () => {
