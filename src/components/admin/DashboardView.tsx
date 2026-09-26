@@ -169,14 +169,14 @@ const money = (n: number | undefined) => formatPrice(n || 0);
 function DarkTrend({ current, previous, trendLabel }: { current: number; previous: number; trendLabel?: string }) {
   if (previous === 0) {
     if (current <= 0) return null;
-    return <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-medium text-white/70">New</span>;
+    return <span className="rounded-full bg-[#f1f2f3] px-2 py-0.5 text-[10px] font-medium text-[#6d7175]">New</span>;
   }
   const pct = Math.round(((current - previous) / previous) * 100);
-  if (pct === 0) return <span className="text-[11px] text-white/50">0%</span>;
+  if (pct === 0) return <span className="text-[11px] text-[#6d7175]">0%</span>;
   const up = pct > 0;
   return (
     <span
-      className={cn("flex items-center gap-0.5 text-[11px] font-medium", up ? "text-[#F0B27A]" : "text-[#F2A79A]")}
+      className={cn("flex items-center gap-0.5 text-[11px] font-medium", up ? "text-[#008060]" : "text-[#d72c0d]")}
       title={trendLabel ? `${Math.abs(pct)}% vs ${trendLabel}` : undefined}
     >
       {up ? <TrendingUp size={11} aria-hidden="true" /> : <TrendingDown size={11} aria-hidden="true" />}
@@ -202,7 +202,7 @@ function TabBar({ tab, onChange }: { tab: TabId; onChange: (t: TabId) => void })
         onChange(id);
         document.getElementById(`dash-tab-${id}`)?.focus();
       }}
-      className="mt-5 flex gap-1 overflow-x-auto rounded-full bg-white/10 p-1"
+      className="mt-5 flex gap-1 overflow-x-auto rounded-lg bg-[#f6f6f7] p-1"
     >
       {TABS.map((t) => {
         const active = t.id === tab;
@@ -217,7 +217,7 @@ function TabBar({ tab, onChange }: { tab: TabId; onChange: (t: TabId) => void })
             onClick={() => onChange(t.id)}
             className={cn(
               "focus-ring flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors",
-              active ? "bg-white text-[#2C1F17] shadow-sm" : "text-white/70 hover:bg-white/10 hover:text-white"
+              active ? "bg-white text-[#202223] shadow-sm" : "text-[#6d7175] hover:bg-white hover:text-[#202223]"
             )}
           >
             <t.icon size={13} aria-hidden="true" />
@@ -328,7 +328,7 @@ export default function DashboardView({
               </div>
             </div>
 
-            <div className="mt-6 grid grid-cols-2 border-t border-white/10 lg:grid-cols-4">
+            <div className="mt-5 grid grid-cols-2 border-t border-[#e1e3e5] lg:grid-cols-4">
               {[0, 1, 2, 3].map((i) => (
                 <div
                   key={i}
@@ -445,9 +445,9 @@ export default function DashboardView({
           tions) stays on light cards below. Not sticky — AdminShell owns the
           sticky bar and breadcrumb. */}
       <section
-        className="relative overflow-hidden rounded-[1.75rem] bg-[#2C1F17] text-white shadow-sm"
+        className="relative overflow-hidden rounded-xl border border-[#e1e3e5] bg-white text-[#202223] shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
       >
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_140%_at_100%_0%,rgba(180,85,45,0.38),transparent_55%)]" />
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[radial-gradient(80%_100%_at_100%_0%,rgba(0,128,96,0.055),transparent_55%)]" />
         {/* The band is rounded-[1.75rem] and overflow-hidden, so the header needs
             its own inset: without it the eyebrow and the h1 sat in the corner and
             the 28px radius cut them. The metrics grid below keeps its own per-cell
@@ -455,9 +455,9 @@ export default function DashboardView({
         <div className="relative">
           <div className="flex flex-col gap-4 px-5 pt-6 sm:flex-row sm:items-end sm:justify-between sm:px-7">
             <div>
-              <p className="font-label text-[#E8A87C]">Overview</p>
+              <p className="font-label text-[#008060]">Overview</p>
               <h1 className="font-display mt-2 text-3xl sm:text-4xl">Dashboard</h1>
-              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-white/60">
+              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#6d7175]">
                 <span>{rangeLabel}</span>
                 <span aria-hidden="true">·</span>
                 <LiveUpdated at={lastUpdated} onDark />
@@ -469,7 +469,7 @@ export default function DashboardView({
                 id="dashboard-range"
                 value={range}
                 onChange={(e) => onRangeChange(e.target.value)}
-                className="focus-ring rounded-full border border-white/15 bg-white/10 px-3 py-2 text-xs font-medium text-white [&>option]:text-primary"
+                className="focus-ring rounded-md border border-[#c9cccf] bg-white px-3 py-2 text-xs font-medium text-[#202223] [&>option]:text-[#202223]"
               >
                 {DATE_RANGES.map((r) => (
                   <option key={r.value} value={r.value}>{r.label}</option>
@@ -480,9 +480,9 @@ export default function DashboardView({
                 onClick={onRefresh}
                 disabled={refreshing}
                 aria-label="Refresh dashboard"
-                className="focus-ring rounded-full border border-white/15 bg-white/10 p-2.5 transition-colors hover:bg-white/20 disabled:opacity-50"
+                className="focus-ring rounded-md border border-[#c9cccf] bg-white p-2.5 transition-colors hover:bg-[#f6f6f7] disabled:opacity-50"
               >
-                <RefreshCw size={15} aria-hidden="true" className={cn("text-white/70", refreshing && "animate-spin")} />
+                <RefreshCw size={15} aria-hidden="true" className={cn("text-[#6d7175]", refreshing && "animate-spin")} />
               </button>
             </div>
           </div>
@@ -493,18 +493,18 @@ export default function DashboardView({
               they scope everything below the band, never the band itself. */}
           <TabBar tab={tab} onChange={setTab} />
           <div className="mt-6 grid grid-cols-2 border-t border-white/10 lg:grid-cols-4">
-            <div className="border-b border-r border-white/10 px-5 py-5 sm:px-7 lg:border-b-0">
+            <div className="border-b border-r border-[#e1e3e5] px-5 py-5 sm:px-7 lg:border-b-0">
               <div className="flex items-center justify-between gap-2">
-                <span className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-white/55">
+                <span className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-[#6d7175]">
                   <IndianRupee size={12} aria-hidden="true" className="text-[#E8A87C]" />
                   Revenue
                 </span>
                 <DarkTrend current={k.revenue || 0} previous={k.prevRevenue || 0} trendLabel="previous period" />
               </div>
-              <p className="mt-3 text-2xl font-semibold tracking-tight tabular-nums sm:text-3xl">{money(k.revenue)}</p>
+              <p className="mt-3 text-2xl font-semibold tracking-tight tabular-nums text-[#202223] sm:text-3xl">{money(k.revenue)}</p>
               <p className="mt-1.5 text-[11px] text-white/50">{plural(funnel.orderCompleted, "order")} completed</p>
             </div>
-            <div className="border-b border-white/10 px-5 py-5 sm:px-7 lg:border-b-0 lg:border-r">
+            <div className="border-b border-[#e1e3e5] px-5 py-5 sm:px-7 lg:border-b-0 lg:border-r">
               <div className="flex items-center justify-between gap-2">
                 <span className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-white/55">
                   <ShoppingCart size={12} aria-hidden="true" className="text-[#E8A87C]" />
@@ -515,7 +515,7 @@ export default function DashboardView({
               <p className="mt-3 text-2xl font-semibold tracking-tight tabular-nums sm:text-3xl">{count(k.totalOrders)}</p>
               <p className="mt-1.5 text-[11px] text-white/50">{count(k.ordersToday)} today</p>
             </div>
-            <div className="border-r border-white/10 px-5 py-5 sm:px-7">
+            <div className="border-r border-[#e1e3e5] px-5 py-5 sm:px-7">
               <div className="flex items-center justify-between gap-2">
                 <span className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-white/55">
                   <BarChart3 size={12} aria-hidden="true" className="text-[#E8A87C]" />
