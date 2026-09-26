@@ -1,261 +1,158 @@
-"use client";
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import db from "@/lib/db";
+import { normalizeImageUrl } from "@/lib/categoryImages";
+import { serializeForClient } from "@/lib/serializeForClient";
+import SubcategoryContentClient from "./SubcategoryContentClient";
 
-import { useState, useEffect, useRef, useCallback, Suspense } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { useParams } from "next/navigation";
-import { SlidersHorizontal, ChevronDown, ArrowLeft, Grid3X3, List, Loader2 } from "lucide-react";
-import ProductCard from "@/components/ui/ProductCard";
-import { ProductGridSkeleton } from "@/components/ui/Skeleton";
-import EmptyState from "@/components/ui/EmptyState";
-import { cn } from "@/lib/utils";
-import type { Product, Category, Subcategory } from "@/types";
+export const revalidate = 300;
 
-const SORT_OPTIONS = [
-  { value: "recommended", label: "Recommended" },
-  { value: "newest", label: "Newest" },
-  { value: "price_asc", label: "Price: Low to High" },
-  { value: "price_desc", label: "Price: High to Low" },
-];
-
-const PAGE_SIZE = 24;
-
-function SubcategoryContent() {
-  const params = useParams();
-  const slug = params.slug as string;
-  const subcategorySlug = params.subcategory as string;
-
-  const [products, setProducts] = useState<Product[]>([]);
-  const [category, setCategory] = useState<Category | null>(null);
-  const [subcategory, setSubcategory] = useState<Subcategory | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [sort, setSort] = useState("recommended");
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [showFilters, setShowFilters] = useState(false);
-  const [minPrice, setMinPrice] = useState("");
-  const [maxPrice, setMaxPrice] = useState("");
-  const [material, setMaterial] = useState("");
-  const [inStockOnly, setInStockOnly] = useState(false);
-  const [onSaleOnly, setOnSaleOnly] = useState(false);
-  const sentinelRef = useRef<HTMLDivElement>(null);
-
-  const fetchProducts = useCallback(async (pageNum: number, append: boolean) => {
-    if (pageNum === 1) setLoading(true);
-    else setLoadingMore(true);
-    try {
-      const catRes = await fetch("/api/categories");
-      if (catRes.ok) {
-        const catData = await catRes.json();
-        const found = catData.categories.find((c: Category) => c.slug === slug);
-        setCategory(found || null);
-        if (found?.subcategories) {
-          const sub = found.subcategories.find((s: Subcategory) => s.slug === subcategorySlug);
-          setSubcategory(sub || null);
-        }
-      }
-
-      const fetchParams = new URLSearchParams();
-      fetchParams.set("category", slug);
-      fetchParams.set("subcategory", subcategorySlug);
-      fetchParams.set("sort", sort);
-      fetchParams.set("page", String(pageNum));
-      fetchParams.set("limit", String(PAGE_SIZE));
-      if (minPrice) fetchParams.set("minPrice", minPrice);
-      if (maxPrice) fetchParams.set("maxPrice", maxPrice);
-      if (material) fetchParams.set("material", material);
-      if (inStockOnly) fetchParams.set("inStock", "true");
-      if (onSaleOnly) fetchParams.set("onSale", "true");
-
-      const prodRes = await fetch(`/api/products?lite=true&${fetchParams.toString()}`);
-      if (prodRes.ok) {
-        const prodData = await prodRes.json();
-        const newProducts = prodData.products || [];
-        const prodTotal = prodData.total || 0;
-        if (append) setProducts((prev) => [...prev, ...newProducts]);
-        else setProducts(newProducts);
-        setTotal(prodTotal);
-        setHasMore(pageNum * PAGE_SIZE < prodTotal);
-      }
-    } catch (err) {
-      console.error("Subcategory fetch error:", err);
-      if (!append) setProducts([]);
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  }, [slug, subcategorySlug, sort, minPrice, maxPrice, material, inStockOnly, onSaleOnly]);
-
-  // Reset and fetch page 1 when filters change
-  useEffect(() => {
-    setPage(1);
-    setHasMore(true);
-    fetchProducts(1, false);
-  }, [fetchProducts]);
-
-  // Infinite scroll observer
-  useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loading && !loadingMore) {
-          const next = page + 1;
-          setPage(next);
-          fetchProducts(next, true);
-        }
-      },
-      { rootMargin: "300px" }
-    );
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [hasMore, loading, loadingMore, page, fetchProducts]);
-
-  return (
-    <div className="animate-fade-in">
-      {/* Back button */}
-      <div className="px-4 pt-3 pb-2">
-        <Link href={`/collections/${slug}`} className="p-1 hover:bg-surface-muted rounded-lg transition-colors inline-flex">
-          <ArrowLeft size={20} />
-        </Link>
-      </div>
-
-      {/* Title + count */}
-      <div className="px-4 pb-3">
-        <div className="flex items-center gap-2 text-xs text-text-muted mb-1">
-          <Link href={`/collections/${slug}`} className="hover:text-primary transition-colors">{category?.name || slug.replace(/-/g, " ")}</Link>
-          <span>/</span>
-          <span className="text-primary font-medium">{subcategory?.name || subcategorySlug.replace(/-/g, " ")}</span>
-        </div>
-        <h1 className="text-2xl font-semibold text-primary">{subcategory?.name || subcategorySlug.replace(/-/g, " ")}</h1>
-
-      </div>
-
-      {/* Filter / Sort bar */}
-      <div className="px-4 pb-3">
-        <div className="flex items-center justify-between">
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={cn(
-              "flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-medium transition-colors",
-              showFilters ? "bg-primary text-white border-primary" : "bg-white border-border"
-            )}
-          >
-            <SlidersHorizontal size={14} /> Filter
-          </button>
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <select
-                value={sort}
-                onChange={(e) => { setSort(e.target.value); setPage(1); }}
-                className="px-3 py-2 pr-8 rounded-xl border border-border bg-white text-sm focus:outline-none appearance-none"
-              >
-                {SORT_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
-              <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
-            </div>
-            <button
-              onClick={() => setViewMode("grid")}
-              className={cn("p-2 rounded-lg", viewMode === "grid" ? "bg-primary text-white" : "bg-white border border-border")}
-            >
-              <Grid3X3 size={16} />
-            </button>
-            <button
-              onClick={() => setViewMode("list")}
-              className={cn("p-2 rounded-lg", viewMode === "list" ? "bg-primary text-white" : "bg-white border border-border")}
-            >
-              <List size={16} />
-            </button>
-          </div>
-        </div>
-
-        {/* Filter Panel */}
-        {showFilters && (
-          <div className="bg-white rounded-xl p-4 shadow-sm mt-3">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div>
-                <label className="text-xs font-medium text-text-secondary mb-1 block">Min Price (₹)</label>
-                <input type="number" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" placeholder="0" />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-text-secondary mb-1 block">Max Price (₹)</label>
-                <input type="number" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" placeholder="Any" />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-text-secondary mb-1 block">Material</label>
-                <input type="text" value={material} onChange={(e) => setMaterial(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" placeholder="e.g. Ceramic" />
-              </div>
-              <div className="flex items-end gap-4">
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <input type="checkbox" checked={inStockOnly} onChange={(e) => setInStockOnly(e.target.checked)} className="accent-accent" />
-                  In Stock
-                </label>
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <input type="checkbox" checked={onSaleOnly} onChange={(e) => setOnSaleOnly(e.target.checked)} className="accent-accent" />
-                  On Sale
-                </label>
-              </div>
-            </div>
-            {(minPrice || maxPrice || material || inStockOnly || onSaleOnly) && (
-              <button
-                onClick={() => { setMinPrice(""); setMaxPrice(""); setMaterial(""); setInStockOnly(false); setOnSaleOnly(false); }}
-                className="mt-3 text-xs text-accent hover:underline"
-              >
-                Clear all filters
-              </button>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Product grid */}
-      <div className="px-4 pb-8">
-        {loading ? (
-          <ProductGridSkeleton count={8} />
-        ) : products.length > 0 ? (
-          <>
-            <div className={cn(
-              "gap-3",
-              viewMode === "grid" ? "grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 lg:grid-cols-4" : "flex flex-col"
-            )}>
-              {products.map((product, i) => (
-                <ProductCard key={product.id} product={product} priority={i < 4} />
-              ))}
-            </div>
-            {/* Infinite scroll sentinel */}
-            {hasMore && <div ref={sentinelRef} className="h-10" />}
-            {loadingMore && (
-              <div className="flex items-center justify-center gap-2 py-6 text-text-muted">
-                <Loader2 size={16} className="animate-spin" />
-                <span className="text-sm">Loading more...</span>
-              </div>
-            )}
-            {!hasMore && products.length > 0 && (
-              <p className="text-center text-xs text-text-muted py-6">End of collection.</p>
-            )}
-          </>
-        ) : (
-          <EmptyState
-            icon="product"
-            title="No products yet"
-            description="This subcategory doesn't have any products yet. Check back soon!"
-            action={{ label: "Browse All Products", href: "/shop" }}
-          />
-        )}
-      </div>
-    </div>
-  );
+interface PageProps {
+  params: Promise<{ slug: string; subcategory: string }>;
 }
 
-export default function SubcategoryPage() {
+async function getCategoryAndSubcategory(categorySlug: string, subcategorySlug: string) {
+  const category = await db.category.findUnique({
+    where: { slug: categorySlug, isActive: true },
+    include: {
+      subcategories: {
+        where: { isActive: true },
+        orderBy: { position: "asc" },
+        include: {
+          _count: { select: { products: { where: { isActive: true, status: "ACTIVE" } } } },
+        },
+      },
+    },
+  });
+  if (!category) return null;
+
+  const subcategory = category.subcategories.find((s) => s.slug === subcategorySlug);
+  if (!subcategory) return null;
+
+  return {
+    id: category.id,
+    name: category.name,
+    slug: category.slug,
+    description: category.description,
+    image: category.image || null,
+    productCount: subcategory._count.products,
+    subcategories: category.subcategories.map((sub: any) => ({
+      id: sub.id,
+      name: sub.name,
+      slug: sub.slug,
+      description: sub.description,
+      image: sub.image || null,
+      productCount: sub._count.products,
+    })),
+    subcategory: {
+      id: subcategory.id,
+      name: subcategory.name,
+      slug: subcategory.slug,
+      description: subcategory.description,
+      image: subcategory.image || null,
+      productCount: subcategory._count.products,
+    },
+  };
+}
+
+async function getInitialProducts(categorySlug: string, subcategorySlug: string) {
+  const where: any = {
+    isActive: true,
+    status: "ACTIVE",
+    category: { slug: categorySlug },
+    subcategory: { slug: subcategorySlug },
+  };
+
+  const [products, total] = await Promise.all([
+    db.product.findMany({
+      where,
+      include: {
+        category: { select: { id: true, name: true, slug: true } },
+        subcategory: { select: { id: true, name: true, slug: true } },
+        images: { orderBy: [{ isPrimary: "desc" as const }, { position: "asc" as const }], take: 1 },
+        variants: {
+          where: { isActive: true },
+          orderBy: { position: "asc" },
+          include: { images: { orderBy: { position: "asc" as const }, take: 1 } },
+        },
+        reviews: { where: { status: "APPROVED" as const }, select: { rating: true } },
+        tags: { where: { tag: { startsWith: "color:" } } },
+      },
+      orderBy: [{ isFeatured: "desc" as const }, { createdAt: "desc" as const }],
+      take: 24,
+    }),
+    db.product.count({ where }),
+  ]);
+
+  return serializeForClient({
+    products: products.map((p: any) => ({
+      ...p,
+      images: (p.images ?? []).map((img: any) => ({ ...img, url: normalizeImageUrl(img.url) })),
+      regularPrice: Number(p.regularPrice),
+      salePrice: p.salePrice ? Number(p.salePrice) : null,
+      rating: p.reviews.length > 0 ? p.reviews.reduce((s: number, r: any) => s + r.rating, 0) / p.reviews.length : null,
+      reviewCount: p.reviews.length,
+      tags: p.tags?.map((t: any) => t.tag) || [],
+      palette: p.tags?.filter((t: any) => t.tag?.startsWith("color:")).map((t: any) => t.tag.slice(6)) || [],
+      variants: (p.variants ?? []).map((v: any) => ({
+        ...v,
+        images: (v.images ?? []).map((img: any) => ({ ...img, url: normalizeImageUrl(img.url) })),
+        price: Number(v.price),
+        salePrice: v.salePrice ? Number(v.salePrice) : null,
+        attributes: (v.attributes ?? []).map((a: any) => ({
+          attributeId: a.variantAttributeId,
+          attributeName: a.variantAttribute?.name,
+          value: a.value,
+          colorCode: a.colorCode,
+        })),
+      })),
+    })),
+    total,
+  });
+}
+
+export async function generateStaticParams() {
+  try {
+    const categories = await db.category.findMany({
+      where: { isActive: true },
+      include: { subcategories: { where: { isActive: true }, select: { slug: true } } },
+    });
+    return categories.flatMap((category) =>
+      category.subcategories.map((sub) => ({ slug: category.slug, subcategory: sub.slug })),
+    );
+  } catch {
+    return [];
+  }
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { slug, subcategory } = await params;
+  const data = await getCategoryAndSubcategory(slug, subcategory);
+  if (!data) return { title: "Collection Not Found" };
+
+  return {
+    title: data.subcategory.name,
+    description: data.subcategory.description || `Shop ${data.subcategory.name} at WEST HOME.`,
+    alternates: { canonical: `/collections/${data.slug}/${data.subcategory.slug}` },
+  };
+}
+
+export default async function SubcategoryPage({ params }: PageProps) {
+  const { slug, subcategory } = await params;
+  const [data, initial] = await Promise.all([
+    getCategoryAndSubcategory(slug, subcategory),
+    getInitialProducts(slug, subcategory),
+  ]);
+  if (!data) notFound();
+
   return (
-    <Suspense fallback={<div className="container-shop py-8"><ProductGridSkeleton count={8} /></div>}>
-      <SubcategoryContent />
-    </Suspense>
+    <SubcategoryContentClient
+      slug={slug}
+      subcategorySlug={subcategory}
+      initialCategory={data}
+      initialSubcategory={data.subcategory}
+      initialProducts={initial.products}
+      initialTotal={initial.total}
+    />
   );
 }
