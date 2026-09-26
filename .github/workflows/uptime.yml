@@ -1,0 +1,50 @@
+# Free uptime probe for westhome.in — runs every 15 minutes on GitHub's infra.
+# A red run here means the storefront, an API, or the image proxy stopped
+# serving; Actions emails workflow-failure notifications to repo watchers.
+# (GitHub disables scheduled workflows after 60 days without repo activity —
+# any commit resets that clock.)
+name: uptime
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe storefront, APIs, and image proxy
+        run: |
+          set -euo pipefail
+          BASE="https://www.westhome.in"
+
+          check() {
+            local url="$1" code
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "$url")
+            if [ "$code" != "200" ]; then
+              echo "::error::UPTIME FAIL $url → HTTP $code"
+              exit 1
+            fi
+            echo "ok  $url"
+          }
+
+          check "$BASE/"
+          check "$BASE/shop"
+          check "$BASE/api/settings"
+          check "$BASE/api/products?limit=1"
+          check "$BASE/sitemap.xml"
+
+          # The image proxy must return actual image bytes, not a JSON error
+          # page with a 200-wrapped failure — check the content type too.
+          img="$BASE/api/images/1xGxBqXK7Uglw4rBUih79ARiFsT-i3DCX"
+          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 60 "$img")
+          type=$(curl -sI --max-time 60 "$img" | tr -d '\r' | grep -i '^content-type:' | awk '{print $2}')
+          if [ "$code" != "200" ] || [[ "$type" != image/* ]]; then
+            echo "::error::UPTIME FAIL image proxy → HTTP $code, content-type $type"
+            exit 1
+          fi
+          echo "ok  $img ($type)"
