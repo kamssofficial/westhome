@@ -66,16 +66,32 @@ async function getInitialProducts(categorySlug: string, subcategorySlug: string)
   const [products, total] = await Promise.all([
     db.product.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        regularPrice: true,
+        salePrice: true,
+        stockQuantity: true,
+        isNewArrival: true,
         category: { select: { id: true, name: true, slug: true } },
         subcategory: { select: { id: true, name: true, slug: true } },
-        images: { orderBy: [{ isPrimary: "desc" as const }, { position: "asc" as const }], take: 1 },
+        images: {
+          orderBy: [{ isPrimary: "desc" as const }, { position: "asc" as const }],
+          take: 1,
+          select: { url: true, alt: true, isPrimary: true, position: true },
+        },
         variants: {
           where: { isActive: true },
-          orderBy: { position: "asc" },
-          include: { images: { orderBy: { position: "asc" as const }, take: 1 } },
+          select: {
+            stockQuantity: true,
+            images: {
+              orderBy: { position: "asc" as const },
+              take: 1,
+              select: { url: true, alt: true, isPrimary: true, position: true },
+            },
+          },
         },
-        reviews: { where: { status: "APPROVED" as const }, select: { rating: true } },
         tags: { where: { tag: { startsWith: "color:" } } },
       },
       orderBy: [{ isFeatured: "desc" as const }, { createdAt: "desc" as const }],
@@ -90,8 +106,6 @@ async function getInitialProducts(categorySlug: string, subcategorySlug: string)
       images: (p.images ?? []).map((img: any) => ({ ...img, url: normalizeImageUrl(img.url) })),
       regularPrice: Number(p.regularPrice),
       salePrice: p.salePrice ? Number(p.salePrice) : null,
-      rating: p.reviews.length > 0 ? p.reviews.reduce((s: number, r: any) => s + r.rating, 0) / p.reviews.length : null,
-      reviewCount: p.reviews.length,
       tags: p.tags?.map((t: any) => t.tag) || [],
       palette: p.tags?.filter((t: any) => t.tag?.startsWith("color:")).map((t: any) => t.tag.slice(6)) || [],
       variants: (p.variants ?? []).map((v: any) => ({
@@ -99,13 +113,7 @@ async function getInitialProducts(categorySlug: string, subcategorySlug: string)
         images: (v.images ?? []).map((img: any) => ({ ...img, url: normalizeImageUrl(img.url) })),
         price: Number(v.price),
         salePrice: v.salePrice ? Number(v.salePrice) : null,
-        attributes: (v.attributes ?? []).map((a: any) => ({
-          attributeId: a.variantAttributeId,
-          attributeName: a.variantAttribute?.name,
-          value: a.value,
-          colorCode: a.colorCode,
         })),
-      })),
     })),
     total,
   });
