@@ -152,9 +152,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function CollectionPage({ params }: PageProps) {
   const { slug } = await params;
-  const category = await getCategory(slug);
+  const [category, initialData] = await Promise.all([
+    getCategory(slug),
+    getInitialProducts(slug),
+  ]);
   if (!category) notFound();
-  const { products, total } = await getInitialProducts(slug);
+  const { products, total } = initialData;
   // Load static collection images from public directory
   let staticImages: string[] = [];
   if (total === 0) {
