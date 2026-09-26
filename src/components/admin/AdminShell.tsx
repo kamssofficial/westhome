@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Menu, Store, ChevronRight } from "lucide-react";
+import { Menu, Store, ChevronRight, Search, Plus, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import WestHomeLogo from "@/components/ui/WestHomeLogo";
 import NotificationBell from "@/components/admin/NotificationBell";
@@ -93,17 +93,17 @@ export default function AdminShell({
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed left-0 top-0 z-50 flex h-full flex-col border-r border-black/[0.06] bg-[#fbfaf8]/95 shadow-[8px_0_40px_rgba(28,25,23,0.035)] backdrop-blur-xl transition-transform duration-300 lg:translate-x-0",
+          "fixed left-0 top-0 z-50 flex h-full flex-col border-r border-[#e1e3e5] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-transform duration-300 lg:translate-x-0",
           sidebarWidthClass,
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
         aria-label="Admin navigation"
       >
         {/* Brand header */}
-        <div className="px-5 py-5 border-b border-black/[0.06]">
+        <div className="px-4 py-4 border-b border-[#e1e3e5]">
           <Link href={homePath} className="flex flex-col gap-0.5">
             <WestHomeLogo size="sm" plain />
-            <div className="mt-2.5 inline-flex items-center gap-2 rounded-full bg-black/[0.035] px-2.5 py-1.5">
+            <div className="mt-2.5 inline-flex items-center gap-2 rounded-md bg-[#f6f6f7] px-2.5 py-1.5">
               <div className="relative h-1.5 w-1.5 rounded-full bg-[#b56c45]"><span className="absolute inset-0 animate-ping rounded-full bg-[#b56c45]/40" /></div>
               <span className="text-[9px] text-panel-label tracking-wider uppercase font-medium">{panelLabel} Panel</span>
             </div>
@@ -111,7 +111,7 @@ export default function AdminShell({
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 space-y-5 overflow-y-auto overscroll-contain px-3 py-4">
+        <nav className="flex-1 space-y-4 overflow-y-auto overscroll-contain px-2.5 py-3">
           {visibleGroups.map((group) => (
             <div key={group.title || "nav"}>
               {group.title && (
@@ -127,18 +127,18 @@ export default function AdminShell({
                       href={item.href}
                       onClick={() => setSidebarOpen(false)}
                       className={cn(
-                        "relative flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13px] font-medium transition-all duration-200 group",
+                        "relative flex items-center gap-2.5 rounded-md px-3 py-2 text-[13px] font-medium transition-all duration-150 group",
                         isActive
                           ? "bg-[#2c1f17] text-white shadow-[0_6px_18px_rgba(44,31,23,0.14)]"
                           : "text-panel-text hover:bg-black/[0.035] hover:text-panel-text-strong"
                       )}
                     >
-                      {isActive && <span className="absolute left-0 h-5 w-0.5 rounded-full bg-[#e8a87c]" />}
+                      {isActive && <span className="absolute left-0 h-5 w-0.5 rounded-full bg-[#008060]" />}
                       <span className={cn(
                         "flex h-7 w-7 items-center justify-center rounded-lg transition-colors",
-                        isActive ? "bg-white/10" : "bg-black/[0.025] group-hover:bg-black/[0.045]"
+                        isActive ? "bg-white" : "bg-[#f6f6f7] group-hover:bg-white"
                       )}>
-                        <Icon size={15} className={cn(isActive ? "text-[#e8a87c]" : "text-panel-icon group-hover:text-panel-label")} />
+                        <Icon size={15} className={cn(isActive ? "text-[#008060]" : "text-panel-icon group-hover:text-panel-label")} />
                       </span>
                       {item.label}
                     </Link>
@@ -150,7 +150,7 @@ export default function AdminShell({
         </nav>
 
         {/* Footer */}
-        <div className="border-t border-black/[0.06] p-3 space-y-1">
+        <div className="border-t border-[#e1e3e5] p-3 space-y-1">
           <Link
             href="/"
             className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13px] font-medium text-panel-text transition-all hover:bg-black/[0.035] hover:text-panel-text-strong"
@@ -171,7 +171,7 @@ export default function AdminShell({
       {/* Main content */}
       <div className={contentMarginClass}>
         {/* Top bar */}
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-black/[0.06] bg-[#fbfaf8]/80 px-3 backdrop-blur-xl sm:gap-4 sm:px-5 md:px-7">
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-[#e1e3e5] bg-white px-3 sm:gap-4 sm:px-5 md:px-7">
           <button
             type="button"
             onClick={() => setSidebarOpen(true)}
@@ -182,23 +182,33 @@ export default function AdminShell({
             <Menu size={18} />
           </button>
 
-          {/* Breadcrumb — the root is decoration, so it yields to the page
-              label on the narrowest screens instead of wrapping. */}
-          <div className="flex min-w-0 flex-1 items-center gap-1.5 text-sm">
-            <span className="hidden shrink-0 text-panel-icon sm:inline">{breadcrumbRoot}</span>
-            <ChevronRight size={12} className="hidden shrink-0 text-panel-icon/70 sm:block" />
-            <span className="truncate font-medium text-panel-text-strong">{currentPageLabel}</span>
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <div className="hidden min-w-[280px] max-w-[460px] flex-1 items-center gap-2 rounded-md border border-[#c9cccf] bg-[#f6f6f7] px-3 py-2 md:flex">
+              <Search size={15} className="text-[#6d7175]" />
+              <input
+                aria-label="Search admin"
+                placeholder="Search products, orders, customers"
+                className="w-full bg-transparent text-[13px] outline-none placeholder:text-[#8c9196]"
+              />
+              <kbd className="rounded border border-[#d2d5d8] bg-white px-1.5 py-0.5 text-[10px] text-[#6d7175]">⌘ K</kbd>
+            </div>
+            <div className="flex min-w-0 items-center gap-1.5 text-sm md:hidden">
+              <span className="truncate font-semibold text-[#202223]">{currentPageLabel}</span>
+            </div>
           </div>
 
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+            <Link href="/admin/products/new" className="hidden items-center gap-1.5 rounded-md bg-[#008060] px-3 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-[#006e52] sm:flex">
+              <Plus size={14} /> Add product
+            </Link>
             <NotificationBell />
-            <div className="mx-0.5 hidden h-6 w-px bg-panel-border sm:block" />
+            <div className="mx-0.5 hidden h-6 w-px bg-[#e1e3e5] sm:block" />
             <ProfileMenu userName={userName} userRole={userRole} userInitials={initials} basePath={`/${breadcrumbRoot.toLowerCase()}`} />
           </div>
         </header>
 
         {/* Page content */}
-        <main className="mx-auto w-full max-w-[1480px] p-3 sm:p-4 md:p-6 lg:px-8 lg:py-7">
+        <main className="mx-auto w-full max-w-[1500px] p-3 sm:p-4 md:p-6 lg:px-8 lg:py-7">
           {children}
         </main>
       </div>
