@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
       ? health && !health.ok
         ? status.s3.configured
           ? `S3 storage is configured but unhealthy: ${health.error ?? "request failed"}`
-          : `Drive credentials are present but broken: ${health.error ?? "request failed"} ${health.action ?? ""}`
+          : `Drive credentials are present but broken: ${health.error ?? "request failed"}`
         : null
         : `Image storage is not configured. ${status.missing ?? "Configure managed S3 or Google Drive credentials."}`,
     },
