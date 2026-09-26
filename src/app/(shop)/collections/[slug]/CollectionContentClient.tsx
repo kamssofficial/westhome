@@ -10,6 +10,7 @@ import { ProductGridSkeleton } from "@/components/ui/Skeleton";
 import EmptyState from "@/components/ui/EmptyState";
 import { cn } from "@/lib/utils";
 import { subcategoryImage } from "@/lib/subcategoryImage";
+import { cachedFetch } from "@/lib/clientCache";
 
 const SORT_OPTIONS = [
   { value: "recommended", label: "Recommended" },
@@ -52,9 +53,30 @@ function CategoryContent({ category: initialCategory, initialProducts, initialTo
   const [inStockOnly, setInStockOnly] = useState(false);
   const [onSaleOnly, setOnSaleOnly] = useState(false);
 
+  // The first page is already rendered by the server. Do not replace it
+  // with a client-side skeleton/re-fetch during hydration. Subsequent sort/filter
+  // changes and infinite-scroll pages still use the API.
+  const hydratedInitialView = useRef(false);
   useEffect(() => {
+    const isInitialServerState =
+      !hydratedInitialView.current &&
+      page === 1 &&
+      sort === "recommended" &&
+      !minPrice &&
+      !maxPrice &&
+      !material &&
+      !inStockOnly &&
+      !onSaleOnly;
+
+    if (isInitialServerState) {
+      hydratedInitialView.current = true;
+      return;
+    }
+
+    const controller = new AbortController();
     const fetchData = async () => {
-      setLoading(true);
+      if (page === 1) setLoading(true);
+      else setLoadingMore(true);
       try {
         const fetchParams = new URLSearchParams();
         fetchParams.set("category", slug);
@@ -65,19 +87,26 @@ function CategoryContent({ category: initialCategory, initialProducts, initialTo
         if (maxPrice) fetchParams.set("maxPrice", maxPrice);
         if (material) fetchParams.set("material", material);
         if (inStockOnly) fetchParams.set("inStock", "true");
-        if (onSaleOnly) fetchParams.set("onSale", "true");          const prodRes = await fetch("/api/products?lite=true&" + fetchParams.toString());
-          if (prodRes.ok) {
-            const prodData = await prodRes.json();
-            setProducts((prev) => page === 1 ? (prodData.products || []) : [...prev, ...(prodData.products || [])]);
-            setTotal(prodData.total || 0);
-          }
-      } catch (err) {
-        console.error("Collection fetch error:", err);
+        if (onSaleOnly) fetchParams.set("onSale", "true");
+
+        const url = "/api/products?lite=true&" + fetchParams.toString();
+        const prodData = await cachedFetch<any>(url, { ttl: 60_000 });
+        const newProducts = prodData.products || [];
+        setProducts((prev) => page === 1 ? newProducts : [...prev, ...newProducts]);
+        setTotal(prodData.total || 0);
+      } catch (err: any) {
+        if (err?.name !== "AbortError") {
+          console.error("Collection fetch error:", err);
+        }
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+          setLoadingMore(false);
+        }
       }
     };
     fetchData();
+    return () => controller.abort();
   }, [slug, sort, page, minPrice, maxPrice, material, inStockOnly, onSaleOnly]);
 
 
