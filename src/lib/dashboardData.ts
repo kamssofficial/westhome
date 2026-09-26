@@ -532,6 +532,7 @@ export async function loadDashboardData(range: string) {
       live: { sessions: liveSessions, devices: liveDevices.map(d => ({ type: d.deviceType || "unknown", count: d._count.id })) },
       // Funnel
       funnel,
+      sessionFunnel,
       // Charts
       revenueOverTime,
       // Order Status
