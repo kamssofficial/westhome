@@ -65,5 +65,7 @@ export function driveFileIdFromUrl(url?: string | null): string | null {
 export function proxiedMediaUrl(url?: string | null): string | null {
   if (!url) return null;
   const fileId = driveFileIdFromUrl(url);
-  return fileId ? `${DRIVE_PROXY_PREFIX}${fileId}` : url;
+  // Deterministic WebP URLs make browser/SW/CDN caches reusable across requests
+  // without relying on Accept-header negotiation.
+  return fileId && ID_BODY.test(fileId) ? `${DRIVE_PROXY_PREFIX}${fileId}.webp` : url;
 }
