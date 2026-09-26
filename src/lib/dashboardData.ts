@@ -548,6 +548,9 @@ export async function loadDashboardData(range: string) {
       insights,
       // Unique visitors
       uniqueVisitors,
+      // Image-load failures reported by the storefront in this period.
+      // This is a diagnostic event count, not a count of unique broken assets.
+      imageErrors: events["IMAGE_ERROR"] || 0,
     };
   } catch (error) {
     console.error("Dashboard data error:", error);
