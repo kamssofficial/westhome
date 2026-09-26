@@ -1,5 +1,6 @@
 const PREFIX = "wh-cache-";
 const DEFAULT_TTL = 5 * 60 * 1000; // 5 minutes
+const INFLIGHT = new Map<string, Promise<unknown>>();
 
 interface CacheEntry<T> {
   data: T;
@@ -33,24 +34,36 @@ export async function cachedFetch<T>(
     } catch {}
   }
 
-  // Fetch fresh data
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
-  const data: T = await res.json();
+  // Share an in-flight request with every component asking for the same
+  // resource during the current load. This removes duplicate catalog/settings
+  // requests when Header, Settings, and Home mount together.
+  const existing = INFLIGHT.get(key);
+  if (existing) return existing as Promise<T>;
 
-  // Cache it
-  try {
-    const entry: CacheEntry<T> = { data, expires: now + ttl };
-    sessionStorage.setItem(key, JSON.stringify(entry));
-  } catch {
-    // sessionStorage full — clear old entries and retry
-    clearExpiredCache();
+  const request = (async () => {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
+    const data: T = await res.json();
+
     try {
-      sessionStorage.setItem(key, JSON.stringify({ data, expires: now + ttl }));
-    } catch {}
-  }
+      const entry: CacheEntry<T> = { data, expires: Date.now() + ttl };
+      sessionStorage.setItem(key, JSON.stringify(entry));
+    } catch {
+      clearExpiredCache();
+      try {
+        sessionStorage.setItem(key, JSON.stringify({ data, expires: Date.now() + ttl }));
+      } catch {}
+    }
 
-  return data;
+    return data;
+  })();
+
+  INFLIGHT.set(key, request);
+  try {
+    return await request;
+  } finally {
+    if (INFLIGHT.get(key) === request) INFLIGHT.delete(key);
+  }
 }
 
 /**
