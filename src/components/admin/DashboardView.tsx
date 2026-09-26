@@ -22,6 +22,14 @@ export interface DashboardData {
   kpis: any;
   live: any;
   funnel: any;
+  sessionFunnel?: {
+    visitorToCart: number;
+    cartToCheckout: number;
+    checkoutToPurchase: number;
+    sessionsWithCart: number;
+    sessionsWithCheckout: number;
+    sessionsWithPurchase: number;
+  };
   revenueOverTime: any[];
   orderStatus: Record<string, number>;
   topByRevenue: any[];
@@ -295,9 +303,9 @@ export default function DashboardView({
   ).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
   // Business-health ratios use the same population and period as the KPI data.
-  const cartToCheckout = funnel.cartAdds > 0 ? Math.round((funnel.checkoutStarted / funnel.cartAdds) * 100) : 0;
-  const checkoutToOrder = funnel.checkoutStarted > 0 ? Math.round(((funnel.orderCompleted || 0) / funnel.checkoutStarted) * 100) : 0;
-  const visitorToCart = (data?.uniqueVisitors || 0) > 0 ? Math.round(((funnel.cartAdds || 0) / data!.uniqueVisitors) * 100) : 0;
+  const cartToCheckout = data?.sessionFunnel?.cartToCheckout || 0;
+  const checkoutToPurchase = data?.sessionFunnel?.checkoutToPurchase || 0;
+  const visitorToCart = data?.sessionFunnel?.visitorToCart || 0;
   const returningShare = (k.totalCustomers || 0) > 0 ? Math.round(((k.returningCustomers || 0) / k.totalCustomers) * 100) : 0;
   const guestRevenueShare = (k.revenue || 0) > 0 ? Math.round(((data?.orderSources?.guest.revenue || 0) / k.revenue) * 100) : 0;
 
@@ -805,9 +813,9 @@ export default function DashboardView({
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <StatTile label="Visitors" value={count(data?.uniqueVisitors)} />
           <StatTile label="Product views" value={count(funnel.productViews)} />
-          <StatTile label="Visitor → cart" value={`${visitorToCart}%`} tone={visitorToCart > 0 ? "accent" : "neutral"} />
-          <StatTile label="Checkout → order" value={`${checkoutToOrder}%`} tone={checkoutToOrder > 0 ? "success" : "neutral"} />
-          <StatTile label="Cart → checkout" value={`${cartToCheckout}%`} tone={cartToCheckout > 0 ? "accent" : "neutral"} />
+          <StatTile label="Visitor → cart" value={`${visitorToCart}%`} hint="unique sessions" tone={visitorToCart > 0 ? "accent" : "neutral"} />
+          <StatTile label="Checkout → purchase" value={`${checkoutToPurchase}%`} hint="unique sessions" tone={checkoutToPurchase > 0 ? "success" : "neutral"} />
+          <StatTile label="Cart → checkout" value={`${cartToCheckout}%`} hint="unique sessions" tone={cartToCheckout > 0 ? "accent" : "neutral"} />
           <StatTile label="Returning share" value={`${returningShare}%`} tone={returningShare > 0 ? "success" : "neutral"} />
           <StatTile label="Guest revenue" value={`${guestRevenueShare}%`} hint="of completed revenue" />
           <StatTile label="Average order" value={money(k.avgOrderValue)} tone="success" />
