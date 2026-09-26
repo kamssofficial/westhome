@@ -7,6 +7,7 @@ import { Search, ShoppingBag, Menu, X, User, ArrowUpRight, ChevronDown } from "l
 import { usePathname, useRouter } from "next/navigation";
 import { useCartStore } from "@/store/cart";
 import { cn } from "@/lib/utils";
+import { cachedFetch, readCached } from "@/lib/clientCache";
 
 const BASE_NAV = [
   { label: "Home", href: "/" },
@@ -14,6 +15,10 @@ const BASE_NAV = [
 ];
 
 interface NavCat { label: string; href: string; }
+
+const navCategoriesPrefetch = typeof window === "undefined"
+  ? null
+  : cachedFetch<{ categories?: Array<{ name: string; slug: string }> }>("/api/categories", { ttl: 5 * 60_000 }).catch(() => null);
 
 export default function Header() {
   const pathname = usePathname();
@@ -24,16 +29,19 @@ export default function Header() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [collectionsOpen, setCollectionsOpen] = useState(false);
-  const [navCategories, setNavCategories] = useState<NavCat[]>([]);
+  const [navCategories, setNavCategories] = useState<NavCat[]>(() => {
+    const cached = readCached<{ categories?: Array<{ name: string; slug: string }> }>("/api/categories");
+    return cached?.categories?.map((c) => ({ label: c.name, href: `/collections/${c.slug}` })) || [];
+  });
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    fetch("/api/categories")
-      .then(r => r.json())
-      .then(d => {
-        if (d.categories) setNavCategories(d.categories.map((c: any) => ({ label: c.name, href: "/collections/" + c.slug })));
-      })
-      .catch(() => {});
+    let cancelled = false;
+    navCategoriesPrefetch?.then((data) => {
+      if (cancelled || !data?.categories) return;
+      setNavCategories(data.categories.map((c) => ({ label: c.name, href: `/collections/${c.slug}` })));
+    });
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {

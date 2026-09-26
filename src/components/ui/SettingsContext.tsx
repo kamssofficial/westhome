@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { cachedFetch, readCached } from "@/lib/clientCache";
 
 interface StoreSettings {
   contactPhone: string;
@@ -18,27 +19,41 @@ const DEFAULT_SETTINGS: StoreSettings = {
   storeName: "WEST HOME",
 };
 
+const settingsPrefetch = typeof window === "undefined"
+  ? null
+  : cachedFetch<{ settings?: Record<string, any> }>("/api/settings", { ttl: 10 * 60_000 }).catch(() => null);
+
 const SettingsContext = createContext<StoreSettings>(DEFAULT_SETTINGS);
 
 export const useSettings = () => useContext(SettingsContext);
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
-  const [settings, setSettings] = useState<StoreSettings>(DEFAULT_SETTINGS);
-
-  useEffect(() => {
-    fetch("/api/settings")
-      .then((r) => r.json())
-      .then((data) => {
-        if (!data.settings) return;
-        const saved = data.settings;
-        setSettings({
+  const [settings, setSettings] = useState<StoreSettings>(() => {
+    const cached = readCached<{ settings?: Record<string, any> }>("/api/settings");
+    const saved = cached?.settings;
+    return saved
+      ? {
           contactPhone: saved.contactPhone || DEFAULT_SETTINGS.contactPhone,
           whatsappNumber: saved.whatsappNumber || DEFAULT_SETTINGS.whatsappNumber,
           contactEmail: saved.contactEmail || DEFAULT_SETTINGS.contactEmail,
           storeName: saved.storeName || DEFAULT_SETTINGS.storeName,
-        });
-      })
-      .catch(() => {});
+        }
+      : DEFAULT_SETTINGS;
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+    settingsPrefetch?.then((data) => {
+      if (cancelled || !data?.settings) return;
+      const saved = data.settings;
+      setSettings({
+        contactPhone: saved.contactPhone || DEFAULT_SETTINGS.contactPhone,
+        whatsappNumber: saved.whatsappNumber || DEFAULT_SETTINGS.whatsappNumber,
+        contactEmail: saved.contactEmail || DEFAULT_SETTINGS.contactEmail,
+        storeName: saved.storeName || DEFAULT_SETTINGS.storeName,
+      });
+    });
+    return () => { cancelled = true; };
   }, []);
 
   return (

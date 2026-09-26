@@ -18,7 +18,7 @@ import { join } from "node:path";
 const ROOT = join(import.meta.dirname, "..");
 const ID = "1-8RwujmwlvQEx8Fjt6kgpxSvhuJQTnDu";
 const CDN = `https://lh3.googleusercontent.com/d/${ID}`;
-const PROXY = `/api/images/${ID}`;
+const PROXY = `/api/images/${ID}.webp`;
 
 // One table drives both the probe and the assertions, so a case cannot drift
 // out of sync with its expectation.
@@ -29,7 +29,7 @@ const CASES = [
   { label: "cdn url with a fragment", url: `${CDN}#frag`, id: ID, proxied: PROXY },
   { label: "cdn url with padding", url: `  ${CDN}  `, id: ID, proxied: PROXY },
   { label: "legacy local file under the proxy path", url: "/api/images/banners/hero-living-room.png", id: null, proxied: "/api/images/banners/hero-living-room.png" },
-  { label: "proxy id decorated with an image extension", url: "/api/images/1VztGVSkhQpSO4PzWSJs2Fn4d0HB43dLQ.webp", id: "1VztGVSkhQpSO4PzWSJs2Fn4d0HB43dLQ", proxied: "/api/images/1VztGVSkhQpSO4PzWSJs2Fn4d0HB43dLQ" },
+  { label: "proxy id decorated with an image extension", url: "/api/images/1VztGVSkhQpSO4PzWSJs2Fn4d0HB43dLQ.webp", id: "1VztGVSkhQpSO4PzWSJs2Fn4d0HB43dLQ", proxied: "/api/images/1VztGVSkhQpSO4PzWSJs2Fn4d0HB43dLQ.webp" },
   { label: "short local filename keeps its extension", url: "/api/images/hero.webp", id: "hero.webp", proxied: "/api/images/hero.webp" },
   { label: "committed static asset", url: "/images/logo/westhome-logo-white.png", id: null, proxied: "/images/logo/westhome-logo-white.png" },
   { label: "a different drive url shape", url: "https://drive.google.com/uc?id=abc&export=view", id: null, proxied: "https://drive.google.com/uc?id=abc&export=view" },

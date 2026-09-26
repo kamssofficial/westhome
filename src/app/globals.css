@@ -301,19 +301,15 @@ h1, h2, h3, h4, h5, h6 {
 @keyframes pulse-ring { 0%, 100% { transform: scale(0.92); opacity: 0.4; } 50% { transform: scale(1.04); opacity: 0.85; } }
 @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
 
-.animate-fade-in { animation: fade-in 700ms cubic-bezier(.23,.88,.26,.92) both; }
+/* The branded intro owns entrance motion. Route/page content stays immediately usable. */
+.animate-fade-in { animation: none; }
+.stagger-in > * { animation: none; }
 .float-slow { animation: float-slow 7s ease-in-out infinite; }
 .pulse-ring { animation: pulse-ring 4s ease-in-out infinite; }
 .marquee-track { animation: marquee 26s linear infinite; }
 .skeleton { background: linear-gradient(90deg, var(--color-surface-muted) 25%, var(--color-surface) 50%, var(--color-surface-muted) 75%); background-size: 200% 100%; animation: shimmer 1.8s ease-in-out infinite; border-radius: var(--radius-card); }
 
-.stagger-in > * { animation: fade-in 700ms cubic-bezier(.23,.88,.26,.92) both; }
-.stagger-in > *:nth-child(1) { animation-delay: 50ms; }
-.stagger-in > *:nth-child(2) { animation-delay: 110ms; }
-.stagger-in > *:nth-child(3) { animation-delay: 170ms; }
-.stagger-in > *:nth-child(4) { animation-delay: 230ms; }
-.stagger-in > *:nth-child(5) { animation-delay: 290ms; }
-.stagger-in > *:nth-child(6) { animation-delay: 350ms; }
+/* Staggered route entrances are intentionally disabled for immediate rendering. */
 
 .safe-bottom { padding-bottom: max(1.5rem, env(safe-area-inset-bottom)); }
 .bottom-nav-safe { padding-bottom: max(4.5rem, calc(4.5rem + env(safe-area-inset-bottom))); }
