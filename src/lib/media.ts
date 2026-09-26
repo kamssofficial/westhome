@@ -54,7 +54,7 @@ export function storageStatus() {
     // development fallback only and is exposed separately as `uploadAvailable`.
     anyConfigured: s3 || drive,
     uploadAvailable: s3 || drive || !production,
-    missing: drive
+    missing: s3 || drive
       ? null
       : "Managed S3 or Google Drive is not configured; production image uploads require S3 credentials or GOOGLE_OAUTH_* (or service-account credentials).",
   };
@@ -67,9 +67,9 @@ export function storageStatus() {
 /**
  * Provider order: managed S3, Google Drive, then local disk (development only).
  *
- * Drive is the production backend for westhome.in: the catalog's existing
- * images already live there, and the site already ships the `/api/images/`
- * proxy that serves them. Local disk is a development convenience only:
+ * Managed S3 is the primary production backend. Google Drive remains supported
+ * for legacy media and as a fallback when S3 is temporarily unavailable. Local
+ * disk is a development convenience only:
  * redeploys wipe it and serverless runtimes have a read-only filesystem,
  * so it must never be the chosen path in production.
  */
