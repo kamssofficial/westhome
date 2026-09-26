@@ -39,6 +39,7 @@ export interface DashboardData {
   lowStockProducts: any[];
   insights: string[];
   uniqueVisitors: number;
+  imageErrors?: number;
   // Payment method mix from completed payments (null method = COD)
   paymentMethods?: { method: string; count: number; amount: number }[];
   // Guest checkout vs signed-in accounts
@@ -810,6 +811,12 @@ export default function DashboardView({
           <StatTile label="Returning share" value={`${returningShare}%`} tone={returningShare > 0 ? "success" : "neutral"} />
           <StatTile label="Guest revenue" value={`${guestRevenueShare}%`} hint="of completed revenue" />
           <StatTile label="Average order" value={money(k.avgOrderValue)} tone="success" />
+          <StatTile
+            label="Tracked image errors"
+            value={count(data?.imageErrors)}
+            hint="reported by storefront in this period"
+            tone={(data?.imageErrors || 0) > 0 ? "warning" : "success"}
+          />
         </div>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <div className="rounded-xl border border-border-light bg-surface-muted/40 px-3.5 py-3">
