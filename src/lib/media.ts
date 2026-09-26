@@ -93,7 +93,7 @@ export async function uploadMedia(folder: string, file: File, filename: string):
     throw new Error("Invalid upload path");
   }
   fs.writeFileSync(resolvedTarget, buffer);
-  return { url: `/images/uploads/${folder}/${filename}`, pathname: key, storageKey: key, provider: "local" };
+  return { url: `/api/images/uploads/${folder}/${filename}`, pathname: key, storageKey: key, provider: "local" };
 }
 
 export async function deleteMedia(media: { fileId?: string; url?: string } | null | undefined): Promise<void> {
