@@ -12,7 +12,7 @@ export default function ReturnPolicyPage() {
         <section>
           <h2 className="text-base font-semibold text-primary mb-2">We are here to help</h2>
           <p>
-            At WestHome, we stand behind the quality of every product we offer.
+            At West Home, we stand behind the quality of every product we offer.
             If you have any concerns about your order, please reach out to our
             support team and we will do our best to assist you.
           </p>

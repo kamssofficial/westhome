@@ -39,4 +39,4 @@ if (!middleware.includes('role !== "ADMIN"')) throw new Error("Admin role guard 
 const orders = await readFile(join(root, "src/api-handlers/orders/route.ts"), "utf8");
 if (!orders.includes("Server-side price validation")) throw new Error("Server-side order price validation missing");
 
-console.log("Westhome preflight audit passed.");
+console.log("West Home preflight audit passed.");

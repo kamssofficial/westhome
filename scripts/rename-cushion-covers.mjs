@@ -92,7 +92,7 @@ for (const p of targets) {
   let n = 2;
   while (existingSlugs.has(slug) && slug !== p.slug) slug = `${newName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}-${n++}`;
 
-  const seoTitle = `${newName} | Westhome`;
+  const seoTitle = `${newName} | West Home`;
   renames.push({ id: p.id, old: p.name, newName, oldSlug: p.slug, slug, seoTitle });
   existingSlugs.add(slug);
 }

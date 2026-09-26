@@ -256,7 +256,6 @@ export async function GET(req: NextRequest) {
       return notFound();
     }
 
-<<<<<<< HEAD
     // Drive files are served through the public image endpoint first. This is
     // deliberately the fast path for storefront reads: product image URLs are
     // already persisted as Drive file ids and public Drive delivery does not

@@ -7,11 +7,11 @@ export const metadata: Metadata = {
     "Learn about West Home by BM Distributors — premium home décor and lifestyle products curated for Indian homes. Showrooms in Kasaragod, Kerala and Mangalore, Karnataka.",
   alternates: { canonical: "/about" },
   openGraph: {
-    title: "About WESTHOME by BM Distributors",
+    title: "About WEST HOME by BM Distributors",
     description:
       "Premium home décor and lifestyle products curated for Indian homes.",
     url: "/about",
-    images: [{ url: "/images/logo/westhome-logo-transparent.png", alt: "WESTHOME by BM Distributors" }],
+    images: [{ url: "/images/logo/westhome-logo-transparent.png", alt: "WEST HOME by BM Distributors" }],
   },
 };
 

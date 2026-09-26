@@ -5,7 +5,7 @@ import { Home } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /* ─── Config (easy to edit) ─── */
-const BRAND = "WESTHOME";
+const BRAND = "WEST HOME";
 const TAGLINE = "Premium Home, Thoughtfully Chosen";
 const ITEM_NAME = "Linen Comforter Set";
 const ITEM_SUB = "King Size · Sage Green";
@@ -382,7 +382,7 @@ function renderReceiptContent(
       </div>
     ),
     /* 15 */ <div key="dr5" className="my-2 border-t border-dashed border-[#2a2825]/20" />,
-    /* 16 */ <p key="footer" className="text-center text-[8px] opacity-40 leading-relaxed">Thank you for shopping with Westhome. This is a digital receipt.</p>,
+    /* 16 */ <p key="footer" className="text-center text-[8px] opacity-40 leading-relaxed">Thank you for shopping with West Home. This is a digital receipt.</p>,
   ];
 
   return (

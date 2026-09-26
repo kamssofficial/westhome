@@ -5,7 +5,7 @@ import { use } from "react";
 const POLICY_CONTENT: Record<string, { title: string; content: string }> = {
   privacy: {
     title: "Privacy Policy",
-    content: `This Privacy Policy describes how WESTHOME by BM Distributors collects, uses, and protects your personal information when you use our website and services.
+    content: `This Privacy Policy describes how WEST HOME by BM Distributors collects, uses, and protects your personal information when you use our website and services.
 
 Information We Collect:
 - Name, email, phone number
@@ -28,7 +28,7 @@ For privacy-related inquiries, please contact us at info@westhome.in.`,
   },
   terms: {
     title: "Terms of Service",
-    content: `Welcome to WESTHOME by BM Distributors. By using our website, you agree to these terms.
+    content: `Welcome to WEST HOME by BM Distributors. By using our website, you agree to these terms.
 
 Products and Pricing:
 - All prices are in Indian Rupees (INR)
@@ -72,7 +72,7 @@ For shipping inquiries, please WhatsApp us or email info@westhome.in.`,
     title: "Contact & Support",
     content: `We are here to help:
 
-At WestHome, we stand behind the quality of every product we offer.
+At West Home, we stand behind the quality of every product we offer.
 If you have any concerns about your order, please reach out to our
 support team and we will do our best to assist you.
 
@@ -83,7 +83,7 @@ the issue.
 
 How to Reach Us:
 - Email: info@westhome.in
-- WhatsApp: https://wa.me/919895071144`,
+- WhatsApp: https://wa.me/919544572445`,
   },
   cancellation: {
     title: "Cancellation Policy",

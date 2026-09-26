@@ -65,7 +65,7 @@ export default function AdminSettingsPage() {
       <div className="bg-white rounded-2xl border border-black/[.06] overflow-hidden">
         <div className="flex items-center gap-2.5 px-6 py-4 border-b border-black/[.06]"><Store size={16} className="text-[#d4a574]" /><h2 className="font-semibold text-sm text-[#1a1917]">Store Information</h2></div>
         <div className="p-6 space-y-5">
-          <Field label="Store Name" error={errs.storeName}><input type="text" value={s.storeName} onChange={(e) => u("storeName", e.target.value)} className={ic + (errs.storeName ? " " + ie : "")} placeholder="WESTHOME" /></Field>
+          <Field label="Store Name" error={errs.storeName}><input type="text" value={s.storeName} onChange={(e) => u("storeName", e.target.value)} className={ic + (errs.storeName ? " " + ie : "")} placeholder="WEST HOME" /></Field>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <Field label="Contact Phone" error={errs.contactPhone}><input type="tel" value={s.contactPhone} onChange={(e) => u("contactPhone", e.target.value)} className={ic + (errs.contactPhone ? " " + ie : "")} placeholder="+91 98765 43210" /></Field>
             <Field label="WhatsApp Number" error={errs.whatsappNumber}><input type="tel" value={s.whatsappNumber} onChange={(e) => u("whatsappNumber", e.target.value)} className={ic + (errs.whatsappNumber ? " " + ie : "")} placeholder="+91 98765 43210" /></Field>

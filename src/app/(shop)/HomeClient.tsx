@@ -386,7 +386,7 @@ export default function HomePage() {
           <div className="grid gap-12 lg:grid-cols-[.8fr_1.2fr] lg:items-end">
             <div>
               <p className="font-label mb-4 text-[9px] text-[#e0a681]">
-                Why Westhome
+                Why West Home
               </p>
               <h2 className="font-display max-w-md text-4xl leading-[.95] md:text-6xl">
                 Good design should feel easy.
@@ -450,7 +450,7 @@ export default function HomePage() {
               send a photo. We will help you find the right fit.
             </p>
             <a
-              href={`https://wa.me/${whatsappNumber.replace(/[^0-9+]/g, "").replace("+", "")}?text=Hi!%20I%20need%20help%20choosing%20a%20WESTHOME%20product.`}
+              href={`https://wa.me/${whatsappNumber.replace(/[^0-9+]/g, "").replace("+", "")}?text=Hi!%20I%20need%20help%20choosing%20a%20WEST HOME%20product.`}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-8 inline-flex items-center gap-2 rounded-full bg-foreground px-5 py-3 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5 active:scale-[.97]"

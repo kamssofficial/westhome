@@ -63,7 +63,7 @@ export default function AdminHomepagePage() {
     { type: "FEATURED_PRODUCTS", label: "Featured Products", description: "Admin-selected products" },
     { type: "NEW_ARRIVALS", label: "New Arrivals", description: "Recently added products" },
     { type: "PROMOTIONAL_BANNER", label: "Promotional Banner", description: "Sale or campaign banner" },
-    { type: "BRAND_STORY", label: "Why WESTHOME", description: "Brand value points" },
+    { type: "BRAND_STORY", label: "Why WEST HOME", description: "Brand value points" },
     { type: "STORE_INFO", label: "Store Information", description: "Contact and location details" },
   ];
 

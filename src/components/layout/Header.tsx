@@ -91,7 +91,7 @@ export default function Header() {
             >
               <Menu size={20} strokeWidth={1.8} />
             </button>
-            <Link href="/" className="shrink-0" aria-label="WESTHOME home">
+            <Link href="/" className="shrink-0" aria-label="WEST HOME home">
               <span className="relative block h-8 w-[9rem] md:h-9 md:w-[10rem]">
                 <WestHomeLogo
                   variant="default"
@@ -249,7 +249,7 @@ export default function Header() {
           </div>
           <div className="mt-10 flex-1">
             <p className="font-label mb-4 text-[9px] text-accent">
-              Explore WESTHOME
+              Explore WEST HOME
             </p>
             <nav className="space-y-1" aria-label="Mobile navigation">
               {BASE_NAV.map((link) => (
@@ -318,7 +318,7 @@ export default function Header() {
               onClick={() => setMobileMenuOpen(false)}
               className="block rounded-2xl px-4 py-3 text-sm font-semibold text-text-secondary hover:bg-foreground/[.06] hover:text-foreground"
             >
-              About WESTHOME
+              About WEST HOME
             </Link>
             <Link
               href="/contact"

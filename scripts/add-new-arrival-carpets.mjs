@@ -109,7 +109,7 @@ for (const rug of RUGS) {
       id,
       rug.name,
       slug,
-      `${rug.name} — carpets from the Westhome collection`,
+      `${rug.name} — carpets from the West Home collection`,
       `soft, textured comfort underfoot to complete your space.\nSIZE :6*4 FTS`,
       cat.id,
     ]

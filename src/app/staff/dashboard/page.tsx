@@ -72,7 +72,7 @@ export default function StaffDashboard() {
         <div className="absolute top-0 right-0 w-64 h-64 bg-[#d4a574]/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
         <div className="relative z-10">
           <div className="mb-1">
-            <span className="text-base font-serif tracking-wide text-white/90 font-semibold">WESTHOME</span>
+            <span className="text-base font-serif tracking-wide text-white/90 font-semibold">WEST HOME</span>
             <span className="block text-[9px] text-[#b0aba6] tracking-[0.15em] uppercase">Staff Panel</span>
           </div>
           <h1 className="text-2xl md:text-3xl font-light tracking-tight mt-3">{greeting}</h1>

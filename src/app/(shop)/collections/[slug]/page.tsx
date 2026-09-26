@@ -133,7 +133,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params;
   const category = await getCategory(slug);
   if (!category) return { title: "Collection Not Found" };
-  const description = category.description || ("Shop " + category.name + " at WESTHOME. Premium home decor, wall art, and accessories.");
+  const description = category.description || ("Shop " + category.name + " at WEST HOME. Premium home decor, wall art, and accessories.");
   const canonical = `/collections/${category.slug}`;
   return {
     title: category.name,
@@ -144,7 +144,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description,
       type: "website",
       url: canonical,
-      images: [{ url: "/images/logo/westhome-logo-transparent.png", alt: "WESTHOME by BM Distributors" }],
+      images: [{ url: "/images/logo/westhome-logo-transparent.png", alt: "WEST HOME by BM Distributors" }],
     },
     twitter: { card: "summary", title: category.name, description },
   };

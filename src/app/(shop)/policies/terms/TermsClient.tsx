@@ -9,7 +9,7 @@ export default function TermsOfServicePage() {
       <div className="space-y-6 text-sm text-secondary leading-relaxed">
         <section>
           <h2 className="text-base font-semibold text-primary mb-2">1. Acceptance of Terms</h2>
-          <p>By accessing and using the WESTHOME website, you agree to be bound by these Terms of Service. If you do not agree, please do not use our website.</p>
+          <p>By accessing and using the WEST HOME website, you agree to be bound by these Terms of Service. If you do not agree, please do not use our website.</p>
         </section>
 
         <section>
@@ -24,12 +24,12 @@ export default function TermsOfServicePage() {
 
         <section>
           <h2 className="text-base font-semibold text-primary mb-2">4. Intellectual Property</h2>
-          <p>All content on this website, including text, images, logos, and design, is the property of WESTHOME by BM Distributors and is protected by copyright laws.</p>
+          <p>All content on this website, including text, images, logos, and design, is the property of WEST HOME by BM Distributors and is protected by copyright laws.</p>
         </section>
 
         <section>
           <h2 className="text-base font-semibold text-primary mb-2">5. Limitation of Liability</h2>
-          <p>WESTHOME shall not be liable for any indirect, incidental, or consequential damages arising from the use of our products or website.</p>
+          <p>WEST HOME shall not be liable for any indirect, incidental, or consequential damages arising from the use of our products or website.</p>
         </section>
 
         <section>

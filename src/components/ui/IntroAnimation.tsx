@@ -106,7 +106,7 @@ export default function IntroAnimation({ children }: { children: React.ReactNode
               >
                 <Image
                   src="/images/logo/westhome-logo-white.png"
-                  alt="WESTHOME"
+                  alt="WEST HOME"
                   fill
                   className="object-contain" sizes="200px"
                   style={{ filter: "drop-shadow(0 0 40px rgba(250,248,245,0.12))" }}

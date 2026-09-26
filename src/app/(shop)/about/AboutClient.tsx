@@ -19,11 +19,11 @@ export default function AboutPage() {
       {/* Brand story */}
       <div className="container-shop py-6">
         <p className="text-sm text-secondary leading-relaxed">
-          At WestHome, we believe that your home deserves the best. Our collections are
+          At West Home, we believe that your home deserves the best. Our collections are
           thoughtfully curated to bring style, comfort and quality into your everyday life.
         </p>
         <p className="text-sm text-secondary leading-relaxed mt-3">
-          WestHome by BM Distributors is a premium home décor and lifestyle retail brand
+          West Home by BM Distributors is a premium home décor and lifestyle retail brand
           offering physical products designed to improve the appearance, comfort, organization,
           and atmosphere of residential interiors.
         </p>

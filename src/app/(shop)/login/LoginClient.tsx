@@ -72,7 +72,7 @@ function LoginForm() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-xl font-serif">Welcome Back</h1>
-          <p className="text-sm text-[#6b6560] mt-1">Sign in to your WESTHOME account</p>
+          <p className="text-sm text-[#6b6560] mt-1">Sign in to your WEST HOME account</p>
         </div>
 
         {errorMsg && (
@@ -83,7 +83,7 @@ function LoginForm() {
 
         {showNoAccountHint && (
           <div className="mb-4 p-3 bg-[#faf6ef] border border-[#e8dcc8] rounded-xl text-center">
-            <p className="text-sm text-[#6b6560]">New to WESTHOME? Create an account in seconds.</p>
+            <p className="text-sm text-[#6b6560]">New to WEST HOME? Create an account in seconds.</p>
             <Link
               href={`/register?phone=${encodeURIComponent(lastPhone)}&callbackUrl=${encodeURIComponent(callbackUrl)}`}
               className="inline-block mt-2 px-4 py-1.5 bg-stone-900 text-white text-xs font-medium rounded-lg hover:bg-stone-800 transition-colors"

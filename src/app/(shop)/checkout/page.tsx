@@ -219,7 +219,7 @@ export default function CheckoutPage() {
     const contact = isGuest ? guestContact : null;
     const savedAddress = addresses.find((a) => a.id === selectedAddress);
     const checkout = new window.Razorpay({
-      key: paymentData.keyId, amount: paymentData.amount, currency: paymentData.currency || "INR", name: "Westhome", description: `Order ${order.orderNumber}`, order_id: paymentData.razorpayOrderId,
+      key: paymentData.keyId, amount: paymentData.amount, currency: paymentData.currency || "INR", name: "West Home", description: `Order ${order.orderNumber}`, order_id: paymentData.razorpayOrderId,
       prefill: { name: contact?.name || savedAddress?.name, email: contact?.email || userEmail, contact: contact?.phone || savedAddress?.phone }, notes: { orderNumber: order.orderNumber }, theme: { color: "#111111" },
       modal: { ondismiss: () => toast("Payment window closed. Your order is saved; you can retry payment.") },
       handler: async (response) => {

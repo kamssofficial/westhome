@@ -32,7 +32,7 @@ export default function GoogleReviewPrompt() {
       <div className="mt-4 flex items-center gap-4">
         <Image
           src={qrSrc}
-          alt="QR code to leave a Google review for WESTHOME by BM Distributors"
+          alt="QR code to leave a Google review for WEST HOME by BM Distributors"
           width={88}
           height={88}
           className="rounded-lg border border-foreground/[.08]"

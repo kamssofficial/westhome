@@ -28,7 +28,7 @@ export default function WestHomeLogo({
   variant = "default",
   size = "md",
   href = "/",
-  alt = "WESTHOME by BM Distributors",
+  alt = "WEST HOME by BM Distributors",
   plain = false,
 }: WestHomeLogoProps) {
   const s = SIZES[size];
@@ -54,7 +54,7 @@ export default function WestHomeLogo({
   if (plain) return logo;
 
   return (
-    <Link href={href} className="shrink-0" aria-label="WESTHOME home">
+    <Link href={href} className="shrink-0" aria-label="WEST HOME home">
       {logo}
     </Link>
   );

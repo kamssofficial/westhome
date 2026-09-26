@@ -160,7 +160,7 @@ export default function Footer({ className }: { className?: string }) {
       <div className="border-t border-white/10">
         <div className="container-shop flex flex-col gap-2 py-5 text-xs text-white/40 sm:flex-row sm:items-center sm:justify-between">
           <p>
-            © {new Date().getFullYear()} WESTHOME by BM Distributors. All rights
+            © {new Date().getFullYear()} WEST HOME by BM Distributors. All rights
             reserved.
           </p>
           <div className="flex gap-5">

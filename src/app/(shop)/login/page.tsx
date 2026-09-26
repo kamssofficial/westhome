@@ -4,7 +4,7 @@ import LoginClient from "./LoginClient";
 export const metadata: Metadata = {
   title: "Sign In",
   description:
-    "Sign in to your WESTHOME account to track orders, manage addresses, and checkout faster.",
+    "Sign in to your WEST HOME account to track orders, manage addresses, and checkout faster.",
   alternates: { canonical: "/login" },
 };
 

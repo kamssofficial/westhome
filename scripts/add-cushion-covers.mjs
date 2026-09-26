@@ -98,7 +98,7 @@ for (const { mrp, sku, files } of products.values()) {
          VALUES (gen_random_uuid()::text, $1, $2, $3, $4, 'ACTIVE', true, $5, NULL,
                  10, 5, true, 'BOTH', $6, $7, now(), now(), now())
          RETURNING id, name, slug`,
-        [name, slug, finalSku, "Premium cushion cover from the Westhome Accessories collection.", mrp, cat.id, sub.id]
+        [name, slug, finalSku, "Premium cushion cover from the West Home Accessories collection.", mrp, cat.id, sub.id]
       );
       const productId = rows[0].id;
       for (let i = 0; i < imageRows.length; i++) {

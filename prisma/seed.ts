@@ -5,7 +5,7 @@ async function main() {
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
   const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
   const db = new PrismaClient({ adapter });
-  console.log("🌱 Seeding WESTHOME database...\n");
+  console.log("🌱 Seeding WEST HOME database...\n");
 
   // ============================================================
   // LOCAL DEFAULT ACCOUNTS ONLY
@@ -105,7 +105,7 @@ async function main() {
   console.log("\n⚙️ Creating site settings...");
 
   const settingsData: { key: string; value: any; group: string }[] = [
-    { key: "storeName", value: "WESTHOME", group: "general" },
+    { key: "storeName", value: "WEST HOME", group: "general" },
     { key: "contactPhone", value: "+919999999999", group: "contact" },
     { key: "whatsappNumber", value: "+919999999999", group: "contact" },
     { key: "contactEmail", value: "info@westhome.in", group: "contact" },
@@ -139,7 +139,7 @@ async function main() {
   console.log("\n📄 Creating content pages...");
 
   const contentPages = [
-    { slug: "about", title: "About WESTHOME", content: "WESTHOME by BM Distributors is a premium home lifestyle brand offering curated products for modern living." },
+    { slug: "about", title: "About WEST HOME", content: "WEST HOME by BM Distributors is a premium home lifestyle brand offering curated products for modern living." },
     { slug: "contact", title: "Contact Us", content: "Reach us via phone, email, or WhatsApp for any queries." },
     { slug: "faq", title: "Frequently Asked Questions", content: "Find answers to common questions about orders, delivery, and returns." },
   ];
@@ -165,7 +165,7 @@ async function main() {
       { type: "CATEGORIES" as const, title: "Shop by Category", position: 1, isActive: true },
       { type: "FEATURED_PRODUCTS" as const, title: "Featured Products", subtitle: "Our handpicked selection", position: 2, isActive: true },
       { type: "NEW_ARRIVALS" as const, title: "New Arrivals", subtitle: "Fresh additions to our collection", position: 3, isActive: true },
-      { type: "BRAND_STORY" as const, title: "Why WESTHOME", position: 4, isActive: true },
+      { type: "BRAND_STORY" as const, title: "Why WEST HOME", position: 4, isActive: true },
       { type: "STORE_INFO" as const, title: "Visit Our Store", position: 5, isActive: true },
     ];
 

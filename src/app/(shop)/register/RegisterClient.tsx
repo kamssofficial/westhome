@@ -81,7 +81,7 @@ export default function RegisterPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-xl font-serif">Create Account</h1>
-          <p className="text-sm text-text-secondary mt-1">Join the WESTHOME community</p>
+          <p className="text-sm text-text-secondary mt-1">Join the WEST HOME community</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-surface border border-border rounded-[1.35rem] p-5 md:p-6 space-y-4">
