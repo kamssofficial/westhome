@@ -19,7 +19,7 @@ function actionForEvent(eventType: string, metadata: any, productName: string | 
       };
     case "COLLECTION_VIEW":
     case "CATEGORY_VIEW":
-      return { type: "BROWSE_COLLECTION", label: "Browsing a collection", intent: "Browsing" };
+      return { type: "BROWSE_COLLECTION", label: "Browsing a collection", intent: "Browsing", searchQuery: null };
     case "SEARCH": {
       const q = typeof metadata?.query === "string" ? metadata.query.trim().slice(0, 80) : "";
       return {
@@ -30,29 +30,29 @@ function actionForEvent(eventType: string, metadata: any, productName: string | 
       };
     }
     case "ADD_TO_CART":
-      return { type: "ADD_TO_CART", label: productName ? `Added “${productName}” to cart` : "Added an item to cart", intent: "Purchase intent" };
+      return { type: "ADD_TO_CART", label: productName ? `Added “${productName}” to cart` : "Added an item to cart", intent: "Purchase intent", searchQuery: null };
     case "REMOVE_FROM_CART":
-      return { type: "REMOVE_FROM_CART", label: "Removed an item from cart", intent: "Shopping" };
+      return { type: "REMOVE_FROM_CART", label: "Removed an item from cart", intent: "Shopping", searchQuery: null };
     case "WISHLIST_ADD":
     case "WISHLIST":
-      return { type: "WISHLIST", label: productName ? `Saved “${productName}”` : "Saved an item to wishlist", intent: "Product interest" };
+      return { type: "WISHLIST", label: productName ? `Saved “${productName}”` : "Saved an item to wishlist", intent: "Product interest", searchQuery: null };
     case "WISHLIST_REMOVE":
-      return { type: "WISHLIST_REMOVE", label: "Removed an item from wishlist", intent: "Shopping" };
+      return { type: "WISHLIST_REMOVE", label: "Removed an item from wishlist", intent: "Shopping", searchQuery: null };
     case "BUY_NOW":
-      return { type: "BUY_NOW", label: productName ? `Starting checkout for “${productName}”` : "Starting checkout", intent: "High purchase intent" };
+      return { type: "BUY_NOW", label: productName ? `Starting checkout for “${productName}”` : "Starting checkout", intent: "High purchase intent", searchQuery: null };
     case "CHECKOUT_STARTED":
-      return { type: "CHECKOUT_STARTED", label: "Started checkout", intent: "High purchase intent" };
+      return { type: "CHECKOUT_STARTED", label: "Started checkout", intent: "High purchase intent", searchQuery: null };
     case "PAYMENT_START":
-      return { type: "PAYMENT_START", label: "Started payment", intent: "High purchase intent" };
+      return { type: "PAYMENT_START", label: "Started payment", intent: "High purchase intent", searchQuery: null };
     case "PAYMENT_SUCCESS":
     case "PURCHASE":
-      return { type: "PURCHASE", label: "Completed a purchase", intent: "Purchase completed" };
+      return { type: "PURCHASE", label: "Completed a purchase", intent: "Purchase completed", searchQuery: null };
     case "WHATSAPP_ENQUIRY":
-      return { type: "WHATSAPP_ENQUIRY", label: "Opened a WhatsApp enquiry", intent: "Enquiry" };
+      return { type: "WHATSAPP_ENQUIRY", label: "Opened a WhatsApp enquiry", intent: "Enquiry", searchQuery: null };
     case "LOGIN":
-      return { type: "LOGIN", label: "Signed in", intent: "Account activity" };
+      return { type: "LOGIN", label: "Signed in", intent: "Account activity", searchQuery: null };
     case "SIGNUP":
-      return { type: "SIGNUP", label: "Created an account", intent: "Account activity" };
+      return { type: "SIGNUP", label: "Created an account", intent: "Account activity", searchQuery: null };
     case "PAGE_VIEW":
     default:
       return { type: "BROWSE", label: "Browsing the store", intent: "Browsing", searchQuery: null };
@@ -61,12 +61,12 @@ function actionForEvent(eventType: string, metadata: any, productName: string | 
 
 function fallbackActionFromPage(path: string | null, productName: string | null) {
   if (path?.startsWith("/products/")) {
-    return { type: "VIEW_PRODUCT", label: productName ? `Viewing “${productName}”` : "Viewing a product", intent: "Product interest" };
+    return { type: "VIEW_PRODUCT", label: productName ? `Viewing “${productName}”` : "Viewing a product", intent: "Product interest", searchQuery: null };
   }
-  if (path?.startsWith("/collections/")) return { type: "BROWSE_COLLECTION", label: "Browsing a collection", intent: "Browsing" };
-  if (path?.startsWith("/cart")) return { type: "CART", label: "Viewing the cart", intent: "Purchase intent" };
-  if (path?.startsWith("/checkout")) return { type: "CHECKOUT", label: "In checkout", intent: "High purchase intent" };
-  if (path?.startsWith("/search")) return { type: "SEARCH", label: "Searching the store", intent: "Search intent" };
+  if (path?.startsWith("/collections/")) return { type: "BROWSE_COLLECTION", label: "Browsing a collection", intent: "Browsing", searchQuery: null };
+  if (path?.startsWith("/cart")) return { type: "CART", label: "Viewing the cart", intent: "Purchase intent", searchQuery: null };
+  if (path?.startsWith("/checkout")) return { type: "CHECKOUT", label: "In checkout", intent: "High purchase intent", searchQuery: null };
+  if (path?.startsWith("/search")) return { type: "SEARCH", label: "Searching the store", intent: "Search intent", searchQuery: null };
   return { type: "BROWSE", label: "Browsing the store", intent: "Browsing" };
 }
 
