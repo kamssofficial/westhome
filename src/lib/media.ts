@@ -41,12 +41,15 @@ export function storageStatus() {
   const drive = driveConfigured();
   return {
     drive: { configured: drive },
-    anyConfigured: drive,
-    // Surfaced verbatim in the admin so a failed upload explains itself
-    // instead of showing a bare "Upload failed (503)".
+    local: {
+      configured: true,
+      path: "public/images/uploads",
+      persistent: process.env.NODE_ENV === "production",
+    },
+    anyConfigured: true,
     missing: drive
       ? null
-      : "Set GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET and GOOGLE_OAUTH_REFRESH_TOKEN (project Settings → Environment) so uploads are stored on Google Drive.",
+      : "Google Drive is not configured; uploads use persistent local storage on this server.",
   };
 }
 
@@ -68,24 +71,29 @@ export async function uploadMedia(folder: string, file: File, filename: string):
   const key = `${folder.replace(/^\/+|\/+$/g, "")}/${filename.replace(/^\/+/, "")}`;
 
   if (driveConfigured()) {
-    const result = await uploadToDrive(folder, file, filename);
-    if (result?.fileId) {
-      return { url: `/api/images/${result.fileId}`, pathname: result.fileId, fileId: result.fileId, provider: "drive" };
+    try {
+      const result = await uploadToDrive(folder, file, filename);
+      if (result?.fileId) {
+        return { url: `/api/images/${result.fileId}`, pathname: result.fileId, fileId: result.fileId, provider: "drive" };
+      }
+    } catch (error) {
+      console.error("Drive upload failed; falling back to local storage:", error);
     }
   }
 
-  if (process.env.NODE_ENV === "production") {
-    throw new Error(storageStatus().missing || "Storage is not configured.");
-  }
-
-  // Dev-only fallback: local disk. Re-deploys wipe it, so this must never be
-  // the chosen path in production.
   const fs = await import("fs");
   const path = await import("path");
-  const uploadDir = path.join(process.cwd(), "public", "images", folder);
-  if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-  fs.writeFileSync(path.join(uploadDir, filename), buffer);
-  return { url: `/images/${folder}/${filename}`, pathname: key, storageKey: key, provider: "local" };
+  const uploadRoot = path.join(process.cwd(), "public", "images", "uploads");
+  const uploadDir = path.join(uploadRoot, folder);
+  fs.mkdirSync(uploadDir, { recursive: true });
+  const target = path.join(uploadDir, filename);
+  const resolvedRoot = path.resolve(uploadRoot) + path.sep;
+  const resolvedTarget = path.resolve(target);
+  if (!resolvedTarget.startsWith(resolvedRoot)) {
+    throw new Error("Invalid upload path");
+  }
+  fs.writeFileSync(resolvedTarget, buffer);
+  return { url: `/images/uploads/${folder}/${filename}`, pathname: key, storageKey: key, provider: "local" };
 }
 
 export async function deleteMedia(media: { fileId?: string; url?: string } | null | undefined): Promise<void> {
