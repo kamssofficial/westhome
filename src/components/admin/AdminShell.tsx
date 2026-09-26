@@ -78,7 +78,7 @@ export default function AdminShell({
     nav.flatMap((g) => g.items).find((item) => pathname.startsWith(item.href))?.label || "Dashboard";
 
   return (
-    <div className="min-h-screen bg-panel">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(181,108,69,0.035),transparent_28%),#f7f6f3]">
       {/* Mobile overlay */}
       <div
         className={cn(
@@ -93,18 +93,18 @@ export default function AdminShell({
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed left-0 top-0 z-50 flex h-full flex-col border-r border-panel-border bg-panel-surface transition-transform duration-300 lg:translate-x-0",
+          "fixed left-0 top-0 z-50 flex h-full flex-col border-r border-black/[0.06] bg-[#fbfaf8]/95 shadow-[8px_0_40px_rgba(28,25,23,0.035)] backdrop-blur-xl transition-transform duration-300 lg:translate-x-0",
           sidebarWidthClass,
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
         aria-label="Admin navigation"
       >
         {/* Brand header */}
-        <div className="px-5 py-5 border-b border-panel-border">
+        <div className="px-5 py-5 border-b border-black/[0.06]">
           <Link href={homePath} className="flex flex-col gap-0.5">
             <WestHomeLogo size="sm" plain />
-            <div className="mt-1.5 inline-flex items-center gap-1.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-panel-mark" />
+            <div className="mt-2.5 inline-flex items-center gap-2 rounded-full bg-black/[0.035] px-2.5 py-1.5">
+              <div className="relative h-1.5 w-1.5 rounded-full bg-[#b56c45]"><span className="absolute inset-0 animate-ping rounded-full bg-[#b56c45]/40" /></div>
               <span className="text-[9px] text-panel-label tracking-wider uppercase font-medium">{panelLabel} Panel</span>
             </div>
           </Link>
@@ -127,13 +127,19 @@ export default function AdminShell({
                       href={item.href}
                       onClick={() => setSidebarOpen(false)}
                       className={cn(
-                        "flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] font-medium transition-all duration-150 group",
+                        "relative flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13px] font-medium transition-all duration-200 group",
                         isActive
-                          ? "bg-panel-active text-panel-active-text shadow-sm"
-                          : "text-panel-text hover:text-panel-text-strong hover:bg-panel-hover"
+                          ? "bg-[#2c1f17] text-white shadow-[0_6px_18px_rgba(44,31,23,0.14)]"
+                          : "text-panel-text hover:bg-black/[0.035] hover:text-panel-text-strong"
                       )}
                     >
-                      <Icon size={16} className={cn(isActive ? "text-panel-active-text/70" : "text-panel-icon group-hover:text-panel-label")} />
+                      {isActive && <span className="absolute left-0 h-5 w-0.5 rounded-full bg-[#e8a87c]" />}
+                      <span className={cn(
+                        "flex h-7 w-7 items-center justify-center rounded-lg transition-colors",
+                        isActive ? "bg-white/10" : "bg-black/[0.025] group-hover:bg-black/[0.045]"
+                      )}>
+                        <Icon size={15} className={cn(isActive ? "text-[#e8a87c]" : "text-panel-icon group-hover:text-panel-label")} />
+                      </span>
                       {item.label}
                     </Link>
                   );
@@ -144,17 +150,17 @@ export default function AdminShell({
         </nav>
 
         {/* Footer */}
-        <div className="p-3 border-t border-panel-border space-y-0.5">
+        <div className="border-t border-black/[0.06] p-3 space-y-1">
           <Link
             href="/"
-            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] font-medium text-panel-text hover:text-panel-text-strong hover:bg-panel-hover transition-all"
+            className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13px] font-medium text-panel-text transition-all hover:bg-black/[0.035] hover:text-panel-text-strong"
           >
             <Store size={16} className="text-panel-icon" />
             View Store
           </Link>
           <button
             onClick={async () => { const { signOut } = await import("next-auth/react"); await signOut({ callbackUrl: "/login" }); }}
-            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] font-medium text-panel-text hover:text-panel-text-strong hover:bg-panel-hover transition-all w-full"
+            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13px] font-medium text-panel-text transition-all hover:bg-black/[0.035] hover:text-panel-text-strong"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-panel-icon"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
             Sign Out
@@ -165,7 +171,7 @@ export default function AdminShell({
       {/* Main content */}
       <div className={contentMarginClass}>
         {/* Top bar */}
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-panel-border bg-panel-header/85 px-3 backdrop-blur-lg sm:gap-4 sm:px-4 md:px-6">
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-black/[0.06] bg-[#fbfaf8]/80 px-3 backdrop-blur-xl sm:gap-4 sm:px-5 md:px-7">
           <button
             type="button"
             onClick={() => setSidebarOpen(true)}
@@ -192,7 +198,7 @@ export default function AdminShell({
         </header>
 
         {/* Page content */}
-        <main className="mx-auto w-full max-w-[1400px] p-3 sm:p-4 md:p-6 lg:p-8">
+        <main className="mx-auto w-full max-w-[1480px] p-3 sm:p-4 md:p-6 lg:px-8 lg:py-7">
           {children}
         </main>
       </div>
