@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import HomeClient from "./HomeClient";
 
 export const revalidate = 300;
+export const dynamic = "force-static";
+export const fetchCache = "force-cache";
 
 export const metadata: Metadata = {
   title: "Premium Home & Lifestyle",
