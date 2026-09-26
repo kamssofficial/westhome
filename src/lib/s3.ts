@@ -155,7 +155,7 @@ async function signedRequest(
   return fetch(url, {
     method,
     headers,
-    body: body ?? undefined,
+    body: body ? new Uint8Array(body) : undefined,
     cache: "no-store",
     signal: AbortSignal.timeout(15000),
   });
