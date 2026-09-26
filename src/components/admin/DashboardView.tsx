@@ -283,7 +283,6 @@ export default function DashboardView({
   // Real-time behavior summary: derived only from active visitor sessions.
   const liveWatching = visitors.filter((v) => !!v.viewingProduct);
   const liveCart = visitors.filter((v) => v.currentPage?.startsWith("/cart") || v.lastActionType === "ADD_TO_CART");
-  const liveCheckout = visitors.filter((v) => v.currentPage?.startsWith("/checkout") || v.lastActionType === "CHECKOUT_STARTED" || v.lastActionType === "PAYMENT_START" || v.intent === "High purchase intent");
   const liveSearching = visitors.filter((v) => v.lastActionType === "SEARCH");
   const liveHighIntent = visitors.filter((v) => v.intent === "High purchase intent" || v.lastActionType === "ADD_TO_CART" || v.lastActionType === "BUY_NOW");
   const watchingNow = Object.entries(
