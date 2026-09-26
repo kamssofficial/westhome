@@ -106,7 +106,6 @@ async function getInitialProducts(categorySlug: string, subcategorySlug: string)
       images: (p.images ?? []).map((img: any) => ({ ...img, url: normalizeImageUrl(img.url) })),
       regularPrice: Number(p.regularPrice),
       salePrice: p.salePrice ? Number(p.salePrice) : null,
-      rating: p.reviews.length > 0 ? p.reviews.reduce((s: number, r: any) => s + r.rating, 0) / p.reviews.length : null,
       tags: p.tags?.map((t: any) => t.tag) || [],
       palette: p.tags?.filter((t: any) => t.tag?.startsWith("color:")).map((t: any) => t.tag.slice(6)) || [],
       variants: (p.variants ?? []).map((v: any) => ({
@@ -114,13 +113,7 @@ async function getInitialProducts(categorySlug: string, subcategorySlug: string)
         images: (v.images ?? []).map((img: any) => ({ ...img, url: normalizeImageUrl(img.url) })),
         price: Number(v.price),
         salePrice: v.salePrice ? Number(v.salePrice) : null,
-        attributes: (v.attributes ?? []).map((a: any) => ({
-          attributeId: a.variantAttributeId,
-          attributeName: a.variantAttribute?.name,
-          value: a.value,
-          colorCode: a.colorCode,
         })),
-      })),
     })),
     total,
   });
