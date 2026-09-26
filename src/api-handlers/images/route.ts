@@ -12,6 +12,7 @@ import {
   LEGACY_MEDIA_CACHE,
   NOT_FOUND_MEDIA_CACHE,
 } from "@/lib/imageProxy";
+import { normalizeDriveFileId } from "@/lib/driveUrl";
 
 const PROJECT_ROOT = process.cwd();
 const PUBLIC_IMAGES_DIR = path.join(PROJECT_ROOT, "public", "images");
@@ -56,6 +57,11 @@ const BINARY_CACHE_MAX_BYTES = 128 * 1024 * 1024;
 const NEGATIVE_CACHE = new Map<string, number>();
 const NEGATIVE_CACHE_TTL_MS = 5 * 60 * 1000;
 
+// The public Drive endpoint rate-limits the server too, so a single attempt
+// occasionally turns a transient 429 into a user-visible 404. Retry briefly
+// within the request before giving up (see the GET handler's fast path).
+const CDN_ATTEMPTS = 3;
+
 function negativeCacheHas(key: string): boolean {
   const until = NEGATIVE_CACHE.get(key);
   if (until === undefined) return false;
@@ -89,7 +95,7 @@ function binaryCacheGet(key: string): CachedBinary | null {
   return entry;
 }
 
-function binaryCacheSet(key: string, data: Buffer, mimeType: string) {
+function binaryCacheSet(key: string, data: Buffer, mimeType: string): CachedBinary {
   binaryCacheEvict(key);
   while (
     binaryCacheBytes + data.byteLength > BINARY_CACHE_MAX_BYTES &&
@@ -99,13 +105,17 @@ function binaryCacheSet(key: string, data: Buffer, mimeType: string) {
     if (!eldestKey) break;
     binaryCacheEvict(eldestKey as string);
   }
-  BINARY_CACHE.set(key, {
+  const entry: CachedBinary = {
     data,
     mimeType,
     expires: Date.now() + BINARY_CACHE_TTL_MS,
-  });
+  };
+  BINARY_CACHE.set(key, entry);
   binaryCacheBytes += data.byteLength;
+  return entry;
 }
+
+const CDN_ATTEMPTS = 3;
 
 function acceptsWebp(req: NextRequest): boolean {
   return acceptsWebpHeader(req.headers.get("accept"));
@@ -232,17 +242,21 @@ export async function GET(req: NextRequest) {
     const notFound = (message = "Image not found") =>
       NextResponse.json({ error: message }, { status: 404, headers: { "Cache-Control": NOT_FOUND_MEDIA_CACHE } });
 
-    // Deterministic ".webp" URLs (emitted by normalizeImageUrl) always serve
-    // WebP and key every cache on the bare id, so both URL shapes share the
-    // in-memory cache and downstream CDN entries.
+    // Deterministic ".webp" URLs always serve WebP and key every cache on the
+    // bare id, so both URL shapes share the in-memory cache and downstream CDN
+    // entries. The importer also decorated some Drive ids with an image
+    // extension ("<id>.webp") — same strip handles it, and
+    // normalizeDriveFileId only rewrites ids that still look like bare ids,
+    // so legacy local filenames keep their extensions.
     const forceWebp = fileId.toLowerCase().endsWith(".webp");
-    const key = forceWebp ? fileId.slice(0, -".webp".length) : fileId;
+    const key = normalizeDriveFileId(forceWebp ? fileId.slice(0, -".webp".length) : fileId);
     const wantsWebp = forceWebp || acceptsWebp(req);
 
     if (key.startsWith("github/")) {
       return notFound();
     }
 
+<<<<<<< HEAD
     // Drive files are served through the public image endpoint first. This is
     // deliberately the fast path for storefront reads: product image URLs are
     // already persisted as Drive file ids and public Drive delivery does not
@@ -257,19 +271,29 @@ export async function GET(req: NextRequest) {
 
       // Fast path: public Drive delivery. This keeps storefront image serving
       // independent from GOOGLE_* credentials when a Drive file is link-readable.
+      // The public endpoint throttles hard enough to 429 the server too (same id
+      // has 404'd once and 200'd on an immediate retry), so a bare single attempt
+      // turns transient rate limits into user-visible 404s — retry briefly.
+      // Only a non-throttling failure (clean 404, not an image) is final.
       let publicFetchThrew = false;
       if (!source) {
-        try {
-          const publicImage = await downloadPublicDriveImage(key);
-          if (publicImage) {
-            binaryCacheSet(key, publicImage.data, publicImage.mimeType);
-            source = binaryCacheGet(key);
+        for (let attempt = 1; attempt <= CDN_ATTEMPTS; attempt++) {
+          if (attempt > 1) await new Promise((resolve) => setTimeout(resolve, 250 * attempt));
+          try {
+            const publicImage = await downloadPublicDriveImage(key);
+            if (publicImage) {
+              binaryCacheSet(key, publicImage.data, publicImage.mimeType);
+              source = binaryCacheGet(key);
+              break;
+            }
+            // A clean non-image/404 miss is definitive — stop retrying.
+            break;
+          } catch (err) {
+            // Thrown = transient (429/5xx/timeout). Remember it so a blip is NOT
+            // negative-cached below, and try again within this request.
+            publicFetchThrew = true;
+            console.warn("public Drive image fetch failed (transient) for", key, err);
           }
-        } catch (err) {
-          // Thrown = transient (429/5xx/timeout). Remember it so a blip is NOT
-          // negative-cached below — the next request should retry immediately.
-          publicFetchThrew = true;
-          console.warn("public Drive image fetch failed (transient) for", key, err);
         }
       }
 

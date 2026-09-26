@@ -1,40 +1,24 @@
+import { proxiedMediaUrl } from "./driveUrl.ts";
+
 /**
- * Normalize legacy image URLs to the WebP image proxy.
+ * Normalize legacy image URLs to the image proxy.
  *
  * Older catalog rows store raw Google Drive URLs (`lh3.googleusercontent.com/d/<id>`
  * or `drive.google.com/uc?id=<id>`). Those are multi-MB PNGs served from a
- * third-party host with no caching control and no WebP negotiation. Every
+ * third-party host that rate-limits anonymous hotlinks (the browser discards
+ * the throttled non-image response, so the image never renders). Every
  * Drive-hosted file is also reachable through our own proxy at
- * `/api/images/<id>` (see src/api-handlers/images/route.ts), which serves
- * content-negotiated WebP (~95% smaller) with immutable cache headers.
+ * `/api/images/<id>` (see src/api-handlers/images/route.ts), which downloads
+ * server-side and serves content-negotiated WebP (~95% smaller) with immutable
+ * cache headers.
  *
  * This is a pure display-URL rewrite: uploads continue to store `/api/images/*`
- * and nothing in the database changes.
- *
- * Proxy URLs are emitted with a deterministic `.webp` suffix: shared CDN caches
- * (Cloudflare's default rules cache by file extension, not Cache-Control) then
- * treat them as static assets instead of round-tripping every request to the
- * origin. The proxy strips the suffix before resolving the Drive file and
- * always serves content-negotiated WebP for this URL shape.
+ * and nothing in the database changes. The suffix-free proxy path is emitted
+ * deliberately — the route content-negotiates on Accept, so a cache must key
+ * on the Vary header (already set) rather than a baked-in extension.
  */
-const PROXY_WEBP_SUFFIX = ".webp";
-
 export function normalizeImageUrl(url?: string | null): string | null {
-  if (!url) return url ?? null;
-
-  // Already proxied (new uploads) or another app-local asset — leave as is.
-  if (url.startsWith("/")) return url;
-
-  // Raw Drive delivery host: https://lh3.googleusercontent.com/d/<fileId>[=wNNN]
-  const driveDirect = url.match(/^https:\/\/lh3\.googleusercontent\.com\/d\/([A-Za-z0-9_-]{10,})(?:[=?].*)?$/);
-  if (driveDirect) return `/api/images/${driveDirect[1]}${PROXY_WEBP_SUFFIX}`;
-
-  // Legacy share shape: https://drive.google.com/uc?id=<fileId>&export=view|download
-  const driveUc = url.match(/^https:\/\/drive\.google\.com\/uc\?id=([A-Za-z0-9_-]{10,})(?:&.*)?$/);
-  if (driveUc) return `/api/images/${driveUc[1]}${PROXY_WEBP_SUFFIX}`;
-
-  // Any other absolute URL (e.g. Cloudflare-hosted media) stays untouched.
-  return url;
+  return proxiedMediaUrl(url);
 }
 
 const CATEGORY_IMAGES: Record<string, string> = {
@@ -57,11 +41,12 @@ export function isPlaceholderImage(url?: string | null): boolean {
 }
 
 export function resolveCategoryImage(slug?: string | null, image?: string | null): string | null {
+  const normalized = proxiedMediaUrl(image);
   // Admin-uploaded category images must take precedence over committed
   // category fallbacks. Only use the fallback when the database has no usable
   // image (or still contains one of the old placeholder paths).
-  if (image && !isPlaceholderImage(image)) return image;
-  return categoryFallbackImage(slug) || image || null;
+  if (normalized && !isPlaceholderImage(normalized)) return normalized;
+  return categoryFallbackImage(slug) || normalized || null;
 }
 
 export function resolveProductImage(
@@ -71,9 +56,9 @@ export function resolveProductImage(
 ): string | null {
   const localFallback = productLocalFallback(productSlug);
 
-  // Route legacy raw-Drive URLs through the WebP proxy so JSON-LD, OG tags
-  // and the Merchant feed advertise fast, cacheable image URLs.
-  const normalized = normalizeImageUrl(image);
+  // Normalize the Drive-backed shapes first, so a row rewritten to the CDN URL
+  // still matches the legacy rules below instead of slipping past them.
+  const normalized = proxiedMediaUrl(image);
 
   // The catalog import historically stored Google Drive proxy URLs. Those
   // IDs are no longer resolvable in production, while the corresponding

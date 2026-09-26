@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import stream from "stream";
+import { DRIVE_PROXY_PREFIX } from "@/lib/driveUrl";
 
 // ---------------------------------------------------------------------------
 // Config — reads from env at call time so Next.js cold-start works
@@ -450,32 +451,18 @@ async function deleteFile(fileId: string): Promise<void> {
 }
 
 /**
- * Build a public URL for a Drive file.
+ * Build the stored URL for a Drive file.
 
- There are two practical options for serving Drive files externally:
- 1. `webContentLink` — direct download link, works without Drive sharing
-    if the service account owns the file and access is granted.
- 2. Public web link — requires the file to be shared publicly.
-
- This helper prefers `webContentLink` because it does not require Drive
- "Make available to anyone with the link" sharing on every upload, which is
- the smoother path for a service account that owns its own files.
-
- If you want the prettier `https://drive.google.com/uc?id=...` style URL,
- swap the implementation here.
+ Every consumer of stored media goes through this app's own
+ `/api/images/<fileId>` proxy: Google rate-limits anonymous hotlinks to its
+ CDN (the browser then discards the non-image response and the image never
+ renders), and Drive's own `webContentLink`/`webViewLink` shapes are not
+ recognized by the URL normalizer or the admin delete path. The proxy route
+ serves the bytes from either the authenticated Drive API or the CDN copy
+ server-side, so it is the only shape that always renders.
  */
 export function publicUrl(file: GDriveFile): string {
-  // Drive direct-content link for owned files (preferred — no public sharing needed).
-  if (file.webContentLink) return file.webContentLink;
-
-  // Fallback to the embed/share link.
-  if (file.webViewLink) return file.webViewLink;
-
-  // Last resort: construct a shareable link from the id.
-  // NOTE: this only works if the file is shared publicly or accessible to the
-  // requesting client; for a service account-owned file this is unlikely to work
-  // without a separate permission grant, so prefer webContentLink above.
-  return `https://drive.google.com/uc?id=${file.id}&export=view`;
+  return `${DRIVE_PROXY_PREFIX}${file.id}`;
 }
 
 // ---------------------------------------------------------------------------
