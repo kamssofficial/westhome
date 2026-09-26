@@ -20,6 +20,26 @@ export default function IntroAnimation({ children }: { children: React.ReactNode
   }, []);
 
   useEffect(() => {
+    // A shop-layout remount can happen during client-side navigation (for
+    // example when switching categories). The intro must never restart after
+    // the first session entry, so check the session flag before scheduling any
+    // animation timers.
+    if (phase === "done") return;
+
+    try {
+      if (sessionStorage.getItem(INTRO_KEY)) {
+        setPhase("done");
+        return;
+      }
+
+      // Mark the intro as seen as soon as it begins. This protects against a
+      // navigation/remount while the 1.6s animation is still running.
+      sessionStorage.setItem(INTRO_KEY, "1");
+    } catch {
+      // Session storage can be unavailable in hardened/private contexts; the
+      // intro still works normally in that case.
+    }
+
     const at = (fn: () => void, ms: number) => {
       timers.current.push(setTimeout(fn, ms));
     };
@@ -28,8 +48,12 @@ export default function IntroAnimation({ children }: { children: React.ReactNode
     at(() => setPhase("tagline"), 650);
     at(() => setPhase("wipe"), 1250);
     at(() => setPhase("done"), 1600);
-    return () => timers.current.forEach(clearTimeout);
-  }, []);
+
+    return () => {
+      timers.current.forEach(clearTimeout);
+      timers.current = [];
+    };
+  }, [phase]);
 
   useEffect(() => {
     if (phase === "done") {
