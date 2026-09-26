@@ -18,14 +18,24 @@ function readConfig(): Partial<S3Config> {
   };
 }
 
+function isResolved(value: string | undefined): value is string {
+  return Boolean(value && value.trim() && !value.includes("${{"));
+}
+
 export function s3Configured(): boolean {
   const c = readConfig();
-  return Boolean(c.endpoint && c.bucket && c.accessKeyId && c.secretAccessKey && c.region);
+  return Boolean(
+    isResolved(c.endpoint) &&
+    isResolved(c.bucket) &&
+    isResolved(c.accessKeyId) &&
+    isResolved(c.secretAccessKey) &&
+    isResolved(c.region)
+  );
 }
 
 export function getS3Config(): S3Config {
   const c = readConfig();
-  if (!c.endpoint || !c.bucket || !c.accessKeyId || !c.secretAccessKey || !c.region) {
+  if (!isResolved(c.endpoint) || !isResolved(c.bucket) || !isResolved(c.accessKeyId) || !isResolved(c.secretAccessKey) || !isResolved(c.region)) {
     throw new Error("S3 storage is not fully configured.");
   }
   return c as S3Config;
