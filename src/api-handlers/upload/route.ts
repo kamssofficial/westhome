@@ -4,6 +4,7 @@ import { requireAuthRole } from "@/lib/apiAuth";
 import { storageStatus, uploadMedia } from "@/lib/media";
 import { sniffImageType, imageExtensionFor } from "@/lib/imageMagic";
 import { classifyDriveError, driveHealthCheck } from "@/lib/gdrive";
+import { s3HealthCheck } from "@/lib/s3";
 
 export const runtime = "nodejs";
 
@@ -24,7 +25,13 @@ const ALLOWED_FOLDERS = ["products", "categories", "banners", "avatars", "homepa
 export async function GET(request: NextRequest) {
   const status = storageStatus();
   const wantsProbe = request.nextUrl.searchParams.get("probe") === "1";
-  const health = wantsProbe ? await driveHealthCheck() : null;
+  const health = wantsProbe
+    ? status.s3.configured
+      ? await s3HealthCheck()
+      : status.drive.configured
+        ? await driveHealthCheck()
+        : null
+    : null;
   return NextResponse.json({
     storage: {
       ...status,
@@ -33,7 +40,7 @@ export async function GET(request: NextRequest) {
         ? health && status.drive.configured && !health.ok
           ? `Drive credentials are present but broken: ${health.error} ${health.action}`
           : null
-        : `Image storage is not configured. ${status.missing ?? "Configure GOOGLE_OAUTH_* (or GOOGLE_CREDENTIALS_PATH / GOOGLE_CREDENTIALS_JSON)."}`,
+        : `Image storage is not configured. ${status.missing ?? "Configure managed S3 or Google Drive credentials."}`,
     },
   });
 }
