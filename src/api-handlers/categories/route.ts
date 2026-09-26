@@ -81,7 +81,7 @@ export async function GET() {
     });
 
     const transformed = await Promise.all(categories.map(async (cat: any) => {
-      const image = resolveCategoryImage(cat);
+      const image = await resolveCategoryImage(cat);
       return {
         id: cat.id,
         name: cat.name,
