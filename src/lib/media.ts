@@ -39,17 +39,21 @@ function driveConfigured() {
  */
 export function storageStatus() {
   const drive = driveConfigured();
+  const production = process.env.NODE_ENV === "production";
   return {
     drive: { configured: drive },
     local: {
-      configured: true,
+      configured: !production,
       path: "public/images/uploads",
-      persistent: process.env.NODE_ENV === "production",
+      persistent: false,
     },
-    anyConfigured: true,
+    // `anyConfigured` describes durable production storage. Local disk is a
+    // development fallback only and is exposed separately as `uploadAvailable`.
+    anyConfigured: drive,
+    uploadAvailable: drive || !production,
     missing: drive
       ? null
-      : "Google Drive is not configured; uploads use persistent local storage on this server.",
+      : "Google Drive is not configured; production image uploads require GOOGLE_OAUTH_* (or service-account credentials).",
   };
 }
 
@@ -70,15 +74,23 @@ export async function uploadMedia(folder: string, file: File, filename: string):
   const buffer = Buffer.from(await file.arrayBuffer());
   const key = `${folder.replace(/^\/+|\/+$/g, "")}/${filename.replace(/^\/+/, "")}`;
 
+  const production = process.env.NODE_ENV === "production";
   if (driveConfigured()) {
     try {
       const result = await uploadToDrive(folder, file, filename);
-      if (result?.fileId) {
-        return { url: `/api/images/${result.fileId}`, pathname: result.fileId, fileId: result.fileId, provider: "drive" };
-      }
+      if (!result?.fileId) throw new Error("Google Drive upload did not return a file id.");
+      return { url: `/api/images/${result.fileId}`, pathname: result.fileId, fileId: result.fileId, provider: "drive" };
     } catch (error) {
-      console.error("Drive upload failed; falling back to local storage:", error);
+      // Never silently switch a production upload to ephemeral disk. A failed
+      // Drive write must be visible to the admin so the catalog cannot claim an
+      // uploaded image that will disappear on the next deployment.
+      if (production) throw error;
+      console.error("Drive upload failed; falling back to local storage in development:", error);
     }
+  }
+
+  if (production) {
+    throw new Error("Google Drive credentials are not configured for production image storage.");
   }
 
   const fs = await import("fs");

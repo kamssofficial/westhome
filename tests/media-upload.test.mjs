@@ -64,6 +64,8 @@ const PNG = Buffer.from(
   "hex"
 );
 
+describe("image upload media path", { concurrency: false }, () => {
+
 describe("imageMagic - content-based detection", () => {
   it("detects PNG from its signature", () => {
     assert.equal(magic.sniffImageType(PNG), "image/png");
@@ -146,12 +148,12 @@ describe("uploadMedia - dev-local path (Drive not configured, non-production)", 
     const file = new File([PNG], "dev.png", { type: "image/png" });
     const mediaItem = await media.uploadMedia("products", file, "dev.png");
     assert.equal(mediaItem.provider, "local");
-    assert.match(mediaItem.url, /\/images\/products\/dev.png$/);
+    assert.match(mediaItem.url, /\/api\/images\/uploads\/products\/dev.png$/);
 
     const fs = await import("fs");
-    const exists = fs.existsSync("public/images/products/dev.png");
+    const exists = fs.existsSync("public/images/uploads/products/dev.png");
     assert.equal(exists, true);
-    fs.unlinkSync("public/images/products/dev.png");
+    fs.unlinkSync("public/images/uploads/products/dev.png");
   });
 
   it("throws in production when nothing is configured (never falls back to disk)", async () => {

@@ -29,8 +29,8 @@ export async function GET(request: NextRequest) {
     storage: {
       ...status,
       health,
-      recommendation: status.anyConfigured
-        ? health && !health.ok
+      recommendation: status.uploadAvailable
+        ? health && status.drive.configured && !health.ok
           ? `Drive credentials are present but broken: ${health.error} ${health.action}`
           : null
         : `Image storage is not configured. ${status.missing ?? "Configure GOOGLE_OAUTH_* (or GOOGLE_CREDENTIALS_PATH / GOOGLE_CREDENTIALS_JSON)."}`,

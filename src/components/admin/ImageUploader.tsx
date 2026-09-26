@@ -27,6 +27,7 @@ interface ImageUploaderProps {
 
 interface StorageStatus {
   anyConfigured: boolean;
+  uploadAvailable: boolean;
   missing: string | null;
 }
 
@@ -62,7 +63,11 @@ export default function ImageUploader({
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (cancelled || !d?.storage) return;
-        setStorage({ anyConfigured: !!d.storage.anyConfigured, missing: d.storage.missing ?? null });
+        setStorage({
+          anyConfigured: !!d.storage.anyConfigured,
+          uploadAvailable: d.storage.uploadAvailable !== false,
+          missing: d.storage.missing ?? null,
+        });
       })
       .catch(() => { /* offline or signed out — assume it may work */ });
     return () => { cancelled = true; };
@@ -184,13 +189,17 @@ export default function ImageUploader({
               });
             } else {
               const data = await res.json().catch(() => null);
-              if (data?.storage && data.storage.anyConfigured === false) {
-                setStorage({ anyConfigured: false, missing: data.storage.missing ?? null });
+              if (data?.storage && data.storage.uploadAvailable === false) {
+                setStorage({
+                  anyConfigured: !!data.storage.anyConfigured,
+                  uploadAvailable: false,
+                  missing: data.storage.missing ?? null,
+                });
               }
               const msg = data?.error || `Upload failed (${res.status})`;
               // One storage-wide failure means the next file will fail the
               // same way; stop instead of firing the same request N times.
-              if (data?.storage && data.storage.anyConfigured === false) {
+              if (data?.storage && data.storage.uploadAvailable === false) {
                 failures += fresh.length - i;
                 setDoneCount(fresh.length);
                 toast.error(msg);
@@ -271,7 +280,7 @@ export default function ImageUploader({
 
   const uploading = phase === "uploading";
   const full = images.length >= maxImages;
-  const storageBlocked = storage?.anyConfigured === false;
+  const storageBlocked = storage?.uploadAvailable === false;
 
   return (
     <div className="space-y-3">
