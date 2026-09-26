@@ -35,6 +35,14 @@ function asArray<T>(data: unknown, key: "products" | "categories"): T[] {
   return [];
 }
 
+const HOME_TTL = 5 * 60_000;
+const homePrefetch = typeof window === "undefined"
+  ? null
+  : Promise.allSettled([
+      cachedFetch<{ categories?: Category[] }>("/api/categories", { ttl: HOME_TTL, forceRefresh: true }),
+      cachedFetch<{ products?: Product[] }>("/api/products?lite=true&featured=true&limit=4", { ttl: HOME_TTL, forceRefresh: true }),
+      cachedFetch<{ products?: Product[] }>("/api/products?lite=true&newArrivals=true&limit=4", { ttl: HOME_TTL, forceRefresh: true }),
+    ]);
 
 export default function HomePage() {
   const { whatsappNumber } = useSettings();
@@ -84,47 +92,31 @@ export default function HomePage() {
     } catch {}
   }, []);
 
-  // Background refresh: the markup above painted from cache instantly, so this
-  // runs after mount — a side effect belongs here, not in the render phase.
+  // The requests begin when this client module evaluates, in parallel with
+  // hydration and the intro animation. By mount time they are usually already
+  // complete, eliminating the old post-hydration waterfall.
   useEffect(() => {
-    const TTL = 5 * 60_000;
-    const fetchData = async () => {
-      try {
-        const [catRes, featRes, newRes] = await Promise.allSettled([
-          cachedFetch<{ categories?: Category[] }>("/api/categories", { ttl: TTL, forceRefresh: true }),
-          cachedFetch<{ products?: Product[] }>("/api/products?lite=true&featured=true&limit=4", { ttl: TTL, forceRefresh: true }),
-          cachedFetch<{ products?: Product[] }>("/api/products?lite=true&newArrivals=true&limit=4", { ttl: TTL, forceRefresh: true }),
-        ]);
-        if (catRes.status === "fulfilled") {
-          const data = catRes.value;
-          if (data.categories?.length) setCategories(data.categories);
-        }
-
-        let featured: Product[] = [];
-        if (featRes.status === "fulfilled") {
-          const data = featRes.value;
-          if (data.products?.length) featured = data.products;
-        }
-        if (featured.length === 0) {
-          try {
-            const fbData = await cachedFetch<{ products?: Product[] }>("/api/products?lite=true&limit=4&sort=newest", { ttl: TTL, forceRefresh: true });
-            if (fbData.products?.length) featured = fbData.products;
-          } catch {}
-        }
-        // A failed refresh must not blank out products the shopper is already
-        // looking at, so only an empty result clears an empty list.
-        setFeaturedProducts((prev) =>
-          featured.length > 0 ? featured : prev.length > 0 ? prev : []
-        );
-
-        if (newRes.status === "fulfilled") {
-          setNewArrivals(asArray<Product>(newRes.value, "products"));
-        }
-      } catch (error) {
-        console.error("Homepage fetch error:", error);
-      }
+    let cancelled = false;
+    const apply = (cat: unknown, feat: unknown, fresh: unknown) => {
+      if (cancelled) return;
+      const nextCategories = asArray<Category>(cat, "categories");
+      const nextFeatured = asArray<Product>(feat, "products");
+      const nextArrivals = asArray<Product>(fresh, "products");
+      if (nextCategories.length) setCategories(nextCategories);
+      if (nextFeatured.length) setFeaturedProducts(nextFeatured);
+      if (nextArrivals.length) setNewArrivals(nextArrivals);
     };
-    fetchData();
+
+    homePrefetch?.then((results) => {
+      const [catRes, featRes, newRes] = results;
+      apply(
+        catRes.status === "fulfilled" ? catRes.value : null,
+        featRes.status === "fulfilled" ? featRes.value : null,
+        newRes.status === "fulfilled" ? newRes.value : null,
+      );
+    });
+
+    return () => { cancelled = true; };
   }, []);
 
   return (
