@@ -3,8 +3,8 @@
 import { useState, type ComponentType, type ReactNode } from "react";
 import Link from "next/link";
 import {
-  AlertTriangle, BarChart3, Boxes, CheckCircle, Clock, CreditCard, Download,
-  ExternalLink, Globe, Heart, IndianRupee, Layers, LayoutDashboard,
+  AlertTriangle, Activity, BarChart3, Boxes, CheckCircle, Clock, CreditCard, Download,
+  ExternalLink, Eye, Globe, Heart, IndianRupee, Layers, LayoutDashboard,
   Map as MapIcon, Monitor, Package, Percent, RefreshCw, Search, Shield,
   ShoppingBag, ShoppingCart, Smartphone, Tablet,  Target, Ticket, TrendingDown,
   TrendingUp, Users, Wallet, XCircle, Zap,
@@ -67,7 +67,16 @@ export interface LiveVisitor {
   currentPage?: string | null;
   viewingProduct?: string | null;
   isCustomer: boolean;
+  customerName?: string | null;
+  customerEmail?: string | null;
   secondsSinceActive: number;
+  sessionAgeSeconds?: number;
+  lastActionType?: string | null;
+  lastAction?: string | null;
+  intent?: string | null;
+  searchQuery?: string | null;
+  lastActionAt?: string | null;
+  lastActionSecondsAgo?: number;
 }
 export interface LiveState {
   live: number;
@@ -270,6 +279,27 @@ export default function DashboardView({
   const funnel = data?.funnel || {};
   const rangeLabel = DATE_RANGES.find((r) => r.value === range)?.label || "Selected period";
   const visitors = live.visitors || [];
+
+  // Real-time behavior summary: derived only from active visitor sessions.
+  const liveWatching = visitors.filter((v) => !!v.viewingProduct);
+  const liveCart = visitors.filter((v) => v.currentPage?.startsWith("/cart") || v.lastActionType === "ADD_TO_CART");
+  const liveSearching = visitors.filter((v) => v.lastActionType === "SEARCH");
+  const liveHighIntent = visitors.filter((v) => v.intent === "High purchase intent" || v.lastActionType === "ADD_TO_CART" || v.lastActionType === "BUY_NOW");
+  const watchingNow = Object.entries(
+    liveWatching.reduce<Record<string, number>>((acc, v) => {
+      const name = v.viewingProduct || "Unknown product";
+      acc[name] = (acc[name] || 0) + 1;
+      return acc;
+    }, {})
+  ).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+  // Business-health ratios use the same population and period as the KPI data.
+  const cartToCheckout = funnel.cartAdds > 0 ? Math.round((funnel.checkoutStarted / funnel.cartAdds) * 100) : 0;
+  const checkoutToOrder = funnel.checkoutStarted > 0 ? Math.round(((funnel.orderCompleted || 0) / funnel.checkoutStarted) * 100) : 0;
+  const visitorToCart = (data?.uniqueVisitors || 0) > 0 ? Math.round(((funnel.cartAdds || 0) / data!.uniqueVisitors) * 100) : 0;
+  const returningShare = (k.totalCustomers || 0) > 0 ? Math.round(((k.returningCustomers || 0) / k.totalCustomers) * 100) : 0;
+  const guestRevenueShare = (k.revenue || 0) > 0 ? Math.round(((data?.orderSources?.guest.revenue || 0) / k.revenue) * 100) : 0;
+
   // An empty store is the normal state for a small shop, and the full card was
   // mostly emptiness — a zero in a 14×14 tile, two counters reading zero and an
   // empty-state box. Collapse it to one line; the full card comes back the moment
@@ -643,6 +673,53 @@ export default function DashboardView({
         </div>
 
         <div className="px-5 pb-5">
+          <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div className="rounded-xl border border-border-light bg-surface-muted/40 px-3 py-2.5">
+              <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wide text-text-muted">
+                <Eye size={12} /> Watching
+              </div>
+              <p className="mt-1 text-lg font-semibold tabular-nums text-primary">{liveWatching.length}</p>
+            </div>
+            <div className="rounded-xl border border-border-light bg-surface-muted/40 px-3 py-2.5">
+              <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wide text-text-muted">
+                <ShoppingCart size={12} /> Cart intent
+              </div>
+              <p className="mt-1 text-lg font-semibold tabular-nums text-primary">{liveCart.length}</p>
+            </div>
+            <div className="rounded-xl border border-border-light bg-surface-muted/40 px-3 py-2.5">
+              <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wide text-text-muted">
+                <Search size={12} /> Searching
+              </div>
+              <p className="mt-1 text-lg font-semibold tabular-nums text-primary">{liveSearching.length}</p>
+            </div>
+            <div className="rounded-xl border border-border-light bg-surface-muted/40 px-3 py-2.5">
+              <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wide text-text-muted">
+                <Target size={12} /> High intent
+              </div>
+              <p className="mt-1 text-lg font-semibold tabular-nums text-primary">{liveHighIntent.length}</p>
+            </div>
+          </div>
+
+          {watchingNow.length > 0 ? (
+            <div className="mb-4 rounded-xl border border-border-light bg-white px-3 py-3">
+              <div className="mb-2 flex items-center justify-between">
+                <h3 className="font-label text-text-muted">What visitors are watching now</h3>
+                <span className="text-[10px] text-text-muted">live sessions</span>
+              </div>
+              <ul className="space-y-1.5">
+                {watchingNow.map(([name, n]) => (
+                  <li key={name} className="flex items-center justify-between gap-3">
+                    <span className="flex min-w-0 items-center gap-2 text-xs font-medium text-primary">
+                      <Eye size={12} className="shrink-0 text-text-muted" />
+                      <span className="truncate">{name}</span>
+                    </span>
+                    <span className="shrink-0 text-[11px] text-text-muted tabular-nums">{n} watching</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
           <div className="mb-2.5 flex items-center justify-between">
             <h3 className="font-label text-text-muted">Live activity</h3>
             <span className="text-[11px] text-text-muted">
@@ -671,30 +748,42 @@ export default function DashboardView({
             <ul className="space-y-2">
               {visitors.map((v) => {
                 const Dev = v.device === "mobile" ? Smartphone : v.device === "tablet" ? Tablet : Monitor;
-                const what = v.viewingProduct
+                const identity = v.isCustomer ? (v.customerName || "Customer") : "Visitor";
+                const current = v.viewingProduct
                   ? `Viewing “${v.viewingProduct}”`
                   : v.currentPage
-                    ? `Browsing ${prettyPage(v.currentPage)}`
+                    ? `On ${prettyPage(v.currentPage)}`
                     : "Browsing the store";
+                const action = v.lastAction || current;
+                const sessionAge = v.sessionAgeSeconds || 0;
+                const ageText = sessionAge < 60
+                  ? `${sessionAge}s`
+                  : sessionAge < 3600
+                    ? `${Math.floor(sessionAge / 60)}m`
+                    : `${Math.floor(sessionAge / 3600)}h ${Math.floor((sessionAge % 3600) / 60)}m`;
                 return (
                   <li
                     key={v.sessionId}
-                    className="flex items-center gap-3 rounded-xl border border-border-light px-3 py-2.5 transition-colors hover:bg-surface-hover"
+                    className="flex items-start gap-3 rounded-xl border border-border-light px-3 py-2.5 transition-colors hover:bg-surface-hover"
                   >
-                    <span className="relative flex h-2 w-2 shrink-0" aria-hidden="true">
+                    <span className="relative mt-1.5 flex h-2 w-2 shrink-0" aria-hidden="true">
                       <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-60" />
                       <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm text-primary">
-                        <span className="font-medium">{v.isCustomer ? "Customer" : "Visitor"}</span>
-                        <span className="text-text-muted"> · {what}</span>
-                      </p>
-                      <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-text-muted">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <p className="truncate text-sm font-medium text-primary">{identity}</p>
+                        {v.isCustomer ? <span className="rounded-full bg-success/10 px-1.5 py-0.5 text-[9px] font-medium text-success">Customer</span> : null}
+                        {v.intent ? <span className="rounded-full bg-surface-muted px-1.5 py-0.5 text-[9px] font-medium text-text-muted">{v.intent}</span> : null}
+                      </div>
+                      <p className="mt-1 truncate text-xs text-primary">{action}</p>
+                      <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-text-muted">
                         <Dev size={11} aria-hidden="true" className="shrink-0" />
                         <span className="capitalize">{v.device || "Unknown device"}</span>
                         <span aria-hidden="true">·</span>
-                        <span>{activeAgo(v.secondsSinceActive)}</span>
+                        <span>active {activeAgo(v.secondsSinceActive)}</span>
+                        <span aria-hidden="true">·</span>
+                        <span>session {ageText}</span>
                       </p>
                     </div>
                   </li>
@@ -710,6 +799,37 @@ export default function DashboardView({
           Headline money metrics live in the band above; this row is the
           operational layer: catalogue, customers and everything that needs
           a decision rather than a celebration. */}
+      {tab === "overview" && (
+      <Section title="Business analytics" icon={BarChart3} hint={rangeLabel}>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <StatTile label="Visitors" value={count(data?.uniqueVisitors)} />
+          <StatTile label="Product views" value={count(funnel.productViews)} />
+          <StatTile label="Visitor → cart" value={`${visitorToCart}%`} tone={visitorToCart > 0 ? "accent" : "neutral"} />
+          <StatTile label="Checkout → order" value={`${checkoutToOrder}%`} tone={checkoutToOrder > 0 ? "success" : "neutral"} />
+          <StatTile label="Cart → checkout" value={`${cartToCheckout}%`} tone={cartToCheckout > 0 ? "accent" : "neutral"} />
+          <StatTile label="Returning share" value={`${returningShare}%`} tone={returningShare > 0 ? "success" : "neutral"} />
+          <StatTile label="Guest revenue" value={`${guestRevenueShare}%`} hint="of completed revenue" />
+          <StatTile label="Average order" value={money(k.avgOrderValue)} tone="success" />
+        </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <div className="rounded-xl border border-border-light bg-surface-muted/40 px-3.5 py-3">
+            <p className="font-label text-text-muted">Most viewed product</p>
+            <p className="mt-1 truncate text-sm font-medium text-primary">{data?.topByViews?.[0]?.product?.name || "No product views yet"}</p>
+            <p className="mt-0.5 text-[11px] text-text-muted">
+              {count(data?.topByViews?.[0]?._count?.id || data?.topByViews?.[0]?.views)} views in {rangeLabel.toLowerCase()}
+            </p>
+          </div>
+          <div className="rounded-xl border border-border-light bg-surface-muted/40 px-3.5 py-3">
+            <p className="font-label text-text-muted">Top search</p>
+            <p className="mt-1 truncate text-sm font-medium text-primary">{data?.topSearches?.[0]?.query || "No searches yet"}</p>
+            <p className="mt-0.5 text-[11px] text-text-muted">
+              {data?.topSearches?.[0] ? `${count(data.topSearches[0].count)} searches` : "Search behavior will appear here"}
+            </p>
+          </div>
+        </div>
+      </Section>
+      )}
+
       {tab === "overview" && (
       <section aria-labelledby="performance-heading">
         <div className="mb-4 flex items-end justify-between gap-3">

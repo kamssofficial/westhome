@@ -6,22 +6,82 @@ function isValidSessionId(sessionId: unknown): sessionId is string {
   return typeof sessionId === "string" && sessionId.length >= 8 && sessionId.length <= 100;
 }
 
+const STAFF_ROLES = ["ADMIN", "MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER", "STAFF"] as const;
+
+function actionForEvent(eventType: string, metadata: any, productName: string | null) {
+  switch (eventType) {
+    case "PRODUCT_VIEW":
+    case "VIEW":
+      return {
+        type: "VIEW_PRODUCT",
+        label: productName ? `Viewing “${productName}”` : "Viewing a product",
+        intent: "Product interest",
+      };
+    case "COLLECTION_VIEW":
+    case "CATEGORY_VIEW":
+      return { type: "BROWSE_COLLECTION", label: "Browsing a collection", intent: "Browsing", searchQuery: null };
+    case "SEARCH": {
+      const q = typeof metadata?.query === "string" ? metadata.query.trim().slice(0, 80) : "";
+      return {
+        type: "SEARCH",
+        label: q ? `Searching “${q}”` : "Searching the store",
+        intent: "Search intent",
+        searchQuery: q || null,
+      };
+    }
+    case "ADD_TO_CART":
+      return { type: "ADD_TO_CART", label: productName ? `Added “${productName}” to cart` : "Added an item to cart", intent: "Purchase intent", searchQuery: null };
+    case "REMOVE_FROM_CART":
+      return { type: "REMOVE_FROM_CART", label: "Removed an item from cart", intent: "Shopping", searchQuery: null };
+    case "WISHLIST_ADD":
+    case "WISHLIST":
+      return { type: "WISHLIST", label: productName ? `Saved “${productName}”` : "Saved an item to wishlist", intent: "Product interest", searchQuery: null };
+    case "WISHLIST_REMOVE":
+      return { type: "WISHLIST_REMOVE", label: "Removed an item from wishlist", intent: "Shopping", searchQuery: null };
+    case "BUY_NOW":
+      return { type: "BUY_NOW", label: productName ? `Starting checkout for “${productName}”` : "Starting checkout", intent: "High purchase intent", searchQuery: null };
+    case "CHECKOUT_STARTED":
+      return { type: "CHECKOUT_STARTED", label: "Started checkout", intent: "High purchase intent", searchQuery: null };
+    case "PAYMENT_START":
+      return { type: "PAYMENT_START", label: "Started payment", intent: "High purchase intent", searchQuery: null };
+    case "PAYMENT_SUCCESS":
+    case "PURCHASE":
+      return { type: "PURCHASE", label: "Completed a purchase", intent: "Purchase completed", searchQuery: null };
+    case "WHATSAPP_ENQUIRY":
+      return { type: "WHATSAPP_ENQUIRY", label: "Opened a WhatsApp enquiry", intent: "Enquiry", searchQuery: null };
+    case "LOGIN":
+      return { type: "LOGIN", label: "Signed in", intent: "Account activity", searchQuery: null };
+    case "SIGNUP":
+      return { type: "SIGNUP", label: "Created an account", intent: "Account activity", searchQuery: null };
+    case "PAGE_VIEW":
+    default:
+      return { type: "BROWSE", label: "Browsing the store", intent: "Browsing", searchQuery: null };
+  }
+}
+
+function fallbackActionFromPage(path: string | null, productName: string | null) {
+  if (path?.startsWith("/products/")) {
+    return { type: "VIEW_PRODUCT", label: productName ? `Viewing “${productName}”` : "Viewing a product", intent: "Product interest", searchQuery: null };
+  }
+  if (path?.startsWith("/collections/")) return { type: "BROWSE_COLLECTION", label: "Browsing a collection", intent: "Browsing", searchQuery: null };
+  if (path?.startsWith("/cart")) return { type: "CART", label: "Viewing the cart", intent: "Purchase intent", searchQuery: null };
+  if (path?.startsWith("/checkout")) return { type: "CHECKOUT", label: "In checkout", intent: "High purchase intent", searchQuery: null };
+  if (path?.startsWith("/search")) return { type: "SEARCH", label: "Searching the store", intent: "Search intent", searchQuery: null };
+  return { type: "BROWSE", label: "Browsing the store", intent: "Browsing" };
+}
+
 let lastCleanupAt = 0;
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { sessionId, deviceType, userAgent, currentPage, currentProductId } = body;
-    if (!isValidSessionId(sessionId)) {
-      return NextResponse.json({ ok: true });
-    }
+    if (!isValidSessionId(sessionId)) return NextResponse.json({ ok: true });
 
     const session = await auth().catch(() => null);
     const userId = session?.user?.id || null;
     const role = session?.user?.role;
-    const isStaff =
-      role !== undefined &&
-      ["ADMIN", "MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER", "STAFF"].includes(role);
+    const isStaff = role !== undefined && STAFF_ROLES.includes(role as (typeof STAFF_ROLES)[number]);
 
     await db.liveSession.upsert({
       where: { sessionId },
@@ -31,7 +91,6 @@ export async function POST(request: NextRequest) {
         userAgent: typeof userAgent === "string" ? userAgent.slice(0, 1000) : null,
         userId,
         isStaff,
-        // What the visitor is looking at right now (cleared when not viewing a product)
         currentPage: typeof currentPage === "string" ? currentPage.slice(0, 300) : null,
         currentProductId: typeof currentProductId === "string" ? currentProductId.slice(0, 200) : null,
       },
@@ -46,8 +105,6 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Cleanup is intentionally throttled per instance; deleting on every heartbeat
-    // creates unnecessary write load as traffic grows.
     if (Date.now() - lastCleanupAt > 60_000) {
       lastCleanupAt = Date.now();
       try {
@@ -66,16 +123,18 @@ export async function GET() {
   try {
     const session = await auth();
     const role = session?.user?.role as string | undefined;
-    if (!session?.user || role === "CUSTOMER" || !["ADMIN", "MANAGER", "ORDER_MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER", "STAFF"].includes(role || "")) {
+    if (!session?.user || role === "CUSTOMER" || !STAFF_ROLES.includes(role as (typeof STAFF_ROLES)[number])) {
       return NextResponse.json({ live: 0, customers: 0, guests: 0, visitors: [] });
     }
 
-    const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000);
+    const now = Date.now();
+    const fiveMinAgo = new Date(now - 5 * 60 * 1000);
+    const tenMinAgo = new Date(now - 10 * 60 * 1000);
+
     const [total, customers, guests, rows] = await Promise.all([
       db.liveSession.count({ where: { lastActive: { gte: fiveMinAgo }, isStaff: false } }),
       db.liveSession.count({ where: { lastActive: { gte: fiveMinAgo }, isStaff: false, userId: { not: null } } }),
       db.liveSession.count({ where: { lastActive: { gte: fiveMinAgo }, isStaff: false, userId: null } }),
-      // Real per-visitor detail for the Live Store cards
       db.liveSession.findMany({
         where: { lastActive: { gte: fiveMinAgo }, isStaff: false },
         select: {
@@ -87,23 +146,78 @@ export async function GET() {
       }),
     ]);
 
-    // Resolve product names for visitors currently on a product page — from
-    // the real Product table, never invented.
     const productIds = [...new Set(rows.map(r => r.currentProductId).filter(Boolean))] as string[];
-    const products = productIds.length > 0
-      ? await db.product.findMany({ where: { id: { in: productIds } }, select: { id: true, name: true } })
-      : [];
-    const pMap = Object.fromEntries(products.map(p => [p.id, p.name]));
+    const userIds = [...new Set(rows.map(r => r.userId).filter(Boolean))] as string[];
 
-    const visitors = rows.map(r => ({
-      sessionId: r.sessionId,
-      device: r.deviceType || "unknown",
-      currentPage: r.currentPage,
-      viewingProduct: r.currentProductId ? (pMap[r.currentProductId] || null) : null,
-      isCustomer: r.userId != null,
-      secondsSinceActive: Math.max(0, Math.round((Date.now() - new Date(r.lastActive).getTime()) / 1000)),
-      sessionStartedAt: r.createdAt,
-    }));
+    const [products, users, recentEvents] = await Promise.all([
+      productIds.length > 0
+        ? db.product.findMany({
+            where: { id: { in: productIds } },
+            select: { id: true, name: true },
+          })
+        : Promise.resolve([]),
+      userIds.length > 0
+        ? db.user.findMany({
+            where: { id: { in: userIds } },
+            select: { id: true, name: true, email: true },
+          })
+        : Promise.resolve([]),
+      rows.length > 0
+        ? db.analyticsEvent.findMany({
+            where: {
+              sessionId: { in: rows.map(r => r.sessionId) },
+              createdAt: { gte: tenMinAgo },
+            },
+            select: {
+              sessionId: true,
+              eventType: true,
+              productId: true,
+              metadata: true,
+              createdAt: true,
+            },
+            orderBy: { createdAt: "desc" },
+            take: 500,
+          })
+        : Promise.resolve([]),
+    ]);
+
+    const pMap = Object.fromEntries(products.map(p => [p.id, p.name]));
+    const uMap = Object.fromEntries(users.map(u => [u.id, u]));
+
+    const latestBySession = new Map<string, (typeof recentEvents)[number]>();
+    for (const event of recentEvents) {
+      if (!latestBySession.has(event.sessionId || "")) latestBySession.set(event.sessionId || "", event);
+    }
+
+    const visitors = rows.map(r => {
+      const currentProductName = r.currentProductId ? (pMap[r.currentProductId] || null) : null;
+      const latest = latestBySession.get(r.sessionId);
+      const latestProductName = latest?.productId ? (pMap[latest.productId] || null) : null;
+      const action = latest
+        ? actionForEvent(latest.eventType, latest.metadata, latestProductName)
+        : fallbackActionFromPage(r.currentPage, currentProductName);
+      const actionAt = latest?.createdAt ? new Date(latest.createdAt) : new Date(r.lastActive);
+      const customer = r.userId ? uMap[r.userId] || null : null;
+
+      return {
+        sessionId: r.sessionId,
+        device: r.deviceType || "unknown",
+        currentPage: r.currentPage,
+        viewingProduct: currentProductName,
+        isCustomer: r.userId != null,
+        customerName: customer?.name || null,
+        customerEmail: customer?.email || null,
+        secondsSinceActive: Math.max(0, Math.round((now - new Date(r.lastActive).getTime()) / 1000)),
+        sessionAgeSeconds: Math.max(0, Math.round((now - new Date(r.createdAt).getTime()) / 1000)),
+        lastActionType: action.type,
+        lastAction: action.label,
+        intent: action.intent,
+        searchQuery: action.searchQuery || null,
+        lastActionAt: actionAt.toISOString(),
+        lastActionSecondsAgo: Math.max(0, Math.round((now - actionAt.getTime()) / 1000)),
+        sessionStartedAt: r.createdAt,
+      };
+    });
 
     return NextResponse.json({ live: total, customers, guests, visitors });
   } catch {
