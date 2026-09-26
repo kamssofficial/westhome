@@ -80,7 +80,7 @@ export async function GET() {
       orderBy: { position: "asc" },
     });
 
-    const transformed = categories.map((cat: any) => {
+    const transformed = await Promise.all(categories.map(async (cat: any) => {
       const image = resolveCategoryImage(cat);
       return {
         id: cat.id,
@@ -101,7 +101,7 @@ export async function GET() {
           productCount: sub._count.products,
         })),
       };
-    });
+    }));
 
     const payload = { categories: transformed };
     memoSet(NS.categories, CATALOG_TTL_MS, payload);
