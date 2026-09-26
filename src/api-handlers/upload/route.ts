@@ -37,9 +37,11 @@ export async function GET(request: NextRequest) {
       ...status,
       health,
       recommendation: status.uploadAvailable
-        ? health && status.drive.configured && !health.ok
-          ? `Drive credentials are present but broken: ${health.error} ${health.action}`
-          : null
+      ? health && !health.ok
+        ? status.s3.configured
+          ? `S3 storage is configured but unhealthy: ${health.error ?? "request failed"}`
+          : `Drive credentials are present but broken: ${health.error ?? "request failed"} ${health.action ?? ""}`
+        : null
         : `Image storage is not configured. ${status.missing ?? "Configure managed S3 or Google Drive credentials."}`,
     },
   });
@@ -49,8 +51,8 @@ export async function POST(request: NextRequest) {
   const authResult = await requireAuthRole(["ADMIN", "MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER"]);
   if (authResult.error) return authResult.error;
 
-  // Storage selection is handled by uploadMedia(). If Google Drive is unavailable,
-  // the self-hosted server falls back to persistent local storage.
+  // Storage selection is handled by uploadMedia(). Production prefers managed S3,
+  // then Google Drive for legacy deployments; local disk is development-only.
   try {
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
