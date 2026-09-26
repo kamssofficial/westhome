@@ -2,6 +2,7 @@
 // these modules are imported directly by the node test runner, which does not
 // know the "@/" tsconfig alias.
 import { uploadToDrive, deleteFromDrive } from "./gdrive.ts";
+import { s3Configured, uploadToS3, deleteFromS3, s3KeyFromUrl } from "./s3.ts";
 import { driveFileIdFromUrl } from "./driveUrl.ts";
 
 export interface UploadedMedia {
@@ -14,7 +15,7 @@ export interface UploadedMedia {
   pathname: string;
   fileId?: string;
   storageKey?: string;
-  provider: "drive" | "local";
+  provider: "s3" | "drive" | "local";
 }
 
 /* ------------------------------------------------------------------ */
@@ -39,8 +40,10 @@ function driveConfigured() {
  */
 export function storageStatus() {
   const drive = driveConfigured();
+  const s3 = s3Configured();
   const production = process.env.NODE_ENV === "production";
   return {
+    s3: { configured: s3 },
     drive: { configured: drive },
     local: {
       configured: !production,
@@ -49,11 +52,11 @@ export function storageStatus() {
     },
     // `anyConfigured` describes durable production storage. Local disk is a
     // development fallback only and is exposed separately as `uploadAvailable`.
-    anyConfigured: drive,
-    uploadAvailable: drive || !production,
+    anyConfigured: s3 || drive,
+    uploadAvailable: s3 || drive || !production,
     missing: drive
       ? null
-      : "Google Drive is not configured; production image uploads require GOOGLE_OAUTH_* (or service-account credentials).",
+      : "Managed S3 or Google Drive is not configured; production image uploads require S3 credentials or GOOGLE_OAUTH_* (or service-account credentials).",
   };
 }
 
@@ -62,7 +65,7 @@ export function storageStatus() {
 /* ------------------------------------------------------------------ */
 
 /**
- * Provider order: Google Drive, then local disk (development only).
+ * Provider order: managed S3, Google Drive, then local disk (development only).
  *
  * Drive is the production backend for westhome.in: the catalog's existing
  * images already live there, and the site already ships the `/api/images/`
@@ -75,6 +78,16 @@ export async function uploadMedia(folder: string, file: File, filename: string):
   const key = `${folder.replace(/^\/+|\/+$/g, "")}/${filename.replace(/^\/+/, "")}`;
 
   const production = process.env.NODE_ENV === "production";
+  if (s3Configured()) {
+    try {
+      const result = await uploadToS3(folder, file, filename);
+      return { url: result.url, pathname: result.key, storageKey: result.key, provider: "s3" };
+    } catch (error) {
+      if (production && !driveConfigured()) throw error;
+      console.error("S3 upload failed; trying Google Drive:", error);
+    }
+  }
+
   if (driveConfigured()) {
     try {
       const result = await uploadToDrive(folder, file, filename);
@@ -90,7 +103,7 @@ export async function uploadMedia(folder: string, file: File, filename: string):
   }
 
   if (production) {
-    throw new Error("Google Drive credentials are not configured for production image storage.");
+    throw new Error("Managed S3 / Google Drive credentials are not configured for production image storage.");
   }
 
   const fs = await import("fs");
@@ -110,6 +123,15 @@ export async function uploadMedia(folder: string, file: File, filename: string):
 
 export async function deleteMedia(media: { fileId?: string; url?: string } | null | undefined): Promise<void> {
   if (!media) return;
+  const s3Key = s3KeyFromUrl(media.url);
+  if (s3Key) {
+    try {
+      await deleteFromS3(s3Key);
+    } catch (err) {
+      console.error("S3 delete failed:", err);
+    }
+    return;
+  }
   // The file id is either passed straight in or embedded in the stored URL,
   // which may be the /api/images/{fileId} proxy path or a direct Drive/CDN
   // url. Both shapes have to resolve, or deleting an image in the admin
