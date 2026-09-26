@@ -53,7 +53,7 @@ export default function IntroAnimation({ children }: { children: React.ReactNode
       timers.current.forEach(clearTimeout);
       timers.current = [];
     };
-  }, [phase]);
+  }, []);
 
   useEffect(() => {
     if (phase === "done") {
