@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import HomeClient from "./HomeClient";
 
+export const revalidate = 300;
+
 export const metadata: Metadata = {
   title: "Premium Home & Lifestyle",
   description:
