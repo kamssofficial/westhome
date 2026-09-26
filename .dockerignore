@@ -1,0 +1,10 @@
+# Keep host artifacts out of `COPY . .` in the Dockerfile build stage.
+node_modules
+.next
+.git
+.env
+.env.*
+tmp
+*.log
+freebuff.json
+image-orphans.txt
