@@ -34,7 +34,15 @@ export async function proxy(request: NextRequest) {
     !pathname.startsWith("/staff") &&
     !pathname.startsWith("/account")
   ) {
-    return NextResponse.next();
+    const response = NextResponse.next();
+    // Public storefront HTML/assets can be reused safely. Product/category data
+    // refreshes in the client, while this keeps repeat navigations off the
+    // application render path.
+    response.headers.set(
+      "Cache-Control",
+      "public, max-age=60, s-maxage=300, stale-while-revalidate=86400",
+    );
+    return response;
   }
 
   const token = await getToken({
