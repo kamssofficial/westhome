@@ -45,7 +45,7 @@ function SubcategoryContent({
   const [loadingMore, setLoadingMore] = useState(false);
   const [total, setTotal] = useState(initialTotal || 0);
   const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
+  const [hasMore, setHasMore] = useState((initialProducts?.length || 0) < (initialTotal || 0));
   const [sort, setSort] = useState("recommended");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [showFilters, setShowFilters] = useState(false);
