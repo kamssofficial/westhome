@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import stream from "stream";
-import { DRIVE_PROXY_PREFIX } from "@/lib/driveUrl";
+import { DRIVE_PROXY_PREFIX } from "./driveUrl.ts";
 
 // ---------------------------------------------------------------------------
 // Config — reads from env at call time so Next.js cold-start works

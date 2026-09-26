@@ -115,8 +115,6 @@ function binaryCacheSet(key: string, data: Buffer, mimeType: string): CachedBina
   return entry;
 }
 
-const CDN_ATTEMPTS = 3;
-
 function acceptsWebp(req: NextRequest): boolean {
   return acceptsWebpHeader(req.headers.get("accept"));
 }
