@@ -160,6 +160,7 @@ export async function loadDashboardData(range: string) {
       uniqueVisitorsRows,
       paymentSuccess, paymentFailed,
       paymentMethods, orderOwnership, orderTotals, topCoupons,
+      funnelSessionEvents,
     ] = await Promise.all([
       // Revenue & orders
       db.order.aggregate({ _sum: { total: true }, _count: { id: true }, where: { paymentStatus: "COMPLETED", createdAt: sinceClause } }),
@@ -308,6 +309,18 @@ export async function loadDashboardData(range: string) {
         where: { paymentStatus: "COMPLETED", createdAt: sinceClause, couponCode: { not: null } },
         orderBy: { _count: { id: "desc" } }, take: 5,
       }),
+      // Session-based funnel population. Unlike raw event totals, a session can
+      // only contribute once to each step, so repeat clicks/actions cannot
+      // inflate conversion rates.
+      db.analyticsEvent.findMany({
+        where: {
+          createdAt: sinceClause,
+          sessionId: { not: null },
+          eventType: { in: ["ADD_TO_CART", "CHECKOUT_STARTED", "PURCHASE", "PAYMENT_SUCCESS"] },
+        },
+        select: { sessionId: true, eventType: true },
+        distinct: ["sessionId", "eventType"],
+      }),
     ]);
 
     const revenue = Number(revenueData._sum.total || 0);
@@ -350,6 +363,33 @@ export async function loadDashboardData(range: string) {
       paymentStarted: events["PAYMENT_START"] || 0,
       paymentSuccess: events["PAYMENT_SUCCESS"] || events["PURCHASE"] || 0,
       orderCompleted: completedOrders,
+    };
+
+    const funnelSessionSets = {
+      visitors: new Set(uniqueVisitorsRows.map((r) => r.sessionId).filter(Boolean) as string[]),
+      cart: new Set<string>(),
+      checkout: new Set<string>(),
+      purchase: new Set<string>(),
+    };
+    for (const event of funnelSessionEvents) {
+      if (!event.sessionId) continue;
+      if (event.eventType === "ADD_TO_CART") funnelSessionSets.cart.add(event.sessionId);
+      if (event.eventType === "CHECKOUT_STARTED") funnelSessionSets.checkout.add(event.sessionId);
+      if (event.eventType === "PURCHASE" || event.eventType === "PAYMENT_SUCCESS") funnelSessionSets.purchase.add(event.sessionId);
+    }
+    const sessionFunnel = {
+      visitorToCart: funnelSessionSets.visitors.size > 0
+        ? Math.round((funnelSessionSets.cart.size / funnelSessionSets.visitors.size) * 100)
+        : 0,
+      cartToCheckout: funnelSessionSets.cart.size > 0
+        ? Math.round((funnelSessionSets.checkout.size / funnelSessionSets.cart.size) * 100)
+        : 0,
+      checkoutToPurchase: funnelSessionSets.checkout.size > 0
+        ? Math.round((funnelSessionSets.purchase.size / funnelSessionSets.checkout.size) * 100)
+        : 0,
+      sessionsWithCart: funnelSessionSets.cart.size,
+      sessionsWithCheckout: funnelSessionSets.checkout.size,
+      sessionsWithPurchase: funnelSessionSets.purchase.size,
     };
 
     // ── Parallel wave 2 ──
