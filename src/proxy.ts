@@ -20,14 +20,28 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(target, 301);
   }
 
-  const token = await getToken({ req: request, secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET });
   const { pathname } = request.nextUrl;
-  const role = (token as any)?.role;
 
   // /shop/all was replaced by /search — issue a real permanent redirect.
   if (pathname === "/shop/all") {
     return NextResponse.redirect(new URL("/search", request.url), 308);
   }
+
+  // Public storefront pages never need session authentication. Avoid the JWT
+  // lookup on the hot path so public requests can reach the browser faster.
+  if (
+    !pathname.startsWith("/admin") &&
+    !pathname.startsWith("/staff") &&
+    !pathname.startsWith("/account")
+  ) {
+    return NextResponse.next();
+  }
+
+  const token = await getToken({
+    req: request,
+    secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
+  });
+  const role = (token as any)?.role;
 
   // ── Admin routes: ADMIN only ──
   if (pathname.startsWith("/admin")) {
