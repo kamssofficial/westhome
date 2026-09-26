@@ -32,6 +32,13 @@ const CATEGORY_IMAGES: Record<string, string> = {
   "wall-decor": "/collections/frames/frame-abstract-art-green-sofa.png",
 };
 
+// One legacy product still references three deleted local-upload files. Keep
+// the database values intact so they can be restored later, but never let that
+// dead path render as a broken product image.
+const PRODUCT_IMAGES_FALLBACK: Record<string, string> = {
+  "ethereal-monolith-80160cm": "/collections/frames/frame-abstract-art-green-sofa.png",
+};
+
 export function categoryFallbackImage(slug?: string | null): string | null {
   return slug ? CATEGORY_IMAGES[slug] || null : null;
 }
@@ -55,10 +62,17 @@ export function resolveProductImage(
   productSlug?: string | null,
 ): string | null {
   const localFallback = productLocalFallback(productSlug);
+  const productFallback = productSlug ? PRODUCT_IMAGES_FALLBACK[productSlug] || null : null;
 
   // Normalize the Drive-backed shapes first, so a row rewritten to the CDN URL
   // still matches the legacy rules below instead of slipping past them.
   const normalized = proxiedMediaUrl(image);
+
+  // This exact product points at local-upload files that no longer exist in
+  // production. Fall back to a committed asset rather than rendering a 404.
+  if (productFallback && normalized?.startsWith("/api/images/uploads/products/")) {
+    return productFallback;
+  }
 
   // The catalog import historically stored Google Drive proxy URLs. Those
   // IDs are no longer resolvable in production, while the corresponding
