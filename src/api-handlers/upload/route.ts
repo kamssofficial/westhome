@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 // Keep uploads moderate: the client-side uploader downscales photos well below
 // this limit, and every reverse proxy in front of the app (nginx client_max_body_size
 // etc.) is sized to match. See scripts/godaddy-deploy-check.mjs.
-const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
+const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 const ALLOWED_FOLDERS = ["products", "categories", "banners", "avatars", "homepage", "staff"];
 
 /**
@@ -42,16 +42,8 @@ export async function POST(request: NextRequest) {
   const authResult = await requireAuthRole(["ADMIN", "MANAGER", "PRODUCT_MANAGER", "CONTENT_MANAGER"]);
   if (authResult.error) return authResult.error;
 
-  // Fail fast, and say exactly what to set. Previously this surfaced as a 503
-  // with a Cloudflare-R2 hint after the bytes had already been uploaded.
-  const status = storageStatus();
-  if (!status.anyConfigured) {
-    return NextResponse.json(
-      { error: `Image storage is not configured. ${status.missing}`, storage: status },
-      { status: 503 }
-    );
-  }
-
+  // Storage selection is handled by uploadMedia(). If Google Drive is unavailable,
+  // the self-hosted server falls back to persistent local storage.
   try {
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
@@ -65,7 +57,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "The selected file is empty" }, { status: 400 });
     }
     if (file.size > MAX_UPLOAD_BYTES) {
-      return NextResponse.json({ error: "Image is too large. Maximum size is 4 MB." }, { status: 413 });
+      return NextResponse.json({ error: "Image is too large. Maximum size is 5 MB." }, { status: 413 });
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
