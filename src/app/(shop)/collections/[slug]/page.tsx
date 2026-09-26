@@ -114,6 +114,7 @@ async function getInitialProducts(categorySlug: string) {
               },
             },
           },
+          tags: { where: { tag: { startsWith: "color:" } } },
         },
         orderBy: [{ isFeatured: "desc" as const }, { createdAt: "desc" as const }],
         take: 24,
@@ -132,7 +133,7 @@ async function getInitialProducts(categorySlug: string) {
         images: (p.images ?? []).map((img: any) => ({ ...img, url: normalizeImageUrl(img.url) })),
         regularPrice: Number(p.regularPrice),
         salePrice: p.salePrice ? Number(p.salePrice) : null,
-
+        palette: p.tags?.map((t: any) => t.tag.slice(6)).filter(Boolean) || [],
       })),
       total,
     });
