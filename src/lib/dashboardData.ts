@@ -11,47 +11,104 @@ import db from "@/lib/db";
  * Every statement below is a read: aggregate, count, groupBy or findMany.
  */
 
-function getDateRange(range: string): Date {
-  const now = new Date();
-  switch (range) {
-    case "today": { const d = new Date(now); d.setHours(0, 0, 0, 0); return d; }
-    case "yesterday": { const d = new Date(now); d.setDate(d.getDate() - 1); d.setHours(0, 0, 0, 0); return d; }
-    case "7d": return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    case "30d": return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    case "90d": return new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-    case "thisMonth": return new Date(now.getFullYear(), now.getMonth(), 1);
-    case "lastMonth": return new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    default: return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  }
+type DateWindow = { start: Date; end: Date; previousStart: Date; previousEnd: Date };
+
+const BUSINESS_TIME_ZONE = "Asia/Kolkata";
+const BUSINESS_OFFSET_MS = 330 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function shiftToBusinessClock(date: Date): Date {
+  return new Date(date.getTime() + BUSINESS_OFFSET_MS);
 }
 
-function getPreviousEnd(range: string): Date {
-  const now = new Date();
-  switch (range) {
-    case "today": { const d = new Date(now); d.setDate(d.getDate() - 1); d.setHours(23, 59, 59, 999); return d; }
-    case "yesterday": { const d = new Date(now); d.setDate(d.getDate() - 2); d.setHours(23, 59, 59, 999); return d; }
-    case "7d": return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    case "30d": return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    case "90d": return new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-    case "thisMonth": return new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
-    case "lastMonth": return new Date(now.getFullYear(), now.getMonth() - 1, 0, 23, 59, 59, 999);
-    default: return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  }
+export function startOfDay(date: Date): Date {
+  const shifted = shiftToBusinessClock(date);
+  shifted.setUTCHours(0, 0, 0, 0);
+  return new Date(shifted.getTime() - BUSINESS_OFFSET_MS);
 }
 
-function getPreviousStart(range: string): Date {
+function endOfDay(date: Date): Date {
+  return new Date(startOfDay(addDays(date, 1)).getTime() - 1);
+}
+
+export function addDays(date: Date, days: number): Date {
+  return new Date(date.getTime() + days * DAY_MS);
+}
+
+function startOfMonth(date: Date, monthOffset = 0): Date {
+  const shifted = shiftToBusinessClock(date);
+  return new Date(Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth() + monthOffset, 1) - BUSINESS_OFFSET_MS);
+}
+
+function endOfMonth(date: Date, monthOffset = 0): Date {
+  return new Date(startOfMonth(date, monthOffset + 1).getTime() - 1);
+}
+
+export function formatBusinessDate(date: Date): string {
+  return new Intl.DateTimeFormat("en-IN", {
+    timeZone: BUSINESS_TIME_ZONE,
+    day: "numeric",
+    month: "short",
+  }).format(date);
+}
+
+function businessDayKey(date: Date): string {
+  const shifted = shiftToBusinessClock(date);
+  return `${shifted.getUTCFullYear()}-${shifted.getUTCMonth()}-${shifted.getUTCDate()}`;
+}
+
+export function getDateWindow(range: string): DateWindow {
   const now = new Date();
-  if (range === "today") {
-    const d = new Date(now);
-    d.setDate(d.getDate() - 1);
-    d.setHours(0, 0, 0, 0);
-    return d;
+  const today = startOfDay(now);
+
+  switch (range) {
+    case "today": {
+      const previous = addDays(today, -1);
+      return { start: today, end: now, previousStart: previous, previousEnd: endOfDay(previous) };
+    }
+    case "yesterday": {
+      const current = addDays(today, -1);
+      const previous = addDays(today, -2);
+      return { start: current, end: endOfDay(current), previousStart: previous, previousEnd: endOfDay(previous) };
+    }
+    case "7d": {
+      const start = addDays(today, -6);
+      const previousEnd = addDays(start, -1);
+      const previousStart = addDays(previousEnd, -6);
+      return { start, end: now, previousStart, previousEnd: endOfDay(previousEnd) };
+    }
+    case "30d": {
+      const start = addDays(today, -29);
+      const previousEnd = addDays(start, -1);
+      const previousStart = addDays(previousEnd, -29);
+      return { start, end: now, previousStart, previousEnd: endOfDay(previousEnd) };
+    }
+    case "90d": {
+      const start = addDays(today, -89);
+      const previousEnd = addDays(start, -1);
+      const previousStart = addDays(previousEnd, -89);
+      return { start, end: now, previousStart, previousEnd: endOfDay(previousEnd) };
+    }
+    case "thisMonth": {
+      const start = startOfMonth(now);
+      const previousStart = startOfMonth(now, -1);
+      const previousEnd = endOfMonth(now, -1);
+      return { start, end: now, previousStart, previousEnd };
+    }
+    case "lastMonth": {
+      const start = startOfMonth(now, -1);
+      const end = endOfMonth(now, -1);
+      const previousStart = startOfMonth(now, -2);
+      const previousEnd = endOfMonth(now, -2);
+      return { start, end, previousStart, previousEnd };
+    }
+    default: {
+      const start = addDays(today, -29);
+      const previousEnd = addDays(start, -1);
+      const previousStart = addDays(previousEnd, -29);
+      return { start, end: now, previousStart, previousEnd: endOfDay(previousEnd) };
+    }
   }
-  if (range === "thisMonth") return new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  if (range === "lastMonth") return new Date(now.getFullYear(), now.getMonth() - 2, 1);
-  const end = getPreviousEnd(range);
-  const diff = now.getTime() - end.getTime();
-  return new Date(end.getTime() - diff);
 }
 
 function pctChange(current: number, previous: number): number {
@@ -61,32 +118,32 @@ function pctChange(current: number, previous: number): number {
 
 export async function loadDashboardData(range: string) {
   try {
-    const since = getDateRange(range);
-    // "yesterday" must not bleed into today: add an exclusive end bound.
-    const until = range === "yesterday" ? (() => { const d = new Date(); d.setDate(d.getDate() - 1); d.setHours(23, 59, 59, 999); return d; })() : null;
-    const sinceClause = until ? { gte: since, lte: until } : { gte: since };
-    const prevStart = getPreviousStart(range);
-    const prevEnd = getPreviousEnd(range);
+    const window = getDateWindow(range);
+    const since = window.start;
+    const until = window.end;
+    const prevStart = window.previousStart;
+    const prevEnd = window.previousEnd;
+    const sinceClause = { gte: since, lte: until };
+    const previousClause = { gte: prevStart, lte: prevEnd };
     const now = new Date();
-    const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
-    const weekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);    // ── Parallel wave 1 ──
+    const todayStart = startOfDay(now);
+    const weekStart = addDays(todayStart, -6);
+    const monthStart = startOfMonth(now);
+    const chartStart = startOfDay(since);
+    const days = Math.max(1, Math.floor((until.getTime() - chartStart.getTime()) / (24 * 60 * 60 * 1000)) + 1);    // ── Parallel wave 1 ──
     // Every query below is independent of every other one, so they are issued
     // together. The database is remote (Supabase pooler), so each round trip
     // costs ~150ms; running them one after another made the dashboard take
     // 6-8s. Fanning them out turns ~30 serial round trips into one wave.
     const customerFilter = { OR: [{ role: "CUSTOMER" as const }, { orders: { some: {} } }], isActive: true };
     const fiveMinAgo = new Date(now.getTime() - 5 * 60 * 1000);
-    const days = range === "today" ? 1 : range === "7d" ? 7 : range === "90d" ? 90 : 30;
-    const chartStart = new Date(now.getTime() - (days - 1) * 24 * 60 * 60 * 1000);
-    chartStart.setHours(0, 0, 0, 0);
 
     const [
       revenueData, prevRevenueData, totalOrders, prevTotalOrders,
       statusCounts, ordersToday, weekOrders, monthOrders,
       unitsData, prevUnitsData,
       totalCustomers, newCustomers, prevNewCustomers,
-      totalProducts, activeProducts, outOfStock, lowStockProductsAtRisk,
+      totalProducts, activeProducts, outOfStock, inventoryProducts,
       productsSold,
       refundCount, cancelledCount, pendingPayments,
       liveSessions, liveDevices,
@@ -106,9 +163,9 @@ export async function loadDashboardData(range: string) {
     ] = await Promise.all([
       // Revenue & orders
       db.order.aggregate({ _sum: { total: true }, _count: { id: true }, where: { paymentStatus: "COMPLETED", createdAt: sinceClause } }),
-      db.order.aggregate({ _sum: { total: true }, _count: { id: true }, where: { paymentStatus: "COMPLETED", createdAt: { gte: prevStart, lte: prevEnd } } }),
+      db.order.aggregate({ _sum: { total: true }, _count: { id: true }, where: { paymentStatus: "COMPLETED", createdAt: previousClause } }),
       db.order.count({ where: { createdAt: sinceClause } }),
-      db.order.count({ where: { createdAt: { gte: prevStart, lte: prevEnd } } }),
+      db.order.count({ where: { createdAt: previousClause } }),
 
       // Order status breakdown + order counts
       db.order.groupBy({ by: ["status"], _count: { id: true }, where: { createdAt: sinceClause } }),
@@ -118,18 +175,21 @@ export async function loadDashboardData(range: string) {
 
       // Units sold
       db.orderItem.aggregate({ _sum: { quantity: true }, where: { order: { createdAt: sinceClause, paymentStatus: "COMPLETED" } } }),
-      db.orderItem.aggregate({ _sum: { quantity: true }, where: { order: { createdAt: { gte: prevStart, lte: prevEnd }, paymentStatus: "COMPLETED" } } }),
+      db.orderItem.aggregate({ _sum: { quantity: true }, where: { order: { createdAt: previousClause, paymentStatus: "COMPLETED" } } }),
 
       // Customers
       db.user.count({ where: customerFilter }),
       db.user.count({ where: { ...customerFilter, createdAt: sinceClause } }),
-      db.user.count({ where: { ...customerFilter, createdAt: { gte: prevStart, lte: prevEnd } } }),
+      db.user.count({ where: { ...customerFilter, createdAt: previousClause } }),
 
       // Products
       db.product.count(),
-      db.product.count({ where: { status: "ACTIVE" } }),
+      db.product.count({ where: { status: "ACTIVE", isActive: true } }),
       db.product.count({ where: { trackInventory: true, stockQuantity: 0 } }),
-      db.product.findMany({ where: { trackInventory: true, stockQuantity: { gt: 0, lte: 5 } }, select: { id: true, name: true, stockQuantity: true, lowStockThreshold: true }, take: 50 }),
+      db.product.findMany({
+        where: { trackInventory: true, stockQuantity: { gt: 0 } },
+        select: { id: true, name: true, stockQuantity: true, lowStockThreshold: true },
+      }),
 
       // Products sold (distinct)
       db.orderItem.groupBy({ by: ["productId"], where: { order: { createdAt: sinceClause, paymentStatus: "COMPLETED" } } }),
@@ -150,7 +210,7 @@ export async function loadDashboardData(range: string) {
       db.orderItem.groupBy({
         by: ["productId"], _sum: { totalPrice: true, quantity: true }, _count: { id: true },
         where: { order: { createdAt: sinceClause, paymentStatus: "COMPLETED" } },
-        orderBy: { _sum: { totalPrice: "desc" } }, take: 10,
+        orderBy: { _sum: { totalPrice: "desc" } }, take: 15,
       }),
       db.analyticsEvent.groupBy({
         by: ["productId"], _count: { id: true },
@@ -170,15 +230,14 @@ export async function loadDashboardData(range: string) {
 
       // Revenue over time
       db.order.findMany({
-        where: { paymentStatus: "COMPLETED", createdAt: { gte: chartStart, lte: now } },
+        where: { paymentStatus: "COMPLETED", createdAt: { gte: chartStart, lte: until } },
         select: { total: true, createdAt: true },
       }),
 
       // Category analytics
       db.category.findMany({ select: { id: true, name: true, slug: true } }),
       db.orderItem.groupBy({
-        by: ["productId"],
-        _count: { id: true },
+        by: ["productId", "orderId"],
         _sum: { totalPrice: true, quantity: true },
         where: { order: { createdAt: sinceClause, paymentStatus: "COMPLETED" } },
       }),
@@ -187,14 +246,14 @@ export async function loadDashboardData(range: string) {
       // Top customers
       db.order.groupBy({
         by: ["userId"], _count: { id: true }, _sum: { total: true },
-        where: { createdAt: sinceClause, userId: { not: null } },
+        where: { createdAt: sinceClause, paymentStatus: "COMPLETED", userId: { not: null } },
         orderBy: { _sum: { total: "desc" } }, take: 20,
       }),
 
       // Geographic
       db.order.groupBy({
         by: ["state"], _count: { id: true }, _sum: { total: true },
-        where: { createdAt: sinceClause },
+        where: { createdAt: sinceClause, paymentStatus: "COMPLETED" },
         orderBy: { _count: { id: "desc" } }, take: 30,
       }),
 
@@ -217,7 +276,11 @@ export async function loadDashboardData(range: string) {
       db.analyticsEvent.count({ where: { eventType: { in: ["WISHLIST_ADD", "WISHLIST"] }, createdAt: { gte: todayStart } } }),
 
       // Unique visitors
-      db.analyticsEvent.findMany({ where: { createdAt: sinceClause }, select: { sessionId: true }, distinct: ["sessionId"] }),
+      db.analyticsEvent.findMany({
+        where: { createdAt: sinceClause, sessionId: { not: null } },
+        select: { sessionId: true },
+        distinct: ["sessionId"],
+      }),
 
       // Payment stats
       db.payment.count({ where: { status: "COMPLETED", createdAt: sinceClause } }),
@@ -227,12 +290,12 @@ export async function loadDashboardData(range: string) {
       // a null method means cash on delivery).
       db.payment.groupBy({
         by: ["method"], _count: { id: true }, _sum: { amount: true },
-        where: { status: "COMPLETED", createdAt: sinceClause },
+        where: { status: "COMPLETED", createdAt: sinceClause, order: { createdAt: sinceClause, paymentStatus: "COMPLETED" } },
       }),
       // Guest checkout vs signed-in accounts.
       db.order.groupBy({
         by: ["userId"], _count: { id: true }, _sum: { total: true },
-        where: { createdAt: sinceClause },
+        where: { createdAt: sinceClause, paymentStatus: "COMPLETED" },
       }),
       // Order-level money: gross items, discounts given, delivery collected.
       db.order.aggregate({
@@ -259,15 +322,27 @@ export async function loadDashboardData(range: string) {
 
     const unitsSold = Number(unitsData._sum.quantity || 0);
     const prevUnitsSold = Number(prevUnitsData._sum.quantity || 0);
-    const returningCustomers = totalCustomers - newCustomers;
+    const lowStockProductsAtRisk = inventoryProducts.filter((p) => p.stockQuantity <= (p.lowStockThreshold ?? 5));
+    const customerOrderRows = await db.order.findMany({
+      where: { createdAt: sinceClause, paymentStatus: "COMPLETED", userId: { not: null } },
+      select: { userId: true, createdAt: true },
+    });
+    const customersWithOrders = new Set(customerOrderRows.map((o) => o.userId).filter(Boolean) as string[]);
+    const returningCustomerIds = new Set(
+      (await db.order.findMany({
+        where: { paymentStatus: "COMPLETED", createdAt: { lt: since }, userId: { in: [...customersWithOrders] } },
+        select: { userId: true },
+      })).map((o) => o.userId).filter(Boolean) as string[]
+    );
+    const returningCustomers = returningCustomerIds.size;
 
     const events: Record<string, number> = {};
     eventCounts.forEach(e => { events[e.eventType] = e._count.id; });
 
     // ── Sales Funnel ──
     const funnel = {
-      pageViews: events["PAGE_VIEW"] || events["VIEW"] || 0,
-      productViews: events["PRODUCT_VIEW"] || events["VIEW"] || 0,
+      pageViews: events["PAGE_VIEW"] || 0,
+      productViews: (events["PRODUCT_VIEW"] || 0) + (events["VIEW"] || 0),
       searches: events["SEARCH"] || 0,
       wishlistAdds: events["WISHLIST_ADD"] || events["WISHLIST"] || 0,
       cartAdds: events["ADD_TO_CART"] || 0,
@@ -284,8 +359,9 @@ export async function loadDashboardData(range: string) {
     [...topByRevenue, ...topByViews, ...topByWishlist, ...topByCart].forEach(t => { if (t.productId) allProductIds.add(t.productId); });
     const categorySaleProductIds = categorySales.map((sale) => sale.productId);
     const custIds = customerOrders.map(c => c.userId).filter(Boolean) as string[];
+    const topRevenueProductIds = topByRevenue.map((t) => t.productId).filter(Boolean) as string[];
 
-    const [productDetails, categoryProducts, custDetails] = await Promise.all([
+    const [productDetails, categoryProducts, custDetails, productOrderRows] = await Promise.all([
       allProductIds.size > 0
         ? db.product.findMany({ where: { id: { in: [...allProductIds] } }, select: { id: true, name: true, slug: true, regularPrice: true, salePrice: true, stockQuantity: true, trackInventory: true, images: { take: 1, select: { url: true } } } })
         : Promise.resolve([]),
@@ -295,15 +371,36 @@ export async function loadDashboardData(range: string) {
       custIds.length > 0
         ? db.user.findMany({ where: { id: { in: custIds } }, select: { id: true, name: true, email: true, createdAt: true } })
         : Promise.resolve([]),
+      topRevenueProductIds.length > 0
+        ? db.orderItem.findMany({
+            where: {
+              productId: { in: topRevenueProductIds },
+              order: { createdAt: sinceClause, paymentStatus: "COMPLETED" },
+            },
+            select: { productId: true, orderId: true },
+          })
+        : Promise.resolve([]),
     ]);
 
     const pMap = Object.fromEntries(productDetails.map(p => [p.id, p]));
+    const productOrderIds = new Map<string, Set<string>>();
+    productOrderRows.forEach((row) => {
+      if (!row.productId || !row.orderId) return;
+      const ids = productOrderIds.get(row.productId) || new Set<string>();
+      ids.add(row.orderId);
+      productOrderIds.set(row.productId, ids);
+    });
 
-    const enrich = (items: any[], valueField: string, countField = "_count") =>
-      items.map(t => ({ ...t, product: pMap[t.productId || ""] || null, [valueField]: Number(t._sum?.[valueField] || 0), orders: t[countField]?.id || 0 }));
+    const enrich = (items: any[], valueField: string) =>
+      items.map(t => ({
+        ...t,
+        product: pMap[t.productId || ""] || null,
+        [valueField]: Number(t._sum?.[valueField] || 0),
+        orders: productOrderIds.get(t.productId || "")?.size || 0,
+      }));
 
     // ── Revenue Over Time ──
-    const dayKey = (date: Date) => `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+    const dayKey = businessDayKey;
     const dailyTotals = new Map<string, { revenue: number; orders: number }>();
     chartOrders.forEach((order) => {
       const key = dayKey(new Date(order.createdAt));
@@ -313,11 +410,12 @@ export async function loadDashboardData(range: string) {
       dailyTotals.set(key, current);
     });
     const revenueOverTime: { date: string; revenue: number; orders: number }[] = [];
+    const chartEndDay = startOfDay(until);
     for (let i = days - 1; i >= 0; i--) {
-      const day = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+      const day = addDays(chartEndDay, -i);
       const key = dayKey(day);
       const totals = dailyTotals.get(key) || { revenue: 0, orders: 0 };
-      revenueOverTime.push({ date: day.toLocaleDateString("en-IN", { day: "numeric", month: "short" }), ...totals });
+      revenueOverTime.push({ date: formatBusinessDate(day), ...totals });
     }
 
     // ── Category Analytics ──
@@ -327,7 +425,7 @@ export async function loadDashboardData(range: string) {
       const categoryId = categoryByProduct[sale.productId];
       if (!categoryId) return;
       const current = categorySalesById.get(categoryId) || { orders: 0, revenue: 0, units: 0 };
-      current.orders += sale._count.id;
+      current.orders += 1;
       current.revenue += Number(sale._sum.totalPrice || 0);
       current.units += Number(sale._sum.quantity || 0);
       categorySalesById.set(categoryId, current);
@@ -445,7 +543,7 @@ export async function loadDashboardData(range: string) {
       // Coupons used in the range, most used first
       topCoupons: topCoupons.map(c => ({ code: c.couponCode || "—", orders: c._count.id, discount: Number(c._sum.discount || 0) })),
       // Low Stock
-      lowStockProducts: lowStockProductsAtRisk.map(p => ({ id: p.id, name: p.name, stock: p.stockQuantity, threshold: p.lowStockThreshold || 5 })),
+      lowStockProducts: lowStockProductsAtRisk.map(p => ({ id: p.id, name: p.name, stock: p.stockQuantity, threshold: p.lowStockThreshold ?? 5 })),
       // Insights
       insights,
       // Unique visitors

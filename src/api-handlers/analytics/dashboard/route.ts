@@ -1,38 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { requireAuthRole } from "@/lib/apiAuth";
-
-function getDateRange(range: string): Date {
-  const now = new Date();
-  switch (range) {
-    case "today": { const d = new Date(now); d.setHours(0,0,0,0); return d; }
-    case "yesterday": { const d = new Date(now); d.setDate(d.getDate()-1); d.setHours(0,0,0,0); return d; }
-    case "7d": return new Date(now.getTime() - 7*24*60*60*1000);
-    case "30d": return new Date(now.getTime() - 30*24*60*60*1000);
-    case "90d": return new Date(now.getTime() - 90*24*60*60*1000);
-    default: return new Date(now.getTime() - 30*24*60*60*1000);
-  }
-}
-
-function getPreviousRange(range: string): { start: Date; end: Date } {
-  const now = new Date();
-  switch (range) {
-    case "today": {
-      const end = new Date(now); end.setHours(0,0,0,0);
-      const start = new Date(end); start.setDate(start.getDate()-1);
-      return { start, end };
-    }
-    case "7d": {
-      return { start: new Date(now.getTime() - 14*24*60*60*1000), end: new Date(now.getTime() - 7*24*60*60*1000) };
-    }
-    case "30d": {
-      return { start: new Date(now.getTime() - 60*24*60*60*1000), end: new Date(now.getTime() - 30*24*60*60*1000) };
-    }
-    default: {
-      return { start: new Date(now.getTime() - 60*24*60*60*1000), end: new Date(now.getTime() - 30*24*60*60*1000) };
-    }
-  }
-}
+import { addDays, getDateWindow, startOfDay } from "@/lib/dashboardData";
 
 export async function GET(request: NextRequest) {
   const authResult = await requireAuthRole(["ADMIN","MANAGER","PRODUCT_MANAGER","ORDER_MANAGER","CONTENT_MANAGER","STAFF"]);
@@ -41,36 +10,36 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const range = searchParams.get("range") || "30d";
-    const since = getDateRange(range);
-    // "yesterday" must not bleed into today: add an exclusive end bound.
-    const until = range === "yesterday" ? (() => { const d = new Date(); d.setDate(d.getDate() - 1); d.setHours(23, 59, 59, 999); return d; })() : null;
-    const sinceClause = until ? { gte: since, lte: until } : { gte: since };
+    const window = getDateWindow(range);
+    const since = window.start;
+    const until = window.end;
+    const sinceClause = { gte: since, lte: until };
+    const previousClause = { gte: window.previousStart, lte: window.previousEnd };
     const now = new Date();
-    const todayStart = new Date(now); todayStart.setHours(0,0,0,0);
-    const weekAgo = new Date(now.getTime() - 7*24*60*60*1000);
+    const todayStart = startOfDay(now);
+    const weekAgo = addDays(todayStart, -6);
 
     // Current period metrics
     const [eventsByType, uniqueSessions, todaySessions, weekSessions] = await Promise.all([
       db.analyticsEvent.groupBy({ by: ["eventType"], _count: { id: true }, where: { createdAt: sinceClause } }),
-      db.analyticsEvent.findMany({ where: { createdAt: sinceClause }, select: { sessionId: true }, distinct: ["sessionId"] }),
-      db.analyticsEvent.findMany({ where: { createdAt: { gte: todayStart } }, select: { sessionId: true }, distinct: ["sessionId"] }),
-      db.analyticsEvent.findMany({ where: { createdAt: { gte: weekAgo } }, select: { sessionId: true }, distinct: ["sessionId"] }),
+      db.analyticsEvent.findMany({ where: { createdAt: sinceClause, sessionId: { not: null } }, select: { sessionId: true }, distinct: ["sessionId"] }),
+      db.analyticsEvent.findMany({ where: { createdAt: { gte: todayStart, lte: now }, sessionId: { not: null } }, select: { sessionId: true }, distinct: ["sessionId"] }),
+      db.analyticsEvent.findMany({ where: { createdAt: { gte: weekAgo, lte: now }, sessionId: { not: null } }, select: { sessionId: true }, distinct: ["sessionId"] }),
     ]);
 
     const eventCounts: Record<string, number> = {};
     eventsByType.forEach(e => { eventCounts[e.eventType] = e._count.id; });
 
     // Previous period for comparison
-    const prev = getPreviousRange(range);
-    const prevEvents = await db.analyticsEvent.groupBy({ by: ["eventType"], _count: { id: true }, where: { createdAt: { gte: prev.start, lte: prev.end } } });
+    const prevEvents = await db.analyticsEvent.groupBy({ by: ["eventType"], _count: { id: true }, where: { createdAt: previousClause } });
     const prevCounts: Record<string, number> = {};
     prevEvents.forEach(e => { prevCounts[e.eventType] = e._count.id; });
-    const prevSessions = await db.analyticsEvent.findMany({ where: { createdAt: { gte: prev.start, lte: prev.end } }, select: { sessionId: true }, distinct: ["sessionId"] });
+    const prevSessions = await db.analyticsEvent.findMany({ where: { createdAt: previousClause, sessionId: { not: null } }, select: { sessionId: true }, distinct: ["sessionId"] });
 
     // Revenue
     const [revenueResult, prevRevenueResult] = await Promise.all([
       db.order.aggregate({ _sum: { total: true }, where: { paymentStatus: "COMPLETED", createdAt: sinceClause } }),
-      db.order.aggregate({ _sum: { total: true }, where: { paymentStatus: "COMPLETED", createdAt: { gte: prev.start, lte: prev.end } } }),
+      db.order.aggregate({ _sum: { total: true }, where: { paymentStatus: "COMPLETED", createdAt: previousClause } }),
     ]);
     const revenue = Number(revenueResult._sum.total || 0);
     const prevRevenue = Number(prevRevenueResult._sum.total || 0);
@@ -78,7 +47,7 @@ export async function GET(request: NextRequest) {
     // Purchases & units
     const [purchases, prevPurchases, unitsResult] = await Promise.all([
       db.order.count({ where: { paymentStatus: "COMPLETED", createdAt: sinceClause } }),
-      db.order.count({ where: { paymentStatus: "COMPLETED", createdAt: { gte: prev.start, lte: prev.end } } }),
+      db.order.count({ where: { paymentStatus: "COMPLETED", createdAt: previousClause } }),
       db.orderItem.aggregate({ _sum: { quantity: true }, where: { order: { createdAt: sinceClause, paymentStatus: "COMPLETED" } } }),
     ]);
     const unitsSold = Number(unitsResult._sum.quantity || 0);
@@ -130,21 +99,32 @@ export async function GET(request: NextRequest) {
 
     // Abandoned carts (CHECKOUT_STARTED without PURCHASE within session)
     const checkoutSessions = await db.analyticsEvent.findMany({
-      where: { createdAt: sinceClause, eventType: "CHECKOUT_STARTED" },
+      where: { createdAt: sinceClause, eventType: "CHECKOUT_STARTED", sessionId: { not: null } },
       select: { sessionId: true },
+      distinct: ["sessionId"],
     });
     const purchaseSessions = await db.analyticsEvent.findMany({
       where: { createdAt: sinceClause, eventType: "PURCHASE" },
       select: { sessionId: true },
     });
     const purchasedSessionIds = new Set(purchaseSessions.map(p => p.sessionId).filter(Boolean));
-    const abandonedCarts = checkoutSessions.filter(c => c.sessionId && !purchasedSessionIds.has(c.sessionId)).length;
+    const abandonedCarts = checkoutSessions.filter(c => !purchasedSessionIds.has(c.sessionId)).length;
 
-    // Customer retention
-    const [newCustomers, returningCustomers] = await Promise.all([
-      db.user.count({ where: { role: "CUSTOMER", createdAt: sinceClause } }),
-      db.user.count({ where: { role: "CUSTOMER", createdAt: { lt: since } } }),
-    ]);
+    // Customer retention: count new accounts and existing customers who actually purchased during this period.
+    const newCustomers = await db.user.count({ where: { role: "CUSTOMER", createdAt: sinceClause } });
+    const currentPurchasers = await db.order.findMany({
+      where: { paymentStatus: "COMPLETED", createdAt: sinceClause, userId: { not: null } },
+      select: { userId: true },
+      distinct: ["userId"],
+    });
+    const currentPurchaserIds = currentPurchasers.map((o) => o.userId).filter(Boolean) as string[];
+    const returningCustomers = currentPurchaserIds.length === 0
+      ? 0
+      : (await db.order.findMany({
+          where: { paymentStatus: "COMPLETED", createdAt: { lt: since }, userId: { in: currentPurchaserIds } },
+          select: { userId: true },
+          distinct: ["userId"],
+        })).length;
 
     // Top products by views
     const topViewed = await db.analyticsEvent.groupBy({ by: ["productId"], _count: { id: true }, where: { eventType: "VIEW", productId: { not: null }, createdAt: sinceClause }, orderBy: { _count: { id: "desc" } }, take: 10 });
@@ -156,33 +136,56 @@ export async function GET(request: NextRequest) {
       count: t._count.id, stock: tvMap[t.productId!]?.stockQuantity || 0,
     }));
 
-    const topPurchased = await db.orderItem.groupBy({ by: ["productId"], _sum: { quantity: true, totalPrice: true }, _count: { id: true }, where: { order: { createdAt: sinceClause, paymentStatus: "COMPLETED" } }, orderBy: { _sum: { quantity: "desc" } }, take: 10 });
+    const topPurchased = await db.orderItem.groupBy({
+      by: ["productId"], _sum: { quantity: true, totalPrice: true },
+      where: { order: { createdAt: sinceClause, paymentStatus: "COMPLETED" } },
+      orderBy: { _sum: { quantity: "desc" } }, take: 10,
+    });
     const topPurchasedIds = topPurchased.map(t => t.productId);
     const topPurchasedProducts = topPurchasedIds.length > 0 ? await db.product.findMany({ where: { id: { in: topPurchasedIds } }, select: { id: true, name: true, slug: true } }) : [];
+    const purchaseOrderRows = topPurchasedIds.length > 0
+      ? await db.orderItem.findMany({
+          where: { productId: { in: topPurchasedIds }, order: { createdAt: sinceClause, paymentStatus: "COMPLETED" } },
+          select: { productId: true, orderId: true },
+        })
+      : [];
+    const purchaseOrderCounts = new Map<string, Set<string>>();
+    purchaseOrderRows.forEach((row) => {
+      const ids = purchaseOrderCounts.get(row.productId) || new Set<string>();
+      ids.add(row.orderId);
+      purchaseOrderCounts.set(row.productId, ids);
+    });
     const tpMap = Object.fromEntries(topPurchasedProducts.map(p => [p.id, p]));
     const enrichedTopPurchased = topPurchased.map(t => ({
       productId: t.productId, name: tpMap[t.productId]?.name || "Unknown", slug: tpMap[t.productId]?.slug || "",
-      quantity: Number(t._sum.quantity || 0), revenue: Number(t._sum.totalPrice || 0), orders: t._count.id,
+      quantity: Number(t._sum.quantity || 0), revenue: Number(t._sum.totalPrice || 0),
+      orders: purchaseOrderCounts.get(t.productId)?.size || 0,
     }));
 
+    const chartEndDay = startOfDay(until);
     const viewsOverTime: { date: string; count: number }[] = [];
     for (let i = 6; i >= 0; i--) {
-      const day = new Date(now.getTime() - i * 24*60*60*1000);
-      const dayStr = day.toISOString().split("T")[0];
-      const dayStart = new Date(dayStr + "T00:00:00.000Z");
-      const dayEnd = new Date(dayStr + "T23:59:59.999Z");
-      const count = await db.analyticsEvent.count({ where: { eventType: "VIEW", createdAt: { gte: dayStart, lte: dayEnd } } });
-      viewsOverTime.push({ date: day.toLocaleDateString("en-IN", { weekday: "short", day: "numeric" }), count });
+      const dayStart = addDays(chartEndDay, -i);
+      const dayEnd = new Date(addDays(dayStart, 1).getTime() - 1);
+      const count = await db.analyticsEvent.count({
+        where: { eventType: "VIEW", createdAt: { gte: dayStart, lte: dayEnd } },
+      });
+      viewsOverTime.push({ date: dayStart.toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", weekday: "short", day: "numeric" }), count });
     }
 
     const purchasesOverTime: { date: string; count: number; revenue: number }[] = [];
     for (let i = 6; i >= 0; i--) {
-      const day = new Date(now.getTime() - i * 24*60*60*1000);
-      const dayStr = day.toISOString().split("T")[0];
-      const dayStart = new Date(dayStr + "T00:00:00.000Z");
-      const dayEnd = new Date(dayStr + "T23:59:59.999Z");
-      const dayOrders = await db.order.findMany({ where: { paymentStatus: "COMPLETED", createdAt: { gte: dayStart, lte: dayEnd } }, select: { total: true } });
-      purchasesOverTime.push({ date: day.toLocaleDateString("en-IN", { weekday: "short", day: "numeric" }), count: dayOrders.length, revenue: dayOrders.reduce((s, o) => s + Number(o.total), 0) });
+      const dayStart = addDays(chartEndDay, -i);
+      const dayEnd = new Date(addDays(dayStart, 1).getTime() - 1);
+      const dayOrders = await db.order.findMany({
+        where: { paymentStatus: "COMPLETED", createdAt: { gte: dayStart, lte: dayEnd } },
+        select: { total: true },
+      });
+      purchasesOverTime.push({
+        date: dayStart.toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", weekday: "short", day: "numeric" }),
+        count: dayOrders.length,
+        revenue: dayOrders.reduce((s, o) => s + Number(o.total), 0),
+      });
     }
 
     const totalVisitors = uniqueSessions.length;
